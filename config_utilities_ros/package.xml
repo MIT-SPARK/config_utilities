@@ -12,9 +12,12 @@
   <buildtool_depend>catkin</buildtool_depend>
   <buildtool_depend>catkin_simple</buildtool_depend>
 
+  <depend>config_utilities</depend>
+
   <depend>glog_catkin</depend>
   <depend>gflags_catkin</depend>
-  <depend>config_utilities</depend>
+
+  <depend>roscpp</depend>
 
   <export>
   </export>
