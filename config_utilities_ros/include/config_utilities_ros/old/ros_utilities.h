@@ -34,12 +34,12 @@
  * -------------------------------------------------------------------------- */
 #pragma once
 #include <glog/logging.h>
-#include <config_utilities/config.h>
+#include <config_utilities/old/config.h>
 #include <ros/ros.h>
 
 #include <Eigen/Dense>
 
-#include "config_utilities_ros/ros_parser.h"
+#include "config_utilities_ros/old/ros_parser.h"
 
 namespace config_parser {
 

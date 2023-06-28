@@ -32,43 +32,66 @@
  * Government is authorized to reproduce and distribute reprints for Government
  * purposes notwithstanding any copyright notation herein.
  * -------------------------------------------------------------------------- */
-#include "config_utilities_ros/ros_parser.h"
+#pragma once
 
-#include <iostream>
+#include <memory>
+
+#include "config_utilities/old/config_visitor.h"
 
 namespace config_parser {
 
-RosParserImpl::RosParserImpl(const ros::NodeHandle& nh, const std::string& name)
-    : nh_(nh), name_(name) {}
+template <typename Impl>
+class Formatter {
+ public:
+  explicit Formatter(std::unique_ptr<Impl>&& impl)
+      : impl_(std::move(impl)), root_call_(true) {}
 
-RosParserImpl::RosParserImpl(const ros::NodeHandle& nh) : RosParserImpl(nh, "") {}
-
-RosParserImpl::RosParserImpl() : RosParserImpl(ros::NodeHandle(), "") {}
-
-RosParserImpl RosParserImpl::child(const std::string& new_name) const {
-  // push name onto nodehandle namespace if name isn't empty
-  ros::NodeHandle new_nh = (name_ == "") ? nh_ : ros::NodeHandle(nh_, name_);
-  return RosParserImpl(new_nh, new_name);
-}
-
-std::vector<std::string> RosParserImpl::children() const {
-  const std::string resolved_name = nh_.resolveName(name_);
-  if (resolved_name == "") {
-    return {};
+  Formatter<Impl> operator[](const std::string& new_name) const {
+    return Formatter(std::make_unique<Impl>(impl_->child(new_name)), false);
   }
 
-  XmlRpc::XmlRpcValue value;
-  nh_.getParam(name_, value);
-  if (value.getType() != XmlRpc::XmlRpcValue::Type::TypeStruct) {
-    return {};
+  template <typename T>
+  void visit(const std::string& name, T& value) const {
+    auto new_parser = this->operator[](name);
+    ConfigVisitor<T>::visit_config(new_parser, value);
   }
 
-  std::vector<std::string> children;
-  for (const auto& nv_pair : value) {
-    children.push_back(nv_pair.first);
+  template <typename T, typename C>
+  void visit(const std::string& name, T& value, const C& converter) const {
+    auto intermediate_value = converter.from(value);
+    visit(name, intermediate_value);
   }
 
-  return children;
-}
+  template <typename T>
+  void parse(T& value) const {
+    impl_->parse(value);
+  }
+
+  inline void pre_visit() const {
+    if (!root_call_) {
+      impl_->pre_visit();
+    }
+  }
+
+  inline void post_visit() const {
+    if (!root_call_) {
+      impl_->post_visit();
+    }
+  }
+
+  template <typename T>
+  void show(const T& value) const {
+    impl_->show(value);
+  }
+
+  std::string prefix() const { return impl_->prefix(); }
+
+ private:
+  Formatter(std::unique_ptr<Impl>&& impl, bool root_call)
+      : impl_(std::move(impl)), root_call_(root_call) {}
+
+  std::unique_ptr<Impl> impl_;
+  bool root_call_;
+};
 
 }  // namespace config_parser

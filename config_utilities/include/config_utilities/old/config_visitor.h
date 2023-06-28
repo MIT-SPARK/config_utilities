@@ -36,7 +36,7 @@
 #include <string>
 #include <utility>
 
-#include "config_utilities/config_traits.h"
+#include "config_utilities/old/config_traits.h"
 
 // argument-dependent-lookup for arbitrary config structures. See the following:
 // - http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4381.html

@@ -38,7 +38,7 @@
 #include <set>
 #include <vector>
 
-#include "config_utilities/config_formatter.h"
+#include "config_utilities/old/config_formatter.h"
 
 namespace config_parser {
 

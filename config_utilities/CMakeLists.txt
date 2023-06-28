@@ -11,9 +11,18 @@ catkin_simple()
 #############
 
 cs_add_library(${PROJECT_NAME}
-        src/yaml_parser.cpp
+        src/old/yaml_parser.cpp
         )
 target_link_libraries(${PROJECT_NAME})
+
+###############
+# Executables #
+###############
+
+cs_add_executable(demo_config
+        demos/config.cpp
+        )
+target_link_libraries(demo_config ${PROJECT_NAME})
 
 ##########
 # Export #

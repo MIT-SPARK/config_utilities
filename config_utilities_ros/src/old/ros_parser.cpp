@@ -32,80 +32,43 @@
  * Government is authorized to reproduce and distribute reprints for Government
  * purposes notwithstanding any copyright notation herein.
  * -------------------------------------------------------------------------- */
-#pragma once
-#include <Eigen/Dense>
-#include <sstream>
+#include "config_utilities_ros/old/ros_parser.h"
 
-#include "config_utilities/config.h"
+#include <iostream>
 
-namespace YAML {
+namespace config_parser {
 
-template <typename Scalar, int N>
-struct convert<Eigen::Matrix<Scalar, N, 1>> {
-  static Node encode(const Eigen::Matrix<Scalar, N, 1>& rhs) {
-    Node node;
-    for (int i = 0; i < N; ++i) {
-      node.push_back(rhs(i));
-    }
+RosParserImpl::RosParserImpl(const ros::NodeHandle& nh, const std::string& name)
+    : nh_(nh), name_(name) {}
 
-    return node;
-  }
+RosParserImpl::RosParserImpl(const ros::NodeHandle& nh) : RosParserImpl(nh, "") {}
 
-  static bool decode(const Node& node, Eigen::Matrix<Scalar, N, 1>& rhs) {
-    std::cout << node << std::endl;
-    if (!node.IsSequence() || node.size() != N) {
-      return false;
-    }
+RosParserImpl::RosParserImpl() : RosParserImpl(ros::NodeHandle(), "") {}
 
-    for (int i = 0; i < N; ++i) {
-      rhs(i) = node[i].as<Scalar>();
-    }
-
-    return true;
-  }
-};
-
-template <int N>
-struct convert<Eigen::Matrix<uint8_t, N, 1>> {
-  static Node encode(const Eigen::Matrix<uint8_t, N, 1>& rhs) {
-    Node node;
-    for (int i = 0; i < N; ++i) {
-      node.push_back(static_cast<int>(rhs(i)));
-    }
-
-    return node;
-  }
-
-  static bool decode(const Node& node, Eigen::Matrix<uint8_t, N, 1>& rhs) {
-    if (!node.IsSequence() || node.size() != N) {
-      return false;
-    }
-
-    for (int i = 0; i < N; ++i) {
-      rhs(i) = node[i].as<uint16_t>();
-    }
-
-    return true;
-  }
-};
-
-}  // namespace YAML
-
-namespace Eigen {
-
-template <typename Scalar, int N>
-void displayParam(std::ostream& out, const Eigen::Matrix<Scalar, N, 1>& value) {
-  Eigen::IOFormat format(
-      Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", ", ", "", "", "[", "]");
-  out << value.format(format);
+RosParserImpl RosParserImpl::child(const std::string& new_name) const {
+  // push name onto nodehandle namespace if name isn't empty
+  ros::NodeHandle new_nh = (name_ == "") ? nh_ : ros::NodeHandle(nh_, name_);
+  return RosParserImpl(new_nh, new_name);
 }
 
-template <int N>
-void displayParam(std::ostream& out, const Eigen::Matrix<uint8_t, N, 1>& value) {
-  Eigen::IOFormat format(
-      Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", ", ", "", "", "[", "]");
-  Eigen::Matrix<int, N, 1> to_show = value.template cast<int>();
-  out << to_show.format(format);
+std::vector<std::string> RosParserImpl::children() const {
+  const std::string resolved_name = nh_.resolveName(name_);
+  if (resolved_name == "") {
+    return {};
+  }
+
+  XmlRpc::XmlRpcValue value;
+  nh_.getParam(name_, value);
+  if (value.getType() != XmlRpc::XmlRpcValue::Type::TypeStruct) {
+    return {};
+  }
+
+  std::vector<std::string> children;
+  for (const auto& nv_pair : value) {
+    children.push_back(nv_pair.first);
+  }
+
+  return children;
 }
 
-}  // namespace Eigen
+}  // namespace config_parser

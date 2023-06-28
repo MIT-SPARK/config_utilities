@@ -33,7 +33,7 @@
  * purposes notwithstanding any copyright notation herein.
  * -------------------------------------------------------------------------- */
 #pragma once
-#include <config_utilities/config_parser.h>
+#include <config_utilities/old/config_parser.h>
 #include <ros/ros.h>
 
 #include <vector>

@@ -32,65 +32,47 @@
  * Government is authorized to reproduce and distribute reprints for Government
  * purposes notwithstanding any copyright notation herein.
  * -------------------------------------------------------------------------- */
-#pragma once
-#include <memory>
-
-#include "config_utilities/config_visitor.h"
+#include "config_utilities/old/yaml_parser.h"
 
 namespace config_parser {
 
-template <typename Impl>
-class Formatter {
- public:
-  explicit Formatter(std::unique_ptr<Impl>&& impl)
-      : impl_(std::move(impl)), root_call_(true) {}
+YamlParserImpl::YamlParserImpl(const YAML::Node& node, const std::string& name)
+    : node_(node), name_(name) {}
 
-  Formatter<Impl> operator[](const std::string& new_name) const {
-    return Formatter(std::make_unique<Impl>(impl_->child(new_name)), false);
+YamlParserImpl::YamlParserImpl(const std::string& file)
+    : YamlParserImpl(YAML::LoadFile(file), "") {}
+
+YamlParserImpl::YamlParserImpl(const YAML::Node& node) : YamlParserImpl(node, "") {}
+
+YamlParserImpl YamlParserImpl::child(const std::string& child_name) const {
+  if (child_name.size() == 0) {
+    return YamlParserImpl(node_, name_);
   }
 
-  template <typename T>
-  void visit(const std::string& name, T& value) const {
-    auto new_parser = this->operator[](name);
-    ConfigVisitor<T>::visit_config(new_parser, value);
+  auto new_name = name_ + "/" + child_name;
+  if (!node_) {
+    return YamlParserImpl(node_, new_name);
   }
 
-  template <typename T, typename C>
-  void visit(const std::string& name, T& value, const C& converter) const {
-    auto intermediate_value = converter.from(value);
-    visit(name, intermediate_value);
+  return YamlParserImpl(node_[child_name], new_name);
+}
+
+bool YamlParserImpl::parseImpl(uint8_t& value) const {
+  value = node_.as<uint16_t>();
+  return true;
+}
+
+std::vector<std::string> YamlParserImpl::children() const {
+  if (!node_.IsMap()) {
+    return {};
   }
 
-  template <typename T>
-  void parse(T& value) const {
-    impl_->parse(value);
+  std::vector<std::string> children;
+  for (const auto& kv_pair : node_) {
+    children.push_back(kv_pair.first.as<std::string>());
   }
 
-  inline void pre_visit() const {
-    if (!root_call_) {
-      impl_->pre_visit();
-    }
-  }
-
-  inline void post_visit() const {
-    if (!root_call_) {
-      impl_->post_visit();
-    }
-  }
-
-  template <typename T>
-  void show(const T& value) const {
-    impl_->show(value);
-  }
-
-  std::string prefix() const { return impl_->prefix(); }
-
- private:
-  Formatter(std::unique_ptr<Impl>&& impl, bool root_call)
-      : impl_(std::move(impl)), root_call_(root_call) {}
-
-  std::unique_ptr<Impl> impl_;
-  bool root_call_;
-};
+  return children;
+}
 
 }  // namespace config_parser

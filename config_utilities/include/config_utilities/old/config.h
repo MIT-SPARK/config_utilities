@@ -33,10 +33,11 @@
  * purposes notwithstanding any copyright notation herein.
  * -------------------------------------------------------------------------- */
 #pragma once
+
 #include <algorithm>
 
-#include "config_utilities/ostream_formatter.h"
-#include "config_utilities/yaml_parser.h"
+#include "config_utilities/old/ostream_formatter.h"
+#include "config_utilities/old/yaml_parser.h"
 
 namespace config_parser {
 

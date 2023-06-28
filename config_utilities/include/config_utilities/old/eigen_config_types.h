@@ -33,79 +33,79 @@
  * purposes notwithstanding any copyright notation herein.
  * -------------------------------------------------------------------------- */
 #pragma once
-#include <iostream>
-#include <memory>
+#include <Eigen/Dense>
 #include <sstream>
-#include <vector>
 
-#include "config_utilities/config_visitor.h"
-#include "config_utilities/ostream_formatter.h"
+#include "config_utilities/old/config.h"
 
-namespace config_parser {
+namespace YAML {
 
-struct Logger {
-  using Ptr = std::shared_ptr<Logger>;
-
-  virtual ~Logger() = default;
-
-  virtual void log_missing(const std::string& message) const = 0;
-
-  virtual void log_invalid(const std::string& message) const {
-    std::cerr << "[Parsing Error]: " << message << std::endl;
-  }
-};
-
-template <typename Impl>
-class Parser {
- public:
-  Parser(std::unique_ptr<Impl>&& impl, Logger::Ptr logger = nullptr)
-      : impl_(std::move(impl)), logger_(logger) {}
-
-  ~Parser() = default;
-
-  Parser(const Parser& other) = delete;
-
-  Parser(Parser&& other) = delete;
-
-  Parser<Impl> operator[](const std::string& new_name) const {
-    return Parser(std::make_unique<Impl>(impl_->child(new_name)), logger_);
-  }
-
-  void setLogger(const Logger::Ptr& logger) { logger_ = logger; }
-
-  template <typename T>
-  void visit(const std::string& name, T& value) const {
-    auto new_parser = this->operator[](name);
-    ConfigVisitor<T>::visit_config(new_parser, value);
-  }
-
-  template <typename T, typename C>
-  void visit(const std::string& name, T& value, const C& converter) const {
-    auto intermediate_value = converter.from(value);
-    this->visit(name, intermediate_value);
-    value = converter.to(intermediate_value);
-  }
-
-  std::vector<std::string> children() const { return impl_->children(); }
-
-  template <typename T>
-  void parse(T& value) const {
-    const bool found = impl_->parse(value, logger_.get());
-    if (logger_ && !found) {
-      std::stringstream ss;
-      ss << "missing param " << impl_->name() << ". defaulting to ";
-      config_parser::displayParam(ss, value);
-
-      logger_->log_missing(ss.str());
+template <typename Scalar, int N>
+struct convert<Eigen::Matrix<Scalar, N, 1>> {
+  static Node encode(const Eigen::Matrix<Scalar, N, 1>& rhs) {
+    Node node;
+    for (int i = 0; i < N; ++i) {
+      node.push_back(rhs(i));
     }
+
+    return node;
   }
 
- private:
-  std::unique_ptr<Impl> impl_;
-  Logger::Ptr logger_;
+  static bool decode(const Node& node, Eigen::Matrix<Scalar, N, 1>& rhs) {
+    std::cout << node << std::endl;
+    if (!node.IsSequence() || node.size() != N) {
+      return false;
+    }
+
+    for (int i = 0; i < N; ++i) {
+      rhs(i) = node[i].as<Scalar>();
+    }
+
+    return true;
+  }
 };
 
-template <typename T>
-struct is_parser<Parser<T>> : std::true_type {};
+template <int N>
+struct convert<Eigen::Matrix<uint8_t, N, 1>> {
+  static Node encode(const Eigen::Matrix<uint8_t, N, 1>& rhs) {
+    Node node;
+    for (int i = 0; i < N; ++i) {
+      node.push_back(static_cast<int>(rhs(i)));
+    }
 
-}  // namespace config_parser
+    return node;
+  }
+
+  static bool decode(const Node& node, Eigen::Matrix<uint8_t, N, 1>& rhs) {
+    if (!node.IsSequence() || node.size() != N) {
+      return false;
+    }
+
+    for (int i = 0; i < N; ++i) {
+      rhs(i) = node[i].as<uint16_t>();
+    }
+
+    return true;
+  }
+};
+
+}  // namespace YAML
+
+namespace Eigen {
+
+template <typename Scalar, int N>
+void displayParam(std::ostream& out, const Eigen::Matrix<Scalar, N, 1>& value) {
+  Eigen::IOFormat format(
+      Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", ", ", "", "", "[", "]");
+  out << value.format(format);
+}
+
+template <int N>
+void displayParam(std::ostream& out, const Eigen::Matrix<uint8_t, N, 1>& value) {
+  Eigen::IOFormat format(
+      Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", ", ", "", "", "[", "]");
+  Eigen::Matrix<int, N, 1> to_show = value.template cast<int>();
+  out << to_show.format(format);
+}
+
+}  // namespace Eigen

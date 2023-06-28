@@ -32,47 +32,80 @@
  * Government is authorized to reproduce and distribute reprints for Government
  * purposes notwithstanding any copyright notation herein.
  * -------------------------------------------------------------------------- */
-#include "config_utilities/yaml_parser.h"
+#pragma once
+#include <iostream>
+#include <memory>
+#include <sstream>
+#include <vector>
+
+#include "config_utilities/old/config_visitor.h"
+#include "config_utilities/old/ostream_formatter.h"
 
 namespace config_parser {
 
-YamlParserImpl::YamlParserImpl(const YAML::Node& node, const std::string& name)
-    : node_(node), name_(name) {}
+struct Logger {
+  using Ptr = std::shared_ptr<Logger>;
 
-YamlParserImpl::YamlParserImpl(const std::string& file)
-    : YamlParserImpl(YAML::LoadFile(file), "") {}
+  virtual ~Logger() = default;
 
-YamlParserImpl::YamlParserImpl(const YAML::Node& node) : YamlParserImpl(node, "") {}
+  virtual void log_missing(const std::string& message) const = 0;
 
-YamlParserImpl YamlParserImpl::child(const std::string& child_name) const {
-  if (child_name.size() == 0) {
-    return YamlParserImpl(node_, name_);
+  virtual void log_invalid(const std::string& message) const {
+    std::cerr << "[Parsing Error]: " << message << std::endl;
+  }
+};
+
+template <typename Impl>
+class Parser {
+ public:
+  Parser(std::unique_ptr<Impl>&& impl, Logger::Ptr logger = nullptr)
+      : impl_(std::move(impl)), logger_(logger) {}
+
+  ~Parser() = default;
+
+  Parser(const Parser& other) = delete;
+
+  Parser(Parser&& other) = delete;
+
+  Parser<Impl> operator[](const std::string& new_name) const {
+    return Parser(std::make_unique<Impl>(impl_->child(new_name)), logger_);
   }
 
-  auto new_name = name_ + "/" + child_name;
-  if (!node_) {
-    return YamlParserImpl(node_, new_name);
+  void setLogger(const Logger::Ptr& logger) { logger_ = logger; }
+
+  template <typename T>
+  void visit(const std::string& name, T& value) const {
+    auto new_parser = this->operator[](name);
+    ConfigVisitor<T>::visit_config(new_parser, value);
   }
 
-  return YamlParserImpl(node_[child_name], new_name);
-}
-
-bool YamlParserImpl::parseImpl(uint8_t& value) const {
-  value = node_.as<uint16_t>();
-  return true;
-}
-
-std::vector<std::string> YamlParserImpl::children() const {
-  if (!node_.IsMap()) {
-    return {};
+  template <typename T, typename C>
+  void visit(const std::string& name, T& value, const C& converter) const {
+    auto intermediate_value = converter.from(value);
+    this->visit(name, intermediate_value);
+    value = converter.to(intermediate_value);
   }
 
-  std::vector<std::string> children;
-  for (const auto& kv_pair : node_) {
-    children.push_back(kv_pair.first.as<std::string>());
+  std::vector<std::string> children() const { return impl_->children(); }
+
+  template <typename T>
+  void parse(T& value) const {
+    const bool found = impl_->parse(value, logger_.get());
+    if (logger_ && !found) {
+      std::stringstream ss;
+      ss << "missing param " << impl_->name() << ". defaulting to ";
+      config_parser::displayParam(ss, value);
+
+      logger_->log_missing(ss.str());
+    }
   }
 
-  return children;
-}
+ private:
+  std::unique_ptr<Impl> impl_;
+  Logger::Ptr logger_;
+};
+
+template <typename T>
+struct is_parser<Parser<T>> : std::true_type {};
 
 }  // namespace config_parser
