@@ -97,13 +97,13 @@ struct GlobalSettings {
 
   // Printing Settings.
   // Width of the 'toString()' output of configs.
-  unsigned int print_width = 80;
+  unsigned int print_width = 80u;
 
   // Indent after which values are printed.
-  unsigned int print_indent = 30;
+  unsigned int print_indent = 30u;
 
   // Indent for nested configs.
-  unsigned int subconfig_indent = 3;
+  unsigned int subconfig_indent = 3u;
 
   // If true, indicate which values are identical to the default.
   bool indicate_default_values = true;

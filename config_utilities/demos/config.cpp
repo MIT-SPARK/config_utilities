@@ -1,97 +1,77 @@
 /**
- * This demo showcases the use of config_utilities to define configs for custom
- * classes, check these for validity and print them.
+ * TODO: Shows how to use configs.
  */
+
+#include "config_utilities/config.h"
 
 #include <iostream>
 #include <string>
 
-// // #include "config_utilities.hpp"
+#include <glog/logging.h>
 
-// // Define a class that uses a config.
-// class MyClass {
-//  public:
-//   // Any new Config can be defined by inheritnig from config_utility::Config and
-//   // templating itself.
-//   struct Config : public config_utilities::Config<Config> {
-//     int a = 1;
-//     double b = 2.34;
-//     double b_half = -1.0;
-//     std::string c = "this is c";
+namespace demo {
 
-//     // General fields can be set in the constructor if required.
-//     Config() {
-//       setConfigName("MyClass-Config");
-//     }
+// A struct that represents we want to be a config.
+struct Config {
+  int i = 100;
+  std::string s = "test";
+  double distance = 42;
+};
 
-//    protected:
-//     // To add parameter conditions override 'checkParams()'. The checks can be
-//     // performed using the checkParamX tools, which have  identical interfaces
-//     // as the 'ConfigChecker'.
-//     void checkParams() const override {
-//       checkParamGE(a, 0, "a");
-//       checkParamEq(c, std::string("this is c"), "c");
-//       checkParamCond(static_cast<int>(b) > a, "b is expected > a.");
-//     }
+// A second struct that will not be declared a config.
+struct NotAConfig {};
 
-//     // Add printing by overriding 'printFields()'. Uniform printing can be
-//     // obtained by using the printX tools.
-//     void printFields() const override {
-//       printField("a", a);
-//       printField("b", b);
-//       printField("b_half", b_half);
-//       printField("c", c);
+// Defining 'void declare_config(T& config)' function labels a struct as config. All config properties are specified
+// within it.
+void declare_config(Config& config) {
+  // Specify the name.
+  config::name("Config");
 
-//       // printField<string>() can be used to create custom, indented messages.
-//       printField("An_extremely_unecessarily_and_unreasonably_long_param_name",
-//                  "A_similarly_unreasonably_long_param_value.");
+  // Specify all fields, optionally specifying a unit for readibility..
+  config::field(config.i, "i");
+  config::field(config.s, "s");
+  config::field(config.distance, "distance", "m");
 
-//       // Custom text can be printed using printText().
-//       printText("And a custom message.");
-//     }
+  // Specify all checks to denote a valid configuration. Checks are specified as param, value, and param name to be
+  // displayed. Implemented checks are GT (>), GE (>=), LT (<), LE (<=), EQ (==), NE (!=).
+  // TODO(lschmid): Would be nice to not duplicate the name but didn't find a nice way to do this.
+  config::checkGT(config.i, 0, "i");
 
-//     // Dependent default arguments can be set by overriding this function.
-//     void initializeDependentVariableDefaults() override {
-//       if (b_half == -1.0) {
-//         b_half = b / 2.0;
-//       }
-//     }
-//   };
+  // Double sided checks can be invoked as in range.
+  config::checkInRange(config.distance, 0.0, 100.0, "distance");
 
-//   // Use the config for construction. All configs expose the functions
-//   // 'bool isValid() const' and 'Config checkValid() const'.
-//   explicit MyClass(const Config& config) : config_(config.checkValid()) {}
+  // Any other checks can be implmented using the generic condition check.
+  config::checkCondition(config.distance < config.i, "Param 'distance' must be < 'i'.");
+  config::checkCondition(!config.s.empty(), "Param 's' may not be empty.");
+}
 
-//   // Use the toString() method for printing.
-//   void print() const { std::cout << config_.toString() << std::endl; }
-
-//  private:
-//   const Config config_;
-// };
+}  // namespace demo
 
 int main(int argc, char** argv) {
   // Setup logging.
-//   config_utilities::RequiredArguments ra(
-//       &argc, &argv, {"--logtostderr", "--colorlogtostderr"});
-//   google::InitGoogleLogging(argv[0]);
-//   google::ParseCommandLineFlags(&argc, &argv, false);
+  FLAGS_alsologtostderr = 1;
+  FLAGS_colorlogtostderr = 1;
+  google::ParseCommandLineFlags(&argc, &argv, false);
+  google::InstallFailureSignalHandler();
+  google::InitGoogleLogging(argv[0]);
 
-//   // Create a valid (default) config.
-//   MyClass::Config valid_config;
-//   MyClass my_class(valid_config);
+  // Use isConfig<T> to check whether an object has been declared a config.
+  std::cout << "Config is a config: " << std::boolalpha << config::isConfig<demo::Config>() << std::endl;
+  std::cout << "NotAConfig is a config: " << std::boolalpha << config::isConfig<demo::NotAConfig>() << std::endl;
 
-//   // This should print the config neatly.
-//   my_class.print();
+  // Create a valid and an invalid config.
+  demo::Config config, invalid_config;
+  invalid_config.i = -1;
+  invalid_config.distance = 123;
+  invalid_config.s.clear();
+  constexpr bool print_warnings = true;
 
-//   // Create an invalid config.
-//   MyClass::Config invalid_config;
-//   invalid_config.a = -1;
-//   invalid_config.b = -3;
-//   invalid_config.c = "test";
+  // Print whether they are valid. Since we invalidated all fields of 'invalid_config' a comprehensive summary of all
+  // issues is printed.
+  std::cout << "'config' is valid: " << config::isValid(config, print_warnings) << std::endl;
+  std::cout << "'invalid_config' is valid: " << config::isValid(invalid_config, print_warnings) << std::endl;
 
-//   // This should raise a warning for every wrong parameter and then exit with a
-//   // failed check.
-//   MyClass another_my_class(invalid_config);
+  //   std::cout << config::test(config) << std::endl;
 
   return 0;
 }

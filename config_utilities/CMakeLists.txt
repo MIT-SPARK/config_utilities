@@ -11,7 +11,8 @@ catkin_simple()
 #############
 
 cs_add_library(${PROJECT_NAME}
-        src/old/yaml_parser.cpp
+        # src/old/yaml_parser.cpp
+        src/internal/meta_data.cpp
         )
 target_link_libraries(${PROJECT_NAME})
 
