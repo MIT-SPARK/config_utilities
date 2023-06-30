@@ -7,8 +7,6 @@
 #include <iostream>
 #include <string>
 
-#include <glog/logging.h>
-
 // #include "config_utilities/printing.h"         // enable toString()
 #include "config_utilities/validity_checks.h"  // enable isValid() and checkValid()
 
@@ -52,13 +50,6 @@ void declare_config(Config& config) {
 }  // namespace demo
 
 int main(int argc, char** argv) {
-  // Setup logging.
-  FLAGS_alsologtostderr = 1;
-  FLAGS_colorlogtostderr = 1;
-  google::ParseCommandLineFlags(&argc, &argv, false);
-  google::InstallFailureSignalHandler();
-  google::InitGoogleLogging(argv[0]);
-
   // Use isConfig<T> to check whether an object has been declared a config.
   std::cout << "Config is a config: " << std::boolalpha << config::isConfig<demo::Config>() << std::endl;
   std::cout << "NotAConfig is a config: " << config::isConfig<demo::NotAConfig>() << std::endl;
@@ -68,13 +59,17 @@ int main(int argc, char** argv) {
   invalid_config.i = -1;
   invalid_config.distance = 123;
   invalid_config.s.clear();
-  constexpr bool print_warnings = true;
 
   // Print whether they are valid. Since we invalidated all fields of 'invalid_config' a comprehensive summary of all
   // issues is printed.
-  std::cout << "'config' is valid: " << config::isValid(config, print_warnings) << std::endl;
-  std::cout << "'invalid_config' is valid: " << config::isValid(invalid_config, print_warnings) << std::endl;
+  constexpr bool print_warnings = true;
+  const bool config_is_valid = config::isValid(config, print_warnings);
+  std::cout << "'config' is valid: " << config_is_valid << std::endl;
 
+  const bool invalid_config_is_valid = config::isValid(invalid_config, print_warnings);
+  std::cout << "'invalid_config' is valid: " << invalid_config_is_valid << std::endl;
+
+  // Check valid will enforce that the config is valid, throwing an error and always printing the warnings if not.
   config::checkValid(invalid_config);
 
   return 0;

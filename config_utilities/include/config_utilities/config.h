@@ -1,12 +1,10 @@
 #pragma once
 
-#include <iostream>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "config_utilities/internal/meta_data.h"
-#include "config_utilities/traits.h"
+#include "config_utilities/internal/visitor.h"
 
 namespace config {
 
@@ -34,15 +32,12 @@ constexpr const auto& declare_config = config::internal::static_const<internal::
 
 }  // namespace
 
-// Properties to declare_config of a config.
+// Public interfaces to declare properties in declare_config.
 
 /**
  * @brief Set the name of a config. This is used for printing and logging.
  */
-void name(const std::string& name) {
-  internal::MetaData& data = internal::MetaData::instance();
-  data.name = name;
-};
+void name(const std::string& name) { internal::visitName(name); }
 
 /**
  * @brief Declare string-named fields of the config. This string will be used to get the configs field values during
@@ -54,8 +49,8 @@ void name(const std::string& name) {
  */
 template <typename T>
 void field(T& field, const std::string& field_name, const std::string& unit = "") {
-//   internal::MetaData& data = internal::MetaData::instance();
-};
+  internal::visitField(field, field_name, unit);
+}
 
 /**
  * @brief Execute a greater than (GT) check, i.e. param > value.
@@ -67,10 +62,7 @@ void field(T& field, const std::string& field_name, const std::string& unit = ""
  */
 template <typename T>
 void checkGT(const T& param, const T& value, const std::string& name) {
-  internal::MetaData& data = internal::MetaData::instance();
-  if (data.mode == internal::MetaData::Mode::kCheckValid) {
-    data.validity_checker.checkGT(param, value, name);
-  }
+  internal::visitCheck(internal::CheckMode::kGT, param, value, name);
 }
 
 /**
@@ -83,10 +75,7 @@ void checkGT(const T& param, const T& value, const std::string& name) {
  */
 template <typename T>
 void checkGE(const T& param, const T& value, const std::string& name) {
-  internal::MetaData& data = internal::MetaData::instance();
-  if (data.mode == internal::MetaData::Mode::kCheckValid) {
-    data.validity_checker.checkGE(param, value, name);
-  }
+  internal::visitCheck(internal::CheckMode::kGE, param, value, name);
 }
 
 /**
@@ -99,10 +88,7 @@ void checkGE(const T& param, const T& value, const std::string& name) {
  */
 template <typename T>
 void checkLT(const T& param, const T& value, const std::string& name) {
-  internal::MetaData& data = internal::MetaData::instance();
-  if (data.mode == internal::MetaData::Mode::kCheckValid) {
-    data.validity_checker.checkLT(param, value, name);
-  }
+  internal::visitCheck(internal::CheckMode::kLT, param, value, name);
 }
 
 /**
@@ -115,10 +101,7 @@ void checkLT(const T& param, const T& value, const std::string& name) {
  */
 template <typename T>
 void checkLE(const T& param, const T& value, const std::string& name) {
-  internal::MetaData& data = internal::MetaData::instance();
-  if (data.mode == internal::MetaData::Mode::kCheckValid) {
-    data.validity_checker.checkLE(param, value, name);
-  }
+  internal::visitCheck(internal::CheckMode::kLE, param, value, name);
 }
 
 /**
@@ -131,10 +114,7 @@ void checkLE(const T& param, const T& value, const std::string& name) {
  */
 template <typename T>
 void checkEQ(const T& param, const T& value, const std::string& name) {
-  internal::MetaData& data = internal::MetaData::instance();
-  if (data.mode == internal::MetaData::Mode::kCheckValid) {
-    data.validity_checker.checkEq(param, value, name);
-  }
+  internal::visitCheck(internal::CheckMode::kEQ, param, value, name);
 }
 
 /**
@@ -147,10 +127,7 @@ void checkEQ(const T& param, const T& value, const std::string& name) {
  */
 template <typename T>
 void checkNE(const T& param, const T& value, const std::string& name) {
-  internal::MetaData& data = internal::MetaData::instance();
-  if (data.mode == internal::MetaData::Mode::kCheckValid) {
-    data.validity_checker.checkNE(param, value, name);
-  }
+  internal::visitCheck(internal::CheckMode::kNE, param, value, name);
 }
 
 /**
@@ -164,10 +141,7 @@ void checkNE(const T& param, const T& value, const std::string& name) {
  */
 template <typename T>
 void checkInRange(const T& param, const T& lower, const T& higher, const std::string& name) {
-  internal::MetaData& data = internal::MetaData::instance();
-  if (data.mode == internal::MetaData::Mode::kCheckValid) {
-    data.validity_checker.checkInRange(param, lower, higher, name);
-  }
+  internal::visitCheckInRange(param, lower, higher, name);
 }
 
 /**
@@ -176,11 +150,6 @@ void checkInRange(const T& param, const T& lower, const T& higher, const std::st
  * @param condition Condition that should evaluate to true if the config is valid.
  * @param warning Message to be reported in the error summary.
  */
-void checkCondition(bool condition, const std::string& warning) {
-  internal::MetaData& data = internal::MetaData::instance();
-  if (data.mode == internal::MetaData::Mode::kCheckValid) {
-    data.validity_checker.checkCondition(condition, warning);
-  }
-}
+void checkCondition(bool condition, const std::string& warning) { internal::visitCheckCondition(condition, warning); }
 
 }  // namespace config
