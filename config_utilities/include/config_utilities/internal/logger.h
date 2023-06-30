@@ -1,7 +1,5 @@
 #pragma once
 
-#include <exception>
-#include <iostream>
 #include <memory>
 #include <string>
 #include <utility>
@@ -31,32 +29,10 @@ class Logger {
   static void logFatal(const std::string& message) { log(Severity::kFatal, message); }
 
  protected:
-  virtual void logImpl(const Severity severity, const std::string& message) {
-    // Default logs to std::cout to always have some sort of output. This could also be moved out to a separate logger
-    // if we want this to be independent of iostream.
-    if (severity == Severity::kFatal) {
-      throw std::runtime_error(message);
-    }
-    switch (severity) {
-      case Severity::kInfo:
-        std::cout << "[INFO] " << message << std::endl;
-        break;
-
-      case Severity::kWarning:
-        std::cout << "\033[33m[WARNING] " << message << "\033[0m" << std::endl;
-        break;
-
-      case Severity::kError:
-        std::cout << "\033[31m[ERROR] " << message << "\033[0m" << std::endl;
-        break;
-
-      case Severity::kFatal:
-        throw std::runtime_error(message);
-    }
-  }
+  virtual void logImpl(const Severity severity, const std::string& message) = 0;
 
  private:
-  inline static std::shared_ptr<Logger> instance_ = std::make_shared<Logger>();
+  inline static std::shared_ptr<Logger> instance_;
 };
 
 }  // namespace config::internal

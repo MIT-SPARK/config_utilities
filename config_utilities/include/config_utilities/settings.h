@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 namespace config {
 
 namespace internal {
@@ -33,6 +35,9 @@ struct Settings {
 
   // If true, also display the unit of each parameter where provided.
   bool indicate_units = true;
+
+  // Specify the logger to be used for printing. Loggers register themselves if included.
+  void setLogger(const std::string& name);
 
  private:
   Settings() = default;

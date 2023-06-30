@@ -1,5 +1,5 @@
 /**
- * TODO: Shows how to use configs.
+ * TODO(lschmid): Shows how to use configs.
  */
 
 #include "config_utilities/config.h"
@@ -8,6 +8,7 @@
 #include <string>
 
 // #include "config_utilities/printing.h"         // enable toString()
+#include "config_utilities/log_to_stdout.h"    // Simply including this file sets logging to stdout.
 #include "config_utilities/validity_checks.h"  // enable isValid() and checkValid()
 
 namespace demo {

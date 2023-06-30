@@ -12,11 +12,11 @@ find_package(yaml-cpp REQUIRED)
 # Libraries #
 #############
 
-# cs_add_library(${PROJECT_NAME}
+cs_add_library(${PROJECT_NAME}
         # src/old/yaml_parser.cpp
-        # src/visitor.cpp
-        # )
-# target_link_libraries(${PROJECT_NAME} yaml-cpp)
+        src/settings.cpp
+        )
+target_link_libraries(${PROJECT_NAME} yaml-cpp)
 
 ###############
 # Executables #
@@ -26,14 +26,14 @@ cs_add_executable(demo_config
         demos/config.cpp
         )
 target_link_libraries(demo_config
-#${PROJECT_NAME}
+${PROJECT_NAME}
 yaml-cpp)
 
 cs_add_executable(demo_factory
         demos/factory.cpp
         )
 target_link_libraries(demo_config
-# ${PROJECT_NAME}
+${PROJECT_NAME}
 yaml-cpp)
 
 ##########

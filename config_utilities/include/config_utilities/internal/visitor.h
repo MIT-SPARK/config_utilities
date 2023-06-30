@@ -1,5 +1,6 @@
 #pragma once
 
+#include <exception>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -9,7 +10,6 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/validity_checker.h"
 
 namespace config::internal {
@@ -101,7 +101,7 @@ struct Visitor {
       // This should never happen as meta data are managed internally. Caught here for debugging.
       std::stringstream ss;
       ss << "Visitor for thread " << id << " accessed but was not created.";
-      Logger::logFatal(ss.str());
+      throw std::runtime_error(ss.str());
     }
     return *instances.at(id);
   }
@@ -113,7 +113,7 @@ struct Visitor {
       // This should never happen as  meta data are managed internally. Caught here for debugging.
       std::stringstream ss;
       ss << "Tried to create Visitor for thread " << id << " which already exists.";
-      Logger::logFatal(ss.str());
+      throw std::runtime_error(ss.str());
     }
     instances[id] = this;
   }
@@ -140,7 +140,7 @@ template <typename T>
 void visitField(T& field, const std::string& field_name, const std::string& unit) {
   Visitor& visitor = Visitor::instance();
   if (visitor.mode == Visitor::Mode::kSet) {
-    // TODO: Implement.
+    // TODO(lschmid): Implement.
   } else if (visitor.mode == Visitor::Mode::kGet) {
     // TODO(lschmid): Double check yaml parsing here.
     visitor.data.data[field_name] = field;
