@@ -1,15 +1,13 @@
 #pragma once
 
-#include <iostream>
+#include <algorithm>
 #include <string>
-#include <utility>
-#include <vector>
 
 namespace config::internal {
 
 /**
  * @brief Print a string centered in a line.
-*/
+ */
 inline std::string printCenter(const std::string& text, int width, char symbol) {
   int first = std::max((width - static_cast<int>(text.length()) - 2) / 2, 0);
   std::string result = std::string(first, symbol) + " " + text + " ";

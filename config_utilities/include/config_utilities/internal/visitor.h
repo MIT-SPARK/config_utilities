@@ -10,29 +10,10 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include "config_utilities/internal/meta_data.h"
 #include "config_utilities/internal/validity_checker.h"
 
 namespace config::internal {
-
-/**
- * @brief Meta-information struct that interfaces all the communication data when interacting with the configs. YAML is
- * used as internal data representation.
- */
-struct MetaData {
-  // We always get the name of the config if possible.
-  std::string name = "Unnamed Config";
-
-  // Yaml node used to get or set the data of a config.
-  YAML::Node data;
-
-  // All units where specified. units[field_name] = unit
-  std::map<std::string, std::string> units;
-
-  // All warnings issued by the validity checker.
-  std::vector<std::string> warnings;
-};
-
-enum class CheckMode { kGT, kGE, kLT, kLE, kEQ, kNE };
 
 /**
  * @brief The visitor gets and sets information between the meta-data and configs. It is hidden via in-thread singleton
@@ -74,12 +55,14 @@ struct Visitor {
   }
 
  private:
+  enum class CheckMode { kGT, kGE, kLT, kLE, kEQ, kNE };
+
   // Forward declare access to the visiting functions.
   friend void visitName(const std::string&);
   template <typename T>
   friend void visitField(T&, const std::string&, const std::string&);
   template <typename T>
-  friend void visitCheck(CheckMode, const T&, const T&, const std::string&);
+  friend void visitCheck(Visitor::CheckMode, const T&, const T&, const std::string&);
   template <typename T>
   friend void visitCheckInRange(const T&, const T&, const T&, const std::string&);
   friend void visitCheckCondition(bool, const std::string&);
@@ -151,29 +134,29 @@ void visitField(T& field, const std::string& field_name, const std::string& unit
 }
 
 template <typename T>
-void visitCheck(CheckMode mode, const T& param, const T& value, const std::string& name) {
+void visitCheck(Visitor::CheckMode mode, const T& param, const T& value, const std::string& name) {
   Visitor& visitor = Visitor::instance();
   if (visitor.mode != Visitor::Mode::kCheck) {
     return;
   }
 
   switch (mode) {
-    case CheckMode::kGT:
+    case Visitor::CheckMode::kGT:
       visitor.validity_checker.checkGT(param, value, name);
       return;
-    case CheckMode::kGE:
+    case Visitor::CheckMode::kGE:
       visitor.validity_checker.checkGE(param, value, name);
       return;
-    case CheckMode::kLT:
+    case Visitor::CheckMode::kLT:
       visitor.validity_checker.checkLT(param, value, name);
       return;
-    case CheckMode::kLE:
+    case Visitor::CheckMode::kLE:
       visitor.validity_checker.checkLE(param, value, name);
       return;
-    case CheckMode::kEQ:
+    case Visitor::CheckMode::kEQ:
       visitor.validity_checker.checkEq(param, value, name);
       return;
-    case CheckMode::kNE:
+    case Visitor::CheckMode::kNE:
       visitor.validity_checker.checkNE(param, value, name);
       return;
   }

@@ -12,27 +12,41 @@ namespace config::internal {
  */
 class Logger {
  public:
+  using Ptr = std::shared_ptr<Logger>;
+  using ConstPtr = std::shared_ptr<const Logger>;
+
+  Logger() = default;
+  virtual ~Logger() = default;
+
+  // Severity levels for logging.
   enum class Severity { kInfo, kWarning, kError, kFatal };
 
-  static void log(const Severity severity, const std::string& message) {
-    if (instance_) {
-      instance_->logImpl(severity, message);
-    }
+  // Interface to be implemented by loggers.
+  virtual void log(const Severity severity, const std::string& message) const {
+    /* Empty logger does not log anything. */
   }
 
-  static void setLogger(std::shared_ptr<Logger> instance) { instance_ = std::move(instance); }
+  // Convenience interfaces to log to a specific severity.
+  void logInfo(const std::string& message) const { log(Severity::kInfo, message); }
+  void logWarning(const std::string& message) const { log(Severity::kWarning, message); }
+  void logError(const std::string& message) const { log(Severity::kError, message); }
+  // Important: Implementations of logFatal are expected to stop execution of the program.
+  void logFatal(const std::string& message) const { log(Severity::kFatal, message); }
 
-  // Convenience interfaces.
-  static void logInfo(const std::string& message) { log(Severity::kInfo, message); }
-  static void logWarning(const std::string& message) { log(Severity::kWarning, message); }
-  static void logError(const std::string& message) { log(Severity::kError, message); }
-  static void logFatal(const std::string& message) { log(Severity::kFatal, message); }
-
- protected:
-  virtual void logImpl(const Severity severity, const std::string& message) = 0;
+  static void setDefaultLogger(Logger::Ptr logger) { default_logger_ = std::move(logger); }
+  static const Logger& defaultLogger() { return *default_logger_; }
 
  private:
-  inline static std::shared_ptr<Logger> instance_;
+  // Loggers need to implement this function returning a copy of themselves. Not specified pure virtual to allow
+  // creation of empty loggers.
+  virtual Logger::Ptr clone() const { return std::make_shared<Logger>(); }
+  friend Logger::Ptr optionalLogger(const Logger* const logger);
+  inline static Logger::ConstPtr default_logger_ = std::shared_ptr<const Logger>();
 };
+
+// Utility function for optionally specified logger.
+inline Logger::Ptr optionalLogger(const Logger* const logger) {
+  return (logger ? logger->clone() : Logger::defaultLogger().clone());
+}
 
 }  // namespace config::internal

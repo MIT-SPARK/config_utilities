@@ -17,7 +17,7 @@ namespace config::internal {
  */
 class GlogLogger : public Logger {
  protected:
-  void logImpl(const Severity severity, const std::string& message) override {
+  void log(const Severity severity, const std::string& message) const override {
     // Default logs to std::cout to always have some sort of output. This could also be moved out to a separate logger
     // if we want this to be independent of iostream.
     if (severity == Severity::kFatal) {
@@ -43,11 +43,14 @@ class GlogLogger : public Logger {
   }
 
  private:
+  // Factory registration to allow setting of formatters via Settings::setDefaultLogger().
   inline static const auto registration_ = Registration<Logger, GlogLogger>("glog");
+
+  Logger::Ptr clone() const override { return std::make_shared<GlogLogger>(*this); }
 
   // Initialize the glog logger to be used if included.
   inline static const struct Initializer {
-    Initializer() { Logger::setLogger(std::make_shared<GlogLogger>()); }
+    Initializer() { Logger::setDefaultLogger(std::make_unique<GlogLogger>()); }
   } initializer_;
 };
 

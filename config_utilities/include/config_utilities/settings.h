@@ -12,7 +12,9 @@ namespace internal {
  */
 struct Settings {
   Settings(const Settings& other) = delete;
+  Settings(const Settings&& other) = delete;
   Settings& operator=(const Settings& other) = delete;
+  Settings& operator=(const Settings&& other) = delete;
 
   // Singleton access to the global settings.
   static Settings& instance() {
@@ -36,8 +38,11 @@ struct Settings {
   // If true, also display the unit of each parameter where provided.
   bool indicate_units = true;
 
-  // Specify the logger to be used for printing. Loggers register themselves if included.
-  void setLogger(const std::string& name);
+  // Specify the default logger to be used for printing. Loggers register themselves if included.
+  void setDefaultLogger(const std::string& name);
+
+  // Specify the formatter to be used for printing. Formatters register themselves if included.
+  void setDefaultFormatter(const std::string& name);
 
  private:
   Settings() = default;
@@ -51,6 +56,6 @@ struct Settings {
  * @brief Global settings for how config_utilities-based configs behave. These
  * can be dynamically set and changed throughout a program.
  */
-internal::Settings& Settings() { return internal::Settings::instance(); }
+inline internal::Settings& Settings() { return internal::Settings::instance(); }
 
 }  // namespace config

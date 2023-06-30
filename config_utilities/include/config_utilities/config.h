@@ -62,7 +62,7 @@ void field(T& field, const std::string& field_name, const std::string& unit = ""
  */
 template <typename T>
 void checkGT(const T& param, const T& value, const std::string& name) {
-  internal::visitCheck(internal::CheckMode::kGT, param, value, name);
+  internal::visitCheck(internal::Visitor::CheckMode::kGT, param, value, name);
 }
 
 /**
@@ -75,7 +75,7 @@ void checkGT(const T& param, const T& value, const std::string& name) {
  */
 template <typename T>
 void checkGE(const T& param, const T& value, const std::string& name) {
-  internal::visitCheck(internal::CheckMode::kGE, param, value, name);
+  internal::visitCheck(internal::Visitor::CheckMode::kGE, param, value, name);
 }
 
 /**
@@ -88,7 +88,7 @@ void checkGE(const T& param, const T& value, const std::string& name) {
  */
 template <typename T>
 void checkLT(const T& param, const T& value, const std::string& name) {
-  internal::visitCheck(internal::CheckMode::kLT, param, value, name);
+  internal::visitCheck(internal::Visitor::CheckMode::kLT, param, value, name);
 }
 
 /**
@@ -101,7 +101,7 @@ void checkLT(const T& param, const T& value, const std::string& name) {
  */
 template <typename T>
 void checkLE(const T& param, const T& value, const std::string& name) {
-  internal::visitCheck(internal::CheckMode::kLE, param, value, name);
+  internal::visitCheck(internal::Visitor::CheckMode::kLE, param, value, name);
 }
 
 /**
@@ -114,7 +114,7 @@ void checkLE(const T& param, const T& value, const std::string& name) {
  */
 template <typename T>
 void checkEQ(const T& param, const T& value, const std::string& name) {
-  internal::visitCheck(internal::CheckMode::kEQ, param, value, name);
+  internal::visitCheck(internal::Visitor::CheckMode::kEQ, param, value, name);
 }
 
 /**
@@ -127,7 +127,7 @@ void checkEQ(const T& param, const T& value, const std::string& name) {
  */
 template <typename T>
 void checkNE(const T& param, const T& value, const std::string& name) {
-  internal::visitCheck(internal::CheckMode::kNE, param, value, name);
+  internal::visitCheck(internal::Visitor::CheckMode::kNE, param, value, name);
 }
 
 /**

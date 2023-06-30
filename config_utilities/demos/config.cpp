@@ -8,8 +8,9 @@
 #include <string>
 
 // #include "config_utilities/printing.h"         // enable toString()
-#include "config_utilities/log_to_stdout.h"    // Simply including this file sets logging to stdout.
-#include "config_utilities/validity_checks.h"  // enable isValid() and checkValid()
+#include "config_utilities/formatting/asl.h"         // Specify a style to format output.
+#include "config_utilities/logging/log_to_stdout.h"  // Simply including this file sets logging to stdout.
+#include "config_utilities/validity_checks.h"        // Enable isValid() and checkValid().
 
 namespace demo {
 
