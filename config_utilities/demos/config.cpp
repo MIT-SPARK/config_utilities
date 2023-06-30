@@ -9,9 +9,13 @@
 
 #include <glog/logging.h>
 
+// #include "config_utilities/printing.h"         // enable toString()
+#include "config_utilities/validity_checks.h"  // enable isValid() and checkValid()
+
 namespace demo {
 
 // A struct that represents we want to be a config.
+// Requirements for a config struct: is default constructable.
 struct Config {
   int i = 100;
   std::string s = "test";
@@ -57,7 +61,7 @@ int main(int argc, char** argv) {
 
   // Use isConfig<T> to check whether an object has been declared a config.
   std::cout << "Config is a config: " << std::boolalpha << config::isConfig<demo::Config>() << std::endl;
-  std::cout << "NotAConfig is a config: " << std::boolalpha << config::isConfig<demo::NotAConfig>() << std::endl;
+  std::cout << "NotAConfig is a config: " << config::isConfig<demo::NotAConfig>() << std::endl;
 
   // Create a valid and an invalid config.
   demo::Config config, invalid_config;
@@ -71,7 +75,7 @@ int main(int argc, char** argv) {
   std::cout << "'config' is valid: " << config::isValid(config, print_warnings) << std::endl;
   std::cout << "'invalid_config' is valid: " << config::isValid(invalid_config, print_warnings) << std::endl;
 
-  //   std::cout << config::test(config) << std::endl;
+  config::checkValid(invalid_config);
 
   return 0;
 }

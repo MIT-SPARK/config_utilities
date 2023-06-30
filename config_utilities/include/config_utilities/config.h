@@ -8,9 +8,6 @@
 #include "config_utilities/internal/meta_data.h"
 #include "config_utilities/traits.h"
 
-// NOTE: Not a dependency but this seems like a frequently used tool that would need to be included anyway.
-#include "config_utilities/validity_checks.h"
-
 namespace config {
 
 namespace internal {

@@ -10,11 +10,11 @@ catkin_simple()
 # Libraries #
 #############
 
-cs_add_library(${PROJECT_NAME}
+# cs_add_library(${PROJECT_NAME}
         # src/old/yaml_parser.cpp
-        src/internal/meta_data.cpp
-        )
-target_link_libraries(${PROJECT_NAME})
+        # src/internal/meta_data.cpp
+        # )
+# target_link_libraries(${PROJECT_NAME})
 
 ###############
 # Executables #
@@ -23,7 +23,7 @@ target_link_libraries(${PROJECT_NAME})
 cs_add_executable(demo_config
         demos/config.cpp
         )
-target_link_libraries(demo_config ${PROJECT_NAME})
+# target_link_libraries(demo_config ${PROJECT_NAME})
 
 ##########
 # Export #

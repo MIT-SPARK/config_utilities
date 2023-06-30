@@ -57,7 +57,11 @@ class ValidityChecker {
    * @brief Enforce that the config is valid. This will terminate the program if
    * invalid.
    */
-  void checkValid() const { CHECK(isValid(true)); }
+  void checkValid() const {
+    if (!isValid(true)) {
+      LOG(FATAL) << "Config '" << name_ << "' is not valid. See warnings above.";
+    }
+  }
 
   /**
    * @brief Execute a greater than (GT) check, i.e. param > value.
