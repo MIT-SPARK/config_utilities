@@ -15,7 +15,6 @@ namespace config::internal {
 class Formatter {
  public:
   using Ptr = std::shared_ptr<Formatter>;
-  using ConstPtr = std::shared_ptr<const Formatter>;
 
   Formatter() = default;
   virtual ~Formatter() = default;
@@ -30,19 +29,10 @@ class Formatter {
   }
 
   static void setDefaultFormatter(Formatter::Ptr formatter) { default_formatter_ = std::move(formatter); }
-  static const Formatter& defaultFormatter() { return *default_formatter_; }
+  static Formatter::Ptr defaultFormatter() { return default_formatter_; }
 
  private:
-  // Formatters need to implement this function returning a copy of themselves. Not specified pure virtual to allow
-  // creation of empty formatters.
-  virtual Formatter::Ptr clone() const { return std::make_shared<Formatter>(); }
-  friend Formatter::Ptr optionalFormatter(const Formatter* const);
-  inline static Formatter::ConstPtr default_formatter_ = std::make_shared<const Formatter>();
+  inline static Formatter::Ptr default_formatter_ = std::make_shared<Formatter>();
 };
-
-// Utility function for optionally specified formatters.
-inline Formatter::Ptr optionalFormatter(const Formatter* const formatter) {
-  return formatter ? formatter->clone() : Formatter::defaultFormatter().clone();
-}
 
 }  // namespace config::internal

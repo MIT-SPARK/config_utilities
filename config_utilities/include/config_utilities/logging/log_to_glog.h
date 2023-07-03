@@ -46,8 +46,6 @@ class GlogLogger : public Logger {
   // Factory registration to allow setting of formatters via Settings::setDefaultLogger().
   inline static const auto registration_ = Registration<Logger, GlogLogger>("glog");
 
-  Logger::Ptr clone() const override { return std::make_shared<GlogLogger>(*this); }
-
   // Initialize the glog logger to be used if included.
   inline static const struct Initializer {
     Initializer() { Logger::setDefaultLogger(std::make_unique<GlogLogger>()); }

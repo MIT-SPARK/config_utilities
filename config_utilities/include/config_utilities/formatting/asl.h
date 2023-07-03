@@ -21,8 +21,6 @@ class AslFormatter : public Formatter {
   // Factory registration to allow setting of formatters via Settings::setDefaultFormatter().
   inline static const auto registration_ = Registration<Formatter, AslFormatter>("asl");
 
-  Formatter::Ptr clone() const override { return std::make_shared<AslFormatter>(*this); }
-
   // Initialize the asl formatter to be used if included.
   inline static const struct Initializer {
     Initializer() { Formatter::setDefaultFormatter(std::make_unique<AslFormatter>()); }

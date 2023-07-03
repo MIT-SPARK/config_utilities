@@ -13,7 +13,6 @@ namespace config::internal {
 class Logger {
  public:
   using Ptr = std::shared_ptr<Logger>;
-  using ConstPtr = std::shared_ptr<const Logger>;
 
   Logger() = default;
   virtual ~Logger() = default;
@@ -34,19 +33,10 @@ class Logger {
   void logFatal(const std::string& message) const { log(Severity::kFatal, message); }
 
   static void setDefaultLogger(Logger::Ptr logger) { default_logger_ = std::move(logger); }
-  static const Logger& defaultLogger() { return *default_logger_; }
+  static Logger::Ptr defaultLogger() { return default_logger_; }
 
  private:
-  // Loggers need to implement this function returning a copy of themselves. Not specified pure virtual to allow
-  // creation of empty loggers.
-  virtual Logger::Ptr clone() const { return std::make_shared<Logger>(); }
-  friend Logger::Ptr optionalLogger(const Logger* const logger);
-  inline static Logger::ConstPtr default_logger_ = std::shared_ptr<const Logger>();
+  inline static Logger::Ptr default_logger_ = std::shared_ptr<Logger>();
 };
-
-// Utility function for optionally specified logger.
-inline Logger::Ptr optionalLogger(const Logger* const logger) {
-  return (logger ? logger->clone() : Logger::defaultLogger().clone());
-}
 
 }  // namespace config::internal

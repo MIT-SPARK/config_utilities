@@ -26,14 +26,14 @@ namespace config {
 template <typename ConfigT>
 bool isValid(const ConfigT& config,
              bool print_warnings = false,
-             const internal::Logger* const logger = nullptr,
-             const internal::Formatter* const formatter = nullptr) {
+             internal::Logger::Ptr logger = internal::Logger::defaultLogger(),
+             internal::Formatter::Ptr formatter = internal::Formatter::defaultFormatter()) {
   if (!isConfig<ConfigT>()) {
     if (print_warnings) {
       std::stringstream ss;
       ss << "Can not use 'config::isValid()' on non-config T='" << typeid(ConfigT).name()
          << "'. Please implement 'void declare_config(T&)' for your struct.";
-      internal::optionalLogger(logger)->logWarning(ss.str());
+      logger->logWarning(ss.str());
     }
     return false;
   }
@@ -42,7 +42,7 @@ bool isValid(const ConfigT& config,
     return true;
   }
   if (print_warnings) {
-    internal::optionalLogger(logger)->logWarning(internal::optionalFormatter(formatter)->formatCheckWarnings(data));
+    logger->logWarning(formatter->formatCheckWarnings(data));
   }
   return false;
 }
@@ -57,19 +57,19 @@ bool isValid(const ConfigT& config,
  */
 template <typename ConfigT>
 void checkValid(const ConfigT& config,
-                const internal::Logger* const logger = nullptr,
-                const internal::Formatter* const formatter = nullptr) {
+                internal::Logger::Ptr logger = internal::Logger::defaultLogger(),
+                internal::Formatter::Ptr formatter = internal::Formatter::defaultFormatter()) {
   if (!isConfig<ConfigT>()) {
     std::stringstream ss;
     ss << "Can not use 'config::checkValid()' on non-config T='" << typeid(ConfigT).name()
        << "'. Please implement 'void declare_config(T&)' for your struct.";
-    internal::optionalLogger(logger)->logFatal(ss.str());
+    logger->logFatal(ss.str());
   }
   internal::MetaData data = internal::Visitor::getChecks(config);
   if (data.warnings.empty()) {
     return;
   }
-  internal::optionalLogger(logger)->logWarning(internal::optionalFormatter(formatter)->formatCheckWarnings(data));
+  logger->logFatal(formatter->formatCheckWarnings(data));
 }
 
 }  // namespace config

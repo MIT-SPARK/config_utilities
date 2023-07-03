@@ -42,10 +42,7 @@ class StdoutLogger : public Logger {
 
  private:
   // Factory registration to allow setting of formatters via Settings::setDefaultLogger().
-
   inline static const auto registration_ = Registration<Logger, StdoutLogger>("stdout");
-
-  Logger::Ptr clone() const override { return std::make_shared<StdoutLogger>(*this); }
 
   // Initialize the stdout logger to be used if included.
   inline static const struct Initializer {
