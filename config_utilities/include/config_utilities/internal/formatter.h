@@ -4,6 +4,7 @@
 #include <string>
 #include <utility>
 
+#include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/meta_data.h"
 
 namespace config::internal {
@@ -19,11 +20,11 @@ class Formatter {
   Formatter() = default;
   virtual ~Formatter() = default;
 
-  virtual std::string formatCheckWarnings(const MetaData& data) const {
+  virtual std::string formatCheckWarnings(const MetaData& data, Logger::Ptr logger = Logger::defaultLogger()) const {
     return "No formatter specified. Specify a format by including one of "
            "'config_utilities/formatters/<preferred_style>.h'.";
   }
-  virtual std::string formatToString(const MetaData& data) const {
+  virtual std::string formatToString(const MetaData& data, Logger::Ptr logger = Logger::defaultLogger()) const {
     return "No formatter specified. Specify a format by including one of "
            "'config_utilities/formatters/<preferred_style>.h'.";
   }

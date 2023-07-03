@@ -14,8 +14,8 @@ namespace config::internal {
  */
 class AslFormatter : public Formatter {
  public:
-  std::string formatCheckWarnings(const MetaData& data) const override;
-  std::string formatToString(const MetaData& data) const override;
+  std::string formatCheckWarnings(const MetaData& data, Logger::Ptr logger = Logger::defaultLogger()) const override;
+  std::string formatToString(const MetaData& data, Logger::Ptr logger = Logger::defaultLogger()) const override;
 
  private:
   // Factory registration to allow setting of formatters via Settings::setDefaultFormatter().
@@ -25,6 +25,12 @@ class AslFormatter : public Formatter {
   inline static const struct Initializer {
     Initializer() { Formatter::setDefaultFormatter(std::make_unique<AslFormatter>()); }
   } initializer_;
+
+  // Helper functions.
+  std::string formatField(const std::string& name,
+                          const std::string& value,
+                          const std::string& unit = "",
+                          const bool is_default = false) const;
 };
 
 }  // namespace config::internal

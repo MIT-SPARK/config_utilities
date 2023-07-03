@@ -51,9 +51,9 @@ bool isValid(const ConfigT& config,
  * @brief Assert that a config is valid. This will terminate the program if invalid.
  *
  * @tparam ConfigT The config type.
+ * @param config The config to check.
  * @param logger [Advanced use] Optionally pass a specific logger to log this call to.
  * @param formatter [Advanced use] Optionally pass a specific formatter to format the warnings with.
- * @param config The config to check.
  */
 template <typename ConfigT>
 void checkValid(const ConfigT& config,

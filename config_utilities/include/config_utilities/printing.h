@@ -1,88 +1,53 @@
 #pragma once
 
-#include <iostream>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "config_utilities/internal/meta_data.h"
+#include "config_utilities/internal/formatter.h"
+#include "config_utilities/internal/logger.h"
+#include "config_utilities/internal/visitor.h"
+#include "config_utilities/settings.h"
+#include "config_utilities/traits.h"
 
 namespace config {
 
-namespace internal {
-
-// Function that produces the a vector of strings for each field of a config.
+/**
+ * @brief Returns a string representation of the config.
+ *
+ * @tparam ConfigT The type of the config to print.
+ * @param config The config to print.
+ * @param logger [Advanced use] Optionally pass a specific logger to log this call to.
+ * @param formatter [Advanced use] Optionally pass a specific formatter to format the warnings with.
+ * @returns The string representation of the config.
+ */
 template <typename ConfigT>
-std::string toStringInternal(const ConfigT& config, int indent) {
-  const int indent_prev = meta_data_->indent;
-  meta_data_->indent = indent;
-
-  meta_data_->messages = std::make_unique<std::vector<std::string>>();
-
-  // Create the default values if required.
-  if (Settings::instance().indicate_default_values) {
-    ConfigT defaults;
-    MetaData& data = MetaData::instance();
-    data.get_defaults = true;
-    
-    meta_data_->default_values = std::make_unique<std::unordered_map<std::string, std::string>>(defaults->getValues());
-    meta_data_->use_printing_to_get_values = true;
-    meta_data_->merged_setup_already_used = true;
-
-    // NOTE: setupParamsAndPrinting() does not modify 'this' in printing mode.
-    ((ConfigInternal*)this)->setupParamsAndPrinting();
-    printFields();
-  }
-
-  meta_data_->use_printing_to_get_values = false;
-  meta_data_->merged_setup_already_used = true;
-
-  // NOTE: setupParamsAndPrinting() does not modify 'this' in printing mode.
-  ((ConfigInternal*)this)->setupParamsAndPrinting();
-  printFields();
-  std::string result;
-  for (const std::string& msg : *(meta_data_->messages)) {
-    result.append("\n" + msg);
-  }
-  if (!result.empty()) {
-    result = result.substr(1);
-  }
-  meta_data_->messages.reset(nullptr);
-  meta_data_->default_values.reset(nullptr);
-  meta_data_->indent = indent_prev;
-  meta_data_->merged_setup_currently_active = false;
-  meta_data_->global_printing_processed = true;
-  return result;
-};
-
-}  // namespace internal
-
-template <typename ConfigT>
-std::string toString(const ConfigT& config) {
+std::string toString(const ConfigT& config,
+                     internal::Logger::Ptr logger = internal::Logger::defaultLogger(),
+                     internal::Formatter::Ptr formatter = internal::Formatter::defaultFormatter()) {
   if (!isConfig<ConfigT>()) {
-    LOG(WARNING) << "Can not use 'config::toString()' on non-config T='" << typeid(ConfigT).name()
-                 << "'. Please implement 'void declare_config(T&)' for your struct.";
+    std::stringstream ss;
+    ss << "Can not use 'config::toString()' on non-config T='" << typeid(ConfigT).name()
+       << "'. Please implement 'void declare_config(T&)' for your struct.";
+    logger->logError(ss.str());
     return "";
   }
-  internal::MetaData data = internal::MetaData::create();
-  data.mode = internal::MetaData::Mode::kToString;
-  data.messages.clear();
+  // Get the data of the config.
+  internal::MetaData data = internal::Visitor::getValues(config);
 
-  // Run the checks call as defined in the config declaration function.
-  // NOTE: We know that in mode kCheckValid, the config is not modified.
-  declare_config(const_cast<ConfigT&>(config));
-};
-
-/**
- * @brief Produces a printable summary of the config as string, containing its
- * name and all parameter values.
- */
-std::string toString() {
-  std::string result = internal::printCenter(name_, GlobalSettings::instance().print_width, '=') + "\n" +
-                       toStringInternal(meta_data_->indent) + "\n" +
-                       std::string(GlobalSettings::instance().print_width, '=');
-  meta_data_->messages.reset(nullptr);
-  return result;
-};
+  // If requested get all default values.
+  if (Settings().indicate_default_values) {
+    // ConfigT defaults;
+    // const internal::MetaData default_data = internal::Visitor::getValues(defaults);
+    // for (const auto& kv : data.data) {
+    //   std::cout << kv.first.as<std::string>() << std::endl;  // prints Foo
+    //   const YAML::Node& value = kv.second;              // the value
+    // if (default_data.data.find(key) != default_data.data.end()) {
+    //   data.params_using_defaults.emplace_back(key);
+    // }
+  }
+  return formatter->formatToString(data);
+}
 
 }  // namespace config

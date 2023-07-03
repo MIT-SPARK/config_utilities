@@ -7,9 +7,9 @@
 #include <iostream>
 #include <string>
 
-// #include "config_utilities/printing.h"         // enable toString()
 #include "config_utilities/formatting/asl.h"         // Specify a style to format output.
 #include "config_utilities/logging/log_to_stdout.h"  // Simply including this file sets logging to stdout.
+#include "config_utilities/printing.h"               // enable toString()
 #include "config_utilities/validity_checks.h"        // Enable isValid() and checkValid().
 
 namespace demo {
@@ -52,9 +52,13 @@ void declare_config(Config& config) {
 }  // namespace demo
 
 int main(int argc, char** argv) {
+  // ==================== Checking whether a struct is a config ====================
+
   // Use isConfig<T> to check whether an object has been declared a config.
   std::cout << "Config is a config: " << std::boolalpha << config::isConfig<demo::Config>() << std::endl;
   std::cout << "NotAConfig is a config: " << config::isConfig<demo::NotAConfig>() << std::endl;
+
+  // ==================== Checking whether a config is valid ====================
 
   // Create a valid and an invalid config.
   demo::Config config, invalid_config;
@@ -73,6 +77,10 @@ int main(int argc, char** argv) {
 
   // Check valid will enforce that the config is valid, throwing an error and always printing the warnings if not.
   config::checkValid(invalid_config);
+
+  // ==================== Printing configs to string ====================
+
+  std::cout << config::toString(config) << std::endl;
 
   return 0;
 }

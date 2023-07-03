@@ -22,6 +22,9 @@ struct MetaData {
   // All units where specified. units[field_name] = unit
   std::map<std::string, std::string> units;
 
+  // All params by name that use a default value.
+  std::vector<std::string> params_using_defaults;
+
   // All warnings issued by the validity checker.
   std::vector<std::string> warnings;
 };
