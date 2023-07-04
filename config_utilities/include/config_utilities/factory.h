@@ -32,7 +32,7 @@ struct ModuleMap {
       std::stringstream ss;
       ss << "Cannot register already existent type '" << type << "' for <DerivedT>='" << typeid(DerivedT).name()
          << "' to factory for base '" << typeid(BaseT).name() << "'.";
-      Logger::defaultLogger()->logError(ss.str());
+      Logger::logError(ss.str());
     } else {
       map.insert(std::make_pair(type, [](Args... args) { return new DerivedT(args...); }));
     }
@@ -93,7 +93,7 @@ class Factory {
       ss << "Cannot create a module of type '" << type << "': No modules registered to the factory for BaseT='"
          << typeid(BaseT).name() << "'" << type_info
          << ". Register modules using a static config::Registration<BaseT, DerivedT, ConstructorArguments...> struct.";
-      Logger::defaultLogger()->logError(ss.str());
+      Logger::logError(ss.str());
       return nullptr;
     }
     auto it = module.map.find(type);
@@ -106,7 +106,7 @@ class Factory {
       std::stringstream ss;
       ss << "No module of type '" << type << "' registered to the factory for BaseT='" << typeid(BaseT).name() << "'"
          << type_info << ". Registered are: " << module_list << ".";
-      Logger::defaultLogger()->logError(ss.str());
+      Logger::logError(ss.str());
       return nullptr;
     }
     return std::unique_ptr<BaseT>(it->second(args...));

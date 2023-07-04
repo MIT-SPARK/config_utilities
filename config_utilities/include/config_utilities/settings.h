@@ -39,10 +39,10 @@ struct Settings {
   bool indicate_units = true;
 
   // Specify the default logger to be used for printing. Loggers register themselves if included.
-  void setDefaultLogger(const std::string& name);
+  void setLogger(const std::string& name);
 
   // Specify the formatter to be used for printing. Formatters register themselves if included.
-  void setDefaultFormatter(const std::string& name);
+  void setFormatter(const std::string& name);
 
  private:
   Settings() = default;

@@ -17,7 +17,7 @@ namespace config::internal {
  */
 class GlogLogger : public Logger {
  protected:
-  void log(const Severity severity, const std::string& message) const override {
+  void log(const Severity severity, const std::string& message) override {
     // Default logs to std::cout to always have some sort of output. This could also be moved out to a separate logger
     // if we want this to be independent of iostream.
     if (severity == Severity::kFatal) {
@@ -48,7 +48,7 @@ class GlogLogger : public Logger {
 
   // Initialize the glog logger to be used if included.
   inline static const struct Initializer {
-    Initializer() { Logger::setDefaultLogger(std::make_unique<GlogLogger>()); }
+    Initializer() { Logger::setLogger(std::make_shared<GlogLogger>()); }
   } initializer_;
 };
 

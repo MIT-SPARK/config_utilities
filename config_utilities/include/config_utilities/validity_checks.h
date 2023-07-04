@@ -18,31 +18,25 @@ namespace config {
  * @tparam ConfigT The config type.
  * @param config The config to check.
  * @param print_warnings Whether to print warnings if the config is not valid. This is off by default.
- * @param logger [Advanced use] Optionally specify a specific logger for this call. Otherwise uses the global default.
- * @param formatter [Advanced use] Optionally pass a specific formatter for this call. Otherwise uses the global
- * default.
  * @returns True if the config is valid, false otherwise.
  */
 template <typename ConfigT>
-bool isValid(const ConfigT& config,
-             bool print_warnings = false,
-             internal::Logger::Ptr logger = internal::Logger::defaultLogger(),
-             internal::Formatter::Ptr formatter = internal::Formatter::defaultFormatter()) {
+bool isValid(const ConfigT& config, bool print_warnings = false) {
   if (!isConfig<ConfigT>()) {
     if (print_warnings) {
       std::stringstream ss;
       ss << "Can not use 'config::isValid()' on non-config T='" << typeid(ConfigT).name()
          << "'. Please implement 'void declare_config(T&)' for your struct.";
-      logger->logWarning(ss.str());
+      internal::Logger::logWarning(ss.str());
     }
     return false;
   }
   internal::MetaData data = internal::Visitor::getChecks(config);
-  if (data.warnings.empty()) {
+  if (data.errors.empty()) {
     return true;
   }
   if (print_warnings) {
-    logger->logWarning(formatter->formatCheckWarnings(data));
+    internal::Logger::logWarning(internal::Formatter::formatErrors(data));
   }
   return false;
 }
@@ -52,24 +46,20 @@ bool isValid(const ConfigT& config,
  *
  * @tparam ConfigT The config type.
  * @param config The config to check.
- * @param logger [Advanced use] Optionally pass a specific logger to log this call to.
- * @param formatter [Advanced use] Optionally pass a specific formatter to format the warnings with.
  */
 template <typename ConfigT>
-void checkValid(const ConfigT& config,
-                internal::Logger::Ptr logger = internal::Logger::defaultLogger(),
-                internal::Formatter::Ptr formatter = internal::Formatter::defaultFormatter()) {
+void checkValid(const ConfigT& config) {
   if (!isConfig<ConfigT>()) {
     std::stringstream ss;
     ss << "Can not use 'config::checkValid()' on non-config T='" << typeid(ConfigT).name()
        << "'. Please implement 'void declare_config(T&)' for your struct.";
-    logger->logFatal(ss.str());
+    internal::Logger::logFatal(ss.str());
   }
   internal::MetaData data = internal::Visitor::getChecks(config);
-  if (data.warnings.empty()) {
+  if (data.errors.empty()) {
     return;
   }
-  logger->logFatal(formatter->formatCheckWarnings(data));
+  internal::Logger::logFatal(internal::Formatter::formatErrors(data));
 }
 
 }  // namespace config

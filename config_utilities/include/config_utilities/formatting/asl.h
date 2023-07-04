@@ -5,6 +5,7 @@
 
 #include "config_utilities/factory.h"
 #include "config_utilities/internal/formatter.h"
+#include "config_utilities/internal/meta_data.h"
 
 namespace config::internal {
 
@@ -13,9 +14,9 @@ namespace config::internal {
  * readability wenn printed to the console.
  */
 class AslFormatter : public Formatter {
- public:
-  std::string formatCheckWarnings(const MetaData& data, Logger::Ptr logger = Logger::defaultLogger()) const override;
-  std::string formatToString(const MetaData& data, Logger::Ptr logger = Logger::defaultLogger()) const override;
+ protected:
+  std::string formatErrorsImpl(const MetaData& data) override;
+  std::string formatToStringImpl(const MetaData& data) override;
 
  private:
   // Factory registration to allow setting of formatters via Settings::setDefaultFormatter().
@@ -23,14 +24,13 @@ class AslFormatter : public Formatter {
 
   // Initialize the asl formatter to be used if included.
   inline static const struct Initializer {
-    Initializer() { Formatter::setDefaultFormatter(std::make_unique<AslFormatter>()); }
+    Initializer() { Formatter::setFormatter(std::make_unique<AslFormatter>()); }
   } initializer_;
 
   // Helper functions.
-  std::string formatField(const std::string& name,
-                          const std::string& value,
-                          const std::string& unit = "",
-                          const bool is_default = false) const;
+  std::string toStringInternal(const MetaData& data, size_t indent) const;
+  std::string formatField(const ConfigData& data, const FieldInfo& info, size_t indent) const;
+  std::string formatValue(const ConfigData& value, const std::string& type_info) const;
 };
 
 }  // namespace config::internal

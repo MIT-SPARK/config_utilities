@@ -20,20 +20,24 @@ class Formatter {
   Formatter() = default;
   virtual ~Formatter() = default;
 
-  virtual std::string formatCheckWarnings(const MetaData& data, Logger::Ptr logger = Logger::defaultLogger()) const {
-    return "No formatter specified. Specify a format by including one of "
-           "'config_utilities/formatters/<preferred_style>.h'.";
-  }
-  virtual std::string formatToString(const MetaData& data, Logger::Ptr logger = Logger::defaultLogger()) const {
-    return "No formatter specified. Specify a format by including one of "
-           "'config_utilities/formatters/<preferred_style>.h'.";
-  }
+  // Accessing the formatter.
+  static std::string formatErrors(const MetaData& data) { return formatter_->formatErrorsImpl(data); }
+  static std::string formatToString(const MetaData& data) { return formatter_->formatToStringImpl(data); }
 
-  static void setDefaultFormatter(Formatter::Ptr formatter) { default_formatter_ = std::move(formatter); }
-  static Formatter::Ptr defaultFormatter() { return default_formatter_; }
+  static void setFormatter(Formatter::Ptr formatter) { formatter_ = std::move(formatter); }
+
+ protected:
+  virtual std::string formatErrorsImpl(const MetaData& data) {
+    return "No formatter specified. Specify a format by including one of "
+           "'config_utilities/formatters/<preferred_style>.h'.";
+  }
+  virtual std::string formatToStringImpl(const MetaData& data) {
+    return "No formatter specified. Specify a format by including one of "
+           "'config_utilities/formatters/<preferred_style>.h'.";
+  }
 
  private:
-  inline static Formatter::Ptr default_formatter_ = std::make_shared<Formatter>();
+  inline static Formatter::Ptr formatter_ = std::make_shared<Formatter>();
 };
 
 }  // namespace config::internal

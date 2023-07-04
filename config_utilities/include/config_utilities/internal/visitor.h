@@ -8,10 +8,10 @@
 #include <thread>
 #include <vector>
 
-#include <yaml-cpp/yaml.h>
-
 #include "config_utilities/internal/meta_data.h"
 #include "config_utilities/internal/validity_checker.h"
+#include "config_utilities/internal/yaml_parser.h"
+#include "config_utilities/traits.h"
 
 namespace config::internal {
 
@@ -28,11 +28,13 @@ struct Visitor {
 
   // Interfaces for all internal tools interact with configs through the visitor.
   template <typename ConfigT>
-  static void setValues(ConfigT& config, const YAML::Node& node) {
+  static MetaData setValues(ConfigT& config, const YAML::Node& node) {
     Visitor visitor = Visitor::create();
-    visitor.data.data = node;
+    visitor.parser.node() = node;
     visitor.mode = Visitor::Mode::kSet;
     declare_config(config);
+    visitor.data.errors = visitor.parser.errors();
+    return visitor.data;
   }
 
   template <typename ConfigT>
@@ -41,6 +43,8 @@ struct Visitor {
     visitor.mode = Visitor::Mode::kGet;
     // NOTE: We know that in mode kGet, the config is not modified.
     declare_config(const_cast<ConfigT&>(config));
+    visitor.data.errors = visitor.parser.errors();
+    visitor.data.data = visitor.parser.node();
     return visitor.data;
   }
 
@@ -50,7 +54,7 @@ struct Visitor {
     visitor.mode = Visitor::Mode::kCheck;
     // NOTE: We know that in mode kCheck, the config is not modified.
     declare_config(const_cast<ConfigT&>(config));
-    visitor.data.warnings = visitor.validity_checker.getWarnings();
+    visitor.data.errors = visitor.checker.getWarnings();
     return visitor.data;
   }
 
@@ -106,7 +110,8 @@ struct Visitor {
 
   // Messenger data.
   MetaData data;
-  ValidityChecker validity_checker;
+  ValidityChecker checker;
+  YamlParser parser;
 
   // Static registration to get access to the correct instance.
   inline static std::map<std::thread::id, Visitor*> instances;
@@ -119,17 +124,23 @@ struct Visitor {
 // Implementation of visits of the fields exposed in config.h
 void visitName(const std::string& name) { Visitor::instance().data.name = name; }
 
+// Specialize this template to get additional information for formatting about custom types.
+template <typename T>
+std::string getFieldTypeInfo(const T& /* field */) {
+  return "";
+}
+
 template <typename T>
 void visitField(T& field, const std::string& field_name, const std::string& unit) {
   Visitor& visitor = Visitor::instance();
   if (visitor.mode == Visitor::Mode::kSet) {
-    // TODO(lschmid): Implement.
+    visitor.parser.fromYaml(field_name, field);
   } else if (visitor.mode == Visitor::Mode::kGet) {
-    // TODO(lschmid): Double check yaml parsing here.
-    visitor.data.data[field_name] = field;
-    if (!unit.empty()) {
-      visitor.data.units[field_name] = unit;
-    }
+    FieldInfo& info = visitor.data.field_info.emplace_back();
+    visitor.parser.toYaml(field_name, field);
+    info.name = field_name;
+    info.unit = unit;
+    info.type_info = getFieldTypeInfo(field);
   }
 }
 
@@ -142,22 +153,22 @@ void visitCheck(Visitor::CheckMode mode, const T& param, const T& value, const s
 
   switch (mode) {
     case Visitor::CheckMode::kGT:
-      visitor.validity_checker.checkGT(param, value, name);
+      visitor.checker.checkGT(param, value, name);
       return;
     case Visitor::CheckMode::kGE:
-      visitor.validity_checker.checkGE(param, value, name);
+      visitor.checker.checkGE(param, value, name);
       return;
     case Visitor::CheckMode::kLT:
-      visitor.validity_checker.checkLT(param, value, name);
+      visitor.checker.checkLT(param, value, name);
       return;
     case Visitor::CheckMode::kLE:
-      visitor.validity_checker.checkLE(param, value, name);
+      visitor.checker.checkLE(param, value, name);
       return;
     case Visitor::CheckMode::kEQ:
-      visitor.validity_checker.checkEq(param, value, name);
+      visitor.checker.checkEq(param, value, name);
       return;
     case Visitor::CheckMode::kNE:
-      visitor.validity_checker.checkNE(param, value, name);
+      visitor.checker.checkNE(param, value, name);
       return;
   }
 }
@@ -168,7 +179,7 @@ void visitCheckInRange(const T& param, const T& lower, const T& upper, const std
   if (visitor.mode != Visitor::Mode::kCheck) {
     return;
   }
-  visitor.validity_checker.checkInRange(param, lower, upper, name);
+  visitor.checker.checkInRange(param, lower, upper, name);
 }
 
 void visitCheckCondition(bool condition, const std::string& error_message) {
@@ -176,7 +187,7 @@ void visitCheckCondition(bool condition, const std::string& error_message) {
   if (visitor.mode != Visitor::Mode::kCheck) {
     return;
   }
-  visitor.validity_checker.checkCondition(condition, error_message);
+  visitor.checker.checkCondition(condition, error_message);
 }
 
 }  // namespace config::internal

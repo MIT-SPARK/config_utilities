@@ -8,25 +8,46 @@
 
 namespace config::internal {
 
+// Use yaml node as internal data representation for clear and easy conversion.
+using ConfigData = YAML::Node;
+
+/**
+ * @brief Struct that holds additional information about fields for printing.
+ */
+struct FieldInfo {
+  // Name of the field. This is always given.
+  std::string name;
+
+  // Optional: Unit of the field.
+  std::string unit;
+
+  // Whether the field corresponds to its default value. Only queried if Settings().indicate_default_values is true.
+  bool is_default = false;
+
+  // Optional: Type info for special formatting of different fields.
+  std::string type_info;
+};
+
 /**
  * @brief Meta-information struct that interfaces all the communication data when interacting with the configs. YAML is
- * used as internal data representation.
+ * used as internal data representation, so all conversions can be checked against yaml and all formatters, factories,
+ * parsers can safely convert to yaml.
  */
 struct MetaData {
-  // We always get the name of the config if possible.
+  // Always get the name of the config if possible.
   std::string name = "Unnamed Config";
 
   // Yaml node used to get or set the data of a config.
-  YAML::Node data;
+  ConfigData data;
 
-  // All units where specified. units[field_name] = unit
-  std::map<std::string, std::string> units;
+  // All additional field information queried for printing.
+  std::vector<FieldInfo> field_info;
 
-  // All params by name that use a default value.
-  std::vector<std::string> params_using_defaults;
+  // All warnings issued by the validity checker or errors raised by the yaml parser.
+  std::vector<std::string> errors;
 
-  // All warnings issued by the validity checker.
-  std::vector<std::string> warnings;
+  // If a config has sub-configs, they are stored here.
+  std::vector<MetaData> sub_configs;
 };
 
 }  // namespace config::internal

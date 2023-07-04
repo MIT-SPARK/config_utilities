@@ -10,6 +10,9 @@ namespace config::internal {
  * @brief Utility tool to make checking configs easier and more readable. Instantiate the checker, then execute all
  * checks, and get a summary of all checks eventually. For every failed check a warning is added to the summary. If
  * there are no warnings this means that all checks have passed.
+ *
+ * NOTE(lschmid): The formatting of warnings could also be specified via a parser but for now just use this fixed
+ * warning.
  */
 class ValidityChecker {
  public:

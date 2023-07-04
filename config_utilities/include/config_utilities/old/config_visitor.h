@@ -36,29 +36,23 @@
 #include <string>
 #include <utility>
 
-#include "config_utilities/old/config_traits.h"
+#include "config_utilities/traits.h"
 
 // argument-dependent-lookup for arbitrary config structures. See the following:
 // - http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4381.html
 // - https:://github.com/nlohmann/json/blob/develop/include/nlohmann/adl_serializer.hpp
 
-namespace config_parser {
-
-namespace detail {
+namespace config::internal {
 
 // specialize primitive types so that non-parsers get a little more information
-template <typename V,
-          typename T,
-          typename std::enable_if<!is_parser<V>::value, bool>::type = true>
+template <typename V, typename T, typename std::enable_if<!is_parser<V>::value, bool>::type = true>
 void visit_config(const V& visitor, T& value) {
   visitor.show(value);
   visitor.post_visit();
 }
 
 // default for primitive types: makes sure that the visitor bottoms-out on leaves
-template <typename V,
-          typename T,
-          typename std::enable_if<is_parser<V>::value, bool>::type = true>
+template <typename V, typename T, typename std::enable_if<is_parser<V>::value, bool>::type = true>
 void visit_config(const V& visitor, T& value) {
   visitor.parse(value);
 }
@@ -66,13 +60,10 @@ void visit_config(const V& visitor, T& value) {
 // adl indirection
 struct visit_config_fn {
   template <typename V, typename T>
-  constexpr auto operator()(const V& visitor, T& value) const
-      -> decltype(visit_config(visitor, value)) {
+  constexpr auto operator()(const V& visitor, T& value) const -> decltype(visit_config(visitor, value)) {
     return visit_config(visitor, value);
   }
 };
-
-}  // namespace detail
 
 namespace {
 
@@ -82,17 +73,13 @@ constexpr const auto& visit_config = detail::static_const<detail::visit_config_f
 
 template <typename ValueType = void, typename SFINAE = void>
 struct ConfigVisitor {
-  template <typename V,
-            typename T = ValueType,
-            typename std::enable_if<is_parser<V>::value, bool>::type = true>
+  template <typename V, typename T = ValueType, typename std::enable_if<is_parser<V>::value, bool>::type = true>
   static auto visit_config(const V& visitor, T& value)
       -> decltype(::config_parser::visit_config(visitor, value), void()) {
     return ::config_parser::visit_config(visitor, value);
   }
 
-  template <typename V,
-            typename T = ValueType,
-            typename std::enable_if<!is_parser<V>::value, bool>::type = true>
+  template <typename V, typename T = ValueType, typename std::enable_if<!is_parser<V>::value, bool>::type = true>
   static auto visit_config(const V& visitor, T& value)
       -> decltype(::config_parser::visit_config(visitor, value), void()) {
     visitor.pre_visit();
@@ -105,4 +92,4 @@ struct ConfigVisitor {
   }
 };
 
-}  // namespace config_parser
+}  // namespace config::internal

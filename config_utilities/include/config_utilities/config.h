@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "config_utilities/internal/visitor.h"
+#include "config_utilities/traits.h"
 
 namespace config {
 
@@ -13,22 +14,18 @@ namespace internal {
 // ADL Indirection so definitions of 'declare_config()' can be found anywhere via ADL.
 
 // adl indirection
-struct declare_fn {
+struct declare_config_fn {
   template <typename ConfigT>
   constexpr auto operator()(ConfigT& config) const -> decltype(declare_config(config)) {
     return declare_config(config);
   }
 };
 
-// ODR workaround
-template <class T>
-constexpr T static_const{};
-
 }  // namespace internal
 
 namespace {
 
-constexpr const auto& declare_config = config::internal::static_const<internal::declare_fn>;
+constexpr const auto& declare_config = config::internal::static_const<internal::declare_config_fn>;
 
 }  // namespace
 
