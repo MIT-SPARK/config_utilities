@@ -62,4 +62,14 @@ std::string dataToString(const ConfigData& data) {
   }
 }
 
+std::vector<size_t> findAllSubstrings(const std::string& text, const std::string& substring) {
+  std::vector<size_t> result;
+  size_t pos = text.find(substring, 0);
+  while (pos != std::string::npos) {
+    result.push_back(pos);
+    pos = text.find(substring, pos + 1);
+  }
+  return result;
+}
+
 }  // namespace config::internal

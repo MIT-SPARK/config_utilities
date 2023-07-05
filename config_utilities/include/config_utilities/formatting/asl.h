@@ -30,6 +30,7 @@ class AslFormatter : public Formatter {
   // Helper functions.
   std::string toStringInternal(const MetaData& data, size_t indent) const;
   std::string formatField(const ConfigData& data, const FieldInfo& info, size_t indent) const;
+  std::string wrapString(const std::string& str, size_t indent, size_t width) const;
 };
 
 }  // namespace config::internal

@@ -62,35 +62,78 @@ std::string AslFormatter::formatField(const ConfigData& data, const FieldInfo& i
   }
   header += ": ";
 
+  // Multi-line formatting info for nested types.
+  std::vector<size_t> linebreaks = findAllSubstrings(field, "}, ");
+  const std::vector<size_t> more_breaks = findAllSubstrings(field, "], ");
+  linebreaks.insert(linebreaks.end(), more_breaks.begin(), more_breaks.end());
+  std::vector<size_t> open_brackets, closed_brackets;
+  const bool is_multiline = !linebreaks.empty();
+  if (is_multiline) {
+    std::sort(linebreaks.begin(), linebreaks.end());
+    const std::vector<size_t> open_1 = findAllSubstrings(field, "{");
+    const std::vector<size_t> open_2 = findAllSubstrings(field, "[");
+    open_brackets.insert(open_brackets.end(), open_1.begin(), open_1.end());
+    open_brackets.insert(open_brackets.end(), open_2.begin(), open_2.end());
+    const std::vector<size_t> closed_1 = findAllSubstrings(field, "}");
+    const std::vector<size_t> closed_2 = findAllSubstrings(field, "]");
+    closed_brackets.insert(closed_brackets.end(), closed_1.begin(), closed_1.end());
+    closed_brackets.insert(closed_brackets.end(), closed_2.begin(), closed_2.end());
+    std::sort(open_brackets.begin(), open_brackets.end());
+    std::sort(closed_brackets.begin(), closed_brackets.end());
+  }
+
   // Format the header to width.
-  while (header.length() > print_width) {
-    // Linebreaks for too long lines.
-    result += header.substr(0, print_width) + "\n";
-    header = header.substr(print_width);
-  }
-  if (header.length() < global_indent) {
-    header.append(std::string(global_indent - header.length(), ' '));
-  } else if (print_width - header.length() < field.length()) {
-    result += header + "\n";
-    header = std::string(global_indent, ' ');
+  result += wrapString(header, indent, print_width);
+  const size_t last_header_line = result.find_last_of('\n');
+  size_t header_size = result.substr(last_header_line != std::string::npos ? last_header_line + 1 : 0).size();
+  if (header_size < global_indent) {
+    result += std::string(global_indent - header_size, ' ');
+    header_size = global_indent;
+  } else if (print_width - header_size < field.length() || is_multiline) {
+    // If the field does not fit entirely or is multi-line anyways just start a new line.
+    result += "\n" + std::string(global_indent, ' ');
+    header_size = global_indent;
   }
 
-  // First line could be shorter.
-  size_t length = print_width - header.length();
-  if (field.length() > length) {
-    result += header + field.substr(0, length) + "\n";
-    field = field.substr(length);
-
-    // Fill the rest.
-    length = print_width - global_indent;
-    while (field.length() > length) {
-      result += std::string(global_indent, ' ') + field.substr(0, length) + "\n";
-      field = field.substr(length);
+  // First line of field could be shorter due to header over extension.
+  const size_t available_length = print_width - header_size;
+  if (is_multiline) {
+    // Multiline fields need formatting but start at new lines anyways.
+    size_t prev_break = 0;
+    linebreaks.push_back(field.length());
+    for (size_t linebreak : linebreaks) {
+      const auto isBefore = [prev_break](size_t i) { return i < prev_break; };
+      size_t num_open = std::count_if(open_brackets.begin(), open_brackets.end(), isBefore) -
+                        std::count_if(closed_brackets.begin(), closed_brackets.end(), isBefore);
+      std::string line = field.substr(prev_break, linebreak - prev_break + 2);
+      line = std::string(num_open, ' ') + line;
+      line = wrapString(line, global_indent, print_width);
+      if (prev_break == 0) {
+        line = line.substr(global_indent);
+      }
+      result += line + "\n";
+      prev_break = linebreak + 3;
     }
-    result += std::string(global_indent, ' ') + field.substr(0, length) + "\n";
+  } else if (field.length() < available_length) {
+    // Field fits on one line.
+    result += field + "\n";
   } else {
-    result += header + field + "\n";
+    // Add as much as fits on the first line and fill the rest.
+    result += field.substr(0, available_length) + "\n";
+    result += wrapString(field.substr(available_length), global_indent, print_width) + "\n";
   }
+  return result;
+}
+
+std::string AslFormatter::wrapString(const std::string& str, size_t indent, size_t width) const {
+  std::string result;
+  std::string remaining = str;
+  const size_t length = width - indent;
+  while (remaining.length() > length) {
+    result += std::string(indent, ' ') + remaining.substr(0, length) + "\n";
+    remaining = remaining.substr(length);
+  }
+  result += std::string(indent, ' ') + remaining;
   return result;
 }
 

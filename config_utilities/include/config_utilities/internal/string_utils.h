@@ -39,4 +39,13 @@ std::vector<std::string> split(const std::string& text, const std::string& delim
  */
 std::string dataToString(const ConfigData& data);
 
+/**
+ * @brief Find all occurences of a substring in a string.
+ *
+ * @param text The text to be searched.
+ * @param substring The substring to be searched for.
+ * @return std::vector<size_t> The vector of positions of the substring in the string.
+ */
+std::vector<size_t> findAllSubstrings(const std::string& text, const std::string& substring);
+
 }  // namespace config::internal
