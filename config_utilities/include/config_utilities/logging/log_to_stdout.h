@@ -16,7 +16,7 @@ namespace config::internal {
  */
 class StdoutLogger : public Logger {
  protected:
-  void log(const Severity severity, const std::string& message) override {
+  void logImpl(const Severity severity, const std::string& message) override {
     // Default logs to std::cout to always have some sort of output. This could also be moved out to a separate logger
     // if we want this to be independent of iostream.
     if (severity == Severity::kFatal) {

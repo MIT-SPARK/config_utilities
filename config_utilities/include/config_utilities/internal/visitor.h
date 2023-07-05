@@ -8,7 +8,10 @@
 #include <thread>
 #include <vector>
 
+#include "config_utilities/internal/formatter.h"
+#include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/meta_data.h"
+#include "config_utilities/internal/string_utils.h"
 #include "config_utilities/internal/validity_checker.h"
 #include "config_utilities/internal/yaml_parser.h"
 #include "config_utilities/traits.h"
@@ -28,23 +31,29 @@ struct Visitor {
 
   // Interfaces for all internal tools interact with configs through the visitor.
   template <typename ConfigT>
-  static MetaData setValues(ConfigT& config, const YAML::Node& node) {
+  static MetaData setValues(ConfigT& config, const YAML::Node& node, bool print_warnings = true) {
     Visitor visitor = Visitor::create();
     visitor.parser.node() = node;
     visitor.mode = Visitor::Mode::kSet;
     declare_config(config);
     visitor.data.errors = visitor.parser.errors();
+    if (print_warnings && !visitor.data.errors.empty()) {
+      Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Formatter::Severity::kWarning));
+    }
     return visitor.data;
   }
 
   template <typename ConfigT>
-  static MetaData getValues(const ConfigT& config) {
+  static MetaData getValues(const ConfigT& config, bool print_warnings = true) {
     Visitor visitor = Visitor::create();
     visitor.mode = Visitor::Mode::kGet;
     // NOTE: We know that in mode kGet, the config is not modified.
     declare_config(const_cast<ConfigT&>(config));
     visitor.data.errors = visitor.parser.errors();
     visitor.data.data = visitor.parser.node();
+    if (print_warnings && !visitor.data.errors.empty()) {
+      Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Formatter::Severity::kWarning));
+    }
     return visitor.data;
   }
 
@@ -124,12 +133,6 @@ struct Visitor {
 // Implementation of visits of the fields exposed in config.h
 void visitName(const std::string& name) { Visitor::instance().data.name = name; }
 
-// Specialize this template to get additional information for formatting about custom types.
-template <typename T>
-std::string getFieldTypeInfo(const T& /* field */) {
-  return "";
-}
-
 template <typename T>
 void visitField(T& field, const std::string& field_name, const std::string& unit) {
   Visitor& visitor = Visitor::instance();
@@ -140,7 +143,6 @@ void visitField(T& field, const std::string& field_name, const std::string& unit
     visitor.parser.toYaml(field_name, field);
     info.name = field_name;
     info.unit = unit;
-    info.type_info = getFieldTypeInfo(field);
   }
 }
 

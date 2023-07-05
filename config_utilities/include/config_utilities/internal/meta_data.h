@@ -23,9 +23,6 @@ struct FieldInfo {
 
   // Whether the field corresponds to its default value. Only queried if Settings().indicate_default_values is true.
   bool is_default = false;
-
-  // Optional: Type info for special formatting of different fields.
-  std::string type_info;
 };
 
 /**

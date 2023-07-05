@@ -19,10 +19,11 @@ namespace config {
  *
  * @tparam ConfigT The type of the config to print.
  * @param config The config to print.
+ * @param print_warnings If true, prints warnings for any failed conversions.
  * @returns The string representation of the config.
  */
 template <typename ConfigT>
-std::string toString(const ConfigT& config) {
+std::string toString(const ConfigT& config, bool print_warnings = true) {
   if (!isConfig<ConfigT>()) {
     std::stringstream ss;
     ss << "Can not use 'config::toString()' on non-config T='" << typeid(ConfigT).name()
@@ -40,14 +41,17 @@ std::string toString(const ConfigT& config) {
     // identical for default constructed configs.
     const internal::MetaData default_data = internal::Visitor::getValues(defaults);
     for (internal::FieldInfo& info : data.field_info) {
-      if (internal::dataToString(data.data[info.name], info.type_info) ==
-          internal::dataToString(default_data.data[info.name], info.type_info)) {
+      if (internal::dataToString(data.data[info.name]) == internal::dataToString(default_data.data[info.name])) {
         info.is_default = true;
       }
     }
   }
 
   // Format the output data.
+  if (print_warnings && !data.errors.empty()) {
+    internal::Logger::logWarning(
+        internal::Formatter::formatErrors(data, "Errors parsing config", internal::Formatter::Severity::kWarning));
+  }
   return internal::Formatter::formatToString(data);
 }
 

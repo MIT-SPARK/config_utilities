@@ -36,7 +36,8 @@ bool isValid(const ConfigT& config, bool print_warnings = false) {
     return true;
   }
   if (print_warnings) {
-    internal::Logger::logWarning(internal::Formatter::formatErrors(data));
+    internal::Logger::logWarning(
+        internal::Formatter::formatErrors(data, "Invalid config", internal::Formatter::Severity::kWarning));
   }
   return false;
 }
@@ -59,7 +60,8 @@ void checkValid(const ConfigT& config) {
   if (data.errors.empty()) {
     return;
   }
-  internal::Logger::logFatal(internal::Formatter::formatErrors(data));
+  internal::Logger::logFatal(
+      internal::Formatter::formatErrors(data, "Invalid config", internal::Formatter::Severity::kFatal));
 }
 
 }  // namespace config

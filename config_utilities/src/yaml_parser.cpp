@@ -2,21 +2,8 @@
 
 namespace config::internal {
 
-std::vector<std::string> YamlParser::children() const {
-  if (!node_.IsMap()) {
-    return {};
-  }
-
-  std::vector<std::string> children;
-  for (const auto& kv_pair : node_) {
-    children.push_back(kv_pair.first.as<std::string>());
-  }
-
-  return children;
-}
-
 std::string YamlParser::fromYamlImpl(uint8_t& value, const YAML::Node& node) const {
-  value = node_.as<uint16_t>();
+  value = node.as<uint16_t>();
   return std::string();
 }
 

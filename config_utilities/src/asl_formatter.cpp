@@ -4,11 +4,22 @@
 
 namespace config::internal {
 
-std::string AslFormatter::formatErrorsImpl(const MetaData& data) {
-  const std::string sev = "Warning: ";
+std::string AslFormatter::formatErrorsImpl(const MetaData& data, const std::string& what, const Severity severity) {
+  std::string sev;
+  switch (severity) {
+    case kWarning:
+      sev = "Warning: ";
+      break;
+    case kError:
+      sev = "Error: ";
+      break;
+    case kFatal:
+      sev = "Fatal: ";
+      break;
+  }
   const size_t print_width = Settings::instance().print_width;
   const size_t length = print_width - sev.length();
-  std::string warning = "Invalid config '" + data.name + "':\n" + internal::printCenter(data.name, print_width, '=');
+  std::string warning = what + " '" + data.name + "':\n" + internal::printCenter(data.name, print_width, '=');
   for (std::string error : data.errors) {
     std::string line = sev;
     while (error.length() > length) {
@@ -41,7 +52,7 @@ std::string AslFormatter::formatField(const ConfigData& data, const FieldInfo& i
   const size_t global_indent = Settings::instance().print_indent;
 
   // field is the stringified value, The header is the field name.
-  std::string field = formatValue(data, info.type_info);
+  std::string field = dataToString(data);
   if (info.is_default) {
     field += " (default)";
   }
@@ -81,10 +92,6 @@ std::string AslFormatter::formatField(const ConfigData& data, const FieldInfo& i
     result += header + field + "\n";
   }
   return result;
-}
-
-std::string AslFormatter::formatValue(const ConfigData& value, const std::string& type_info) const {
-  return dataToString(value, type_info);
 }
 
 }  // namespace config::internal

@@ -15,7 +15,7 @@ namespace config::internal {
  */
 class AslFormatter : public Formatter {
  protected:
-  std::string formatErrorsImpl(const MetaData& data) override;
+  std::string formatErrorsImpl(const MetaData& data, const std::string& what, const Severity severity) override;
   std::string formatToStringImpl(const MetaData& data) override;
 
  private:
@@ -30,7 +30,6 @@ class AslFormatter : public Formatter {
   // Helper functions.
   std::string toStringInternal(const MetaData& data, size_t indent) const;
   std::string formatField(const ConfigData& data, const FieldInfo& info, size_t indent) const;
-  std::string formatValue(const ConfigData& value, const std::string& type_info) const;
 };
 
 }  // namespace config::internal

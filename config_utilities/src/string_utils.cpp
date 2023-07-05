@@ -25,18 +25,18 @@ std::vector<std::string> split(const std::string& text, const std::string& delim
   return result;
 }
 
-std::string dataToString(const ConfigData& data, const std::string& type_info) {
-  return CustomStringConversion::convert(data, type_info);
-}
-
-std::string yamlToString(const ConfigData& data) {
+std::string dataToString(const ConfigData& data) {
   switch (data.Type()) {
-    case YAML::NodeType::Scalar:
-      return scalarToString(data);
+    case YAML::NodeType::Scalar: {
+      // NOTE(lschmid): All YAML scalars should implement the << operator.
+      std::stringstream ss;
+      ss << data;
+      return ss.str();
+    }
     case YAML::NodeType::Sequence: {
       std::string result = "[";
       for (size_t i = 0; i < data.size(); ++i) {
-        result += scalarToString(data[i]);
+        result += dataToString(data[i]);
         if (i < data.size() - 1) {
           result += ", ";
         }
@@ -49,7 +49,7 @@ std::string yamlToString(const ConfigData& data) {
       bool has_data = false;
       for (const auto& kv_pair : data) {
         has_data = true;
-        result += scalarToString(kv_pair.first) + ": " + scalarToString(kv_pair.second) + ", ";
+        result += dataToString(kv_pair.first) + ": " + dataToString(kv_pair.second) + ", ";
       }
       if (has_data) {
         result = result.substr(0, result.length() - 2);
@@ -61,36 +61,5 @@ std::string yamlToString(const ConfigData& data) {
       return kInvalidField;
   }
 }
-
-std::string scalarToString(const ConfigData& data) {
-  if (!data.IsScalar()) {
-    return kInvalidField;
-  }
-  // Use stringstream to convert to string for any type.
-  std::stringstream ss;
-  ss << data;
-  return ss.str();
-}
-
-void CustomStringConversion::addConversion(ConversionFunction conversion) { conversions_.push_back(conversion); }
-
-std::string CustomStringConversion::convert(const ConfigData& data, const std::string& type_info) {
-  if (type_info.empty()) {
-    // No data is the most common case so use the default conversion.
-    return yamlToString(data);
-  }
-  for (const auto& conversion : conversions_) {
-    auto result = conversion(data, type_info);
-    if (result) {
-      // If any of the conversions feel responsible for the supplied type_info, return the result.
-      return *result;
-    }
-  }
-
-  // Otherwise fall back to the default conversion, which captures all natural YAML types.
-  return yamlToString(data);
-}
-
-std::vector<CustomStringConversion::ConversionFunction> CustomStringConversion::conversions_;
 
 }  // namespace config::internal

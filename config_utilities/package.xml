@@ -15,6 +15,7 @@
   <!-- Optional Dependencies for parts of the library. -->
   <depend>glog_catkin</depend>
   <depend>gflags_catkin</depend>
+  <depend>eigen_catkin</depend>
 
   <export>
   </export>

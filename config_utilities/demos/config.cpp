@@ -12,6 +12,7 @@
 #include "config_utilities/parsing/yaml.h"           // Enable fromYamlFile().
 #include "config_utilities/printing.h"               // Enable toString()
 #include "config_utilities/traits.h"                 // Enables isConfig()
+#include "config_utilities/types/eigen_matrix.h"     // Enable parsing and printing of Eigen::Matrix types.
 #include "config_utilities/validity_checks.h"        // Enable isValid() and checkValid().
 
 namespace demo {
@@ -28,6 +29,7 @@ struct MyConfig {
   std::string test3 = "A really really really ridiculously long string that will also be wrapped.";
   std::vector<int> vec = {1, 2, 3};
   std::map<std::string, int> map = {{"a", 1}, {"b", 2}, {"c", 3}};
+  Eigen::Matrix<double, 3, 3> mat = Eigen::Matrix<double, 3, 3>::Identity();
 };
 
 // A second struct that will not be declared a config.
@@ -50,6 +52,7 @@ void declare_config(MyConfig& config) {
                 "A really really really really really really ridiculously long field name that will be wrapped");
   config::field(config.vec, "vec");
   config::field(config.map, "map");
+  config::field(config.mat, "mat");
 
   // Specify all checks to denote a valid configuration. Checks are specified as param, value, and param name to be
   // displayed. Implemented checks are GT (>), GE (>=), LT (<), LE (<=), EQ (==), NE (!=).
@@ -65,19 +68,6 @@ void declare_config(MyConfig& config) {
 }
 
 }  // namespace demo
-
-namespace config::internal {
-// Specialize this template to get additional information for formatting about custom types.
-template <>
-std::string getFieldTypeInfo(const int& /* field */) {
-  return "int";
-}
-template <>
-std::string getFieldTypeInfo(const bool& /* field */) {
-  return "bool";
-}
-
-}  // namespace config::internal
 
 int main(int argc, char** argv) {
   std::cout << argv[0] << std::endl;
@@ -114,12 +104,14 @@ int main(int argc, char** argv) {
   // ======================================== Read the config from file ========================================
 
   // Read the config from file.
-  const std::string my_file_path =
-      "/home/lukas/khronos_ws/src/config_utilities/config_utilities/demos/demo_params.yaml";
-  config = config::fromYamlFile<demo::MyConfig>(my_file_path);
+  const std::string my_root_path = "/home/lukas/khronos_ws/src/config_utilities/config_utilities/demos/";
+  config = config::fromYamlFile<demo::MyConfig>(my_root_path + "demo_params.yaml");
 
   std::cout << "Read values i='" << config.i << "', s='" << config.s << "', distance='" << config.distance
             << "' from file." << std::endl;
+
+  // Any errors parsing configs will print verbose warnings and use the default values.
+  invalid_config = config::fromYamlFile<demo::MyConfig>(my_root_path + "demo_invalid_params.yaml");
 
   // ======================================== Printing configs to string ========================================
 

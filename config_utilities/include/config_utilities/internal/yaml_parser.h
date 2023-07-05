@@ -23,7 +23,6 @@ class YamlParser {
   ~YamlParser() = default;
 
   // Access tools.
-  std::vector<std::string> children() const;
   const YAML::Node& node() const { return node_; }
   YAML::Node& node() { return node_; }
   const std::vector<std::string>& errors() const { return errors_; }
@@ -49,7 +48,7 @@ class YamlParser {
     try {
       error = fromYamlImpl(value, child_node);
     } catch (const std::exception& e) {
-      error = e.what();
+      error = std::string(e.what()) + ".";
     }
     if (error.empty()) {
       return true;
@@ -73,7 +72,7 @@ class YamlParser {
     try {
       error = toYamlImpl(name, value);
     } catch (const std::exception& e) {
-      error = e.what();
+      error = std::string(e.what()) + ".";
     }
     if (error.empty()) {
       return true;
@@ -85,40 +84,25 @@ class YamlParser {
  private:
   // Specializations for parsing different types. These add error messages if the parsing fails.
 
-  // Not config enums.
-  template <typename T, typename std::enable_if<std::negation<is_config_enum<T>>::value, bool>::type = true>
+  // Generic types.
+  template <typename T>
   std::string fromYamlImpl(T& value, const YAML::Node& node) const {
     value = node.as<T>();
     return std::string();
   }
-  template <typename T, typename std::enable_if<std::negation<is_config_enum<T>>::value, bool>::type = true>
+  template <typename T>
   std::string toYamlImpl(const std::string& name, const T& value) {
     node_[name] = value;
     return std::string();
   }
 
-  // Config enums. TODO(lschmid): Double check and verify how DECLARE_CONFIG_ENUM is used.
-  template <typename T, typename std::enable_if<is_config_enum<T>::value, bool>::type = true>
-  std::string fromYamlImpl(T& value, const YAML::Node& node) const {
-    const auto placeholder = node_.as<std::string>();
-    readConfigEnumFromString(placeholder, value);
-    return std::string();
-  }
-  template <typename T, typename std::enable_if<is_config_enum<T>::value, bool>::type = true>
-  std::string toYamlImpl(const std::string& name, const T& value) {
-    node_[name] = configEnumToString(value);
-    return std::string();
-  }
-
-  // TODO(lschmid): Add support for sub-configs.
-
   // Vector.
   template <typename T>
   std::string fromYamlImpl(std::vector<T>& value, const YAML::Node& node) const {
-    if (!node_.IsSequence()) {
+    if (!node.IsSequence()) {
       return "Data is not a sequence.";
     }
-    value = node_.as<std::vector<T>>();
+    value = node.as<std::vector<T>>();
     return std::string();
   }
   template <typename T>
@@ -132,10 +116,10 @@ class YamlParser {
   // Set.
   template <typename T>
   std::string fromYamlImpl(std::set<T>& value, const YAML::Node& node) const {
-    if (!node_.IsSequence()) {
+    if (!node.IsSequence()) {
       return "Data is not a sequence.";
     }
-    std::vector<T> placeholder = node_.as<std::vector<T>>();
+    const std::vector<T> placeholder = node.as<std::vector<T>>();
     value.clear();
     value.insert(placeholder.begin(), placeholder.end());
     return std::string();
@@ -150,10 +134,10 @@ class YamlParser {
 
   template <typename K, typename V>
   std::string fromYamlImpl(std::map<K, V>& value, const YAML::Node& node) const {
-    if (!node_.IsMap()) {
+    if (!node.IsMap()) {
       return "Data is not a map.";
     }
-    value = node_.as<std::map<K, V>>();
+    value = node.as<std::map<K, V>>();
     return std::string();
   }
   template <typename K, typename V>
