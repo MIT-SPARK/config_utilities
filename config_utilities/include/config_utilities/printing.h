@@ -1,6 +1,6 @@
 #pragma once
 
-#include <sstream>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -39,7 +39,7 @@ std::string toString(const ConfigT& config, bool print_warnings = true) {
     ConfigT defaults;
     // NOTE(lschmid): Operator YAML::Node== checks for identity,not equality. Comparing the formatted strings should be
     // identical for default constructed configs.
-    const internal::MetaData default_data = internal::Visitor::getValues(defaults);
+    const internal::MetaData default_data = internal::Visitor::getValues(defaults, false);
     for (internal::FieldInfo& info : data.field_info) {
       if (internal::dataToString(data.data[info.name]) == internal::dataToString(default_data.data[info.name])) {
         info.is_default = true;
@@ -56,3 +56,11 @@ std::string toString(const ConfigT& config, bool print_warnings = true) {
 }
 
 }  // namespace config
+
+// Define the ostream operator for declared configs.
+template <typename ConfigT,
+          typename std::enable_if<config::internal::is_config_impl<ConfigT>::value, bool>::type = true>
+std::ostream& operator<<(std::ostream& os, const ConfigT& config) {
+  os << config::toString(config);
+  return os;
+}

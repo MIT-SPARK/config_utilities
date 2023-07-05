@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <string>
 #include <utility>
 #include <vector>
@@ -11,7 +12,9 @@ namespace config {
 
 namespace internal {
 
-// ADL Indirection so definitions of 'declare_config()' can be found anywhere via ADL.
+// argument-dependent-lookup (ADL) so definitions of 'declare_config()' can be found anywher. See the following:
+// - http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4381.html
+// - https:://github.com/nlohmann/json/blob/develop/include/nlohmann/adl_serializer.hpp
 
 // adl indirection
 struct declare_config_fn {
@@ -47,6 +50,39 @@ void name(const std::string& name) { internal::visitName(name); }
 template <typename T>
 void field(T& field, const std::string& field_name, const std::string& unit = "") {
   internal::visitField(field, field_name, unit);
+}
+
+/**
+ * @brief Declare string-named fields of the config. This string will be used to get the configs field values during
+ * creation, and for checking of validity. The enum field declares string-based conversion of enums.
+ *
+ * @tparam EnumT The enum type.
+ * @param field The config member that stores data.
+ * @param field_name The name of the field.
+ * @param enum_names Map of enum values to names for non-sequential enums.
+ */
+template <typename EnumT>
+void enum_field(EnumT& field, const std::string& field_name, const std::map<EnumT, std::string>& enum_names) {
+  internal::visitEnumField(field, field_name, enum_names);
+}
+
+/**
+ * @brief Declare string-named fields of the config. This string will be used to get the configs field values during
+ * creation, and for checking of validity. The enum field declares string-based conversion of enums.
+ *
+ * @tparam EnumT The enum type.
+ * @param field The config member that stores data.
+ * @param field_name The name of the field.
+ * @param enum_names List of all possible enum names in identical order to the enum definition. These will be casted to
+ * enum. Use only with sequential enums.
+ */
+template <typename EnumT>
+void enum_field(EnumT& field, const std::string& field_name, const std::vector<std::string>& enum_names) {
+  std::map<EnumT, std::string> enum_map;
+  for (size_t i = 0; i < enum_names.size(); ++i) {
+    enum_map[static_cast<EnumT>(i)] = enum_names[i];
+  }
+  enum_field(field, field_name, enum_map);
 }
 
 /**

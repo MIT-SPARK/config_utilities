@@ -30,6 +30,9 @@ struct MyConfig {
   std::vector<int> vec = {1, 2, 3};
   std::map<std::string, int> map = {{"a", 1}, {"b", 2}, {"c", 3}};
   Eigen::Matrix<double, 3, 3> mat = Eigen::Matrix<double, 3, 3>::Identity();
+
+  enum class MyEnum { kA, kB, kC } my_enum = MyEnum::kA;
+  enum MyStrangeEnum : int { kX = 0, kY = 42, kZ = -7 } my_strange_enum = MyStrangeEnum::kX;
 };
 
 // A second struct that will not be declared a config.
@@ -53,6 +56,14 @@ void declare_config(MyConfig& config) {
   config::field(config.vec, "vec");
   config::field(config.map, "map");
   config::field(config.mat, "mat");
+
+  // String-based enum conversion and verification is supported. Valid values can be specified as a list of names for
+  // sequential enums or as a map for non-sequential enums.
+  config::enum_field(config.my_enum, "my_enum", {"A", "B", "C"});
+  config::enum_field(
+      config.my_strange_enum,
+      "my_strange_enum",
+      {{MyConfig::MyStrangeEnum::kX, "X"}, {MyConfig::MyStrangeEnum::kY, "Y"}, {MyConfig::MyStrangeEnum::kZ, "Z"}});
 
   // Specify all checks to denote a valid configuration. Checks are specified as param, value, and param name to be
   // displayed. Implemented checks are GT (>), GE (>=), LT (<), LE (<=), EQ (==), NE (!=).
@@ -116,7 +127,13 @@ int main(int argc, char** argv) {
   // ======================================== Printing configs to string ========================================
 
   // Easier automatic printing of all configs with unit and additional information can be done using the toString():
-  std::cout << config::toString(config) << std::endl;
+  const std::string config_as_string = config::toString(config);
+  std::cout << config_as_string << std::endl;
+
+  // Inclunding "printing.h" also implements th ostream operator for decared config types. The above is thus equivalent
+  // to
+
+  std::cout << config << std::endl;
 
   return 0;
 }

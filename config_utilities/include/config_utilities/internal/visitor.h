@@ -4,6 +4,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <set>
 #include <string>
 #include <thread>
 #include <vector>
@@ -36,7 +37,8 @@ struct Visitor {
     visitor.parser.node() = node;
     visitor.mode = Visitor::Mode::kSet;
     declare_config(config);
-    visitor.data.errors = visitor.parser.errors();
+    visitor.data.errors.insert(
+        visitor.data.errors.end(), visitor.parser.errors().begin(), visitor.parser.errors().end());
     if (print_warnings && !visitor.data.errors.empty()) {
       Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Formatter::Severity::kWarning));
     }
@@ -49,7 +51,8 @@ struct Visitor {
     visitor.mode = Visitor::Mode::kGet;
     // NOTE: We know that in mode kGet, the config is not modified.
     declare_config(const_cast<ConfigT&>(config));
-    visitor.data.errors = visitor.parser.errors();
+    visitor.data.errors.insert(
+        visitor.data.errors.end(), visitor.parser.errors().begin(), visitor.parser.errors().end());
     visitor.data.data = visitor.parser.node();
     if (print_warnings && !visitor.data.errors.empty()) {
       Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Formatter::Severity::kWarning));
@@ -74,6 +77,8 @@ struct Visitor {
   friend void visitName(const std::string&);
   template <typename T>
   friend void visitField(T&, const std::string&, const std::string&);
+  template <typename EnumT>
+  friend void visitEnumField(EnumT&, const std::string&, const std::map<EnumT, std::string>&);
   template <typename T>
   friend void visitCheck(Visitor::CheckMode, const T&, const T&, const std::string&);
   template <typename T>
@@ -138,11 +143,63 @@ void visitField(T& field, const std::string& field_name, const std::string& unit
   Visitor& visitor = Visitor::instance();
   if (visitor.mode == Visitor::Mode::kSet) {
     visitor.parser.fromYaml(field_name, field);
-  } else if (visitor.mode == Visitor::Mode::kGet) {
+  }
+
+  if (visitor.mode == Visitor::Mode::kGet) {
     FieldInfo& info = visitor.data.field_info.emplace_back();
     visitor.parser.toYaml(field_name, field);
     info.name = field_name;
     info.unit = unit;
+  }
+}
+
+template <typename EnumT>
+void visitEnumField(EnumT& field, const std::string& field_name, const std::map<EnumT, std::string>& enum_names) {
+  Visitor& visitor = Visitor::instance();
+  if (visitor.mode != Visitor::Mode::kSet && visitor.mode != Visitor::Mode::kGet) {
+    return;
+  }
+
+  // Check uniqueness of enum names.
+  std::set<std::string> names;
+  for (const auto& [_, name] : enum_names) {
+    if (names.find(name) != names.end()) {
+      visitor.data.errors.emplace_back("Value '" + name + "' is defined multiple times for enum field '" + field_name +
+                                       "'.");
+    }
+    names.insert(name);
+  }
+
+  // Parse enums. These are internally stored as strings.
+  if (visitor.mode == Visitor::Mode::kSet) {
+    std::string place_holder;
+    if (visitor.parser.fromYaml(field_name, place_holder)) {
+      const auto it = std::find_if(enum_names.begin(), enum_names.end(), [&place_holder](const auto& pair) {
+        return pair.second == place_holder;
+      });
+      if (it == enum_names.end()) {
+        std::string error = "Failed to parse param '" + field_name + "': Invalid value '" + place_holder +
+                            "' for enum field with values ";
+        for (const auto& [_, name] : enum_names) {
+          error += "'" + name + "', ";
+        }
+        visitor.data.errors.emplace_back(error.substr(0, error.size() - 2) + ".");
+      } else {
+        field = it->first;
+      }
+    }
+  }
+
+  if (visitor.mode == Visitor::Mode::kGet) {
+    FieldInfo& info = visitor.data.field_info.emplace_back();
+    const auto it = enum_names.find(field);
+    if (it == enum_names.end()) {
+      visitor.data.errors.emplace_back("Value of enum field '" + field_name + "' is out of the defined range.");
+      visitor.parser.toYaml(field_name, "INVALID ENUM VALUE");
+    } else {
+      visitor.parser.toYaml(field_name, it->second);
+    }
+    info.name = field_name;
   }
 }
 
