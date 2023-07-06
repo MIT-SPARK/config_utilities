@@ -18,30 +18,40 @@ std::string AslFormatter::formatErrorsImpl(const MetaData& data, const std::stri
       break;
   }
   const size_t print_width = Settings::instance().print_width;
-  const size_t length = print_width - sev.length();
-  std::string warning = what + " '" + data.name + "':\n" + internal::printCenter(data.name, print_width, '=');
-  for (std::string error : data.errors) {
-    std::string line = sev;
-    while (error.length() > length) {
-      line.append(error.substr(0, length));
-      error = error.substr(length);
-      warning.append("\n" + line);
-      line = std::string(sev.length(), ' ');
-    }
-    warning.append("\n" + line + error);
+  return what + " '" + data.name + "':\n" + internal::printCenter(data.name, print_width, '=') + "\n" +
+         formatErrorsInternal(data, sev, print_width) + std::string(print_width, '=');
+}
+
+std::string AslFormatter::formatErrorsInternal(const MetaData& data,
+                                               const std::string& sev,
+                                               const size_t length) const {
+  std::string warning;
+  for (const std::string& error : data.errors) {
+    warning.append(wrapString(sev + error, sev.length(), length, false) + "\n");
   }
-  warning = warning + "\n" + std::string(print_width, '=');
+
+  // Iterate through all sub-configs and append their errors.
+  for (const MetaData& sub_config : data.sub_configs) {
+    warning += formatErrorsInternal(sub_config, sev, length);
+  }
   return warning;
 }
 
 std::string AslFormatter::formatToStringImpl(const MetaData& data) {
-  return internal::printCenter(data.name, Settings::instance().print_width, '=') + "\n" + toStringInternal(data, 0) +
-         std::string(Settings::instance().print_width, '=');
+  std::string result = internal::printCenter(data.name, Settings::instance().print_width, '=') + "\n";
+  // const int delta_indent = Settings::instance().subconfig_indent;
+  // int indent = -delta_indent;
+  // data.performOnAll([&](const MetaData& data) {
+  //   indent += delta_indent;
+  //   result += toStringInternal(data, indent);
+  //   indent -= delta_indent;
+  // });
+  return result + std::string(Settings::instance().print_width, '=');
 }
 
 std::string AslFormatter::toStringInternal(const MetaData& data, size_t indent) const {
   std::string result;
-  for (const FieldInfo& info : data.field_info) {
+  for (const FieldInfo& info : data.field_infos) {
     result += formatField(data.data[info.name], info, indent);
   }
   return result;
@@ -125,16 +135,25 @@ std::string AslFormatter::formatField(const ConfigData& data, const FieldInfo& i
   return result;
 }
 
-std::string AslFormatter::wrapString(const std::string& str, size_t indent, size_t width) const {
+std::string AslFormatter::wrapString(const std::string& str,
+                                     size_t indent,
+                                     size_t width,
+                                     bool indent_first_line) const {
   std::string result;
   std::string remaining = str;
+  if (indent_first_line) {
+    result = std::string(indent, ' ');
+  } else {
+    const size_t first_line_length = std::min(indent, str.length());
+    result = str.substr(0, first_line_length);
+    remaining = str.substr(first_line_length);
+  }
   const size_t length = width - indent;
   while (remaining.length() > length) {
-    result += std::string(indent, ' ') + remaining.substr(0, length) + "\n";
+    result += remaining.substr(0, length) + "\n" + std::string(indent, ' ');
     remaining = remaining.substr(length);
   }
-  result += std::string(indent, ' ') + remaining;
-  return result;
+  return result + remaining;
 }
 
 }  // namespace config::internal

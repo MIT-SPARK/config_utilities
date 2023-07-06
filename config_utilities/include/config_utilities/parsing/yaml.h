@@ -51,7 +51,7 @@ YAML::Node toYaml(const ConfigT& config) {
 template <typename ConfigT>
 ConfigT fromYamlFile(const std::string& file_name, const std::string& name_space = "") {
   YAML::Node node = YAML::LoadFile(file_name);
-  for (const std::string& name : internal::split(name_space, "/")) {
+  for (const std::string& name : internal::splitNamespace(name_space, "/")) {
     if (!name.empty()) {
       node = node[name];
     }

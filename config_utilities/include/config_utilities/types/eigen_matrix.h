@@ -55,13 +55,13 @@ struct convert<Eigen::Matrix<Scalar, R, C>> {
     if (!node.IsSequence() || node.size() != R) {
       throw std::runtime_error("Incompatible Matrix dimensions: Requested " + std::to_string(R) + "x" +
                                std::to_string(C) + " but got " + std::to_string(node.size()) + "x" +
-                               std::to_string(node[0].size()) + ".");
+                               std::to_string(node[0].size()));
     }
     for (int c = 0; c < C; ++c) {
       if (node[c].size() != C) {
         throw std::runtime_error("Incompatible Matrix dimensions: Requested " + std::to_string(R) + "x" +
                                  std::to_string(C) + " but got " + std::to_string(node.size()) + "x" +
-                                 std::to_string(node[c].size()) + ".");
+                                 std::to_string(node[c].size()));
       }
     }
 
@@ -90,7 +90,7 @@ struct convert<Eigen::Matrix<Scalar, R, 1>> {
     // Check matrx layout. NOTE(lschmid) Exceptions are caught and printed as errors in the yaml parser.
     if (!node.IsSequence() || node.size() != R) {
       throw std::runtime_error("Incompatible Matrix dimensions: Requested " + std::to_string(R) + "x1 but got " +
-                               std::to_string(node.size()) + "x1.");
+                               std::to_string(node.size()) + "x1");
     }
 
     for (int r = 0; r < R; ++r) {

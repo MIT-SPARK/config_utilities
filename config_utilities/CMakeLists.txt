@@ -13,10 +13,12 @@ find_package(yaml-cpp REQUIRED)
 #############
 
 cs_add_library(${PROJECT_NAME}
+        src/meta_data.cpp
         src/yaml_parser.cpp
         src/settings.cpp
         src/asl_formatter.cpp
         src/string_utils.cpp
+        src/yaml_utils.cpp
         )
 target_link_libraries(${PROJECT_NAME} yaml-cpp)
 

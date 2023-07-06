@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <map>
 #include <string>
 #include <vector>
@@ -38,13 +39,20 @@ struct MetaData {
   ConfigData data;
 
   // All additional field information queried for printing.
-  std::vector<FieldInfo> field_info;
+  std::vector<FieldInfo> field_infos;
 
   // All warnings issued by the validity checker or errors raised by the yaml parser.
   std::vector<std::string> errors;
 
   // If a config has sub-configs, they are stored here.
   std::vector<MetaData> sub_configs;
+
+  // Utility to look up if there's any error messages in the data or its sub-configs.
+  bool hasErrors() const;
+
+  // Utility function so not every class needs to write their own recursion.
+  void performOnAll(const std::function<void(MetaData&)>& func);
+  void performOnAll(const std::function<void(const MetaData&)>& func) const;
 };
 
 }  // namespace config::internal

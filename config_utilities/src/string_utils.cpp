@@ -12,8 +12,11 @@ std::string printCenter(const std::string& text, int width, char symbol) {
   return result;
 }
 
-std::vector<std::string> split(const std::string& text, const std::string& delimiter) {
+std::vector<std::string> splitNamespace(const std::string& text, const std::string& delimiter) {
   std::vector<std::string> result;
+  if (text.empty()) {
+    return result;
+  }
   std::string s = text;
   size_t pos = 0;
   while ((pos = s.find(delimiter)) != std::string::npos) {
@@ -22,7 +25,29 @@ std::vector<std::string> split(const std::string& text, const std::string& delim
     }
     s.erase(0, pos + delimiter.length());
   }
+  return result.empty() ? std::vector<std::string>{text} : result;
+}
+
+std::string joinNamespace(const std::vector<std::string>& namespaces, const std::string& delimiter) {
+  std::string result;
+  if (namespaces.empty()) {
+    return result;
+  }
+  result = namespaces[0];
+  for (const std::string& ns : namespaces) {
+    result += delimiter + ns;
+  }
   return result;
+}
+
+std::string joinNamespace(const std::string& namespace_1,
+                          const std::string& namespace_2,
+                          const std::string& delimiter) {
+  // Ensure the final formatting is uniform
+  std::vector<std::string> ns_1 = splitNamespace(namespace_1, delimiter);
+  const std::vector<std::string> ns_2 = splitNamespace(namespace_2, delimiter);
+  ns_1.insert(ns_1.end(), ns_2.begin(), ns_2.end());
+  return joinNamespace(ns_1, delimiter);
 }
 
 std::string dataToString(const ConfigData& data) {

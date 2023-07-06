@@ -32,7 +32,7 @@ bool isValid(const ConfigT& config, bool print_warnings = false) {
     return false;
   }
   internal::MetaData data = internal::Visitor::getChecks(config);
-  if (data.errors.empty()) {
+  if (!data.hasErrors()) {
     return true;
   }
   if (print_warnings) {
@@ -57,7 +57,7 @@ void checkValid(const ConfigT& config) {
     internal::Logger::logFatal(ss.str());
   }
   internal::MetaData data = internal::Visitor::getChecks(config);
-  if (data.errors.empty()) {
+  if (!data.hasErrors()) {
     return;
   }
   internal::Logger::logFatal(

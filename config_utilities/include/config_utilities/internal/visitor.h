@@ -7,6 +7,7 @@
 #include <set>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include "config_utilities/internal/formatter.h"
@@ -15,6 +16,7 @@
 #include "config_utilities/internal/string_utils.h"
 #include "config_utilities/internal/validity_checker.h"
 #include "config_utilities/internal/yaml_parser.h"
+#include "config_utilities/internal/yaml_utils.h"
 #include "config_utilities/traits.h"
 
 namespace config::internal {
@@ -39,7 +41,7 @@ struct Visitor {
     declare_config(config);
     visitor.data.errors.insert(
         visitor.data.errors.end(), visitor.parser.errors().begin(), visitor.parser.errors().end());
-    if (print_warnings && !visitor.data.errors.empty()) {
+    if (print_warnings && visitor.data.hasErrors()) {
       Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Formatter::Severity::kWarning));
     }
     return visitor.data;
@@ -54,7 +56,7 @@ struct Visitor {
     visitor.data.errors.insert(
         visitor.data.errors.end(), visitor.parser.errors().begin(), visitor.parser.errors().end());
     visitor.data.data = visitor.parser.node();
-    if (print_warnings && !visitor.data.errors.empty()) {
+    if (print_warnings && visitor.data.hasErrors()) {
       Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Formatter::Severity::kWarning));
     }
     return visitor.data;
@@ -84,6 +86,8 @@ struct Visitor {
   template <typename T>
   friend void visitCheckInRange(const T&, const T&, const T&, const std::string&);
   friend void visitCheckCondition(bool, const std::string&);
+  template <typename ConfigT>
+  friend void visitSubconfig(ConfigT&, const std::string&, const std::string&);
 
   // Create and access the meta data for the current thread. Lifetime of the meta data is managed internally by the
   // objects. Note that meta data always needs to be created before it can be accessed. In short, 'instance()' is only
@@ -124,8 +128,12 @@ struct Visitor {
 
   // Messenger data.
   MetaData data;
+
+  // Internal data to handle visits.
   ValidityChecker checker;
   YamlParser parser;
+  std::string name_prefix = "";
+  std::string name_space = "";
 
   // Static registration to get access to the correct instance.
   inline static std::map<std::thread::id, Visitor*> instances;
@@ -142,12 +150,12 @@ template <typename T>
 void visitField(T& field, const std::string& field_name, const std::string& unit) {
   Visitor& visitor = Visitor::instance();
   if (visitor.mode == Visitor::Mode::kSet) {
-    visitor.parser.fromYaml(field_name, field);
+    visitor.parser.fromYaml(field_name, field, visitor.name_space, visitor.name_prefix);
   }
 
   if (visitor.mode == Visitor::Mode::kGet) {
-    FieldInfo& info = visitor.data.field_info.emplace_back();
-    visitor.parser.toYaml(field_name, field);
+    FieldInfo& info = visitor.data.field_infos.emplace_back();
+    visitor.parser.toYaml(field_name, field, visitor.name_space, visitor.name_prefix);
     info.name = field_name;
     info.unit = unit;
   }
@@ -173,7 +181,7 @@ void visitEnumField(EnumT& field, const std::string& field_name, const std::map<
   // Parse enums. These are internally stored as strings.
   if (visitor.mode == Visitor::Mode::kSet) {
     std::string place_holder;
-    if (visitor.parser.fromYaml(field_name, place_holder)) {
+    if (visitor.parser.fromYaml(field_name, place_holder, visitor.name_space, visitor.name_prefix)) {
       const auto it = std::find_if(enum_names.begin(), enum_names.end(), [&place_holder](const auto& pair) {
         return pair.second == place_holder;
       });
@@ -191,13 +199,13 @@ void visitEnumField(EnumT& field, const std::string& field_name, const std::map<
   }
 
   if (visitor.mode == Visitor::Mode::kGet) {
-    FieldInfo& info = visitor.data.field_info.emplace_back();
+    FieldInfo& info = visitor.data.field_infos.emplace_back();
     const auto it = enum_names.find(field);
     if (it == enum_names.end()) {
       visitor.data.errors.emplace_back("Value of enum field '" + field_name + "' is out of the defined range.");
-      visitor.parser.toYaml(field_name, "INVALID ENUM VALUE");
+      visitor.parser.toYaml(field_name, "INVALID ENUM VALUE", visitor.name_space, visitor.name_prefix);
     } else {
-      visitor.parser.toYaml(field_name, it->second);
+      visitor.parser.toYaml(field_name, it->second, visitor.name_space, visitor.name_prefix);
     }
     info.name = field_name;
   }
@@ -247,6 +255,51 @@ void visitCheckCondition(bool condition, const std::string& error_message) {
     return;
   }
   visitor.checker.checkCondition(condition, error_message);
+}
+
+template <typename ConfigT>
+void visitSubconfig(ConfigT& config, const std::string& field_name, const std::string& sub_namespace) {
+  Visitor& visitor = Visitor::instance();
+
+  if (visitor.mode != Visitor::Mode::kSet && visitor.mode != Visitor::Mode::kGet &&
+      visitor.mode != Visitor::Mode::kCheck) {
+    return;
+  }
+
+  // Check is a configT.
+  if (!isConfig<ConfigT>()) {
+    visitor.data.errors.emplace_back("Subconfig field '" + field_name + "' has not beend declared a config.");
+    return;
+  }
+
+  // Store state as was before.
+  const MetaData data_before = visitor.data;
+  const std::string name_space_before = visitor.name_space;
+  const std::string name_prefix_before = visitor.name_prefix;
+
+  // Set new data.
+  // TODO(lschmid): This could also be part of the formatter but a bit complicated for now.
+  constexpr bool index_errors_with_subconfig_names = true;
+  if (index_errors_with_subconfig_names) {
+    visitor.name_prefix += field_name + ".";
+  }
+  visitor.name_space = joinNamespace(visitor.name_space, sub_namespace);
+  visitor.data = MetaData();
+
+  // Visit subconfig.
+  declare_config(config);
+
+  // Aggregate data.
+  MetaData data_after = visitor.data;
+  if (visitor.mode == Visitor::Mode::kGet) {
+    data_after.data = lookupNamespace(YAML::Clone(visitor.parser.node()), visitor.name_space);
+  }
+
+  // Restore state.
+  visitor.name_space = name_space_before;
+  visitor.name_prefix = name_prefix_before;
+  visitor.data = data_before;
+  visitor.data.sub_configs.emplace_back(std::move(data_after));
 }
 
 }  // namespace config::internal

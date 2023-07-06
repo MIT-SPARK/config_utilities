@@ -53,8 +53,7 @@ void field(T& field, const std::string& field_name, const std::string& unit = ""
 }
 
 /**
- * @brief Declare string-named fields of the config. This string will be used to get the configs field values during
- * creation, and for checking of validity. The enum field declares string-based conversion of enums.
+ * @brief Declare an enum to as field of a config, that will be parsed and checked by value names.
  *
  * @tparam EnumT The enum type.
  * @param field The config member that stores data.
@@ -67,8 +66,7 @@ void enum_field(EnumT& field, const std::string& field_name, const std::map<Enum
 }
 
 /**
- * @brief Declare string-named fields of the config. This string will be used to get the configs field values during
- * creation, and for checking of validity. The enum field declares string-based conversion of enums.
+ * @brief Declare an enum to as field of a config, that will be parsed and checked by value names.
  *
  * @tparam EnumT The enum type.
  * @param field The config member that stores data.
@@ -83,6 +81,19 @@ void enum_field(EnumT& field, const std::string& field_name, const std::vector<s
     enum_map[static_cast<EnumT>(i)] = enum_names[i];
   }
   enum_field(field, field_name, enum_map);
+}
+
+/**
+ * @brief Declare a struct that is also a config as field.
+ *
+ * @tparam ConfigT The config type.
+ * @param config The config member that stores data.
+ * @param field_name The name of the field.
+ * @param sub_namespace Optionally define a sub namespace to read parameter values for the subconfig from.
+ */
+template <typename ConfigT>
+void subconfig(ConfigT& config, const std::string& field_name, const std::string& sub_namespace = "") {
+  internal::visitSubconfig(config, field_name, sub_namespace);
 }
 
 /**

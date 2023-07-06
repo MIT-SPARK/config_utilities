@@ -17,7 +17,13 @@
 
 namespace demo {
 
-// A struct that represents we want to be a config.
+// A sub-struct for later use.
+struct SubConfig {
+  float f = 0.123;
+  std::string s = "test";
+};
+
+// A struct that represents what we want to be a config.
 // Requirements for a config struct: is default constructable.
 struct MyConfig {
   int i = 100;
@@ -33,9 +39,11 @@ struct MyConfig {
 
   enum class MyEnum { kA, kB, kC } my_enum = MyEnum::kA;
   enum MyStrangeEnum : int { kX = 0, kY = 42, kZ = -7 } my_strange_enum = MyStrangeEnum::kX;
+
+  SubConfig sub_config;
 };
 
-// A second struct that will not be declared a config.
+// Another struct that will not be declared a config.
 struct NotAConfig {};
 
 // Defining 'void declare_config(T& config)' function labels a struct as config. All config properties are specified
@@ -65,6 +73,9 @@ void declare_config(MyConfig& config) {
       "my_strange_enum",
       {{MyConfig::MyStrangeEnum::kX, "X"}, {MyConfig::MyStrangeEnum::kY, "Y"}, {MyConfig::MyStrangeEnum::kZ, "Z"}});
 
+  // Any other struct that has been declared a config can be a sub-config, with optional sub-namespace.
+  config::subconfig(config.sub_config, "sub_config", "sub_ns");
+
   // Specify all checks to denote a valid configuration. Checks are specified as param, value, and param name to be
   // displayed. Implemented checks are GT (>), GE (>=), LT (<), LE (<=), EQ (==), NE (!=).
   // TODO(lschmid): Would be nice to not duplicate the name but didn't find a nice way to do this.
@@ -78,17 +89,27 @@ void declare_config(MyConfig& config) {
   config::checkCondition(!config.s.empty(), "Param 's' may not be empty.");
 }
 
+// Declaration of the subconfig.
+void declare_config(SubConfig& config) {
+  using namespace config;
+  name("SubConfig");
+  field(config.f, "f");
+  field(config.s, "s");
+  checkGT(config.f, 0.f, "f");
+}
+
 }  // namespace demo
 
 int main(int argc, char** argv) {
-  std::cout << argv[0] << std::endl;
   // ===================================== Checking whether a struct is a config =====================================
+  std::cout << "\n\n----- Checking whether a struct is a config -----\n\n" << std::endl;
 
   // Use isConfig<T> to check whether an object has been declared a config.
   std::cout << "MyConfig is a config: " << std::boolalpha << config::isConfig<demo::MyConfig>() << std::endl;
   std::cout << "NotAConfig is a config: " << config::isConfig<demo::NotAConfig>() << std::endl;
 
   // ====================================== Checking whether a config is valid ======================================
+  std::cout << "\n\n----- Checking whether a config is valid \n" << std::endl;
 
   // Create a valid and an invalid config.
   demo::MyConfig config, invalid_config;
@@ -113,6 +134,7 @@ int main(int argc, char** argv) {
   }
 
   // ======================================== Read the config from file ========================================
+  std::cout << "\n\n----- Reading the config from file -----\n\n" << std::endl;
 
   // Read the config from file.
   const std::string my_root_path = "/home/lukas/khronos_ws/src/config_utilities/config_utilities/demos/";
@@ -120,19 +142,20 @@ int main(int argc, char** argv) {
 
   std::cout << "Read values i='" << config.i << "', s='" << config.s << "', distance='" << config.distance
             << "' from file." << std::endl;
+  std::cout << "Enum 'config.my_enum' is now B: " << (config.my_enum == demo::MyConfig::MyEnum::kB) << std::endl;
 
   // Any errors parsing configs will print verbose warnings and use the default values.
   invalid_config = config::fromYamlFile<demo::MyConfig>(my_root_path + "demo_invalid_params.yaml");
 
   // ======================================== Printing configs to string ========================================
+  std::cout << "\n\n----- Printing configs to string -----\n\n" << std::endl;
 
   // Easier automatic printing of all configs with unit and additional information can be done using the toString():
   const std::string config_as_string = config::toString(config);
   std::cout << config_as_string << std::endl;
 
   // Inclunding "printing.h" also implements th ostream operator for decared config types. The above is thus equivalent
-  // to
-
+  // to:
   std::cout << config << std::endl;
 
   return 0;

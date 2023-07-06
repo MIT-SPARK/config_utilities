@@ -7,6 +7,8 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include "config_utilities/internal/string_utils.h"
+#include "config_utilities/internal/yaml_utils.h"
 #include "config_utilities/traits.h"
 
 namespace config::internal {
@@ -19,12 +21,11 @@ namespace config::internal {
 class YamlParser {
  public:
   YamlParser() = default;
-  explicit YamlParser(const YAML::Node& node) : node_(node) {}
   ~YamlParser() = default;
 
   // Access tools.
-  const YAML::Node& node() const { return node_; }
-  YAML::Node& node() { return node_; }
+  const YAML::Node& node() const { return root_node_; }
+  YAML::Node& node() { return root_node_; }
   const std::vector<std::string>& errors() const { return errors_; }
 
   /**
@@ -35,11 +36,14 @@ class YamlParser {
    * @tparam T Type of the value to parse.
    * @param name Name of the param to look up.
    * @param value Value to parse.
+   * @param sub_namespace Sub-namespace of the param to look up.
+   * @param name_prefix Name prefix of the param used only for error logging.
    * @return true If the value was found and successfully parsed.
    */
   template <typename T>
-  bool fromYaml(const std::string& name, T& value) {
-    YAML::Node child_node = node_[name];
+  bool fromYaml(const std::string& name, T& value, const std::string& sub_namespace, const std::string& name_prefix) {
+    YAML::Node child_node = lookupNamespace(root_node_, sub_namespace)[name];
+
     if (!child_node) {
       // The param is not defined. This is not an error.
       return false;
@@ -53,7 +57,7 @@ class YamlParser {
     if (error.empty()) {
       return true;
     }
-    errors_.emplace_back("Failed to parse param '" + name + "': " + error);
+    errors_.emplace_back("Failed to parse param '" + name_prefix + name + "': " + error);
     return false;
   }
 
@@ -64,26 +68,32 @@ class YamlParser {
    * @tparam T Type of the value to parse.
    * @param name Name of the param to store.
    * @param value Value to parse.
+   * @param sub_namespace Sub-namespace of the param to look parse.
+   * @param name_prefix Name prefix of the param used only for error logging.
    * @return true If the value was successfully parsed.
    */
   template <typename T>
-  bool toYaml(const std::string& name, const T& value) {
+  bool toYaml(const std::string& name,
+              const T& value,
+              const std::string& sub_namespace,
+              const std::string& name_prefix) {
+    node_ = YAML::Node();
     std::string error;
     try {
       error = toYamlImpl(name, value);
     } catch (const std::exception& e) {
       error = std::string(e.what()) + ".";
     }
+
     if (error.empty()) {
+      root_node_ = mergeYamlNodes(root_node_, moveDownNamespace(node_, sub_namespace));
       return true;
     }
-    errors_.emplace_back("Failed to parse param '" + name + "': " + error);
+    errors_.emplace_back("Failed to parse param '" + name_prefix + name + "': " + error);
     return false;
   }
 
  private:
-  // Specializations for parsing different types. These add error messages if the parsing fails.
-
   // Generic types.
   template <typename T>
   std::string fromYamlImpl(T& value, const YAML::Node& node) const {
@@ -96,6 +106,7 @@ class YamlParser {
     return std::string();
   }
 
+  // Specializations for parsing different types. These add error messages if the parsing fails.
   // Vector.
   template <typename T>
   std::string fromYamlImpl(std::vector<T>& value, const YAML::Node& node) const {
@@ -152,7 +163,8 @@ class YamlParser {
   std::string toYamlImpl(const std::string& name, const uint8_t& value);
 
   // Members.
-  YAML::Node node_;
+  YAML::Node root_node_;  // Data storage.
+  YAML::Node node_;       // Node to write to.
   std::vector<std::string> errors_;
 };
 
