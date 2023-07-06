@@ -7,6 +7,7 @@
 
 #include "config_utilities/internal/string_utils.h"
 #include "config_utilities/internal/visitor.h"
+#include "config_utilities/internal/yaml_utils.h"
 
 namespace config {
 
@@ -50,12 +51,7 @@ YAML::Node toYaml(const ConfigT& config) {
  */
 template <typename ConfigT>
 ConfigT fromYamlFile(const std::string& file_name, const std::string& name_space = "") {
-  YAML::Node node = YAML::LoadFile(file_name);
-  for (const std::string& name : internal::splitNamespace(name_space, "/")) {
-    if (!name.empty()) {
-      node = node[name];
-    }
-  }
+  YAML::Node node = internal::lookupNamespace(YAML::LoadFile(file_name), name_space);
   ConfigT config;
   internal::Visitor::setValues(config, node);
   return config;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <map>
 #include <set>
 #include <string>
@@ -26,7 +27,8 @@ class YamlParser {
   // Access tools.
   const YAML::Node& node() const { return root_node_; }
   YAML::Node& node() { return root_node_; }
-  const std::vector<std::string>& errors() const { return errors_; }
+  const std::vector<std::string>& getErrors() const { return errors_; }
+  void resetErrors() { errors_.clear(); }
 
   /**
    * @brief Parse a value from the yaml node. If the value is not found, the value is not modified, and thus should

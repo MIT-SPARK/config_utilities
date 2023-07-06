@@ -25,7 +25,8 @@ std::vector<std::string> splitNamespace(const std::string& text, const std::stri
     }
     s.erase(0, pos + delimiter.length());
   }
-  return result.empty() ? std::vector<std::string>{text} : result;
+  result.push_back(s);
+  return result;
 }
 
 std::string joinNamespace(const std::vector<std::string>& namespaces, const std::string& delimiter) {
@@ -34,8 +35,8 @@ std::string joinNamespace(const std::vector<std::string>& namespaces, const std:
     return result;
   }
   result = namespaces[0];
-  for (const std::string& ns : namespaces) {
-    result += delimiter + ns;
+  for (size_t i = 1; i < namespaces.size(); ++i) {
+    result += delimiter + namespaces[i];
   }
   return result;
 }
@@ -50,7 +51,7 @@ std::string joinNamespace(const std::string& namespace_1,
   return joinNamespace(ns_1, delimiter);
 }
 
-std::string dataToString(const ConfigData& data) {
+std::string dataToString(const YAML::Node& data) {
   switch (data.Type()) {
     case YAML::NodeType::Scalar: {
       // NOTE(lschmid): All YAML scalars should implement the << operator.

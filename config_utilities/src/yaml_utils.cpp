@@ -41,7 +41,7 @@ YAML::Node mergeYamlNodes(const YAML::Node& a, const YAML::Node& b) {
 }
 
 YAML::Node lookupNamespace(const YAML::Node& node, const std::string& name_space, const std::string& separator) {
-  YAML::Node current_node = node;
+  YAML::Node current_node = YAML::Clone(node);
   for (const std::string& ns : splitNamespace(name_space, separator)) {
     current_node = current_node[ns];
   }

@@ -18,23 +18,26 @@ std::string AslFormatter::formatErrorsImpl(const MetaData& data, const std::stri
       break;
   }
   const size_t print_width = Settings::instance().print_width;
-  return what + " '" + data.name + "':\n" + internal::printCenter(data.name, print_width, '=') + "\n" +
-         formatErrorsInternal(data, sev, print_width) + std::string(print_width, '=');
+  std::string result = what + " '" + data.name + "':\n";
+  if (Settings::instance().index_subconfig_field_names) {
+    result += internal::printCenter(data.name, print_width, '=') + "\n";
+  }
+  data.performOnAll([&](const MetaData& data) { result += formatErrorsInternal(data, sev, print_width); });
+  return result + std::string(print_width, '=');
 }
 
 std::string AslFormatter::formatErrorsInternal(const MetaData& data,
                                                const std::string& sev,
                                                const size_t length) const {
-  std::string warning;
+  std::string result;
+  if (!Settings::instance().index_subconfig_field_names && !data.errors.empty()) {
+    result += internal::printCenter(data.name, Settings::instance().print_width, '=') + "\n";
+  }
   for (const std::string& error : data.errors) {
-    warning.append(wrapString(sev + error, sev.length(), length, false) + "\n");
+    result.append(wrapString(sev + error, sev.length(), length, false) + "\n");
   }
 
-  // Iterate through all sub-configs and append their errors.
-  for (const MetaData& sub_config : data.sub_configs) {
-    warning += formatErrorsInternal(sub_config, sev, length);
-  }
-  return warning;
+  return result;
 }
 
 std::string AslFormatter::formatToStringImpl(const MetaData& data) {
@@ -67,7 +70,7 @@ std::string AslFormatter::formatSubconfig(const MetaData& data, const FieldInfo&
   return header + toStringInternal(data, indent + Settings::instance().subconfig_indent);
 }
 
-std::string AslFormatter::formatField(const ConfigData& data, const FieldInfo& info, size_t indent) const {
+std::string AslFormatter::formatField(const YAML::Node& data, const FieldInfo& info, size_t indent) const {
   std::string result;
   const size_t print_width = Settings::instance().print_width;
   const size_t global_indent = Settings::instance().print_indent;

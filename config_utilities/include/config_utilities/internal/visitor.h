@@ -17,6 +17,7 @@
 #include "config_utilities/internal/validity_checker.h"
 #include "config_utilities/internal/yaml_parser.h"
 #include "config_utilities/internal/yaml_utils.h"
+#include "config_utilities/settings.h"
 #include "config_utilities/traits.h"
 
 namespace config::internal {
@@ -27,10 +28,7 @@ namespace config::internal {
  * thread, so it can be used as if single-threaded.
  */
 struct Visitor {
-  ~Visitor() {
-    std::lock_guard<std::mutex> lock(instance_mutex);
-    instances.erase(id);
-  }
+  ~Visitor();
 
   // Interfaces for all internal tools interact with configs through the visitor.
   template <typename ConfigT>
@@ -39,8 +37,8 @@ struct Visitor {
     visitor.parser.node() = node;
     visitor.mode = Visitor::Mode::kSet;
     declare_config(config);
-    visitor.data.errors.insert(
-        visitor.data.errors.end(), visitor.parser.errors().begin(), visitor.parser.errors().end());
+    visitor.extractErrors();
+
     if (print_warnings && visitor.data.hasErrors()) {
       Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Formatter::Severity::kWarning));
     }
@@ -53,8 +51,7 @@ struct Visitor {
     visitor.mode = Visitor::Mode::kGet;
     // NOTE: We know that in mode kGet, the config is not modified.
     declare_config(const_cast<ConfigT&>(config));
-    visitor.data.errors.insert(
-        visitor.data.errors.end(), visitor.parser.errors().begin(), visitor.parser.errors().end());
+    visitor.extractErrors();
     visitor.data.data = visitor.parser.node();
     if (print_warnings && visitor.data.hasErrors()) {
       Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Formatter::Severity::kWarning));
@@ -68,7 +65,8 @@ struct Visitor {
     visitor.mode = Visitor::Mode::kCheck;
     // NOTE: We know that in mode kCheck, the config is not modified.
     declare_config(const_cast<ConfigT&>(config));
-    visitor.data.errors = visitor.checker.getWarnings();
+    visitor.extractErrors();
+
     return visitor.data;
   }
 
@@ -93,10 +91,7 @@ struct Visitor {
   // objects. Note that meta data always needs to be created before it can be accessed. In short, 'instance()' is only
   // to be used within the 'declare_config()' function, whereas 'create()' is to be used to extract data from a struct
   // by calling 'declare_config()'.
-  static Visitor create() {
-    const std::thread::id id = std::this_thread::get_id();
-    return Visitor(id);
-  }
+  static Visitor create();
 
   static Visitor& instance() {
     std::lock_guard<std::mutex> lock(instance_mutex);
@@ -112,16 +107,10 @@ struct Visitor {
   }
 
   // Create one instance per thread and store the reference to it.
-  explicit Visitor(std::thread::id _id) : id(_id) {
-    std::lock_guard<std::mutex> lock(instance_mutex);
-    if (instances.find(id) != instances.end()) {
-      // This should never happen as  meta data are managed internally. Caught here for debugging.
-      std::stringstream ss;
-      ss << "Tried to create Visitor for thread " << id << " which already exists.";
-      throw std::runtime_error(ss.str());
-    }
-    instances[id] = this;
-  }
+  explicit Visitor(std::thread::id _id);
+
+  // Utility function to manipulate data.
+  void extractErrors();
 
   // Which operations to perform on the data.
   enum class Mode { kUnspecified, kGet, kSet, kCheck } mode = Mode::kUnspecified;
@@ -144,7 +133,7 @@ struct Visitor {
 };
 
 // Implementation of visits of the fields exposed in config.h
-void visitName(const std::string& name) { Visitor::instance().data.name = name; }
+inline void visitName(const std::string& name) { Visitor::instance().data.name = name; }
 
 template <typename T>
 void visitField(T& field, const std::string& field_name, const std::string& unit) {
@@ -249,7 +238,7 @@ void visitCheckInRange(const T& param, const T& lower, const T& upper, const std
   visitor.checker.checkInRange(param, lower, upper, name);
 }
 
-void visitCheckCondition(bool condition, const std::string& error_message) {
+inline void visitCheckCondition(bool condition, const std::string& error_message) {
   Visitor& visitor = Visitor::instance();
   if (visitor.mode != Visitor::Mode::kCheck) {
     return;
@@ -278,15 +267,15 @@ void visitSubconfig(ConfigT& config, const std::string& field_name, const std::s
   info.subconfig_id = visitor.data.sub_configs.size();
 
   // Store state as was before.
+  visitor.extractErrors();
   const MetaData data_before = visitor.data;
   const std::string name_space_before = visitor.name_space;
   const std::string name_prefix_before = visitor.name_prefix;
 
   // Set new data.
-  // TODO(lschmid): This could also be part of the formatter but a bit complicated for now.
-  constexpr bool index_errors_with_subconfig_names = true;
-  if (index_errors_with_subconfig_names) {
+  if (Settings::instance().index_subconfig_field_names) {
     visitor.name_prefix += field_name + ".";
+    visitor.checker.setFieldNamePrefix(visitor.name_prefix);
   }
   visitor.name_space = joinNamespace(visitor.name_space, sub_namespace);
   visitor.data = MetaData();
@@ -295,6 +284,7 @@ void visitSubconfig(ConfigT& config, const std::string& field_name, const std::s
   declare_config(config);
 
   // Aggregate data.
+  visitor.extractErrors();
   MetaData data_after = visitor.data;
   if (visitor.mode == Visitor::Mode::kGet) {
     data_after.data = lookupNamespace(YAML::Clone(visitor.parser.node()), visitor.name_space);
@@ -303,6 +293,7 @@ void visitSubconfig(ConfigT& config, const std::string& field_name, const std::s
   // Restore state.
   visitor.name_space = name_space_before;
   visitor.name_prefix = name_prefix_before;
+  visitor.checker.setFieldNamePrefix(name_prefix_before);
   visitor.data = data_before;
   visitor.data.sub_configs.emplace_back(std::move(data_after));
 }

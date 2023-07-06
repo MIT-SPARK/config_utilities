@@ -9,9 +9,6 @@
 
 namespace config::internal {
 
-// Use yaml node as internal data representation for clear and easy conversion.
-using ConfigData = YAML::Node;
-
 /**
  * @brief Struct that holds additional information about fields for printing.
  */
@@ -39,7 +36,7 @@ struct MetaData {
   std::string name = "Unnamed Config";
 
   // Yaml node used to get or set the data of a config.
-  ConfigData data;
+  YAML::Node data;
 
   // All additional field information queried for printing.
   std::vector<FieldInfo> field_infos;

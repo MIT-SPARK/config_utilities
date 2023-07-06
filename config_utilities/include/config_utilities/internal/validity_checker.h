@@ -16,14 +16,16 @@ namespace config::internal {
  */
 class ValidityChecker {
  public:
-  ValidityChecker() { reset(); }
+  ValidityChecker() = default;
   ~ValidityChecker() = default;
+
+  void setFieldNamePrefix(const std::string& prefix) { name_prefix_ = prefix; }
 
   template <typename T>
   void checkGT(const T& param, const T& value, const std::string& name) {
     if (param <= value) {
       std::stringstream ss;
-      ss << "Param '" << name << "' is expected > '" << value << "' (is: '" << param << "').";
+      ss << "Param '" << name_prefix_ + name << "' is expected > '" << value << "' (is: '" << param << "').";
       warnings_.emplace_back(ss.str());
     }
   }
@@ -32,7 +34,7 @@ class ValidityChecker {
   void checkGE(const T& param, const T& value, const std::string& name) {
     if (param < value) {
       std::stringstream ss;
-      ss << "Param '" << name << "' is expected >= '" << value << "' (is: '" << param << "').";
+      ss << "Param '" << name_prefix_ + name << "' is expected >= '" << value << "' (is: '" << param << "').";
       warnings_.emplace_back(ss.str());
     }
   }
@@ -41,7 +43,7 @@ class ValidityChecker {
   void checkLT(const T& param, const T& value, const std::string& name) {
     if (param >= value) {
       std::stringstream ss;
-      ss << "Param '" << name << "' is expected < '" << value << "' (is: '" << param << "').";
+      ss << "Param '" << name_prefix_ + name << "' is expected < '" << value << "' (is: '" << param << "').";
       warnings_.emplace_back(ss.str());
     }
   }
@@ -50,7 +52,7 @@ class ValidityChecker {
   void checkLE(const T& param, const T& value, const std::string& name) {
     if (param > value) {
       std::stringstream ss;
-      ss << "Param '" << name << "' is expected <= '" << value << "' (is: '" << param << "').";
+      ss << "Param '" << name_prefix_ + name << "' is expected <= '" << value << "' (is: '" << param << "').";
       warnings_.emplace_back(ss.str());
     }
   }
@@ -59,7 +61,7 @@ class ValidityChecker {
   void checkEq(const T& param, const T& value, const std::string& name) {
     if (param != value) {
       std::stringstream ss;
-      ss << "Param '" << name << "' is expected to be '" << value << "' (is: '" << param << "').";
+      ss << "Param '" << name_prefix_ + name << "' is expected to be '" << value << "' (is: '" << param << "').";
       warnings_.emplace_back(ss.str());
     }
   }
@@ -68,7 +70,7 @@ class ValidityChecker {
   void checkNE(const T& param, const T& value, const std::string& name) {
     if (param == value) {
       std::stringstream ss;
-      ss << "Param '" << name << "' is expected to be different from '" << value << "'.";
+      ss << "Param '" << name_prefix_ + name << "' is expected to be different from '" << value << "'.";
       warnings_.emplace_back(ss.str());
     }
   }
@@ -77,8 +79,8 @@ class ValidityChecker {
   void checkInRange(const T& param, const T& lower, const T& higher, const std::string& name) {
     if (param < lower || param > higher) {
       std::stringstream ss;
-      ss << "Param '" << name << "' is expected to be within [" << lower << ", " << higher << "] (is: '" << param
-         << "').";
+      ss << "Param '" << name_prefix_ + name << "' is expected to be within [" << lower << ", " << higher << "] (is: '"
+         << param << "').";
       warnings_.emplace_back(ss.str());
     }
   }
@@ -89,12 +91,13 @@ class ValidityChecker {
     }
   }
 
-  void reset() { warnings_.clear(); }
-
+  void resetWarnings() { warnings_.clear(); }
+  std::vector<std::string>& warnings() { return warnings_; }
   const std::vector<std::string>& getWarnings() const { return warnings_; }
 
  private:
   std::vector<std::string> warnings_;
+  std::string name_prefix_;  // Used to prefix field names in warnings.
 };
 
 }  // namespace config::internal

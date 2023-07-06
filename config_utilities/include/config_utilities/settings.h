@@ -22,7 +22,7 @@ struct Settings {
     return settings;
   }
 
-  // Printing Settings.
+  // Printing Settings. TODO(lschmid): These should probabl be moved to a file or so for different formatters.
   // Width of the 'toString()' output of configs.
   unsigned int print_width = 80u;
 
@@ -37,6 +37,9 @@ struct Settings {
 
   // If true, also display the unit of each parameter where provided.
   bool indicate_units = true;
+
+  // If true integrate subconfig fields into the main config, if false print them separately.
+  bool index_subconfig_field_names = true;
 
   // Specify the default logger to be used for printing. Loggers register themselves if included.
   void setLogger(const std::string& name);

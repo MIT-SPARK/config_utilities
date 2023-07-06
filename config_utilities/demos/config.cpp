@@ -21,7 +21,7 @@ namespace demo {
 struct SubSubConfig {
   using Color = Eigen::Matrix<uint8_t, 3, 1>;
   Color color = Color(255, 127, 0);
-  uint8_t alpha = 255;
+  size_t size = 10;
 };
 
 struct SubConfig {
@@ -100,7 +100,7 @@ void declare_config(SubConfig& config) {
   name("SubConfig");
   field(config.f, "f");
   field(config.s, "s");
-  subconfig(config.sub_sub_config, "sub_sub_config");
+  subconfig(config.sub_sub_config, "sub_sub_config");  // Not specifying an additional sub-namespace.
   checkGT(config.f, 0.f, "f");
 }
 
@@ -108,13 +108,15 @@ void declare_config(SubSubConfig& config) {
   using namespace config;
   name("SubSubConfig");
   field(config.color, "color");
-  field(config.alpha, "alpha");
-  checkEQ(config.alpha, uint8_t(255), "alpha");
+  field(config.size, "size");
+  checkEQ(config.size, size_t(10), "size");
 }
 
 }  // namespace demo
 
 int main(int argc, char** argv) {
+  config::Settings().index_subconfig_field_names = true;
+
   // ===================================== Checking whether a struct is a config =====================================
   std::cout << "\n\n----- Checking whether a struct is a config -----\n\n" << std::endl;
 
@@ -130,8 +132,8 @@ int main(int argc, char** argv) {
   invalid_config.i = -1;
   invalid_config.distance = 123;
   invalid_config.s.clear();
-  // invalid_config.sub_config.f = -1.f;
-  // invalid_config.sub_config.sub_sub_config.alpha = 0;
+  invalid_config.sub_config.f = -1.f;
+  invalid_config.sub_config.sub_sub_config.size = 0;
 
   // Print whether they are valid. Since we invalidated all fields of 'invalid_config' a comprehensive summary of all
   // issues is printed.
@@ -160,7 +162,7 @@ int main(int argc, char** argv) {
             << "' from file." << std::endl;
   std::cout << "Enum 'config.my_enum' is now B: " << (config.my_enum == demo::MyConfig::MyEnum::kB) << std::endl;
 
-  // Any errors parsing configs will print verbose warnings and use the default values.
+  // Any errors parsing configs will print verbose warnings if desired and use the default values.
   invalid_config = config::fromYamlFile<demo::MyConfig>(my_root_path + "demo_invalid_params.yaml");
 
   // ======================================== Printing configs to string ========================================

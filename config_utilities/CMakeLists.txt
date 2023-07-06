@@ -14,6 +14,7 @@ find_package(yaml-cpp REQUIRED)
 
 cs_add_library(${PROJECT_NAME}
         src/meta_data.cpp
+        src/visitor.cpp
         src/yaml_parser.cpp
         src/settings.cpp
         src/printing.cpp
