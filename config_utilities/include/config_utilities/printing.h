@@ -14,6 +14,12 @@
 
 namespace config {
 
+namespace internal {
+
+void checkDefaultValues(MetaData& data, const MetaData& default_data);
+
+}  // namespace internal
+
 /**
  * @brief Returns a string representation of the config.
  *
@@ -37,23 +43,8 @@ std::string toString(const ConfigT& config, bool print_warnings = true) {
   // If requested check default values by comparing against a default constructed config.
   if (Settings().indicate_default_values) {
     ConfigT defaults;
-    // NOTE(lschmid): Operator YAML::Node== checks for identity, not equality. Comparing the formatted strings should be
-    // identical for default constructed configs. Check for all subconfigs using the fact that the structure is
-    // identical.
     const internal::MetaData default_data = internal::Visitor::getValues(defaults, false);
-    std::vector<const internal::MetaData*> default_configs;
-    default_data.performOnAll([&default_configs](const internal::MetaData& data) { default_configs.push_back(&data); });
-    std::vector<internal::MetaData*> configs;
-    data.performOnAll([&configs](internal::MetaData& data) { configs.push_back(&data); });
-
-    for (size_t i = 0; i < configs.size(); ++i) {
-      for (internal::FieldInfo& info : configs[i]->field_infos) {
-        if (internal::dataToString(configs[i]->data[info.name]) ==
-            internal::dataToString(default_configs[i]->data[info.name])) {
-          info.is_default = true;
-        }
-      }
-    }
+    internal::checkDefaultValues(data, default_data);
   }
 
   // Format the output data.

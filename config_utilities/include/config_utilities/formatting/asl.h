@@ -31,7 +31,12 @@ class AslFormatter : public Formatter {
   std::string formatErrorsInternal(const MetaData& data, const std::string& sev, const size_t length) const;
   std::string toStringInternal(const MetaData& data, size_t indent) const;
   std::string formatField(const ConfigData& data, const FieldInfo& info, size_t indent) const;
+  std::string formatSubconfig(const MetaData& data, const FieldInfo& info, size_t indent) const;
   std::string wrapString(const std::string& str, size_t indent, size_t width, bool indent_first_line = true) const;
+
+  // Formatting options, currently hardcoded.
+  constexpr static bool indicate_subconfig_types_ = true;
 };
+constexpr static bool indicate_subconfig_default_ = true;
 
 }  // namespace config::internal

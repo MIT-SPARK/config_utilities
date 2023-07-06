@@ -16,6 +16,7 @@ cs_add_library(${PROJECT_NAME}
         src/meta_data.cpp
         src/yaml_parser.cpp
         src/settings.cpp
+        src/printing.cpp
         src/asl_formatter.cpp
         src/string_utils.cpp
         src/yaml_utils.cpp

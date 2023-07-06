@@ -18,9 +18,16 @@
 namespace demo {
 
 // A sub-struct for later use.
+struct SubSubConfig {
+  using Color = Eigen::Matrix<uint8_t, 3, 1>;
+  Color color = Color(255, 127, 0);
+  uint8_t alpha = 255;
+};
+
 struct SubConfig {
   float f = 0.123;
   std::string s = "test";
+  SubSubConfig sub_sub_config;
 };
 
 // A struct that represents what we want to be a config.
@@ -36,10 +43,8 @@ struct MyConfig {
   std::vector<int> vec = {1, 2, 3};
   std::map<std::string, int> map = {{"a", 1}, {"b", 2}, {"c", 3}};
   Eigen::Matrix<double, 3, 3> mat = Eigen::Matrix<double, 3, 3>::Identity();
-
   enum class MyEnum { kA, kB, kC } my_enum = MyEnum::kA;
   enum MyStrangeEnum : int { kX = 0, kY = 42, kZ = -7 } my_strange_enum = MyStrangeEnum::kX;
-
   SubConfig sub_config;
 };
 
@@ -89,13 +94,22 @@ void declare_config(MyConfig& config) {
   config::checkCondition(!config.s.empty(), "Param 's' may not be empty.");
 }
 
-// Declaration of the subconfig.
+// Declaration of the subconfigs.
 void declare_config(SubConfig& config) {
   using namespace config;
   name("SubConfig");
   field(config.f, "f");
   field(config.s, "s");
+  subconfig(config.sub_sub_config, "sub_sub_config");
   checkGT(config.f, 0.f, "f");
+}
+
+void declare_config(SubSubConfig& config) {
+  using namespace config;
+  name("SubSubConfig");
+  field(config.color, "color");
+  field(config.alpha, "alpha");
+  checkEQ(config.alpha, uint8_t(255), "alpha");
 }
 
 }  // namespace demo
@@ -116,6 +130,8 @@ int main(int argc, char** argv) {
   invalid_config.i = -1;
   invalid_config.distance = 123;
   invalid_config.s.clear();
+  // invalid_config.sub_config.f = -1.f;
+  // invalid_config.sub_config.sub_sub_config.alpha = 0;
 
   // Print whether they are valid. Since we invalidated all fields of 'invalid_config' a comprehensive summary of all
   // issues is printed.

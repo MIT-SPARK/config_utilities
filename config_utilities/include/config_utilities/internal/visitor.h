@@ -272,6 +272,11 @@ void visitSubconfig(ConfigT& config, const std::string& field_name, const std::s
     return;
   }
 
+  // Add the field info.
+  FieldInfo& info = visitor.data.field_infos.emplace_back();
+  info.name = field_name;
+  info.subconfig_id = visitor.data.sub_configs.size();
+
   // Store state as was before.
   const MetaData data_before = visitor.data;
   const std::string name_space_before = visitor.name_space;

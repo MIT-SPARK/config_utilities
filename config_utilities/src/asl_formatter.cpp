@@ -38,24 +38,35 @@ std::string AslFormatter::formatErrorsInternal(const MetaData& data,
 }
 
 std::string AslFormatter::formatToStringImpl(const MetaData& data) {
-  std::string result = internal::printCenter(data.name, Settings::instance().print_width, '=') + "\n";
-  // const int delta_indent = Settings::instance().subconfig_indent;
-  // int indent = -delta_indent;
-  // data.performOnAll([&](const MetaData& data) {
-  //   indent += delta_indent;
-  //   result += toStringInternal(data, indent);
-  //   indent -= delta_indent;
-  // });
-  return result + std::string(Settings::instance().print_width, '=');
+  return internal::printCenter(data.name, Settings::instance().print_width, '=') + "\n" + toStringInternal(data, 0) +
+         std::string(Settings::instance().print_width, '=');
 }
 
 std::string AslFormatter::toStringInternal(const MetaData& data, size_t indent) const {
   std::string result;
   for (const FieldInfo& info : data.field_infos) {
-    result += formatField(data.data[info.name], info, indent);
+    if (info.subconfig_id >= 0) {
+      result += formatSubconfig(data.sub_configs[info.subconfig_id], info, indent);
+    } else {
+      result += formatField(data.data[info.name], info, indent);
+    }
   }
   return result;
 }
+
+std::string AslFormatter::formatSubconfig(const MetaData& data, const FieldInfo& info, size_t indent) const {
+  // Header.
+  std::string header = std::string(indent, ' ') + info.name;
+  if (indicate_subconfig_types_) {
+    header += " [" + data.name + "]";
+  }
+  if (indicate_subconfig_default_ && info.is_default) {
+    header += " (default)";
+  }
+  header += ":\n";
+  return header + toStringInternal(data, indent + Settings::instance().subconfig_indent);
+}
+
 std::string AslFormatter::formatField(const ConfigData& data, const FieldInfo& info, size_t indent) const {
   std::string result;
   const size_t print_width = Settings::instance().print_width;
@@ -93,7 +104,7 @@ std::string AslFormatter::formatField(const ConfigData& data, const FieldInfo& i
   }
 
   // Format the header to width.
-  result += wrapString(header, indent, print_width);
+  result += wrapString(header, indent, print_width, false);
   const size_t last_header_line = result.find_last_of('\n');
   size_t header_size = result.substr(last_header_line != std::string::npos ? last_header_line + 1 : 0).size();
   if (header_size < global_indent) {

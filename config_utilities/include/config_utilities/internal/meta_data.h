@@ -24,6 +24,9 @@ struct FieldInfo {
 
   // Whether the field corresponds to its default value. Only queried if Settings().indicate_default_values is true.
   bool is_default = false;
+
+  // If a field is a config this is the position of it's corresponding meta-data in the sub-configs vector.
+  int subconfig_id = -1;
 };
 
 /**
