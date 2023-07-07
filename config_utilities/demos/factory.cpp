@@ -2,18 +2,20 @@
  * TODO: Shows how to use factories.
  */
 
-#include "config_utilities/factory.h"
+#include "config_utilities/factory.h"  // enables 'create()'
 
 #include <iostream>
 #include <string>
 
-#include "config_utilities/config.h"                 // enables 'create()'
+#include "config_utilities/config.h"                 // Required for config declaration
 #include "config_utilities/formatting/asl.h"         // Simply including this file sets a style to format output.
 #include "config_utilities/logging/log_to_stdout.h"  // Simply including this file sets logging to stdout.
+#include "config_utilities/parsing/yaml.h"           // enables 'createFromYaml()' and 'createFromYamlFile()'
+#include "config_utilities/validity_checks.h"        // enables 'checkValid()'
 
 namespace demo {
 
-// Declare a Base and two derived classes.
+// Declare a Base and two derived classes that don't use configs.
 
 class Base {
  public:
@@ -47,9 +49,75 @@ class DerivedB : public Base {
 
 class NotOfBase {};
 
+// Declare two derived classes that use configs.
+
+class DerivedC : public Base {
+ public:
+  // Member struct config definition.
+  struct Config {
+    float f;
+  };
+
+  // Constructore must take the config as first argument.
+  DerivedC(const Config& config, const int& i) : Base(i), config_(config) {
+    // Make sure the config is valid, otherwise throw an exception.
+    config::checkValid(config_);
+  }
+
+  void print() const override {
+    std::cout << "I'm a DerivedC with i='" << i_ << "' and config.f='" << config_.f << "'." << std::endl;
+  }
+
+ private:
+  const Config config_;
+
+  // Register the module to the factory with a static registration struct. Signature:
+  // RegistrationWithConfig<BaseT, DerivedT, DerivedConfigT, ConstructorArguments...>(string identifier).
+  inline static const auto registration_ =
+      config::RegistrationWithConfig<Base, DerivedC, DerivedC::Config, int>("DerivedC");
+};
+
+void declare_config(DerivedC::Config& config) {
+  // Declare the config using the config utilities.
+  using namespace config;
+  name("DerivedC");
+  field(config.f, "f");
+  checkGE(config.f, 0.f, "f");
+}
+
+// Configs can be defined anywhere, e.g. also structs from different libraries as long as a 'void
+// declare_config(ConfigT& config)' exists.
+struct ExternalConfig {
+  std::string s = "I'm a completely different field from float f.";
+};
+
+void declare_config(ExternalConfig& config) {
+  // Declare the config using the config utilities.
+  using namespace config;
+  name("ExternalConfig for DerivedD");
+  field(config.s, "s");
+}
+
+class DerivedD : public Base {
+ public:
+  DerivedD(const ExternalConfig& config, const int& i) : Base(i), config_(config) {}
+
+  void print() const override {
+    std::cout << "I'm a DerivedD with i='" << i_ << "' and config.s='" << config_.s << "'." << std::endl;
+  }
+
+ private:
+  const ExternalConfig config_;
+
+  inline static const auto registration_ =
+      config::RegistrationWithConfig<Base, DerivedD, ExternalConfig, int>("DerivedD");
+};
+
 }  // namespace demo
 
 int main(int argc, char** argv) {
+  // --------------- Creating strig-identified objects ----------------
+
   // Create an object of type Base using the factory.
   const std::string type = "DerivedA";
   const int value = 42;
@@ -68,6 +136,32 @@ int main(int argc, char** argv) {
   // Note that changing th constructor arguments changes the signature. If multiple constructors are available, the
   // all versions need to be registered with their own registration struct.
   object = config::create<demo::Base>("DerivedA", value, 1.f);
+
+  // --------------- Creating objects from file ----------------
+
+  // Optionally specify the name of the type-identifying param. Default is 'type'.
+  config::Settings().factory_type_param_name = "type";
+
+  // Create an object of type and with config as specified in a file.
+  // TODO(lschmid): Make this nicer.
+  const std::string my_root_path = "/home/lukas/khronos_ws/src/config_utilities/config_utilities/demos/";
+
+  object = config::createFromYamlFile<demo::Base>(my_root_path + "demo_factory.yaml", 123);
+  object->print();
+
+  // By changing the type param, a different object can be created.
+  YAML::Node file_data = YAML::LoadFile(my_root_path + "demo_factory.yaml");
+  file_data["type"] = "DerivedD";
+  object = config::createFromYaml<demo::Base>(file_data, 123);
+  object->print();
+
+  // Objects can also be created from separate namespaces.
+  object = config::createFromYamlFileWithNamespace<demo::Base>(my_root_path + "demo_factory.yaml", "special_ns", 123);
+  object->print();
+
+  // If the type param is not specified, a warning will be printed.
+  object =
+      config::createFromYamlFileWithNamespace<demo::Base>(my_root_path + "demo_factory.yaml", "nonexistent_ns", 123);
 
   return 0;
 }

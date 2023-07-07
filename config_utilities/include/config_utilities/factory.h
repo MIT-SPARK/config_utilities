@@ -137,9 +137,9 @@ class Factory {
     ((ss << typeid(args).name() << "', '"), ...);
     std::string type_info = ss.str();
     if (!type_info.empty()) {
-      type_info = " and ConstructorArguments={'" + type_info.substr(0, type_info.size() - 2) + "'}";
+      type_info = " and ConstructorArguments={'" + type_info.substr(0, type_info.size() - 4) + "'}";
     } else {
-      type_info = "";
+      type_info = " and ConstructorArguments={}";
     }
     if (module.map.empty()) {
       std::stringstream ss;
@@ -164,72 +164,72 @@ class Factory {
     }
     return std::unique_ptr<BaseT>(it->second(args...));
   }
-};
 
-/**
- * @brief Query the factory to create a dervied typethat uses a config. Finds the type identifier in the provided data
- * to decide on the type and cosntruct the config and object.
- *
- * @tparam BaseT Type of the base class to query for.
- * @tparam Args Other constructor arguments. Notice that each unique set of constructor arguments will result in a
- * different base-entry in the factory.
- * @param data Data to lookup the type identifier and build the config.
- * @param args Other constructor arguments.
- * @return std::unique_ptr<BaseT> Unique pointer of type base that contains the derived object.
- */
-template <class BaseT, typename... Args>
-static std::unique_ptr<BaseT> create(const YAML::Node& data, Args... args) {
-  ModuleMap<BaseT, Args...>& module = ModuleMap<BaseT, Args...>::instance();
-  std::stringstream ss;
-  ((ss << typeid(args).name() << "', '"), ...);
-  std::string type_info = ss.str();
-  if (!type_info.empty()) {
-    type_info = " and constructor arguments '" + type_info.substr(0, type_info.size() - 2) + "'";
-  } else {
-    type_info = "";
-  }
-
-  // Get the type param.
-  std::string type;
-  try {
-    type = data[Settings::instance().factory_type_param_name].as<std::string>();
-  } catch (const YAML::Exception& e) {
+  /**
+   * @brief Query the factory to create a dervied typethat uses a config. Finds the type identifier in the provided data
+   * to decide on the type and cosntruct the config and object.
+   *
+   * @tparam BaseT Type of the base class to query for.
+   * @tparam Args Other constructor arguments. Notice that each unique set of constructor arguments will result in a
+   * different base-entry in the factory.
+   * @param data Data to lookup the type identifier and build the config.
+   * @param args Other constructor arguments.
+   * @return std::unique_ptr<BaseT> Unique pointer of type base that contains the derived object.
+   */
+  template <class BaseT, typename... Args>
+  static std::unique_ptr<BaseT> createWithConfig(const YAML::Node& data, Args... args) {
+    ModuleMap<BaseT, Args...>& module = ModuleMap<BaseT, Args...>::instance();
     std::stringstream ss;
-    ss << "Could not read the param '" << Settings::instance().factory_type_param_name
-       << "' to deduce the type of the module to create: " << e.what();
-    Logger::logError(ss.str());
-    return nullptr;
-  }
-
-  // Check the source module exists.
-  if (module.map_config.empty()) {
-    std::stringstream ss;
-
-    ss << "Cannot create a module of type '" << type << "': No modules registered to the factory for base '"
-       << typeid(BaseT).name() << "'" << type_info
-       << ". Register modules using a static config::RegistrationWithConfig<BaseT, DerivedT, DerivedConfigT, "
-          "ConstructorArguments...> struct.";
-    Logger::logError(ss.str());
-    return nullptr;
-  }
-
-  auto it2 = module.map_config.find(type);
-  if (it2 == module.map_config.end()) {
-    std::string module_list;
-    for (const auto& entry : module.map_config) {
-      module_list.append(entry.first + ", ");
+    ((ss << typeid(args).name() << "', '"), ...);
+    std::string type_info = ss.str();
+    if (!type_info.empty()) {
+      type_info = " and constructor arguments '" + type_info.substr(0, type_info.size() - 4) + "'";
+    } else {
+      type_info = " and ConstructorArguments={}";
     }
-    module_list = module_list.substr(0, module_list.size() - 2);
-    std::stringstream ss;
-    ss << "No module of type '" << type << "' registered to the factory for base '" << typeid(BaseT).name() << "'"
-       << type_info << ". Registered are: " << module_list << ".";
-    Logger::logError(ss.str());
-    return nullptr;
-  }
 
-  // Get the config and create the target.
-  return std::unique_ptr<BaseT>(it2->second(data, args...));
-}
+    // Get the type param.
+    std::string type;
+    try {
+      type = data[Settings::instance().factory_type_param_name].as<std::string>();
+    } catch (const YAML::Exception& e) {
+      std::stringstream ss;
+      ss << "Could not read the param '" << Settings::instance().factory_type_param_name
+         << "' to deduce the type of the module to create with error '" << e.what() << "'.";
+      Logger::logError(ss.str());
+      return nullptr;
+    }
+
+    // Check the source module exists.
+    if (module.map_config.empty()) {
+      std::stringstream ss;
+
+      ss << "Cannot create a module of type '" << type << "': No modules registered to the factory for base '"
+         << typeid(BaseT).name() << "'" << type_info
+         << ". Register modules using a static config::RegistrationWithConfig<BaseT, DerivedT, DerivedConfigT, "
+            "ConstructorArguments...> struct.";
+      Logger::logError(ss.str());
+      return nullptr;
+    }
+
+    auto it2 = module.map_config.find(type);
+    if (it2 == module.map_config.end()) {
+      std::string module_list;
+      for (const auto& entry : module.map_config) {
+        module_list.append(entry.first + ", ");
+      }
+      module_list = module_list.substr(0, module_list.size() - 2);
+      std::stringstream ss;
+      ss << "No module of type '" << type << "' registered to the factory for base '" << typeid(BaseT).name() << "'"
+         << type_info << ". Registered are: " << module_list << ".";
+      Logger::logError(ss.str());
+      return nullptr;
+    }
+
+    // Get the config and create the target.
+    return std::unique_ptr<BaseT>(it2->second(data, args...));
+  }
+};
 
 }  // namespace internal
 
