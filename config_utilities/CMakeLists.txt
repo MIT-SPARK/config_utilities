@@ -21,6 +21,7 @@ cs_add_library(${PROJECT_NAME}
         src/asl_formatter.cpp
         src/string_utils.cpp
         src/yaml_utils.cpp
+        src/formatter.cpp
         )
 target_link_libraries(${PROJECT_NAME} yaml-cpp)
 
@@ -31,16 +32,12 @@ target_link_libraries(${PROJECT_NAME} yaml-cpp)
 cs_add_executable(demo_config
         demos/config.cpp
         )
-target_link_libraries(demo_config
-${PROJECT_NAME}
-yaml-cpp)
+target_link_libraries(demo_config ${PROJECT_NAME} yaml-cpp)
 
 cs_add_executable(demo_factory
         demos/factory.cpp
         )
-target_link_libraries(demo_config
-${PROJECT_NAME}
-yaml-cpp)
+target_link_libraries(demo_factory ${PROJECT_NAME} yaml-cpp)
 
 ##########
 # Export #

@@ -14,6 +14,10 @@ namespace config::internal {
  * readability wenn printed to the console.
  */
 class AslFormatter : public Formatter {
+ public:
+  AslFormatter() = default;
+  ~AslFormatter() override = default;
+
  protected:
   std::string formatErrorsImpl(const MetaData& data, const std::string& what, const Severity severity) override;
   std::string formatToStringImpl(const MetaData& data) override;

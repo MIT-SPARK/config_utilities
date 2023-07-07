@@ -1,5 +1,5 @@
 /**
- * TODO: Shows how to use configs.
+ * TODO: Shows how to use factories.
  */
 
 #include "config_utilities/factory.h"
@@ -7,7 +7,9 @@
 #include <iostream>
 #include <string>
 
-#include "config_utilities/config.h"
+#include "config_utilities/config.h"                 // enables 'create()'
+#include "config_utilities/formatting/asl.h"         // Simply including this file sets a style to format output.
+#include "config_utilities/logging/log_to_stdout.h"  // Simply including this file sets logging to stdout.
 
 namespace demo {
 
@@ -30,7 +32,7 @@ class DerivedA : public Base {
 
  private:
   // Register the class as creatable module for Base with a string identifier using a static registration struct.
-  // Signature: Registration<Base, DerivedA, ConstructorArguments...>(string identifier).
+  // Signature: Registration<Base, DerivedA, ConstructorArguments...>(string identifier, whether to use a config).
   inline static const auto registration_ = config::Registration<Base, DerivedA, int>("DerivedA");
 };
 

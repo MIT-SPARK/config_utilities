@@ -15,6 +15,10 @@ namespace config::internal {
  * @brief Implements logging to std::cout.
  */
 class StdoutLogger : public Logger {
+ public:
+  StdoutLogger() = default;
+  virtual ~StdoutLogger() = default;
+
  protected:
   void logImpl(const Severity severity, const std::string& message) override {
     // Default logs to std::cout to always have some sort of output. This could also be moved out to a separate logger

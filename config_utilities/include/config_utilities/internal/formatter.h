@@ -27,23 +27,15 @@ class Formatter {
   // Accessing the formatter.
   static std::string formatErrors(const MetaData& data,
                                   const std::string& what = "",
-                                  const Severity severity = kWarning) {
-    return formatter_->formatErrorsImpl(data, what, severity);
-  }
-  static std::string formatToString(const MetaData& data) { return formatter_->formatToStringImpl(data); }
+                                  const Severity severity = kWarning);
+  static std::string formatToString(const MetaData& data);
 
   // Set the global formatter.
-  static void setFormatter(Formatter::Ptr formatter) { formatter_ = std::move(formatter); }
+  static void setFormatter(Formatter::Ptr formatter);
 
  protected:
-  virtual std::string formatErrorsImpl(const MetaData& data, const std::string& what, const Severity severity) {
-    return "No format specified. Specify a format by including one of "
-           "'config_utilities/formatters/<preferred_style>.h'.";
-  }
-  virtual std::string formatToStringImpl(const MetaData& data) {
-    return "No format specified. Specify a format by including one of "
-           "'config_utilities/formatters/<preferred_style>.h'.";
-  }
+  virtual std::string formatErrorsImpl(const MetaData& data, const std::string& what, const Severity severity);
+  virtual std::string formatToStringImpl(const MetaData& data);
 
  private:
   inline static Formatter::Ptr formatter_ = std::make_shared<Formatter>();

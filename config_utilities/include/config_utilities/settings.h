@@ -22,7 +22,8 @@ struct Settings {
     return settings;
   }
 
-  // Printing Settings. TODO(lschmid): These should probabl be moved to a file or so for different formatters.
+  /* Printing Settings. TODO(lschmid): These should probabl be moved to a file or so for different formatters. */
+
   // Width of the 'toString()' output of configs.
   unsigned int print_width = 80u;
 
@@ -40,6 +41,12 @@ struct Settings {
 
   // If true integrate subconfig fields into the main config, if false print them separately.
   bool index_subconfig_field_names = true;
+
+  /* Factory settings */
+  // The factory will look for this param to deduce the type of the object to be created.
+  std::string factory_type_param_name = "type";
+
+  /* Options to specify the logger and formatter at run time. */
 
   // Specify the default logger to be used for printing. Loggers register themselves if included.
   void setLogger(const std::string& name);
