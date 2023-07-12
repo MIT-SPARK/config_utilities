@@ -10,3 +10,4 @@
 #include "config_utilities/printing.h"
 #include "config_utilities/settings.h"
 #include "config_utilities/validity_checks.h"
+#include "config_utilities/variable_config.h"

@@ -19,6 +19,9 @@ void checkDefaultValues(MetaData& data, const MetaData& default_data) {
     } else {
       // Check the field itself. NOTE(lschmid): Operator YAML::Node== checks for identity, not equality. Comparing the
       // formatted strings should be identical for default constructed configs.
+      if (!data.data[info.name] || !default_data.data[info.name]) {
+        return;
+      }
       if (internal::dataToString(data.data[info.name]) == internal::dataToString(default_data.data[info.name])) {
         info.is_default = true;
       }

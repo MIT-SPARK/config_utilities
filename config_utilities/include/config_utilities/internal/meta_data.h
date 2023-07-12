@@ -33,7 +33,10 @@ struct FieldInfo {
  */
 struct MetaData {
   // Always get the name of the config if possible.
-  std::string name = "Unnamed Config";
+  std::string name;
+
+  // Whether the data stored belongs to a variable config.
+  bool is_variable_config = false;
 
   // Yaml node used to get or set the data of a config.
   YAML::Node data;

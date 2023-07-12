@@ -12,6 +12,7 @@
 
 #include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/visitor.h"
+#include "config_utilities/settings.h"
 #include "config_utilities/traits.h"
 
 namespace config {
@@ -23,7 +24,7 @@ template <class BaseT, typename... Args>
 struct ModuleMap {
  public:
   using FactoryMethod = std::function<BaseT*(Args... args)>;
-  using FactoryWithConfigMethod = std::function<BaseT*(const YAML::Node, Args... args)>;
+  using FactoryWithConfigMethod = std::function<BaseT*(const YAML::Node&, Args... args)>;
 
   // Singleton access.
   static ModuleMap& instance() {
@@ -51,21 +52,21 @@ struct ModuleMap {
       ss << "Cannot register already existent type '" << type << "' for <DerivedT>='" << typeid(DerivedT).name()
          << "' to factory for base '" << typeid(BaseT).name() << "'.";
       Logger::logError(ss.str());
-    } else {
-      map_config.insert(std::make_pair(type, [type](const YAML::Node& data, Args... args) -> BaseT* {
-        if (!isConfig<DerivedConfigT>()) {
-          std::stringstream ss;
-          ss << "Cannot create '" << type << "' with <DerivedT>='" << typeid(DerivedT).name()
-             << "' and non-config <DerivedConfigT>=" << typeid(DerivedConfigT).name()
-             << "'. Please implement 'void declare_config(DerivedConfigT&)' for your struct.";
-          Logger::logError(ss.str());
-          return nullptr;
-        }
-        DerivedConfigT config;
-        Visitor::setValues(config, data);
-        return new DerivedT(config, args...);
-      }));
+      return;
     }
+    map_config.insert(std::make_pair(type, [type](const YAML::Node& data, Args... args) -> BaseT* {
+      if (!isConfig<DerivedConfigT>()) {
+        std::stringstream ss;
+        ss << "Cannot create '" << type << "' with <DerivedT>='" << typeid(DerivedT).name()
+           << "' and non-config <DerivedConfigT>=" << typeid(DerivedConfigT).name()
+           << "'. Please implement 'void declare_config(DerivedConfigT&)' for your struct.";
+        Logger::logError(ss.str());
+        return nullptr;
+      }
+      DerivedConfigT config;
+      Visitor::setValues(config, data);
+      return new DerivedT(config, args...);
+    }));
   }
 
   // The maps.
@@ -74,6 +75,57 @@ struct ModuleMap {
 
  private:
   ModuleMap() = default;
+};
+
+// Wrapper struct for any config type.
+struct ConfigWrapper {
+  explicit ConfigWrapper(const std::string& _type) : type(_type) {}
+  virtual ~ConfigWrapper() = default;
+  virtual std::unique_ptr<ConfigWrapper> clone() = 0;
+  virtual void onDeclareConfig() = 0;
+  virtual MetaData getDefaultValues() const = 0;
+  std::string type;
+};
+
+template <typename ConfigT>
+struct ConfigWrapperImpl : public ConfigWrapper {
+  explicit ConfigWrapperImpl(const std::string& _type) : ConfigWrapper(_type) {}
+  ConfigT config;
+  std::unique_ptr<ConfigWrapper> clone() override { return std::make_unique<ConfigWrapperImpl<ConfigT>>(*this); };
+  void onDeclareConfig() { declare_config(config); }
+  MetaData getDefaultValues() const override {
+    ConfigT defaults;
+    return internal::Visitor::getValues(defaults, false);
+  };
+};
+
+template <class BaseT>
+struct VariableConfigModuleMap {
+ public:
+  using FactoryMethod = std::function<ConfigWrapper*()>;
+
+  // Singleton access.
+  static VariableConfigModuleMap& instance() {
+    static VariableConfigModuleMap instance_;
+    return instance_;
+  }
+
+  // Add entries.
+  template <class DerivedConfigT>
+  void addEntry(const std::string& type) {
+    if (map.find(type) != map.end()) {
+      // If the config is already registered, e.g. from different constructor args we don't need to do anything.
+      return;
+    }
+    map.insert(
+        std::make_pair(type, [type]() -> ConfigWrapper* { return new ConfigWrapperImpl<DerivedConfigT>(type); }));
+  }
+
+  // The maps.
+  std::unordered_map<std::string, FactoryMethod> map;
+
+ private:
+  VariableConfigModuleMap() = default;
 };
 
 }  // namespace internal
@@ -113,6 +165,7 @@ struct RegistrationWithConfig {
   explicit RegistrationWithConfig(const std::string& type) {
     internal::ModuleMap<BaseT, ConstructorArguments...>::instance()
         .template addEntryWithConfig<DerivedT, DerivedConfigT>(type);
+    internal::VariableConfigModuleMap<BaseT>::instance().template addEntry<DerivedConfigT>(type);
   }
 };
 
@@ -195,7 +248,7 @@ class Factory {
     } catch (const YAML::Exception& e) {
       std::stringstream ss;
       ss << "Could not read the param '" << Settings::instance().factory_type_param_name
-         << "' to deduce the type of the module to create with error '" << e.what() << "'.";
+         << "' to deduce the type of the module to create.";
       Logger::logError(ss.str());
       return nullptr;
     }
@@ -228,6 +281,25 @@ class Factory {
 
     // Get the config and create the target.
     return std::unique_ptr<BaseT>(it2->second(data, args...));
+  }
+
+  // Get a config wrapper for the module.
+  template <class BaseT>
+  static std::unique_ptr<ConfigWrapper> createConfig(const YAML::Node& data) {
+    VariableConfigModuleMap<BaseT>& module = VariableConfigModuleMap<BaseT>::instance();
+    // Get the type param.
+    std::string type;
+    try {
+      type = data[Settings::instance().factory_type_param_name].as<std::string>();
+    } catch (const YAML::Exception& e) {
+      return nullptr;
+    }
+
+    auto it = module.map.find(type);
+    if (it == module.map.end()) {
+      return nullptr;
+    }
+    return std::unique_ptr<ConfigWrapper>(it->second());
   }
 };
 

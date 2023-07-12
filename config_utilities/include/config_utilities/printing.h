@@ -18,6 +18,13 @@ namespace internal {
 
 void checkDefaultValues(MetaData& data, const MetaData& default_data);
 
+template <typename ConfigT>
+MetaData getDefaultValues(const ConfigT& config) {
+  // For regular configs we use a default constructed object to get its data.
+  ConfigT defaults;
+  return internal::Visitor::getValues(defaults, false);
+}
+
 }  // namespace internal
 
 /**
@@ -42,8 +49,7 @@ std::string toString(const ConfigT& config, bool print_warnings = true) {
 
   // If requested check default values by comparing against a default constructed config.
   if (Settings().indicate_default_values) {
-    ConfigT defaults;
-    const internal::MetaData default_data = internal::Visitor::getValues(defaults, false);
+    const internal::MetaData default_data = internal::getDefaultValues(config);
     internal::checkDefaultValues(data, default_data);
   }
 

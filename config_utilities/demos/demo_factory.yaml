@@ -6,3 +6,4 @@ special_ns:
 type: "DerivedC"
 f: 123.456
 s: "a string in a file"
+d: 3.14159

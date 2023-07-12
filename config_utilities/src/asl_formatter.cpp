@@ -18,9 +18,9 @@ std::string AslFormatter::formatErrorsImpl(const MetaData& data, const std::stri
       break;
   }
   const size_t print_width = Settings::instance().print_width;
-  std::string result = what + " '" + data.name + "':\n";
+  std::string result = what + " '" + resolveConfigName(data) + "':\n";
   if (Settings::instance().index_subconfig_field_names) {
-    result += internal::printCenter(data.name, print_width, '=') + "\n";
+    result += internal::printCenter(resolveConfigName(data), print_width, '=') + "\n";
   }
   data.performOnAll([&](const MetaData& data) { result += formatErrorsInternal(data, sev, print_width); });
   return result + std::string(print_width, '=');
@@ -31,7 +31,7 @@ std::string AslFormatter::formatErrorsInternal(const MetaData& data,
                                                const size_t length) const {
   std::string result;
   if (!Settings::instance().index_subconfig_field_names && !data.errors.empty()) {
-    result += internal::printCenter(data.name, Settings::instance().print_width, '=') + "\n";
+    result += internal::printCenter(resolveConfigName(data), Settings::instance().print_width, '=') + "\n";
   }
   for (const std::string& error : data.errors) {
     result.append(wrapString(sev + error, sev.length(), length, false) + "\n");
@@ -41,8 +41,8 @@ std::string AslFormatter::formatErrorsInternal(const MetaData& data,
 }
 
 std::string AslFormatter::formatToStringImpl(const MetaData& data) {
-  return internal::printCenter(data.name, Settings::instance().print_width, '=') + "\n" + toStringInternal(data, 0) +
-         std::string(Settings::instance().print_width, '=');
+  return internal::printCenter(resolveConfigName(data), Settings::instance().print_width, '=') + "\n" +
+         toStringInternal(data, 0) + std::string(Settings::instance().print_width, '=');
 }
 
 std::string AslFormatter::toStringInternal(const MetaData& data, size_t indent) const {
@@ -168,6 +168,22 @@ std::string AslFormatter::wrapString(const std::string& str,
     remaining = remaining.substr(length);
   }
   return result + remaining;
+}
+
+std::string AslFormatter::resolveConfigName(const MetaData& data) const {
+  if (data.name.empty()) {
+    if (data.is_variable_config) {
+      return "Uninitialized Variable Config";
+    } else {
+      return "Unnamed Config";
+    }
+  } else {
+    if (data.is_variable_config && indicate_variable_configs_) {
+      return "Variable Config: " + data.name;
+    } else {
+      return data.name;
+    }
+  }
 }
 
 }  // namespace config::internal

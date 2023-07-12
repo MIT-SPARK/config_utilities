@@ -37,7 +37,7 @@ constexpr const auto& declare_config = config::internal::static_const<internal::
 /**
  * @brief Set the name of a config. This is used for printing and logging.
  */
-void name(const std::string& name) { internal::visitName(name); }
+void name(const std::string& name) { internal::Visitor::visitName(name); }
 
 /**
  * @brief Declare string-named fields of the config. This string will be used to get the configs field values during
@@ -49,7 +49,7 @@ void name(const std::string& name) { internal::visitName(name); }
  */
 template <typename T>
 void field(T& field, const std::string& field_name, const std::string& unit = "") {
-  internal::visitField(field, field_name, unit);
+  internal::Visitor::visitField(field, field_name, unit);
 }
 
 /**
@@ -62,7 +62,7 @@ void field(T& field, const std::string& field_name, const std::string& unit = ""
  */
 template <typename EnumT>
 void enum_field(EnumT& field, const std::string& field_name, const std::map<EnumT, std::string>& enum_names) {
-  internal::visitEnumField(field, field_name, enum_names);
+  internal::Visitor::visitEnumField(field, field_name, enum_names);
 }
 
 /**
@@ -93,7 +93,7 @@ void enum_field(EnumT& field, const std::string& field_name, const std::vector<s
  */
 template <typename ConfigT>
 void subconfig(ConfigT& config, const std::string& field_name, const std::string& sub_namespace = "") {
-  internal::visitSubconfig(config, field_name, sub_namespace);
+  internal::Visitor::visitSubconfig(config, field_name, sub_namespace);
 }
 
 /**
@@ -106,7 +106,7 @@ void subconfig(ConfigT& config, const std::string& field_name, const std::string
  */
 template <typename T>
 void checkGT(const T& param, const T& value, const std::string& name) {
-  internal::visitCheck(internal::Visitor::CheckMode::kGT, param, value, name);
+  internal::Visitor::visitCheck(internal::Visitor::CheckMode::kGT, param, value, name);
 }
 
 /**
@@ -119,7 +119,7 @@ void checkGT(const T& param, const T& value, const std::string& name) {
  */
 template <typename T>
 void checkGE(const T& param, const T& value, const std::string& name) {
-  internal::visitCheck(internal::Visitor::CheckMode::kGE, param, value, name);
+  internal::Visitor::visitCheck(internal::Visitor::CheckMode::kGE, param, value, name);
 }
 
 /**
@@ -132,7 +132,7 @@ void checkGE(const T& param, const T& value, const std::string& name) {
  */
 template <typename T>
 void checkLT(const T& param, const T& value, const std::string& name) {
-  internal::visitCheck(internal::Visitor::CheckMode::kLT, param, value, name);
+  internal::Visitor::visitCheck(internal::Visitor::CheckMode::kLT, param, value, name);
 }
 
 /**
@@ -145,7 +145,7 @@ void checkLT(const T& param, const T& value, const std::string& name) {
  */
 template <typename T>
 void checkLE(const T& param, const T& value, const std::string& name) {
-  internal::visitCheck(internal::Visitor::CheckMode::kLE, param, value, name);
+  internal::Visitor::visitCheck(internal::Visitor::CheckMode::kLE, param, value, name);
 }
 
 /**
@@ -158,7 +158,7 @@ void checkLE(const T& param, const T& value, const std::string& name) {
  */
 template <typename T>
 void checkEQ(const T& param, const T& value, const std::string& name) {
-  internal::visitCheck(internal::Visitor::CheckMode::kEQ, param, value, name);
+  internal::Visitor::visitCheck(internal::Visitor::CheckMode::kEQ, param, value, name);
 }
 
 /**
@@ -171,7 +171,7 @@ void checkEQ(const T& param, const T& value, const std::string& name) {
  */
 template <typename T>
 void checkNE(const T& param, const T& value, const std::string& name) {
-  internal::visitCheck(internal::Visitor::CheckMode::kNE, param, value, name);
+  internal::Visitor::visitCheck(internal::Visitor::CheckMode::kNE, param, value, name);
 }
 
 /**
@@ -185,7 +185,7 @@ void checkNE(const T& param, const T& value, const std::string& name) {
  */
 template <typename T>
 void checkInRange(const T& param, const T& lower, const T& higher, const std::string& name) {
-  internal::visitCheckInRange(param, lower, higher, name);
+  internal::Visitor::visitCheckInRange(param, lower, higher, name);
 }
 
 /**
@@ -194,6 +194,8 @@ void checkInRange(const T& param, const T& lower, const T& higher, const std::st
  * @param condition Condition that should evaluate to true if the config is valid.
  * @param warning Message to be reported in the error summary.
  */
-void checkCondition(bool condition, const std::string& warning) { internal::visitCheckCondition(condition, warning); }
+void checkCondition(bool condition, const std::string& warning) {
+  internal::Visitor::visitCheckCondition(condition, warning);
+}
 
 }  // namespace config

@@ -10,6 +10,7 @@
 #include "config_utilities/internal/string_utils.h"
 #include "config_utilities/internal/visitor.h"
 #include "config_utilities/internal/yaml_utils.h"
+#include "config_utilities/variable_config.h"
 
 namespace config {
 
