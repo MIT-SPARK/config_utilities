@@ -61,12 +61,15 @@ std::string AslFormatter::formatSubconfig(const MetaData& data, const FieldInfo&
   // Header.
   std::string header = std::string(indent, ' ') + info.name;
   if (indicate_subconfig_types_) {
-    header += " [" + data.name + "]";
+    header += " [" + resolveConfigName(data) + "]";
   }
-  if (indicate_subconfig_default_ && info.is_default) {
+  if (indicate_subconfig_default_ && info.is_default && !data.is_variable_config) {
     header += " (default)";
   }
-  header += ":\n";
+  if (resolveConfigName(data) != "Uninitialized Variable Config") {
+    header += ":";
+  }
+  header += "\n";
   return header + toStringInternal(data, indent + Settings::instance().subconfig_indent);
 }
 

@@ -122,13 +122,13 @@ class ObjectWithDerivedMembers {
     config::VariableConfig<Base> base_config;
   };
 
-  explicit ObjectWithDerivedMembers(const Config& config) : config_(config) {
+  explicit ObjectWithDerivedMembers(const Config& config, int base_i) : config_(config) {
     config::checkValid(config_);
-    base_ = config_.base_config.create();
+    base_ = config_.base_config.create(base_i);
   }
 
   void print() const {
-    std::cout << "I'm an ObjectWithDerivedMembers with d='" << config_.d << "' and base_: ";
+    std::cout << "I'm an ObjectWithDerivedMembers with d='" << config_.d << "' and base object: ";
     base_->print();
   }
 
@@ -204,6 +204,7 @@ int main(int argc, char** argv) {
   std::cout << "Config is set: " << std::boolalpha << config.isSet() << std::endl;
   bool is_valid = config::isValid(config, true);
   std::cout << "Config is valid: " << is_valid << std::endl;
+  std::cout << "Config has type: " << config.getType() << std::endl;
   std::cout << "Config content:\n" << config::toString(config) << std::endl;
 
   // Variable configs are created as any other.
@@ -212,10 +213,19 @@ int main(int argc, char** argv) {
   std::cout << "Config is set: " << config.isSet() << std::endl;
   is_valid = config::isValid(config, true);
   std::cout << "Config is valid: " << is_valid << std::endl;
+  std::cout << "Config has type: " << config.getType() << std::endl;
   std::cout << "Config content:\n" << config::toString(config) << std::endl;
 
-  // auto object_config = config::fromYamlFile<demo::ObjectWithDerivedMembers::Config>(my_root_path +
-  // "demo_factory.yaml");
+  // Variable configs can be treated like any other as subconfigs.
+  auto object_config = config::fromYamlFile<demo::ObjectWithDerivedMembers::Config>(my_root_path + "demo_factory.yaml");
+
+  std::cout << "Object config content:\n" << config::toString(object_config) << std::endl;
+
+  // Most importantly, they can delay the creation of the configured object, as is done in the constructor of
+  // 'ObjectWithDerivedMembers'.
+
+  demo::ObjectWithDerivedMembers object_with_members(object_config, 987);
+  object_with_members.print();
 
   return 0;
 }

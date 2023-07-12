@@ -39,6 +39,7 @@ MetaData Visitor::getValues(const ConfigT& config, bool print_warnings) {
   declare_config(const_cast<ConfigT&>(config));
   visitor.extractErrors();
   visitor.data.data = visitor.parser.node();
+
   if (print_warnings && visitor.data.hasErrors()) {
     Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Formatter::Severity::kWarning));
   }
@@ -212,17 +213,5 @@ void Visitor::visitSubconfig(ConfigT& config, const std::string& field_name, con
   visitor.data = data_before;
   visitor.data.sub_configs.emplace_back(std::move(data_after));
 }
-
-// template <typename BaseT>
-// void Visitor::visitSubconfig(VariableConfig<BaseT>& config,
-//                              const std::string& field_name,
-//                              const std::string& sub_namespace) {
-//   Visitor& visitor = Visitor::instance();
-//   std::cout << "In Variable Config setup!" << std::endl;
-//   if (visitor.mode != Visitor::Mode::kSet && visitor.mode != Visitor::Mode::kGet &&
-//       visitor.mode != Visitor::Mode::kCheck) {
-//     return;
-//   }
-// }
 
 }  // namespace config::internal

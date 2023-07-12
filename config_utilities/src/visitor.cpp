@@ -2,7 +2,7 @@
 
 #include "config_utilities/internal/visitor.h"
 
-#include "config_utilities/factory.h"
+#include "config_utilities/settings.h"
 
 namespace config::internal {
 
@@ -59,13 +59,22 @@ void Visitor::visitCheckCondition(bool condition, const std::string& error_messa
   visitor.checker.checkCondition(condition, error_message);
 }
 
-std::optional<YAML::Node> Visitor::visitVariableConfig(bool is_set, bool is_optional) {
+std::optional<YAML::Node> Visitor::visitVariableConfig(bool is_set, bool is_optional, const std::string& type) {
   Visitor& visitor = Visitor::instance();
   visitor.data.is_variable_config = true;
 
   if (visitor.mode == Visitor::Mode::kCheck) {
     if (!is_set && !is_optional) {
+      // The config is required and not set.
       visitor.checker.checkCondition(false, "Variable config is required but not set.");
+    }
+  }
+
+  if (visitor.mode == Visitor::Mode::kGet) {
+    if (is_set) {
+      // Also write the type param back to file.
+      visitor.parser.toYaml(
+          Settings::instance().factory_type_param_name, type, visitor.name_space, visitor.name_prefix);
     }
   }
 

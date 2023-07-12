@@ -58,7 +58,7 @@ class VariableConfig {
   /**
    * @brief Get the string-identifier-type of the config stored in the variable config.
    */
-  const std::string& getType() const { return config_ ? config_->type : "Uninitialized"; }
+  std::string getType() const { return config_ ? config_->type : "Uninitialized"; }
 
   /**
    * @brief Create the DerivedT object specified in the config.
@@ -69,7 +69,12 @@ class VariableConfig {
    */
   template <typename... ConstructorArguments>
   std::unique_ptr<BaseT> create(ConstructorArguments... args) const {
-    return nullptr;
+    // NOTE(lschmid): This is not the most beautiful but fairly general. Deserialize the config to YAML and use that to
+    // create the object with the standard factory. We assume that every type that can be serialized into a config can
+    // also be de-serialized so this should not result in any warnings, we print them anyways to be sure. The factory
+    // should take proper care of any other verbose error management.
+    const internal::MetaData data = internal::Visitor::getValues(*this);
+    return internal::Factory::createWithConfig<BaseT, ConstructorArguments...>(data.data, args...);
   }
 
  private:
@@ -94,6 +99,7 @@ MetaData getDefaultValues(const VariableConfig<ConfigT>& config) {
   if (!config.config_) {
     return MetaData();
   }
+
   return config.config_->getDefaultValues();
 }
 
@@ -102,7 +108,8 @@ MetaData getDefaultValues(const VariableConfig<ConfigT>& config) {
 // Declare the Variable Config a config, so it can be handled like any other object.
 template <typename BaseT>
 void declare_config(VariableConfig<BaseT>& config) {
-  std::optional<YAML::Node> data = internal::Visitor::visitVariableConfig(config.isSet(), config.optional_);
+  std::optional<YAML::Node> data =
+      internal::Visitor::visitVariableConfig(config.isSet(), config.optional_, config.getType());
   if (data) {
     // Create the wrapped config for the first time.
     config.config_ = internal::Factory::createConfig<BaseT>(*data);
