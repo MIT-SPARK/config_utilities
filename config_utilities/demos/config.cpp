@@ -115,6 +115,7 @@ void declare_config(SubSubConfig& config) {
 }  // namespace demo
 
 int main(int argc, char** argv) {
+  // GLobal settings can be set at runtime to change the behavior and presentation of configs.
   config::Settings().index_subconfig_field_names = true;
 
   // ===================================== Checking whether a struct is a config =====================================
@@ -125,7 +126,7 @@ int main(int argc, char** argv) {
   std::cout << "NotAConfig is a config: " << config::isConfig<demo::NotAConfig>() << std::endl;
 
   // ====================================== Checking whether a config is valid ======================================
-  std::cout << "\n\n----- Checking whether a config is valid \n" << std::endl;
+  std::cout << "\n\n----- Checking whether a config is valid \n\n" << std::endl;
 
   // Create a valid and an invalid config.
   demo::MyConfig config, invalid_config;

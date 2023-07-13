@@ -44,6 +44,12 @@ cs_add_executable(demo_inheritance
         )
 target_link_libraries(demo_inheritance ${PROJECT_NAME} yaml-cpp)
 
+cs_add_executable(demo_ros
+        demos/ros.cpp
+        )
+target_link_libraries(demo_ros ${PROJECT_NAME} yaml-cpp)
+
+
 ##########
 # Export #
 ##########

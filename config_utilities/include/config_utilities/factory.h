@@ -248,7 +248,7 @@ class Factory {
     } catch (const YAML::Exception& e) {
       std::stringstream ss;
       ss << "Could not read the param '" << Settings::instance().factory_type_param_name
-         << "' to deduce the type of the module to create.";
+         << "' to deduce the type of the module to create." + std::string(e.what());
       Logger::logError(ss.str());
       return nullptr;
     }

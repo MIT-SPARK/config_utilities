@@ -1,0 +1,5 @@
+<launch>
+    <node pkg="config_utilities" type="demo_ros" name="demo_ros" required="true" output="screen">
+        <rosparam file="$(find config_utilities)/demos/demo_params.yaml"/>
+    </node>
+</launch>

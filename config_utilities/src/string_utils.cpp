@@ -21,7 +21,7 @@ std::vector<std::string> splitNamespace(const std::string& text, const std::stri
   size_t pos = 0;
   while ((pos = s.find(delimiter)) != std::string::npos) {
     if (pos != 0) {
-      result.push_back(text.substr(0, pos));
+      result.push_back(s.substr(0, pos));
     }
     s.erase(0, pos + delimiter.length());
   }

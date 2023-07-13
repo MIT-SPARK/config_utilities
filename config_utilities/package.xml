@@ -12,10 +12,10 @@
   <buildtool_depend>catkin</buildtool_depend>
   <buildtool_depend>catkin_simple</buildtool_depend>
 
-  <!-- Optional Dependencies for parts of the library. -->
-  <depend>glog_catkin</depend>
-  <depend>gflags_catkin</depend>
-  <depend>eigen_catkin</depend>
+  <!-- Optional Dependencies for optional parts of the library. -->
+  <depend>glog_catkin</depend>  <!-- logging/glog -->
+  <depend>eigen_catkin</depend>  <!-- types/eigen_matrix -->
+  <depend>roscpp</depend>  <!-- parsing/ros, logging/ros -->
 
   <export>
   </export>
