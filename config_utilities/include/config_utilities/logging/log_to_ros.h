@@ -4,7 +4,7 @@
 #include <string>
 #include <utility>
 
-#include <glog/logging.h>
+#include <ros/console.h>
 
 #include "config_utilities/factory.h"
 #include "config_utilities/internal/logger.h"
@@ -12,42 +12,41 @@
 namespace config::internal {
 
 /**
- * @brief Implements logging to glog. This file pulls in glog as a dependency, but glog is not required if this file is
+ * @brief Implements logging to roslog. This file pulls in ros as a dependency, but its not required if this file is
  * not included in the project.
  */
-class GlogLogger : public Logger {
+class RosLogger : public Logger {
  public:
-  GlogLogger() = default;
-  virtual ~GlogLogger() = default;
+  RosLogger() = default;
+  virtual ~RosLogger() = default;
 
  protected:
   void logImpl(const Severity severity, const std::string& message) override {
     switch (severity) {
       case Severity::kInfo:
-        LOG(INFO) << message;
+        ROS_INFO_STREAM(message);
         break;
 
       case Severity::kWarning:
-        LOG(WARNING) << message;
-
+        ROS_WARN_STREAM(message);
         break;
 
       case Severity::kError:
-        LOG(ERROR) << message;
+        ROS_ERROR_STREAM(message);
         break;
 
       case Severity::kFatal:
-        LOG(FATAL) << message;
+        ROS_FATAL_STREAM(message);
     }
   }
 
  private:
   // Factory registration to allow setting of formatters via Settings::setDefaultLogger().
-  inline static const auto registration_ = Registration<Logger, GlogLogger>("glog");
+  inline static const auto registration_ = Registration<Logger, RosLogger>("ros");
 
-  // Initialize the glog logger to be used if included.
+  // Initialize the ros logger to be used if included.
   inline static const struct Initializer {
-    Initializer() { Logger::setLogger(std::make_shared<GlogLogger>()); }
+    Initializer() { Logger::setLogger(std::make_shared<RosLogger>()); }
   } initializer_;
 };
 

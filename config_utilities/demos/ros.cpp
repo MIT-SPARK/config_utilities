@@ -10,13 +10,13 @@
 #include <glog/logging.h>
 #include <ros/ros.h>
 
-#include "config_utilities/config.h"                 // Enables declare_config().
-#include "config_utilities/formatting/asl.h"         // Simply including this file sets a style to format output.
-#include "config_utilities/logging/log_to_stdout.h"  // Simply including this file sets logging to stdout.
-#include "config_utilities/printing.h"               // Enable toString()
-#include "config_utilities/traits.h"                 // Enables isConfig()
-#include "config_utilities/types/eigen_matrix.h"     // Enable parsing and printing of Eigen::Matrix types.
-#include "config_utilities/validity_checks.h"        // Enable isValid() and checkValid().
+#include "config_utilities/config.h"              // Enables declare_config().
+#include "config_utilities/formatting/asl.h"      // Simply including this file sets a style to format output.
+#include "config_utilities/logging/log_to_ros.h"  // Simply including this file sets logging to roslog.
+#include "config_utilities/printing.h"            // Enable toString()
+#include "config_utilities/traits.h"              // Enables isConfig()
+#include "config_utilities/types/eigen_matrix.h"  // Enable parsing and printing of Eigen::Matrix types.
+#include "config_utilities/validity_checks.h"     // Enable isValid() and checkValid().
 
 namespace demo {
 
@@ -79,7 +79,7 @@ class DerivedA : public Base {
 
   DerivedA(const Config& config) : config_(config) { config::checkValid(config_); }
 
-  void print() const override { std::cout << "I'm a DerivedA with config.f='" << config_.f << "'." << std::endl; }
+  void print() const override { ROS_INFO_STREAM("I'm a DerivedA with config.f='" << config_.f << "'."); }
 
  private:
   const Config config_;
@@ -104,7 +104,7 @@ class DerivedB : public Base {
 
   DerivedB(const Config& config) : config_(config) {}
 
-  void print() const override { std::cout << "I'm a DerivedB with config.s='" << config_.s << "'." << std::endl; }
+  void print() const override { ROS_INFO_STREAM("I'm a DerivedB with config.s='" << config_.s << "'."); }
 
  private:
   const Config config_;
@@ -127,7 +127,7 @@ int main(int argc, char** argv) {
 
   // Ther parsing/ros.h header enables getting of configs from ros.
   auto config = config::fromRos<demo::MyConfig>(nh);
-  std::cout << config << std::endl;
+  ROS_INFO_STREAM("\n" << config);
 
   // As well as all factory creation functions.
   nh.setParam("type", std::string("DerivedA"));
@@ -136,5 +136,18 @@ int main(int argc, char** argv) {
   std::unique_ptr<demo::Base> object = config::createFromROS<demo::Base>(nh);
   object->print();
 
+  // Regular config verification and warnings work as usual. Including logging/log_to_ros.h sets the logging to roslog.
+
+  // Set invalid params.
+  nh.setParam("type", "A random type");
+  nh.setParam("f", -1);
+  nh.setParam("i", -1);
+  nh.setParam("vec", "Not a vector");
+
+  config = config::fromRos<demo::MyConfig>(nh);
+  config::isValid(config, true);
+  object = config::createFromROS<demo::Base>(nh);
+
+  ros::shutdown();
   return 0;
 }

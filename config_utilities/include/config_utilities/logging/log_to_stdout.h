@@ -21,11 +21,6 @@ class StdoutLogger : public Logger {
 
  protected:
   void logImpl(const Severity severity, const std::string& message) override {
-    // Default logs to std::cout to always have some sort of output. This could also be moved out to a separate logger
-    // if we want this to be independent of iostream.
-    if (severity == Severity::kFatal) {
-      throw std::runtime_error(message);
-    }
     switch (severity) {
       case Severity::kInfo:
         std::cout << "[INFO] " << message << std::endl;
