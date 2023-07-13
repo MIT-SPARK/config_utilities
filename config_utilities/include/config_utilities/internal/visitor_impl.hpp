@@ -214,4 +214,17 @@ void Visitor::visitSubconfig(ConfigT& config, const std::string& field_name, con
   visitor.data.sub_configs.emplace_back(std::move(data_after));
 }
 
+template <typename ConfigT>
+void Visitor::visitBase(ConfigT& config, const std::string& sub_namespace) {
+  Visitor& visitor = Visitor::instance();
+  // For now simply pass the call to the base config, treating it as a single config object.
+  // NOTE(lschmid): Alternatives are to treat it as a subconfig for clearer readability.
+  const std::string name_space_before = visitor.name_space;
+  const std::string name_before = visitor.data.name;
+  visitor.name_space = joinNamespace(visitor.name_space, sub_namespace);
+  declare_config(config);
+  visitor.name_space = name_space_before;
+  visitor.data.name = name_before;
+}
+
 }  // namespace config::internal

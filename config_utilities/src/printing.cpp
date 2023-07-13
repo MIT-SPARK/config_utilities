@@ -23,11 +23,14 @@ void checkDefaultValues(MetaData& data, const MetaData& default_data) {
       }
     } else {
       // Check the field itself. NOTE(lschmid): Operator YAML::Node== checks for identity, not equality. Comparing the
-      // formatted strings should be identical for default constructed configs.
-      if (!data.data[info.name] || !default_data.data[info.name]) {
+      // formatted strings should be identical for default constructed configs. The clone is needed as for yaml nodes
+      // are internally references and operator[] occasionally messes up things.
+      YAML::Node data_node = YAML::Clone(data.data);
+      YAML::Node default_node = YAML::Clone(default_data.data);
+      if (!data_node[info.name] || !default_node[info.name]) {
         return;
       }
-      if (internal::dataToString(data.data[info.name]) == internal::dataToString(default_data.data[info.name])) {
+      if (internal::dataToString(data_node[info.name]) == internal::dataToString(default_node[info.name])) {
         info.is_default = true;
       }
     }

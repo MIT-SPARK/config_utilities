@@ -45,7 +45,6 @@ class YamlParser {
   template <typename T>
   bool fromYaml(const std::string& name, T& value, const std::string& sub_namespace, const std::string& name_prefix) {
     YAML::Node child_node = lookupNamespace(root_node_, sub_namespace)[name];
-
     if (!child_node) {
       // The param is not defined. This is not an error.
       return false;
@@ -145,6 +144,7 @@ class YamlParser {
     return std::string();
   }
 
+  // Map.
   template <typename K, typename V>
   std::string fromYamlImpl(std::map<K, V>& value, const YAML::Node& node) const {
     if (!node.IsMap()) {
@@ -161,6 +161,7 @@ class YamlParser {
     return std::string();
   }
 
+  // uint8
   std::string fromYamlImpl(uint8_t& value, const YAML::Node& node) const;
   std::string toYamlImpl(const std::string& name, const uint8_t& value);
 

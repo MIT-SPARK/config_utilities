@@ -21,7 +21,7 @@ namespace demo {
 struct SubSubConfig {
   using Color = Eigen::Matrix<uint8_t, 3, 1>;
   Color color = Color(255, 127, 0);
-  size_t size = 10;
+  size_t size = 5;
 };
 
 struct SubConfig {
@@ -109,7 +109,7 @@ void declare_config(SubSubConfig& config) {
   name("SubSubConfig");
   field(config.color, "color");
   field(config.size, "size");
-  checkEQ(config.size, size_t(10), "size");
+  checkEQ(config.size, size_t(5), "size");
 }
 
 }  // namespace demo

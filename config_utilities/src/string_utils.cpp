@@ -54,7 +54,7 @@ std::string joinNamespace(const std::string& namespace_1,
 std::string dataToString(const YAML::Node& data) {
   switch (data.Type()) {
     case YAML::NodeType::Scalar: {
-      // NOTE(lschmid): All YAML scalars should implement the << operator.
+      // NOTE(lschmid): All YAML scalars should implement the ostream<< operator.
       std::stringstream ss;
       ss << data;
       return ss.str();

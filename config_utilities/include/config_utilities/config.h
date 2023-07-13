@@ -97,6 +97,18 @@ void subconfig(ConfigT& config, const std::string& field_name, const std::string
 }
 
 /**
+ * @brief Declare that this config inherits from a base config.
+ *
+ * @tparam ConfigT The base config type.
+ * @param config The config object that is being declared.
+ * @param sub_namespace Optionally define a sub namespace to read parameter values for the base config from.
+ */
+template <typename ConfigT>
+void base(ConfigT& config, const std::string& sub_namespace = "") {
+  internal::Visitor::visitBase(config, sub_namespace);
+}
+
+/**
  * @brief Execute a greater than (GT) check, i.e. param > value.
  *
  * @tparam T type of the parameter to be checked.

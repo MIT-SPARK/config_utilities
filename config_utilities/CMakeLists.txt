@@ -39,6 +39,11 @@ cs_add_executable(demo_factory
         )
 target_link_libraries(demo_factory ${PROJECT_NAME} yaml-cpp)
 
+cs_add_executable(demo_inheritance
+        demos/inheritance.cpp
+        )
+target_link_libraries(demo_inheritance ${PROJECT_NAME} yaml-cpp)
+
 ##########
 # Export #
 ##########

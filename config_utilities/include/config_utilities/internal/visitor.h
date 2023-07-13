@@ -54,6 +54,9 @@ struct Visitor {
   template <typename ConfigT>
   static void visitSubconfig(ConfigT& config, const std::string& field_name, const std::string& sub_namespace);
 
+  template <typename ConfigT>
+  static void visitBase(ConfigT& config, const std::string& sub_namespace);
+
   static std::optional<YAML::Node> visitVariableConfig(bool is_set, bool is_optional, const std::string& type);
 
  private:
