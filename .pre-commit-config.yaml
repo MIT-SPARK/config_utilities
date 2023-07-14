@@ -29,5 +29,5 @@ repos:
   rev: '1.6.1'
   hooks:
   - id: cpplint
-    args: ['--filter=-whitespace/line_length,-legal/copyright,-build/include_order,-runtime/references,-build/c++11']
+    args: ['--filter=-whitespace/line_length,-legal/copyright,-build/include_order,-runtime/references,-build/c++11,-build/namespaces']
     exclude: 3rd_party/

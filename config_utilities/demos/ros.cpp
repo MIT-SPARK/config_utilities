@@ -77,7 +77,7 @@ class DerivedA : public Base {
     float f = 0.f;
   };
 
-  DerivedA(const Config& config) : config_(config) { config::checkValid(config_); }
+  explicit DerivedA(const Config& config) : config_(config) { config::checkValid(config_); }
 
   void print() const override { ROS_INFO_STREAM("I'm a DerivedA with config.f='" << config_.f << "'."); }
 
@@ -102,7 +102,7 @@ class DerivedB : public Base {
     std::string s = "test string";
   };
 
-  DerivedB(const Config& config) : config_(config) {}
+  explicit DerivedB(const Config& config) : config_(config) {}
 
   void print() const override { ROS_INFO_STREAM("I'm a DerivedB with config.s='" << config_.s << "'."); }
 
