@@ -37,7 +37,7 @@ constexpr const auto& declare_config = config::internal::static_const<internal::
 /**
  * @brief Set the name of a config. This is used for printing and logging.
  */
-void name(const std::string& name) { internal::Visitor::visitName(name); }
+inline void name(const std::string& name) { internal::Visitor::visitName(name); }
 
 /**
  * @brief Declare string-named fields of the config. This string will be used to get the configs field values during
@@ -47,7 +47,7 @@ void name(const std::string& name) { internal::Visitor::visitName(name); }
  * @param field_name The name of the field.
  * @param unit Optionally define the unit of the field during printing.
  */
-template <typename T>
+template <typename T, typename std::enable_if<!internal::is_config_impl<T>::value, bool>::type = true>
 void field(T& field, const std::string& field_name, const std::string& unit = "") {
   internal::Visitor::visitField(field, field_name, unit);
 }
@@ -206,7 +206,7 @@ void checkInRange(const T& param, const T& lower, const T& higher, const std::st
  * @param condition Condition that should evaluate to true if the config is valid.
  * @param warning Message to be reported in the error summary.
  */
-void checkCondition(bool condition, const std::string& warning) {
+inline void checkCondition(bool condition, const std::string& warning) {
   internal::Visitor::visitCheckCondition(condition, warning);
 }
 

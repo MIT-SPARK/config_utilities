@@ -171,7 +171,7 @@ void Visitor::visitSubconfig(ConfigT& config, const std::string& field_name, con
     return;
   }
 
-  // Check is a configT.
+  // Check is a configT. Ceck this at runtime to allow more flexibility for config declaration.
   if (!isConfig<ConfigT>()) {
     visitor.data.errors.emplace_back("Subconfig field '" + field_name + "' has not beend declared a config.");
     return;
