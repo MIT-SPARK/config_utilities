@@ -87,9 +87,7 @@ void declare_config(DerivedConfig& config) {
 
 class DerivedObject : public BaseObject {
  public:
-  explicit DerivedObject(const DerivedConfig& config) : BaseObject(config), config_(config) {
-    config::checkValid(config);
-  }
+  explicit DerivedObject(const DerivedConfig& config) : BaseObject(config), config_(config::checkValid(config)) {}
 
   void print() const override {
     std::cout << "I'm a DerivedObject, who knows about my bases config i=" << config_.i << " and f=" << config_.f

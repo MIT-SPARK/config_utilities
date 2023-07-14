@@ -24,6 +24,8 @@ MetaData getDefaultValues(const VariableConfig<ConfigT>& config);
 /**
  * @brief The variable config is a config struct that wraps an arbitrary config struct for later creation of a DerivedT
  * class.
+ *
+ * @tparam BaseT The base class of the object that should be created from the config.
  */
 template <class BaseT>
 class VariableConfig {

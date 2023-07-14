@@ -61,9 +61,8 @@ class DerivedC : public Base {
   };
 
   // Constructore must take the config as first argument.
-  DerivedC(const Config& config, const int& i) : Base(i), config_(config) {
+  DerivedC(const Config& config, const int& i) : Base(i), config_(config::checkValid(config)) {
     // Make sure the config is valid, otherwise throw an exception.
-    config::checkValid(config_);
   }
 
   void print() const override {

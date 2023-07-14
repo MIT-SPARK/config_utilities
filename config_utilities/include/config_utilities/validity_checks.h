@@ -49,7 +49,7 @@ bool isValid(const ConfigT& config, bool print_warnings = false) {
  * @param config The config to check.
  */
 template <typename ConfigT>
-void checkValid(const ConfigT& config) {
+const ConfigT& checkValid(const ConfigT& config) {
   if (!isConfig<ConfigT>()) {
     std::stringstream ss;
     ss << "Can not use 'config::checkValid()' on non-config T='" << typeid(ConfigT).name()
@@ -58,10 +58,11 @@ void checkValid(const ConfigT& config) {
   }
   internal::MetaData data = internal::Visitor::getChecks(config);
   if (!data.hasErrors()) {
-    return;
+    return config;
   }
   internal::Logger::logFatal(
       internal::Formatter::formatErrors(data, "Invalid config", internal::Formatter::Severity::kFatal));
+  return config;
 }
 
 }  // namespace config
