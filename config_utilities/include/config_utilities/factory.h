@@ -287,9 +287,6 @@ class Factory {
   static std::unique_ptr<ConfigWrapper> createConfig(const YAML::Node& data) {
     VariableConfigModuleMap<BaseT>& module = VariableConfigModuleMap<BaseT>::instance();
 
-    std::cout << "Looking for variable config for type '" << typeid(BaseT).name() << "'." << std::endl;
-    std::cout << "Data: \n" << data << std::endl;
-
     // Get the type param.
     std::string type;
     try {
