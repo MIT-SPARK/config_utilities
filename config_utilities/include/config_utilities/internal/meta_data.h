@@ -37,6 +37,7 @@ struct MetaData {
 
   // Whether the data stored belongs to a variable config.
   bool is_variable_config = false;
+  std::string current_field_name;  // Temporary storage for field names.
 
   // Yaml node used to get or set the data of a config.
   YAML::Node data;

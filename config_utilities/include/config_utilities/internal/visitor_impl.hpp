@@ -195,6 +195,7 @@ void Visitor::visitSubconfig(ConfigT& config, const std::string& field_name, con
   }
   visitor.name_space = joinNamespace(visitor.name_space, sub_namespace);
   visitor.data = MetaData();
+  visitor.data.current_field_name = field_name;
 
   // Visit subconfig.
   declare_config(config);

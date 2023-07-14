@@ -2,6 +2,7 @@
 
 #include "config_utilities/internal/visitor.h"
 
+#include "config_utilities/internal/yaml_utils.h"
 #include "config_utilities/settings.h"
 
 namespace config::internal {
@@ -66,7 +67,8 @@ std::optional<YAML::Node> Visitor::visitVariableConfig(bool is_set, bool is_opti
   if (visitor.mode == Visitor::Mode::kCheck) {
     if (!is_set && !is_optional) {
       // The config is required and not set.
-      visitor.checker.checkCondition(false, "Variable config is required but not set.");
+      visitor.checker.checkCondition(
+          false, "Variable config '" + visitor.data.current_field_name + "' is required but not set.");
     }
   }
 
@@ -80,7 +82,7 @@ std::optional<YAML::Node> Visitor::visitVariableConfig(bool is_set, bool is_opti
 
   if (visitor.mode == Visitor::Mode::kSet) {
     // Return the data to intialize the variable config if this is the first time setting it.
-    return visitor.parser.node();
+    return lookupNamespace(visitor.parser.node(), visitor.name_space);
   }
 
   return std::nullopt;
