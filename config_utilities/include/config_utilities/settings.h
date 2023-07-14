@@ -42,6 +42,9 @@ struct Settings {
   // If true integrate subconfig fields into the main config, if false print them separately.
   bool index_subconfig_field_names = true;
 
+  // If true, store all validated configs for global printing.
+  bool store_valid_configs = true;
+
   /* Factory settings */
   // The factory will look for this param to deduce the type of the object to be created.
   std::string factory_type_param_name = "type";

@@ -8,7 +8,7 @@
 #include "config_utilities/internal/formatter.h"
 #include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/visitor.h"
-#include "config_utilities/printing.h"
+#include "config_utilities/settings.h"
 #include "config_utilities/traits.h"
 
 namespace config {
@@ -59,11 +59,13 @@ const ConfigT& checkValid(const ConfigT& config) {
   }
   internal::MetaData data = internal::Visitor::getChecks(config);
   if (!data.hasErrors()) {
+    if (Settings().store_valid_configs) {
+      internal::Globals::instance().valid_configs.push_back(internal::Visitor::getValues(config, false));
+    }
     return config;
   }
   internal::Logger::logFatal(
       internal::Formatter::formatErrors(data, "Invalid config", internal::Formatter::Severity::kFatal));
-  internal::Globals::instance().valid_configs.emplace_back(toString(config));
   return config;
 }
 

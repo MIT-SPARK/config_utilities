@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+#include "config_utilities/internal/meta_data.h"
+
 namespace config {
 
 namespace internal {
@@ -24,7 +26,7 @@ struct Globals {
   }
 
   // Keep track of all configs that were checked valid (as a proxy for all configs that were created).
-  std::vector<std::string> valid_configs;
+  std::vector<MetaData> valid_configs;
 
  private:
   Globals() = default;
@@ -36,7 +38,10 @@ struct Globals {
 
 /**
  * @brief Return a printed string of all configs that were checked valid (as a proxy for all configs that were created).
+ *
+ * @param clear If true, clear the list of valid configs after printing.
+ * @returns The formatted string of all validated configs so far.
  */
-inline std::vector<std::string> getValidConfigs() { return internal::Globals::instance().valid_configs; }
+std::string printAllValidConfigs(bool clear = false);
 
 }  // namespace config

@@ -22,6 +22,7 @@ cs_add_library(${PROJECT_NAME}
         src/string_utils.cpp
         src/yaml_utils.cpp
         src/formatter.cpp
+        src/globals.cpp
         )
 target_link_libraries(${PROJECT_NAME} yaml-cpp)
 

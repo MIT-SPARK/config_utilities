@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "config_utilities/factory.h"
 #include "config_utilities/internal/formatter.h"
@@ -21,6 +22,7 @@ class AslFormatter : public Formatter {
  protected:
   std::string formatErrorsImpl(const MetaData& data, const std::string& what, const Severity severity) override;
   std::string formatToStringImpl(const MetaData& data) override;
+  std::string formatToStringImpl(const std::vector<MetaData>& data) override;
 
  private:
   // Factory registration to allow setting of formatters via Settings::setDefaultFormatter().

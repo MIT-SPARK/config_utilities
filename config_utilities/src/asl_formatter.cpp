@@ -45,6 +45,20 @@ std::string AslFormatter::formatToStringImpl(const MetaData& data) {
          toStringInternal(data, 0) + std::string(Settings::instance().print_width, '=');
 }
 
+std::string AslFormatter::formatToStringImpl(const std::vector<MetaData>& data) {
+  if (data.empty()) {
+    return "";
+  }
+  std::string result;
+  for (const MetaData& config : data) {
+    std::string entry = formatToStringImpl(config);
+    entry.erase(entry.find_last_of("\n"));
+    result += entry + "\n";
+  }
+  result += std::string(Settings::instance().print_width, '=');
+  return result;
+}
+
 std::string AslFormatter::toStringInternal(const MetaData& data, size_t indent) const {
   std::string result;
   for (const FieldInfo& info : data.field_infos) {
