@@ -4,10 +4,11 @@
 #include <string>
 #include <vector>
 
+#include "config_utilities/globals.h"
 #include "config_utilities/internal/formatter.h"
 #include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/visitor.h"
-#include "config_utilities/settings.h"
+#include "config_utilities/printing.h"
 #include "config_utilities/traits.h"
 
 namespace config {
@@ -62,6 +63,7 @@ const ConfigT& checkValid(const ConfigT& config) {
   }
   internal::Logger::logFatal(
       internal::Formatter::formatErrors(data, "Invalid config", internal::Formatter::Severity::kFatal));
+  internal::Globals::instance().valid_configs.emplace_back(toString(config));
   return config;
 }
 

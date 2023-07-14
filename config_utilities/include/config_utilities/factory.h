@@ -244,11 +244,11 @@ class Factory {
     // Get the type param.
     std::string type;
     try {
-      type = data[Settings::instance().factory_type_param_name].as<std::string>();
+      type = YAML::Clone(data)[Settings::instance().factory_type_param_name].as<std::string>();
     } catch (const YAML::Exception& e) {
       std::stringstream ss;
       ss << "Could not read the param '" << Settings::instance().factory_type_param_name
-         << "' to deduce the type of the module to create." + std::string(e.what());
+         << "' to deduce the type of the module to create.";
       Logger::logError(ss.str());
       return nullptr;
     }
@@ -256,7 +256,6 @@ class Factory {
     // Check the source module exists.
     if (module.map_config.empty()) {
       std::stringstream ss;
-
       ss << "Cannot create a module of type '" << type << "': No modules registered to the factory for base '"
          << typeid(BaseT).name() << "'" << type_info
          << ". Register modules using a static config::RegistrationWithConfig<BaseT, DerivedT, DerivedConfigT, "
@@ -287,16 +286,41 @@ class Factory {
   template <class BaseT>
   static std::unique_ptr<ConfigWrapper> createConfig(const YAML::Node& data) {
     VariableConfigModuleMap<BaseT>& module = VariableConfigModuleMap<BaseT>::instance();
+
     // Get the type param.
     std::string type;
     try {
-      type = data[Settings::instance().factory_type_param_name].as<std::string>();
+      type = YAML::Clone(data)[Settings::instance().factory_type_param_name].as<std::string>();
     } catch (const YAML::Exception& e) {
+      std::stringstream ss;
+      ss << "Could not read the param '" << Settings::instance().factory_type_param_name
+         << "' to deduce the type of the module to create.";
+      Logger::logError(ss.str());
+      return nullptr;
+    }
+
+    // Check the source module exists.
+    if (module.map.empty()) {
+      std::stringstream ss;
+      ss << "Cannot create a variable config of type '" << type << "': No modules registered to the factory for base '"
+         << typeid(BaseT).name()
+         << "'. Register modules using a static config::RegistrationWithConfig<BaseT, DerivedT, DerivedConfigT, "
+            "ConstructorArguments...> struct.";
+      Logger::logError(ss.str());
       return nullptr;
     }
 
     auto it = module.map.find(type);
     if (it == module.map.end()) {
+      std::string module_list;
+      for (const auto& entry : module.map) {
+        module_list.append(entry.first + ", ");
+      }
+      module_list = module_list.substr(0, module_list.size() - 2);
+      std::stringstream ss;
+      ss << "No module of type '" << type << "' registered to the factory for base '" << typeid(BaseT).name()
+         << "'. Registered are: " << module_list << ".";
+      Logger::logError(ss.str());
       return nullptr;
     }
     return std::unique_ptr<ConfigWrapper>(it->second());

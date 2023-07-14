@@ -130,8 +130,8 @@ int main(int argc, char** argv) {
   ROS_INFO_STREAM("\n" << config);
 
   // As well as all factory creation functions.
-  nh.setParam("type", std::string("DerivedA"));
   nh.setParam("f", 0.123);
+  nh.setParam("type", "DerivedA");
 
   std::unique_ptr<demo::Base> object = config::createFromROS<demo::Base>(nh);
   object->print();
