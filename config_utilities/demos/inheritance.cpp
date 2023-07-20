@@ -12,7 +12,6 @@
 #include "config_utilities/parsing/yaml.h"           // Enable fromYamlFile().
 #include "config_utilities/printing.h"               // Enable toString()
 #include "config_utilities/traits.h"                 // Enables isConfig()
-#include "config_utilities/types/eigen_matrix.h"     // Enable parsing and printing of Eigen::Matrix types.
 #include "config_utilities/validity_checks.h"        // Enable isValid() and checkValid().
 
 namespace demo {
