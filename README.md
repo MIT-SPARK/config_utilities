@@ -44,3 +44,4 @@ Directory of headers to include depending on which functionality you need. All c
 - [ ] Refactor Config checking to get names and types.
 - [ ] Make visitors sequential and some extra clean up.
 - [ ] Clean up linking, install, and deps.
+- [ ] Improve perfrmance (probably reduce yaml copies and check const-ness of yaml nodes)
