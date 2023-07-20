@@ -1,0 +1,9 @@
+special_ns:
+  type: "DerivedD"
+  f: 987.654
+  s: "a string in a special namespace"
+
+type: "DerivedC"
+f: 123.456
+s: "a string in a file"
+d: 3.14159

@@ -1,0 +1,9 @@
+valid_ns:
+  f: 3.45
+  s: "asdasd"
+
+invalid_ns:
+  f: -1
+  d: -1
+  vec: [1, 2, 3, 4, 5]
+  b: false

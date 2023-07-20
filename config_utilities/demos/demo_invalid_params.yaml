@@ -1,0 +1,12 @@
+vec: "Invalid Value to create a vector from"
+map: "Invalid Value to create a map from"
+mat:
+  - [1, 2, 3]
+  - [4, 5, 6]
+  - [7, 8, 9, 10]
+i: "Value that can't be cast to int"
+my_enum: "D"
+sub_ns:
+  color: "Not a valid color"
+  f: "Not a float"
+  size: -1
