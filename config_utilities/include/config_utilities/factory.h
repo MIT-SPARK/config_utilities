@@ -185,7 +185,7 @@ class Factory {
    */
   template <class BaseT, typename... Args>
   static std::unique_ptr<BaseT> create(const std::string& type, Args... args) {
-    ModuleMap<BaseT, Args...>& module = ModuleMap<BaseT, Args...>::instance();
+    auto& module = ModuleMap<BaseT, Args...>::instance();
     std::stringstream ss;
     ((ss << typeid(args).name() << "', '"), ...);
     std::string type_info = ss.str();
