@@ -25,8 +25,8 @@ class YamlParser {
   ~YamlParser() = default;
 
   // Access tools.
-  const YAML::Node& node() const { return root_node_; }
-  YAML::Node& node() { return root_node_; }
+  const YAML::Node& getNode() const { return root_node_; }
+  void setNode(const YAML::Node& node) { node_ = node; }
   const std::vector<std::string>& getErrors() const { return errors_; }
   void resetErrors() { errors_.clear(); }
 
@@ -51,7 +51,7 @@ class YamlParser {
     }
     std::string error;
     try {
-      error = fromYamlImpl(value, child_node);
+      fromYamlImpl(value, child_node, error);
     } catch (const std::exception& e) {
       error = std::string(e.what()) + ".";
     }
@@ -81,7 +81,7 @@ class YamlParser {
     node_ = YAML::Node();
     std::string error;
     try {
-      error = toYamlImpl(name, value);
+      toYamlImpl(name, value, error);
     } catch (const std::exception& e) {
       error = std::string(e.what()) + ".";
     }
@@ -97,73 +97,72 @@ class YamlParser {
  private:
   // Generic types.
   template <typename T>
-  std::string fromYamlImpl(T& value, const YAML::Node& node) const {
+  void fromYamlImpl(T& value, const YAML::Node& node, std::string& error) const {
     value = node.as<T>();
-    return std::string();
   }
+
   template <typename T>
-  std::string toYamlImpl(const std::string& name, const T& value) {
+  void toYamlImpl(const std::string& name, const T& value, std::string& error) {
     node_[name] = value;
-    return std::string();
   }
 
   // Specializations for parsing different types. These add error messages if the parsing fails.
   // Vector.
   template <typename T>
-  std::string fromYamlImpl(std::vector<T>& value, const YAML::Node& node) const {
+  void fromYamlImpl(std::vector<T>& value, const YAML::Node& node, std::string& error) const {
     if (!node.IsSequence()) {
-      return "Data is not a sequence.";
+      error = "Data is not a sequence.";
+      return;
     }
     value = node.as<std::vector<T>>();
-    return std::string();
   }
+
   template <typename T>
-  std::string toYamlImpl(const std::string& name, const std::vector<T>& value) {
+  void toYamlImpl(const std::string& name, const std::vector<T>& value, std::string& error) {
     for (const T& element : value) {
       node_[name].push_back(element);
     }
-    return std::string();
   }
 
   // Set.
   template <typename T>
-  std::string fromYamlImpl(std::set<T>& value, const YAML::Node& node) const {
+  void fromYamlImpl(std::set<T>& value, const YAML::Node& node, std::string& error) const {
     if (!node.IsSequence()) {
-      return "Data is not a sequence.";
+      error = "Data is not a sequence.";
+      return;
     }
     const std::vector<T> placeholder = node.as<std::vector<T>>();
     value.clear();
     value.insert(placeholder.begin(), placeholder.end());
-    return std::string();
   }
+
   template <typename T>
-  std::string toYamlImpl(const std::string& name, const std::set<T>& value) {
+  void toYamlImpl(const std::string& name, const std::set<T>& value, std::string& error) {
     for (const T& element : value) {
       node_[name].push_back(element);
     }
-    return std::string();
   }
 
   // Map.
   template <typename K, typename V>
-  std::string fromYamlImpl(std::map<K, V>& value, const YAML::Node& node) const {
+  void fromYamlImpl(std::map<K, V>& value, const YAML::Node& node, std::string& error) const {
     if (!node.IsMap()) {
-      return "Data is not a map.";
+      error = "Data is not a map.";
+      return;
     }
     value = node.as<std::map<K, V>>();
-    return std::string();
   }
+
   template <typename K, typename V>
-  std::string toYamlImpl(const std::string& name, const std::map<K, V>& value) {
+  void toYamlImpl(const std::string& name, const std::map<K, V>& value, std::string& error) {
     for (const auto& kv_pair : value) {
       node_[name][kv_pair.first] = kv_pair.second;
     }
-    return std::string();
   }
 
   // uint8
-  std::string fromYamlImpl(uint8_t& value, const YAML::Node& node) const;
-  std::string toYamlImpl(const std::string& name, const uint8_t& value);
+  void fromYamlImpl(uint8_t& value, const YAML::Node& node, std::string& error) const;
+  void toYamlImpl(const std::string& name, const uint8_t& value, std::string& error);
 
   // Members.
   YAML::Node root_node_;  // Data storage.

@@ -5,7 +5,7 @@
 namespace config::internal {
 
 std::string AslFormatter::formatErrorsImpl(const MetaData& data, const std::string& what, const Severity severity) {
-  const std::string sev = severityToString(severity);
+  const std::string sev = severityToString(severity) + ": ";
   const size_t print_width = Settings::instance().print_width;
   std::string result = what + " '" + resolveConfigName(data) + "':\n";
   if (Settings::instance().index_subconfig_field_names) {

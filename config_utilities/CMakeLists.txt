@@ -50,6 +50,13 @@ cs_add_executable(demo_ros
         )
 target_link_libraries(demo_ros ${PROJECT_NAME} yaml-cpp)
 
+##########
+# Tests #
+##########
+
+if(CATKIN_ENABLE_TESTING)
+  add_subdirectory(test)
+endif(CATKIN_ENABLE_TESTING)
 
 ##########
 # Export #

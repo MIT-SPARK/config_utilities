@@ -1,3 +1,5 @@
+#pragma once
+
 #include <exception>
 #include <map>
 #include <memory>
@@ -18,10 +20,13 @@ namespace config::internal {
 
 // Interfaces for all internal tools interact with configs through the visitor.
 template <typename ConfigT>
-MetaData Visitor::setValues(ConfigT& config, const YAML::Node& node, bool print_warnings) {
-  Visitor visitor = Visitor::create();
-  visitor.parser.node() = node;
-  visitor.mode = Visitor::Mode::kSet;
+MetaData Visitor::setValues(ConfigT& config,
+                            const YAML::Node& node,
+                            const bool print_warnings,
+                            const std::string& sub_namespace,
+                            const std::string& name_prefix) {
+  Visitor visitor(Mode::kSet, sub_namespace, name_prefix);
+  visitor.parser.setNode(node);
   declare_config(config);
   visitor.extractErrors();
 
@@ -32,13 +37,15 @@ MetaData Visitor::setValues(ConfigT& config, const YAML::Node& node, bool print_
 }
 
 template <typename ConfigT>
-MetaData Visitor::getValues(const ConfigT& config, bool print_warnings) {
-  Visitor visitor = Visitor::create();
-  visitor.mode = Visitor::Mode::kGet;
+MetaData Visitor::getValues(const ConfigT& config,
+                            const bool print_warnings,
+                            const std::string& sub_namespace,
+                            const std::string& name_prefix) {
+  Visitor visitor(Mode::kGet, sub_namespace, name_prefix);
   // NOTE: We know that in mode kGet, the config is not modified.
   declare_config(const_cast<ConfigT&>(config));
   visitor.extractErrors();
-  visitor.data.data = visitor.parser.node();
+  visitor.data.data = visitor.parser.getNode();
 
   if (print_warnings && visitor.data.hasErrors()) {
     Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Severity::kWarning));
@@ -48,13 +55,30 @@ MetaData Visitor::getValues(const ConfigT& config, bool print_warnings) {
 
 template <typename ConfigT>
 MetaData Visitor::getChecks(const ConfigT& config) {
-  Visitor visitor = Visitor::create();
-  visitor.mode = Visitor::Mode::kCheck;
+  Visitor visitor(Mode::kCheck);
   // NOTE: We know that in mode kCheck, the config is not modified.
   declare_config(const_cast<ConfigT&>(config));
   visitor.extractErrors();
 
   return visitor.data;
+}
+
+template <typename ConfigT>
+MetaData Visitor::subVisit(ConfigT& config,
+                           const bool print_warnings,
+                           const std::string& sub_namespace,
+                           const std::string& name_prefix) {
+  Visitor& current_visitor = Visitor::instance();
+  switch (current_visitor.mode) {
+    case Visitor::Mode::kGet:
+      return getValues(config, print_warnings, sub_namespace, name_prefix);
+    case Visitor::Mode::kSet:
+      return setValues(config, current_visitor.parser.getNode(), print_warnings, sub_namespace, name_prefix);
+    case Visitor::Mode::kCheck:
+      return getChecks(config);
+    default:
+      return MetaData();
+  }
 }
 
 template <typename T>
@@ -130,6 +154,7 @@ void Visitor::visitCheck(Visitor::CheckMode mode, const T& param, const T& value
   if (visitor.mode != Visitor::Mode::kCheck) {
     return;
   }
+  visitor.checker.setFieldNamePrefix(visitor.name_prefix);
 
   switch (mode) {
     case Visitor::CheckMode::kGT:
@@ -159,60 +184,38 @@ void Visitor::visitCheckInRange(const T& param, const T& lower, const T& upper, 
   if (visitor.mode != Visitor::Mode::kCheck) {
     return;
   }
+  visitor.checker.setFieldNamePrefix(visitor.name_prefix);
   visitor.checker.checkInRange(param, lower, upper, name);
 }
 
 template <typename ConfigT>
 void Visitor::visitSubconfig(ConfigT& config, const std::string& field_name, const std::string& sub_namespace) {
   Visitor& visitor = Visitor::instance();
-
-  if (visitor.mode != Visitor::Mode::kSet && visitor.mode != Visitor::Mode::kGet &&
-      visitor.mode != Visitor::Mode::kCheck) {
-    return;
-  }
+  MetaData& data = visitor.data;
 
   // Check is a configT. Ceck this at runtime to allow more flexibility for config declaration.
   if (!isConfig<ConfigT>()) {
-    visitor.data.errors.emplace_back("Subconfig field '" + field_name + "' has not beend declared a config.");
+    data.errors.emplace_back("Subconfig field '" + field_name + "' has not beend declared a config.");
     return;
   }
 
   // Add the field info.
-  FieldInfo& info = visitor.data.field_infos.emplace_back();
+  FieldInfo& info = data.field_infos.emplace_back();
   info.name = field_name;
-  info.subconfig_id = visitor.data.sub_configs.size();
-
-  // Store state as was before.
-  visitor.extractErrors();
-  const MetaData data_before = visitor.data;
-  const std::string name_space_before = visitor.name_space;
-  const std::string name_prefix_before = visitor.name_prefix;
-
-  // Set new data.
-  if (Settings::instance().index_subconfig_field_names) {
-    visitor.name_prefix += field_name + ".";
-    visitor.checker.setFieldNamePrefix(visitor.name_prefix);
-  }
-  visitor.name_space = joinNamespace(visitor.name_space, sub_namespace);
-  visitor.data = MetaData();
-  visitor.data.current_field_name = field_name;
+  info.subconfig_id = data.sub_configs.size();
 
   // Visit subconfig.
-  declare_config(config);
+  const std::string new_namespace = joinNamespace(visitor.name_space, sub_namespace);
+  const std::string new_prefix =
+      visitor.name_prefix + (Settings::instance().index_subconfig_field_names ? field_name + "." : "");
+  data.current_field_name = field_name;
+  MetaData& new_data = data.sub_configs.emplace_back(Visitor::subVisit(config, false, new_namespace, new_prefix));
 
   // Aggregate data.
-  visitor.extractErrors();
-  MetaData data_after = visitor.data;
   if (visitor.mode == Visitor::Mode::kGet) {
-    data_after.data = lookupNamespace(YAML::Clone(visitor.parser.node()), visitor.name_space);
+    // When getting data add the new data also to the parent data node, using the correct namespace.
+    mergeYamlNodes(data.data, moveDownNamespace(new_data.data, sub_namespace));
   }
-
-  // Restore state.
-  visitor.name_space = name_space_before;
-  visitor.name_prefix = name_prefix_before;
-  visitor.checker.setFieldNamePrefix(name_prefix_before);
-  visitor.data = data_before;
-  visitor.data.sub_configs.emplace_back(std::move(data_after));
 }
 
 template <typename ConfigT>
