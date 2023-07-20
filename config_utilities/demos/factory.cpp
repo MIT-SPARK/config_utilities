@@ -13,7 +13,7 @@
 #include "config_utilities/parsing/yaml.h"           // enables 'createFromYaml()' and 'createFromYamlFile()'
 #include "config_utilities/printing.h"               // enables 'toString()'
 #include "config_utilities/validity_checks.h"        // enables 'checkValid()'
-#include "config_utilities/variable_config.h"        // enables 'VariableConfig'
+#include "config_utilities/virtual_config.h"         // enables 'VirtualConfig'
 
 namespace demo {
 
@@ -113,12 +113,12 @@ class DerivedD : public Base {
       config::RegistrationWithConfig<Base, DerivedD, ExternalConfig, int>("DerivedD");
 };
 
-// Define an object that uses variable configs to specify its members.
+// Define an object that uses virtual configs to specify its members.
 class ObjectWithDerivedMembers {
  public:
   struct Config {
     double d = 0.123;
-    config::VariableConfig<Base> base_config;
+    config::VirtualConfig<Base> base_config;
   };
 
   explicit ObjectWithDerivedMembers(const Config& config, int base_i) : config_(config) {
@@ -197,7 +197,7 @@ int main(int argc, char** argv) {
   // --------------- Storing Configs to Variable Objects ----------------
 
   // Variable configs can be used to store configs of any derived type and create that object later.
-  config::VariableConfig<demo::Base> config;
+  config::VirtualConfig<demo::Base> config;
 
   // An unitnitilized config is not valid.
   std::cout << "Config is set: " << std::boolalpha << config.isSet() << std::endl;
@@ -207,7 +207,7 @@ int main(int argc, char** argv) {
   std::cout << "Config content:\n" << config::toString(config) << std::endl;
 
   // Variable configs are created as any other.
-  config = config::fromYamlFile<config::VariableConfig<demo::Base>>(my_root_path + "demo_factory.yaml");
+  config = config::fromYamlFile<config::VirtualConfig<demo::Base>>(my_root_path + "demo_factory.yaml");
 
   std::cout << "Config is set: " << config.isSet() << std::endl;
   is_valid = config::isValid(config, true);

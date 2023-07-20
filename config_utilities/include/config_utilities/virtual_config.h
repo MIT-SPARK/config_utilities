@@ -12,33 +12,33 @@
 namespace config {
 
 template <class BaseT>
-class VariableConfig;
+class VirtualConfig;
 
 namespace internal {
 
 template <typename ConfigT>
-MetaData getDefaultValues(const VariableConfig<ConfigT>& config);
+MetaData getDefaultValues(const VirtualConfig<ConfigT>& config);
 
 }  // namespace internal
 
 /**
- * @brief The variable config is a config struct that wraps an arbitrary config struct for later creation of a DerivedT
+ * @brief The virtual config is a config struct that wraps an arbitrary config struct for later creation of a DerivedT
  * class.
  *
  * @tparam BaseT The base class of the object that should be created from the config.
  */
 template <class BaseT>
-class VariableConfig {
+class VirtualConfig {
  public:
   // Copy operators.
-  VariableConfig() = default;
-  VariableConfig(const VariableConfig& other) { config_ = other.config_->clone(); }
-  VariableConfig(VariableConfig&& other) { config_ = std::move(other.config_); }
-  VariableConfig& operator=(const VariableConfig& other) {
+  VirtualConfig() = default;
+  VirtualConfig(const VirtualConfig& other) { config_ = other.config_->clone(); }
+  VirtualConfig(VirtualConfig&& other) { config_ = std::move(other.config_); }
+  VirtualConfig& operator=(const VirtualConfig& other) {
     config_ = other.config_->clone();
     return *this;
   }
-  VariableConfig& operator=(VariableConfig&& other) {
+  VirtualConfig& operator=(VirtualConfig&& other) {
     config_ = std::move(other.config_);
     return *this;
   }
@@ -58,7 +58,7 @@ class VariableConfig {
   void setOptional(bool optional) { optional_ = optional; }
 
   /**
-   * @brief Get the string-identifier-type of the config stored in the variable config.
+   * @brief Get the string-identifier-type of the config stored in the virtual config.
    */
   std::string getType() const { return config_ ? config_->type : "Uninitialized"; }
 
@@ -81,9 +81,9 @@ class VariableConfig {
 
  private:
   template <typename T>
-  friend void declare_config(VariableConfig<T>&);
+  friend void declare_config(VirtualConfig<T>&);
   template <typename T>
-  friend internal::MetaData internal::getDefaultValues(const VariableConfig<T>&);
+  friend internal::MetaData internal::getDefaultValues(const VirtualConfig<T>&);
 
   bool optional_ = false;
   std::unique_ptr<internal::ConfigWrapper> config_;
@@ -91,13 +91,13 @@ class VariableConfig {
 
 namespace internal {
 
-// Declare variable config types.
+// Declare virtual config types.
 template <typename T>
-struct is_variable_config<VariableConfig<T>> : std::true_type {};
+struct is_virtual_config<VirtualConfig<T>> : std::true_type {};
 
 // Specialization for default values.
 template <typename ConfigT>
-MetaData getDefaultValues(const VariableConfig<ConfigT>& config) {
+MetaData getDefaultValues(const VirtualConfig<ConfigT>& config) {
   if (!config.config_) {
     return MetaData();
   }
@@ -107,11 +107,11 @@ MetaData getDefaultValues(const VariableConfig<ConfigT>& config) {
 
 }  // namespace internal
 
-// Declare the Variable Config a config, so it can be handled like any other object.
+// Declare the Virtual Config a config, so it can be handled like any other object.
 template <typename BaseT>
-void declare_config(VariableConfig<BaseT>& config) {
+void declare_config(VirtualConfig<BaseT>& config) {
   std::optional<YAML::Node> data =
-      internal::Visitor::visitVariableConfig(config.isSet(), config.optional_, config.getType());
+      internal::Visitor::visitVirtualConfig(config.isSet(), config.optional_, config.getType());
   if (data) {
     // Create the wrapped config for the first time.
     config.config_ = internal::Factory::createConfig<BaseT>(*data);

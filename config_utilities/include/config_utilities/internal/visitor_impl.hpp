@@ -26,7 +26,7 @@ MetaData Visitor::setValues(ConfigT& config, const YAML::Node& node, bool print_
   visitor.extractErrors();
 
   if (print_warnings && visitor.data.hasErrors()) {
-    Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Formatter::Severity::kWarning));
+    Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Severity::kWarning));
   }
   return visitor.data;
 }
@@ -41,7 +41,7 @@ MetaData Visitor::getValues(const ConfigT& config, bool print_warnings) {
   visitor.data.data = visitor.parser.node();
 
   if (print_warnings && visitor.data.hasErrors()) {
-    Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Formatter::Severity::kWarning));
+    Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Severity::kWarning));
   }
   return visitor.data;
 }

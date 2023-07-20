@@ -5,18 +5,7 @@
 namespace config::internal {
 
 std::string AslFormatter::formatErrorsImpl(const MetaData& data, const std::string& what, const Severity severity) {
-  std::string sev;
-  switch (severity) {
-    case kWarning:
-      sev = "Warning: ";
-      break;
-    case kError:
-      sev = "Error: ";
-      break;
-    case kFatal:
-      sev = "Fatal: ";
-      break;
-  }
+  const std::string sev = severityToString(severity);
   const size_t print_width = Settings::instance().print_width;
   std::string result = what + " '" + resolveConfigName(data) + "':\n";
   if (Settings::instance().index_subconfig_field_names) {
@@ -79,10 +68,10 @@ std::string AslFormatter::formatSubconfig(const MetaData& data, const FieldInfo&
   if (indicate_subconfig_types_) {
     header += " [" + resolveConfigName(data) + "]";
   }
-  if (indicate_subconfig_default_ && info.is_default && !data.is_variable_config) {
+  if (indicate_subconfig_default_ && info.is_default && !data.is_virtual_config) {
     header += " (default)";
   }
-  if (resolveConfigName(data) != "Uninitialized Variable Config") {
+  if (resolveConfigName(data) != "Uninitialized Virtual Config") {
     header += ":";
   }
   header += "\n";
@@ -192,14 +181,14 @@ std::string AslFormatter::wrapString(const std::string& str,
 
 std::string AslFormatter::resolveConfigName(const MetaData& data) const {
   if (data.name.empty()) {
-    if (data.is_variable_config) {
-      return "Uninitialized Variable Config";
+    if (data.is_virtual_config) {
+      return "Uninitialized Virtual Config";
     } else {
       return "Unnamed Config";
     }
   } else {
-    if (data.is_variable_config && indicate_variable_configs_) {
-      return "Variable Config: " + data.name;
+    if (data.is_virtual_config && indicate_virtual_configs_) {
+      return "Virtual Config: " + data.name;
     } else {
       return data.name;
     }

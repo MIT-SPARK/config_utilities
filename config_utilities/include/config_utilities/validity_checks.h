@@ -23,22 +23,16 @@ namespace config {
  */
 template <typename ConfigT>
 bool isValid(const ConfigT& config, bool print_warnings = false) {
-  if (!isConfig<ConfigT>()) {
-    if (print_warnings) {
-      std::stringstream ss;
-      ss << "Can not use 'config::isValid()' on non-config T='" << typeid(ConfigT).name()
-         << "'. Please implement 'void declare_config(T&)' for your struct.";
-      internal::Logger::logWarning(ss.str());
-    }
-    return false;
-  }
+  static_assert(isConfig<ConfigT>(),
+                "Can not use 'config::isValid()' on non-config type. Please implement 'void declare_config(ConfigT&)' "
+                "for your struct.");
   internal::MetaData data = internal::Visitor::getChecks(config);
   if (!data.hasErrors()) {
     return true;
   }
   if (print_warnings) {
     internal::Logger::logWarning(
-        internal::Formatter::formatErrors(data, "Invalid config", internal::Formatter::Severity::kWarning));
+        internal::Formatter::formatErrors(data, "Invalid config", internal::Severity::kWarning));
   }
   return false;
 }
@@ -51,12 +45,10 @@ bool isValid(const ConfigT& config, bool print_warnings = false) {
  */
 template <typename ConfigT>
 const ConfigT& checkValid(const ConfigT& config) {
-  if (!isConfig<ConfigT>()) {
-    std::stringstream ss;
-    ss << "Can not use 'config::checkValid()' on non-config T='" << typeid(ConfigT).name()
-       << "'. Please implement 'void declare_config(T&)' for your struct.";
-    internal::Logger::logFatal(ss.str());
-  }
+  static_assert(
+      isConfig<ConfigT>(),
+      "Can not use 'config::checkValid()' on non-config type. Please implement 'void declare_config(ConfigT&)' "
+      "for your struct.");
   internal::MetaData data = internal::Visitor::getChecks(config);
   if (!data.hasErrors()) {
     if (Settings().store_valid_configs) {
@@ -64,8 +56,7 @@ const ConfigT& checkValid(const ConfigT& config) {
     }
     return config;
   }
-  internal::Logger::logFatal(
-      internal::Formatter::formatErrors(data, "Invalid config", internal::Formatter::Severity::kFatal));
+  internal::Logger::logFatal(internal::Formatter::formatErrors(data, "Invalid config", internal::Severity::kFatal));
   return config;
 }
 

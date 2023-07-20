@@ -35,8 +35,8 @@ struct MetaData {
   // Always get the name of the config if possible.
   std::string name;
 
-  // Whether the data stored belongs to a variable config.
-  bool is_variable_config = false;
+  // Whether the data stored belongs to a virtual config.
+  bool is_virtual_config = false;
   std::string current_field_name;  // Temporary storage for field names.
 
   // Yaml node used to get or set the data of a config.

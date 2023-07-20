@@ -47,7 +47,7 @@ inline void name(const std::string& name) { internal::Visitor::visitName(name); 
  * @param field_name The name of the field.
  * @param unit Optionally define the unit of the field during printing.
  */
-template <typename T, typename std::enable_if<!internal::is_config_impl<T>::value, bool>::type = true>
+template <typename T, typename std::enable_if<!isConfig<T>(), bool>::type = true>
 void field(T& field, const std::string& field_name, const std::string& unit = "") {
   internal::Visitor::visitField(field, field_name, unit);
 }

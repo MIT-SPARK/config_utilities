@@ -35,15 +35,8 @@ MetaData getDefaultValues(const ConfigT& config) {
  * @param print_warnings If true, prints warnings for any failed conversions.
  * @returns The string representation of the config.
  */
-template <typename ConfigT>
+template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
 std::string toString(const ConfigT& config, bool print_warnings = true) {
-  if (!isConfig<ConfigT>()) {
-    std::stringstream ss;
-    ss << "Can not use 'config::toString()' on non-config T='" << typeid(ConfigT).name()
-       << "'. Please implement 'void declare_config(T&)' for your struct.";
-    internal::Logger::logError(ss.str());
-    return "";
-  }
   // Get the data of the config.
   internal::MetaData data = internal::Visitor::getValues(config);
 
@@ -56,7 +49,7 @@ std::string toString(const ConfigT& config, bool print_warnings = true) {
   // Format the output data.
   if (print_warnings && data.hasErrors()) {
     internal::Logger::logWarning(
-        internal::Formatter::formatErrors(data, "Errors parsing config", internal::Formatter::Severity::kWarning));
+        internal::Formatter::formatErrors(data, "Errors parsing config", internal::Severity::kWarning));
   }
 
   return internal::Formatter::formatToString(data);
@@ -65,8 +58,7 @@ std::string toString(const ConfigT& config, bool print_warnings = true) {
 }  // namespace config
 
 // Define the ostream operator for declared configs.
-template <typename ConfigT,
-          typename std::enable_if<config::internal::is_config_impl<ConfigT>::value, bool>::type = true>
+template <typename ConfigT, typename std::enable_if<config::isConfig<ConfigT>(), bool>::type = true>
 std::ostream& operator<<(std::ostream& os, const ConfigT& config) {
   os << config::toString(config);
   return os;

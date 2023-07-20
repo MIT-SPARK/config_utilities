@@ -44,7 +44,7 @@ class AslFormatter : public Formatter {
   // Formatting options, currently hardcoded.
   constexpr static bool indicate_subconfig_types_ = true;
   constexpr static bool indicate_subconfig_default_ = true;
-  constexpr static bool indicate_variable_configs_ = true;
+  constexpr static bool indicate_virtual_configs_ = true;
 };
 
 }  // namespace config::internal

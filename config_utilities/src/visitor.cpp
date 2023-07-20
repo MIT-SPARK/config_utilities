@@ -60,9 +60,9 @@ void Visitor::visitCheckCondition(bool condition, const std::string& error_messa
   visitor.checker.checkCondition(condition, error_message);
 }
 
-std::optional<YAML::Node> Visitor::visitVariableConfig(bool is_set, bool is_optional, const std::string& type) {
+std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set, bool is_optional, const std::string& type) {
   Visitor& visitor = Visitor::instance();
-  visitor.data.is_variable_config = true;
+  visitor.data.is_virtual_config = true;
 
   if (visitor.mode == Visitor::Mode::kCheck) {
     if (!is_set && !is_optional) {
@@ -81,7 +81,7 @@ std::optional<YAML::Node> Visitor::visitVariableConfig(bool is_set, bool is_opti
   }
 
   if (visitor.mode == Visitor::Mode::kSet) {
-    // Return the data to intialize the variable config if this is the first time setting it.
+    // Return the data to intialize the virtual config if this is the first time setting it.
     return lookupNamespace(visitor.parser.node(), visitor.name_space);
   }
 

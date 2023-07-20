@@ -22,14 +22,11 @@ class Formatter {
   Formatter() = default;
   virtual ~Formatter() = default;
 
-  // Severity of error formatting.
-  enum Severity { kWarning, kError, kFatal };
-
   // Accessing the formatter.
   // Format all errors in the meta data into the display string.
   static std::string formatErrors(const MetaData& data,
                                   const std::string& what = "",
-                                  const Severity severity = kWarning);
+                                  const Severity severity = Severity::kWarning);
 
   // Format the content of a single config the display string.
   static std::string formatToString(const MetaData& data);
