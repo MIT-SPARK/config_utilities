@@ -7,12 +7,14 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(yaml-cpp REQUIRED)
 
+option(BUILD_SHARED_LIBS "Build shared libs" ON)
 option(CONFIG_UTILS_ENABLE_ROS "Export roscpp and build related code" ON)
 option(CONFIG_UTILS_ENABLE_EIGEN "Export Eigen and build related code" ON)
 option(CONFIG_UTILS_ENABLE_GLOG "Export glog and build related code" ON)
 option(CONFIG_UTILS_BUILD_TESTS "Build unit tests" ON)
+option(CONFIG_UTILS_INSTALL_TESTS "Install test executable" ON)
 option(CONFIG_UTILS_BUILD_DEMOS "Build demo executables" ON)
-# TODO(nathan) executable install options
+option(CONFIG_UTILS_INSTALL_DEMOS "Install demo executable" ON)
 
 macro(FIND_OPTIONAL package_name package_option)
   find_package(${package_name})
@@ -26,10 +28,8 @@ macro(FIND_OPTIONAL package_name package_option)
   endif()
 endmacro()
 
-FIND_OPTIONAL(roscpp CONFIG_UTILS_ENABLE_ROS)
-FIND_OPTIONAL(Eigen3 CONFIG_UTILS_ENABLE_EIGEN)
-message(WARNING ${ENABLE_roscpp})
-message(WARNING ${ENABLE_Eigen3})
+find_optional(roscpp CONFIG_UTILS_ENABLE_ROS)
+find_optional(Eigen3 CONFIG_UTILS_ENABLE_EIGEN)
 
 add_library(
   ${PROJECT_NAME}
@@ -48,6 +48,7 @@ target_include_directories(
   ${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>
                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
+set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE 1)
 
 if(ENABLE_roscpp)
   target_link_libraries(${PROJECT_NAME} PUBLIC ${roscpp_LIBRARIES})
@@ -82,11 +83,14 @@ install(
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/config_utilities)
 
 include(CMakePackageConfigHelpers)
-write_basic_package_version_file(
-  config_utilitiesVersion.cmake
-  VERSION ${PACKAGE_VERSION}
-  COMPATIBILITY AnyNewerVersion)
 configure_package_config_file(
   ${CMAKE_CURRENT_LIST_DIR}/cmake/config_utilitiesConfig.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/config_utilitiesConfig.cmake
   INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/config_utilities)
+write_basic_package_version_file(
+  config_utilitiesConfigVersion.cmake
+  VERSION ${PACKAGE_VERSION}
+  COMPATIBILITY AnyNewerVersion)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/config_utilitiesConfig.cmake
+              ${CMAKE_CURRENT_BINARY_DIR}/config_utilitiesConfigVersion.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/config_utilities)
