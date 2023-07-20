@@ -7,12 +7,29 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(yaml-cpp REQUIRED)
 
-option(CONFIG_UTILS_ENABLE_ROS "Build ROS related code" ON)
-option(CONFIG_UTILS_ENABLE_EIGEN "Build Eigen related code" ON)
-option(CONFIG_UTILS_ENABLE_GLOG "Build glog related code" ON)
+option(CONFIG_UTILS_ENABLE_ROS "Export roscpp and build related code" ON)
+option(CONFIG_UTILS_ENABLE_EIGEN "Export Eigen and build related code" ON)
+option(CONFIG_UTILS_ENABLE_GLOG "Export glog and build related code" ON)
 option(CONFIG_UTILS_BUILD_TESTS "Build unit tests" ON)
 option(CONFIG_UTILS_BUILD_DEMOS "Build demo executables" ON)
 # TODO(nathan) executable install options
+
+macro(FIND_OPTIONAL package_name package_option)
+  find_package(${package_name})
+  if(${package_name}_FOUND)
+    set(ENABLE_${package_name} TRUE)
+  else()
+    set(ENABLE_${package_name} FALSE)
+    if(${package_option})
+      message(WARNING "${package_name} not found. Consider disabling")
+    endif()
+  endif()
+endmacro()
+
+FIND_OPTIONAL(roscpp CONFIG_UTILS_ENABLE_ROS)
+FIND_OPTIONAL(Eigen3 CONFIG_UTILS_ENABLE_EIGEN)
+message(WARNING ${ENABLE_roscpp})
+message(WARNING ${ENABLE_Eigen3})
 
 add_library(
   ${PROJECT_NAME}
@@ -32,32 +49,44 @@ target_include_directories(
                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
 
-# TODO(nathan) refactor
-if (CONFIG_UTILS_ENABLE_ROS)
-  find_package(roscpp)
-  if (roscpp_FOUND)
-    target_link_libraries(${PROJECT_NAME} PUBLIC ${roscpp_LIBRARIES})
-    target_include_directories(${PROJECT_NAME} PUBLIC ${roscpp_INCLUDE_DIRS})
-  else()
-    message(WARNING "ROS was not found. Consider disabling")
-    set(CONFIG_UTILS_ENABLE_ROS OFF)
-  endif()
-endif(CONFIG_UTILS_ENABLE_ROS)
+if(ENABLE_roscpp)
+  target_link_libraries(${PROJECT_NAME} PUBLIC ${roscpp_LIBRARIES})
+  target_include_directories(${PROJECT_NAME} PUBLIC ${roscpp_INCLUDE_DIRS})
+endif()
 
-if (CONFIG_UTILS_ENABLE_EIGEN)
-  find_package(Eigen3)
-  if (Eigen3_FOUND)
-    target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen)
-  else()
-    message(WARNING "Eigen3 was not found. Consider disabling")
-    set(CONFIG_UTILS_ENABLE_EIGEN OFF)
-  endif()
-endif(CONFIG_UTILS_ENABLE_EIGEN)
+if(ENABLE_Eigen3)
+  target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen)
+endif()
 
 if(CONFIG_UTILS_BUILD_DEMOS)
   add_subdirectory(demos)
-endif(CONFIG_UTILS_BUILD_DEMOS)
+endif()
 
 if(CONFIG_UTILS_BUILD_TESTS)
   add_subdirectory(tests)
-endif(CONFIG_UTILS_BUILD_TESTS)
+endif()
+
+add_library(config_utilities::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+
+include(GNUInstallDirs)
+install(
+  TARGETS ${PROJECT_NAME}
+  EXPORT config_utilities-targets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(
+  EXPORT config_utilities-targets
+  FILE config_utilitiesTargets.cmake
+  NAMESPACE config_utilities::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/config_utilities)
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+  config_utilitiesVersion.cmake
+  VERSION ${PACKAGE_VERSION}
+  COMPATIBILITY AnyNewerVersion)
+configure_package_config_file(
+  ${CMAKE_CURRENT_LIST_DIR}/cmake/config_utilitiesConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/config_utilitiesConfig.cmake
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/config_utilities)

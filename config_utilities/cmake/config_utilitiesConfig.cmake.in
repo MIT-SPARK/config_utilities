@@ -1,0 +1,17 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+if(@ENABLE_Eigen3@)
+  find_dependency(Eigen3 REQUIRED)
+endif()
+
+if(@ENABLE_roscpp@)
+  find_dependency(roscpp REQUIRED)
+endif()
+
+if(NOT TARGET config_utilities::config_utilities)
+  include("${config_utilities_CMAKE_DIR}/config_utilitiesTargets.cmake")
+endif()
+
+set(config_utilities_LIBRARIES config_utilities::config_utilities)
