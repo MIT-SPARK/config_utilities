@@ -14,7 +14,6 @@ option(CONFIG_UTILS_ENABLE_GLOG "Export glog and build related code" ON)
 option(CONFIG_UTILS_BUILD_TESTS "Build unit tests" ON)
 option(CONFIG_UTILS_INSTALL_TESTS "Install test executable" ON)
 option(CONFIG_UTILS_BUILD_DEMOS "Build demo executables" ON)
-option(CONFIG_UTILS_INSTALL_DEMOS "Install demo executable" ON)
 
 macro(FIND_OPTIONAL package_name package_option)
   find_package(${package_name})
