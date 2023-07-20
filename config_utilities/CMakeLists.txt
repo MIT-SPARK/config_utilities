@@ -21,6 +21,7 @@ cs_add_library(${PROJECT_NAME}
         src/asl_formatter.cpp
         src/string_utils.cpp
         src/yaml_utils.cpp
+        src/logger.cpp
         src/formatter.cpp
         src/globals.cpp
         )

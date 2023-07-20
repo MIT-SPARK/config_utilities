@@ -1,0 +1,29 @@
+#pragma once
+
+#include <map>
+#include <set>
+#include <string>
+#include <vector>
+
+#include "config_utilities/types/eigen_matrix.h"
+
+namespace config::test {
+
+struct DefaultConfig {
+  int i = 1;
+  float f = 2.f;
+  double d = 3.0;
+  bool b = true;
+  uint8_t u8 = 4;
+  std::string s = "test string";
+  std::vector<int> vec = {1, 2, 3};
+  std::map<std::string, int> map = {{"a", 1}, {"b", 2}, {"c", 3}};
+  std::set<float> set = {1.0, 2.0, 3.0};
+  Eigen::Matrix<double, 3, 3> mat = Eigen::Matrix<double, 3, 3>::Identity();
+  enum class Enum { kA, kB, kC } my_enum = Enum::kA;
+  enum class StrangeEnum : int { kX = 0, kY = 42, kZ = -7 } my_strange_enum = StrangeEnum::kX;
+};
+
+void declare_config(DefaultConfig& config);
+
+}  // namespace config::test

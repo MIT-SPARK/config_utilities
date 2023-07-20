@@ -50,12 +50,14 @@ const ConfigT& checkValid(const ConfigT& config) {
       "Can not use 'config::checkValid()' on non-config type. Please implement 'void declare_config(ConfigT&)' "
       "for your struct.");
   internal::MetaData data = internal::Visitor::getChecks(config);
+
   if (!data.hasErrors()) {
     if (Settings().store_valid_configs) {
       internal::Globals::instance().valid_configs.push_back(internal::Visitor::getValues(config, false));
     }
     return config;
   }
+
   internal::Logger::logFatal(internal::Formatter::formatErrors(data, "Invalid config", internal::Severity::kFatal));
   return config;
 }
