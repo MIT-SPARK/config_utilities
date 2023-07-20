@@ -16,6 +16,7 @@
   <depend>glog_catkin</depend>  <!-- logging/glog -->
   <depend>eigen_catkin</depend>  <!-- types/eigen_matrix -->
   <depend>roscpp</depend>  <!-- parsing/ros, logging/ros -->
+  <depend>roslib</depend>  <!-- for testing -->
 
   <export>
   </export>
