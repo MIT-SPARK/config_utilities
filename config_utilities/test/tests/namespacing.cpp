@@ -4,6 +4,7 @@
 
 #include "config_utilities/config.h"
 #include "config_utilities/internal/string_utils.h"
+#include "config_utilities/test/utils.h"
 
 namespace config::test {
 
@@ -116,6 +117,31 @@ void declare_config(DerivedNs& ns) {
   }
 }
 
+struct DoublyDerivedNs : public DerivedNs {
+  explicit DoublyDerivedNs(Syntax syntax) : DerivedNs(syntax) {}
+};
+
+void declare_config(DoublyDerivedNs& ns) {
+  switch (ns.syntax) {
+    case DerivedNs::Syntax::kNone: {
+      config::base<DerivedNs>(ns);
+      break;
+    }
+    case DerivedNs::Syntax::kNamespaceFunctions: {
+      config::enter_namespace("double_function_ns");
+      config::base<DerivedNs>(ns);
+      break;
+    }
+    case DerivedNs::Syntax::kNameSpaceClass: {
+      {
+        NameSpace open_ns("double_class_ns");
+        config::base<DerivedNs>(ns);
+      }
+      break;
+    }
+  }
+}
+
 struct NsWrapper {
   Ns ns1, ns2;
 };
@@ -190,10 +216,17 @@ TEST(Namespacing, joinNamespace) {
 }
 
 TEST(Namespacing, enterNamespace) {
+  auto logger = std::make_shared<TestLogger>();
+  internal::Logger::setLogger(logger);
   Ns ns;
   internal::Visitor::setValues(ns, YAML::Node());
   checkNS(ns);
 
+  // This should warn about improper use of NameSpace.enter()/exit().
+  EXPECT_EQ(logger->messages().size(), 2);
+}
+
+TEST(Namespacing, enterNestedNamespaces) {
   auto testNestedNs = []() {
     auto derived_ns_none = DerivedNs(DerivedNs::Syntax::kNone);
     internal::Visitor::setValues(derived_ns_none, YAML::Node());
@@ -209,6 +242,21 @@ TEST(Namespacing, enterNamespace) {
     internal::Visitor::setValues(derived_ns_fn, YAML::Node());
     checkNS(derived_ns_fn, "function_ns");
     checkNS(derived_ns_fn.ns);
+
+    auto doubly_derived_ns_none = DoublyDerivedNs(DerivedNs::Syntax::kNone);
+    internal::Visitor::setValues(doubly_derived_ns_none, YAML::Node());
+    checkNS(doubly_derived_ns_none);
+    checkNS(doubly_derived_ns_none.ns);
+
+    auto doubly_derived_ns_class = DoublyDerivedNs(DerivedNs::Syntax::kNameSpaceClass);
+    internal::Visitor::setValues(doubly_derived_ns_class, YAML::Node());
+    checkNS(doubly_derived_ns_class, "double_class_ns/class_ns");
+    checkNS(doubly_derived_ns_class.ns, "double_class_ns");
+
+    auto doubly_derived_ns_fn = DoublyDerivedNs(DerivedNs::Syntax::kNamespaceFunctions);
+    internal::Visitor::setValues(doubly_derived_ns_fn, YAML::Node());
+    checkNS(doubly_derived_ns_fn, "double_function_ns/function_ns");
+    checkNS(doubly_derived_ns_fn.ns, "double_function_ns");
 
     NsWrapper ns_wrapper;
     internal::Visitor::setValues(ns_wrapper, YAML::Node());

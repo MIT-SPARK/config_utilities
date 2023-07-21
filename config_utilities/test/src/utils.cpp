@@ -55,4 +55,8 @@ bool expectEqual(const YAML::Node& a, const YAML::Node& b) {
   return false;
 }
 
+void TestLogger::logImpl(const internal::Severity severity, const std::string& message) {
+  messages_.emplace_back(severity, message);
+}
+
 }  // namespace config::test
