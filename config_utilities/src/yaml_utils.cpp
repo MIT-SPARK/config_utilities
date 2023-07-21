@@ -25,7 +25,7 @@ void mergeYamlNodes(YAML::Node& a, const YAML::Node& b) {
   }
 
   // Merge all entries of b into a.
-  for (auto kv_pair : b) {
+  for (const auto kv_pair : b) {
     if (kv_pair.first.IsScalar()) {
       const std::string& key = kv_pair.first.Scalar();
       if (a[key]) {
@@ -40,13 +40,13 @@ void mergeYamlNodes(YAML::Node& a, const YAML::Node& b) {
 }
 
 YAML::Node lookupNamespace(const YAML::Node& node, const std::string& name_space, const std::string& separator) {
-  YAML::Node current_node = node;
+  YAML::Node current_node(node);
   for (const std::string& ns : splitNamespace(name_space, separator)) {
-    if (!current_node[ns]) {
+    if (!current_node.IsMap() || !current_node[ns]) {
       // Full namespace does not exist, make sure to not modify the input node.
-      return YAML::Node(YAML::NodeType::Null);
+      return YAML::Node(YAML::NodeType::Undefined);
     }
-    current_node = current_node[ns];
+    current_node.reset(current_node[ns]);
   }
   return current_node;
 }
@@ -56,8 +56,47 @@ void moveDownNamespace(YAML::Node& node, const std::string& name_space, const st
   for (auto it = namespaces.rbegin(); it != namespaces.rend(); ++it) {
     YAML::Node tmp;   // This is a new node.
     tmp[*it] = node;  // Add the current node as a child.
-    node = tmp;
+    node.reset(tmp);
   }
+}
+
+bool isEqual(const YAML::Node& a, const YAML::Node& b) {
+  if (a.Type() != b.Type()) {
+    return false;
+  }
+  switch (a.Type()) {
+    case YAML::NodeType::Scalar:
+      return a.Scalar() == b.Scalar();
+    case YAML::NodeType::Sequence:
+      if (a.size() != b.size()) {
+        return false;
+      }
+      for (size_t i = 0; i < a.size(); ++i) {
+        if (!isEqual(a[i], b[i])) {
+          return false;
+        }
+      }
+      return true;
+    case YAML::NodeType::Map:
+      if (a.size() != b.size()) {
+        return false;
+      }
+      for (const auto& kv_pair : a) {
+        const std::string key = kv_pair.first.Scalar();
+        if (!b[key]) {
+          return false;
+        }
+        if (!isEqual(kv_pair.second, b[key])) {
+          return false;
+        }
+      }
+      return true;
+    case YAML::NodeType::Null:
+      return true;
+    case YAML::NodeType::Undefined:
+      return true;
+  }
+  return false;
 }
 
 }  // namespace config::internal

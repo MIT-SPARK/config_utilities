@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 
 #include "config_utilities/internal/string_utils.h"
-#include "config_utilities/test/utils.h"
 
 namespace config::test {
 

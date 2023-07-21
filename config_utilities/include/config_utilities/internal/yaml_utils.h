@@ -24,4 +24,10 @@ YAML::Node lookupNamespace(const YAML::Node& node, const std::string& name_space
  */
 void moveDownNamespace(YAML::Node& node, const std::string& name_space, const std::string& separator = "/");
 
+/**
+ * @brief Check whether two yaml nodes are equal. Note that since since yaml-cpp operator== checks for identity and not
+ * equality, scalar values will be compared by string representation.
+ */
+bool isEqual(const YAML::Node& a, const YAML::Node& b);
+
 }  // namespace config::internal

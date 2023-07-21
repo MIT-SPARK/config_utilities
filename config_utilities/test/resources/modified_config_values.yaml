@@ -1,0 +1,15 @@
+i: 2
+f: -1
+d: 3.1415926
+b: false
+u8: 255
+s: "a different test string"
+vec: [2, 3, 4, 5]
+map: { x: 24, y: 25, z: 26 }
+set: [11.11, 22.22, 33.33, 44.44]
+mat:
+  - [1, 2, 3]
+  - [4, 5, 6]
+  - [7, 8, 9]
+my_enum: B
+my_strange_enum: Z
