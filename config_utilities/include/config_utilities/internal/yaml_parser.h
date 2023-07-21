@@ -25,7 +25,7 @@ class YamlParser {
 
   // Access tools.
   const YAML::Node& getNode() const { return root_node_; }
-  void setNode(const YAML::Node& node) { node_ = node; }
+  void setNode(const YAML::Node& node) { root_node_ = node; }
   const std::vector<std::string>& getErrors() const { return errors_; }
   void resetErrors() { errors_.clear(); }
 
@@ -43,7 +43,7 @@ class YamlParser {
    */
   template <typename T>
   bool fromYaml(const std::string& name, T& value, const std::string& sub_namespace, const std::string& name_prefix) {
-    YAML::Node child_node = lookupNamespace(root_node_, sub_namespace)[name];
+    YAML::Node child_node = lookupNamespace(root_node_, sub_namespace + "/" + name);
     if (!child_node) {
       // The param is not defined. This is not an error.
       return false;
@@ -77,17 +77,17 @@ class YamlParser {
               const T& value,
               const std::string& sub_namespace,
               const std::string& name_prefix) {
-    node_ = YAML::Node();
+    YAML::Node node;
     std::string error;
     try {
-      toYamlImpl(name, value, error);
+      node = toYamlImpl(name, value, error);
     } catch (const std::exception& e) {
       error = std::string(e.what()) + ".";
     }
 
     if (error.empty()) {
-      moveDownNamespace(node_, sub_namespace);
-      mergeYamlNodes(root_node_, node_);
+      moveDownNamespace(node, sub_namespace);
+      mergeYamlNodes(root_node_, node);
       return true;
     }
     errors_.emplace_back("Failed to parse param '" + name_prefix + name + "': " + error);
@@ -102,8 +102,10 @@ class YamlParser {
   }
 
   template <typename T>
-  void toYamlImpl(const std::string& name, const T& value, std::string& error) {
-    node_[name] = value;
+  YAML::Node toYamlImpl(const std::string& name, const T& value, std::string& error) {
+    YAML::Node node;
+    node[name] = value;
+    return node;
   }
 
   // Specializations for parsing different types. These add error messages if the parsing fails.
@@ -118,10 +120,12 @@ class YamlParser {
   }
 
   template <typename T>
-  void toYamlImpl(const std::string& name, const std::vector<T>& value, std::string& error) {
+  YAML::Node toYamlImpl(const std::string& name, const std::vector<T>& value, std::string& error) {
+    YAML::Node node;
     for (const T& element : value) {
-      node_[name].push_back(element);
+      node[name].push_back(element);
     }
+    return node;
   }
 
   // Set.
@@ -137,10 +141,12 @@ class YamlParser {
   }
 
   template <typename T>
-  void toYamlImpl(const std::string& name, const std::set<T>& value, std::string& error) {
+  YAML::Node toYamlImpl(const std::string& name, const std::set<T>& value, std::string& error) {
+    YAML::Node node;
     for (const T& element : value) {
-      node_[name].push_back(element);
+      node[name].push_back(element);
     }
+    return node;
   }
 
   // Map.
@@ -154,19 +160,20 @@ class YamlParser {
   }
 
   template <typename K, typename V>
-  void toYamlImpl(const std::string& name, const std::map<K, V>& value, std::string& error) {
+  YAML::Node toYamlImpl(const std::string& name, const std::map<K, V>& value, std::string& error) {
+    YAML::Node node;
     for (const auto& kv_pair : value) {
-      node_[name][kv_pair.first] = kv_pair.second;
+      node[name][kv_pair.first] = kv_pair.second;
     }
+    return node;
   }
 
   // uint8
   void fromYamlImpl(uint8_t& value, const YAML::Node& node, std::string& error) const;
-  void toYamlImpl(const std::string& name, const uint8_t& value, std::string& error);
+  YAML::Node toYamlImpl(const std::string& name, const uint8_t& value, std::string& error);
 
   // Members.
   YAML::Node root_node_;  // Data storage.
-  YAML::Node node_;       // Node to write to.
   std::vector<std::string> errors_;
 };
 

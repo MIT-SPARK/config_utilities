@@ -5,7 +5,7 @@ b: true
 u8: 4
 s: "test string"
 vec: [1, 2, 3]
-map: { a: 1, b: 2, c: 3 }
+map: { "a": 1, "b": 2, "c": 3 }
 set: [1.1, 2.2, 3.3]
 mat:
   - [1, 0, 0]

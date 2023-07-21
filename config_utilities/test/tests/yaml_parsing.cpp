@@ -1,3 +1,5 @@
+#include <sstream>
+
 #include <gtest/gtest.h>
 
 #include "config_utilities/internal/yaml_utils.h"
@@ -20,7 +22,7 @@ YAML::Node createData() {
 TEST(YamlParsing, lookupNamespace) {
   YAML::Node data = createData();
 
-  EXPECT_TRUE(internal::isEqual(data, data));
+  expectEqual(data, data);
 
   YAML::Node data_1 = YAML::Clone(data);
   data_1["a"]["b"]["c"] = 2;
@@ -29,16 +31,16 @@ TEST(YamlParsing, lookupNamespace) {
   YAML::Node data_2 = internal::lookupNamespace(data, "");
   // NOTE(lschmid): lookupNamespace returns a pointer, so this should be identity.
   EXPECT_TRUE(data == data_2);
-  EXPECT_TRUE(internal::isEqual(data, data_2));
+  expectEqual(data, data_2);
 
   YAML::Node b = internal::lookupNamespace(data, "a/b");
   // NOTE(lschmid): lookupNamespace returns a pointer, so this should be identity.
   EXPECT_TRUE(b == data["a"]["b"]);
-  EXPECT_TRUE(internal::isEqual(b, data["a"]["b"]));
+  expectEqual(b, data["a"]["b"]);
 
   YAML::Node b2 = internal::lookupNamespace(YAML::Clone(data), "a/b");
 
-  EXPECT_TRUE(internal::isEqual(b2, data["a"]["b"]));
+  expectEqual(b2, data["a"]["b"]);
 
   YAML::Node c = internal::lookupNamespace(data, "a/b/c");
   EXPECT_TRUE(c.IsScalar());
@@ -49,19 +51,62 @@ TEST(YamlParsing, lookupNamespace) {
   EXPECT_FALSE(static_cast<bool>(invalid));
 
   // Make sure the input node is not modified.
-  EXPECT_TRUE(internal::isEqual(data, createData()));
+  expectEqual(data, createData());
 }
 
 TEST(YamlParsing, moveDownNamespace) {
   YAML::Node data = createData();
 
   internal::moveDownNamespace(data, "");
-  EXPECT_TRUE(internal::isEqual(data, createData()));
+  expectEqual(data, createData());
 
   YAML::Node expected_data;
   expected_data["a"]["b"]["c"] = createData();
   internal::moveDownNamespace(data, "a/b/c");
-  EXPECT_TRUE(internal::isEqual(data, expected_data));
+  expectEqual(data, expected_data);
+}
+
+TEST(YamlParsing, parsefromYaml) {
+  DefaultConfig config;
+  internal::YamlParser parser;
+  YAML::Node data = loadResource("modified_config_values");
+  parser.setNode(data);
+
+  parser.fromYaml("i", config.i, "", "");
+  EXPECT_EQ(config.i, 2);
+
+  parser.fromYaml("f", config.f, "", "");
+  EXPECT_EQ(config.f, -1.f);
+
+  parser.fromYaml("d", config.d, "", "");
+  EXPECT_EQ(config.d, 3.1415926);
+
+  parser.fromYaml("b", config.b, "", "");
+  EXPECT_EQ(config.b, false);
+
+  parser.fromYaml("u8", config.u8, "", "");
+  EXPECT_EQ(config.u8, 255);
+
+  parser.fromYaml("s", config.s, "", "");
+  EXPECT_EQ(config.s, "a different test string");
+
+  parser.fromYaml("vec", config.vec, "", "");
+  EXPECT_EQ(config.vec, std::vector<int>({2, 3, 4, 5}));
+
+  parser.fromYaml("map", config.map, "", "");
+  const std::map<std::string, int> map({{"x", 24}, {"y", 25}, {"z", 26}});
+  EXPECT_EQ(config.map, map);
+
+  parser.fromYaml("set", config.set, "", "");
+  EXPECT_EQ(config.set, std::set<float>({11.11, 22.22, 33.33, 44.44}));
+
+  parser.fromYaml("mat", config.mat, "", "");
+  Eigen::Matrix3d mat;
+  mat << 1, 2, 3, 4, 5, 6, 7, 8, 9;
+  EXPECT_EQ(config.mat, mat);
+
+  // TODO(lschmid): Could add tests that correct warnings are issued and that unset params don't modfy the config but
+  // not important for now.
 }
 
 TEST(YamlParsing, configFromYaml) {
@@ -84,15 +129,15 @@ TEST(YamlParsing, configFromYaml) {
   EXPECT_EQ(config.my_strange_enum, DefaultConfig::StrangeEnum::kZ);
 
   // Make sure the input node is not modified.
-  EXPECT_TRUE(internal::isEqual(data, loadResource("modified_config_values")));
+  expectEqual(data, loadResource("modified_config_values"));
 }
 
 TEST(YamlParsing, configToYaml) {
   DefaultConfig config;
-  EXPECT_TRUE(internal::isEqual(toYaml(config), loadResource("default_config_values")));
+  expectEqual(toYaml(config), loadResource("default_config_values"));
 
   auto modified_config = fromYaml<DefaultConfig>(loadResource("modified_config_values"));
-  EXPECT_TRUE(internal::isEqual(toYaml(modified_config), loadResource("modified_config_values")));
+  expectEqual(toYaml(modified_config), loadResource("modified_config_values"));
 }
 
 }  // namespace config::test
