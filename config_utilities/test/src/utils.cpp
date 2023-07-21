@@ -38,7 +38,7 @@ bool expectEqual(const YAML::Node& a, const YAML::Node& b) {
       for (const auto& kv_pair : a) {
         const std::string key = kv_pair.first.Scalar();
         if (!b[key]) {
-          EXPECT_TRUE(false) << "Key " << key << " not found in b.";
+          ADD_FAILURE() << "Key " << key << " not found in b.";
           return false;
         }
         EXPECT_TRUE(expectEqual(kv_pair.second, b[key]));

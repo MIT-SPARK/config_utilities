@@ -9,7 +9,7 @@
 
 namespace config::internal {
 
-inline static const std::string kInvalidField = "Invalid Field";
+inline static const std::string kInvalidField = "<Invalid Field>";
 
 /**
  * @brief Print a string centered in a line.

@@ -58,6 +58,14 @@ TEST(ValidityChecks, isValid) {
   config = DefaultConfig();
   config.d = -1;
   EXPECT_EQ(isValid(config), false);
+
+  config = DefaultConfig();
+  config.sub_config.i = -1;
+  EXPECT_EQ(isValid(config), false);
+
+  config = DefaultConfig();
+  config.sub_config.sub_sub_config.i = -1;
+  EXPECT_EQ(isValid(config), false);
 }
 
 TEST(ValidityChecks, numErrors) {
@@ -87,6 +95,12 @@ TEST(ValidityChecks, numErrors) {
 
   config.d = 1000.0;
   EXPECT_EQ(numErrors(config), 8);
+
+  config.sub_config.i = -1;
+  EXPECT_EQ(numErrors(config), 9);
+
+  config.sub_config.sub_sub_config.i = -1;
+  EXPECT_EQ(numErrors(config), 10);
 }
 
 TEST(ValidityChecks, checkValid) {

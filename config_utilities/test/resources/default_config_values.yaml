@@ -14,8 +14,8 @@ mat:
 my_enum: A
 my_strange_enum: X
 sub_ns:
-  b: true
-  nested_sub_ns:
+  i: 1
+  nested_ns:
     i: 1
 sub_sub_ns:
   i: 1

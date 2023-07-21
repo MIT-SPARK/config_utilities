@@ -144,8 +144,6 @@ TEST(YamlParsing, setValues) {
 TEST(YamlParsing, getValues) {
   DefaultConfig config;
   internal::MetaData meta_data = internal::Visitor::getValues(config);
-  // std::cout << "meta_data: \n" << meta_data.data << std::endl;
-  // std::cout << "default: \n" << loadResource("default_config_values") << std::endl;
 
   expextDefaultValues(config);
   expectEqual(meta_data.data, loadResource("default_config_values"));
@@ -182,6 +180,8 @@ TEST(YamlParsing, configToYAML) {
   expectEqual(toYaml(config), loadResource("default_config_values"));
 
   config = fromYaml<DefaultConfig>(loadResource("modified_config_values"));
+
+  YAML::Node data2 = toYaml(config);
   expectEqual(toYaml(config), loadResource("modified_config_values"));
 }
 

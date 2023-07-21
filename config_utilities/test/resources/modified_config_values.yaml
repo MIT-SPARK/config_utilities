@@ -15,7 +15,7 @@ my_enum: B
 my_strange_enum: Z
 sub_ns:
   i: 2
-  nested_sub_ns:
+  nested_ns:
     i: 3
 sub_sub_ns:
   i: 4

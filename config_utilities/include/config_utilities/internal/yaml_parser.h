@@ -38,7 +38,7 @@ class YamlParser {
    * @tparam T Type of the value to parse.
    * @param name Name of the param to look up.
    * @param value Value to parse.
-   * @param sub_namespace Sub-namespace of the param to look up.
+   * @param sub_namespace Sub-namespace of the param to look up in the node.
    * @param field_name_prefix Name prefix of the param used only for error logging.
    * @return true If the value was found and successfully parsed.
    */
@@ -72,7 +72,7 @@ class YamlParser {
    * @tparam T Type of the value to parse.
    * @param name Name of the param to store.
    * @param value Value to parse.
-   * @param sub_namespace Sub-namespace of the param to look parse.
+   * @param sub_namespace Sub-namespace of the param when adding it to the root node.
    * @param field_name_prefix Name prefix of the param used only for error logging.
    * @return true If the value was successfully parsed.
    */

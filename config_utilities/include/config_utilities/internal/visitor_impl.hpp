@@ -46,7 +46,7 @@ MetaData Visitor::getValues(const ConfigT& config,
   // NOTE: We know that in mode kGet, the config is not modified.
   declare_config(const_cast<ConfigT&>(config));
   visitor.extractErrors();
-  visitor.data.data = visitor.parser.getNode();
+  mergeYamlNodes(visitor.data.data, visitor.parser.getNode());
 
   if (print_warnings && visitor.data.hasErrors()) {
     Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Severity::kWarning));
@@ -192,33 +192,21 @@ void Visitor::visitField(ConfigT& config, const std::string& field_name, const s
   Visitor& visitor = Visitor::instance();
   MetaData& data = visitor.data;
 
-  // Check is a configT. Ceck this at runtime to allow more flexibility for config declaration.
-  if (!isConfig<ConfigT>()) {
-    data.errors.emplace_back("Subconfig field '" + field_name + "' has not beend declared a config.");
-    return;
-  }
-
   // Add the field info.
   FieldInfo& info = data.field_infos.emplace_back();
   info.name = field_name;
   info.subconfig_id = data.sub_configs.size();
+  data.current_field_name = field_name;
 
   // Visit subconfig.
   const std::string new_prefix =
       visitor.field_name_prefix + (Settings::instance().index_subconfig_field_names ? field_name + "." : "");
-  data.current_field_name = field_name;
   MetaData& new_data = data.sub_configs.emplace_back(Visitor::subVisit(config, false, new_prefix));
 
   // Aggregate data.
   if (visitor.mode == Visitor::Mode::kGet) {
-    // When getting data add the new data also to the parent data node, using the correct namespace.
-    // std::cout << "GETTING " << field_name << std::endl;
-    // std::cout << "new_node: \n" << new_data.data << std::endl;
-    YAML::Node new_node = YAML::Clone(new_data.data);
-    // TODO(lschmid): Figure out how to resolve subconfig namespaces if they exist.
-    // moveDownNamespace(new_node, sub_namespace);
-    mergeYamlNodes(data.data, new_node);
-    // std::cout << "combined data: \n" << data.data << std::endl;
+    // When getting data add the new data also to the parent data node. This automatically using the correct namespace.
+    mergeYamlNodes(data.data, new_data.data);
   }
 }
 
