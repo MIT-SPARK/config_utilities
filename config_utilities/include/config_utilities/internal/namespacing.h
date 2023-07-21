@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -8,7 +10,7 @@ namespace config {
 /**
  * @brief Enters a sub-namespace to get or set object fields. The namespace remains active until 'exit_namespace()' or
  * 'clear_namespaces()' is called.
- * @param name_space The name of the sub-namespace. This can be a nested namespace separated by '/', e.g. "foo/bar".
+ * @param name_space The sub-namespace to enter. This can be a nested namespace separated by slashes, e.g. "foo/bar".
  */
 void enter_namespace(const std::string& name_space);
 
@@ -30,13 +32,18 @@ void clear_namespaces();
 void switch_namespace(const std::string& name_space);
 
 /**
+ * @brief Get the current sub-namespace used for getting or setting params.
+ */
+std::string current_namespace();
+
+/**
  * @brief Enters a sub-namespace to get or set object fields for the duration of the NameSpace's lifetime.
  */
 class NameSpace {
  public:
   /**
    * @brief Enters a sub-namespace to get or set object fields for the duration of the NameSpace's lifetime.
-   * @param name_space The name of the sub-namespace. This can be a nested namespace separated by '/', e.g. "foo/bar".
+   * @param name_space The sub-namespace to enter. This can be a nested namespace separated by slashes, e.g. "foo/bar".
    */
   explicit NameSpace(const std::string& name_space);
   virtual ~NameSpace();
@@ -53,14 +60,34 @@ class NameSpace {
    */
   void enter();
 
- private:
-  friend void enter_namespace(const std::string& name_space);
-  friend void exit_namespace();
-
-  // Member data.
+  //  private:
   const std::string sub_ns_;
   std::string previous_ns_;
   bool is_open_ = false;
 };
+
+namespace internal {
+
+// Struct that keeps namespaces around in the visitor and manages keeping namespaces constant when visiting.
+struct OpenNameSpace {
+  using Stack = std::vector<std::unique_ptr<OpenNameSpace>>;
+
+  explicit OpenNameSpace(const std::string& name_space);
+
+  static void performOperationWithGuardedNs(Stack& stack, const std::function<void()>& operation);
+
+  bool isLocked() const;
+
+ private:
+  // Interaction. Private so the lock count can not be messed with.
+  void lock();
+  void unlock();
+
+  // Data.
+  int locks = 0;
+  const NameSpace ns;
+};
+
+}  // namespace internal
 
 }  // namespace config

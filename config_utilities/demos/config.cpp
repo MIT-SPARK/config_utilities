@@ -78,8 +78,11 @@ void declare_config(MyConfig& config) {
       "my_strange_enum",
       {{MyConfig::MyStrangeEnum::kX, "X"}, {MyConfig::MyStrangeEnum::kY, "Y"}, {MyConfig::MyStrangeEnum::kZ, "Z"}});
 
-  // Any other struct that has been declared a config can be a sub-config, with optional sub-namespace.
-  config::subconfig(config.sub_config, "sub_config", "sub_ns");
+  // Sub-namespaces can be used to group fields.
+  config::enter_namespace("sub_ns");
+
+  // Any other struct that has been declared a config can be a sub-config, declared as a regular field.
+  config::field(config.sub_config, "sub_config");
 
   // Specify all checks to denote a valid configuration. Checks are specified as param, value, and param name to be
   // displayed. Implemented checks are GT (>), GE (>=), LT (<), LE (<=), EQ (==), NE (!=).
@@ -100,7 +103,7 @@ void declare_config(SubConfig& config) {
   name("SubConfig");
   field(config.f, "f");
   field(config.s, "s");
-  subconfig(config.sub_sub_config, "sub_sub_config");  // Not specifying an additional sub-namespace.
+  field(config.sub_sub_config, "sub_sub_config");
   checkGT(config.f, 0.f, "f");
 }
 

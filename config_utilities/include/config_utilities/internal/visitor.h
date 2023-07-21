@@ -29,14 +29,14 @@ struct Visitor {
                             const YAML::Node& node,
                             const bool print_warnings = true,
                             const std::string& name_space = "",
-                            const std::string& name_prefix = "");
+                            const std::string& field_name_prefix = "");
 
   // Get the data stored in the config.
   template <typename ConfigT>
   static MetaData getValues(const ConfigT& config,
                             const bool print_warnings = true,
                             const std::string& name_space = "",
-                            const std::string& name_prefix = "");
+                            const std::string& field_name_prefix = "");
 
   // Execute all checks specified in the config.
   template <typename ConfigT>
@@ -44,12 +44,14 @@ struct Visitor {
 
   // Extend the current visitor with a sub-visitor, replicating the previous specification.
   template <typename ConfigT>
-  static MetaData subVisit(ConfigT& config, const bool print_warnings = true, const std::string& name_prefix = "");
+  static MetaData subVisit(ConfigT& config,
+                           const bool print_warnings = true,
+                           const std::string& field_name_prefix = "");
 
   // Interfaces for the config declaration interfaces to to expose their info to the visitor.
   static void visitName(const std::string& name);
 
-  template <typename T>
+  template <typename T, typename std::enable_if<!isConfig<T>(), bool>::type = true>
   static void visitField(T& field, const std::string& field_name, const std::string& unit);
 
   template <typename EnumT>
@@ -67,11 +69,11 @@ struct Visitor {
 
   static void visitCheckCondition(bool condition, const std::string& error_message);
 
-  template <typename ConfigT>
-  static void visitSubconfig(ConfigT& config, const std::string& field_name, const std::string& /* unit */);
+  template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
+  static void visitField(ConfigT& config, const std::string& field_name, const std::string& /* unit */);
 
   template <typename ConfigT>
-  static void visitBase(ConfigT& config, const std::string& sub_namespace);
+  static void visitBase(ConfigT& config);
 
   static std::optional<YAML::Node> visitVirtualConfig(bool is_set, bool is_optional, const std::string& type);
 
@@ -80,6 +82,7 @@ struct Visitor {
   friend void config::enter_namespace(const std::string& name);
   friend void config::exit_namespace();
   friend void config::clear_namespaces();
+  friend std::string config::current_namespace();
 
   // Which operations to perform on the data.
   enum class Mode { kGet, kSet, kCheck };
@@ -108,13 +111,13 @@ struct Visitor {
   YamlParser parser;
 
   // Storage for user specified namespaces. Managed by namespacing.h.
-  std::vector<NameSpace> open_namespaces;
+  OpenNameSpace::Stack open_namespaces;
 
   // The current namespace used to get or set values.
   std::string name_space;
 
   // Current name prefix to be put before filed names.
-  std::string name_prefix;
+  std::string field_name_prefix;
 
   // Static registration to get access to the correct instance. Instancs are managed per thread and as a stack, i.e.
   // nested calls are possible and will always use the latest visitor.

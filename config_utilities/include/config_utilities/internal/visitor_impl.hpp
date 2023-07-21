@@ -25,8 +25,8 @@ MetaData Visitor::setValues(ConfigT& config,
                             const YAML::Node& node,
                             const bool print_warnings,
                             const std::string& name_space,
-                            const std::string& name_prefix) {
-  Visitor visitor(Mode::kSet, name_prefix);
+                            const std::string& field_name_prefix) {
+  Visitor visitor(Mode::kSet, name_space, field_name_prefix);
   visitor.parser.setNode(node);
   declare_config(config);
   visitor.extractErrors();
@@ -41,8 +41,8 @@ template <typename ConfigT>
 MetaData Visitor::getValues(const ConfigT& config,
                             const bool print_warnings,
                             const std::string& name_space,
-                            const std::string& name_prefix) {
-  Visitor visitor(Mode::kGet, name_prefix);
+                            const std::string& field_name_prefix) {
+  Visitor visitor(Mode::kGet, name_space, field_name_prefix);
   // NOTE: We know that in mode kGet, the config is not modified.
   declare_config(const_cast<ConfigT&>(config));
   visitor.extractErrors();
@@ -64,14 +64,14 @@ MetaData Visitor::getChecks(const ConfigT& config) {
 }
 
 template <typename ConfigT>
-MetaData Visitor::subVisit(ConfigT& config, const bool print_warnings, const std::string& name_prefix) {
+MetaData Visitor::subVisit(ConfigT& config, const bool print_warnings, const std::string& field_name_prefix) {
   Visitor& current_visitor = Visitor::instance();
   switch (current_visitor.mode) {
     case Visitor::Mode::kGet:
-      return getValues(config, print_warnings, current_visitor.name_space, name_prefix);
+      return getValues(config, print_warnings, current_visitor.name_space, field_name_prefix);
     case Visitor::Mode::kSet:
       return setValues(
-          config, current_visitor.parser.getNode(), print_warnings, current_visitor.name_space, name_prefix);
+          config, current_visitor.parser.getNode(), print_warnings, current_visitor.name_space, field_name_prefix);
     case Visitor::Mode::kCheck:
       return getChecks(config);
     default:
@@ -79,16 +79,16 @@ MetaData Visitor::subVisit(ConfigT& config, const bool print_warnings, const std
   }
 }
 
-template <typename T>
+template <typename T, typename std::enable_if<!isConfig<T>(), bool>::type = true>
 void Visitor::visitField(T& field, const std::string& field_name, const std::string& unit) {
   Visitor& visitor = Visitor::instance();
   if (visitor.mode == Visitor::Mode::kSet) {
-    visitor.parser.fromYaml(field_name, field, visitor.name_space, visitor.name_prefix);
+    visitor.parser.fromYaml(field_name, field, visitor.name_space, visitor.field_name_prefix);
   }
 
   if (visitor.mode == Visitor::Mode::kGet) {
     FieldInfo& info = visitor.data.field_infos.emplace_back();
-    visitor.parser.toYaml(field_name, field, visitor.name_space, visitor.name_prefix);
+    visitor.parser.toYaml(field_name, field, visitor.name_space, visitor.field_name_prefix);
     info.name = field_name;
     info.unit = unit;
   }
@@ -116,7 +116,7 @@ void Visitor::visitEnumField(EnumT& field,
   // Parse enums. These are internally stored as strings.
   if (visitor.mode == Visitor::Mode::kSet) {
     std::string place_holder;
-    if (visitor.parser.fromYaml(field_name, place_holder, visitor.name_space, visitor.name_prefix)) {
+    if (visitor.parser.fromYaml(field_name, place_holder, visitor.name_space, visitor.field_name_prefix)) {
       const auto it = std::find_if(enum_names.begin(), enum_names.end(), [&place_holder](const auto& pair) {
         return pair.second == place_holder;
       });
@@ -138,9 +138,9 @@ void Visitor::visitEnumField(EnumT& field,
     const auto it = enum_names.find(field);
     if (it == enum_names.end()) {
       visitor.data.errors.emplace_back("Value of enum field '" + field_name + "' is out of the defined range.");
-      visitor.parser.toYaml(field_name, "INVALID ENUM VALUE", visitor.name_space, visitor.name_prefix);
+      visitor.parser.toYaml(field_name, "INVALID ENUM VALUE", visitor.name_space, visitor.field_name_prefix);
     } else {
-      visitor.parser.toYaml(field_name, it->second, visitor.name_space, visitor.name_prefix);
+      visitor.parser.toYaml(field_name, it->second, visitor.name_space, visitor.field_name_prefix);
     }
     info.name = field_name;
   }
@@ -152,7 +152,7 @@ void Visitor::visitCheck(Visitor::CheckMode mode, const T& param, const T& value
   if (visitor.mode != Visitor::Mode::kCheck) {
     return;
   }
-  visitor.checker.setFieldNamePrefix(visitor.name_prefix);
+  visitor.checker.setFieldNamePrefix(visitor.field_name_prefix);
 
   switch (mode) {
     case Visitor::CheckMode::kGT:
@@ -182,12 +182,13 @@ void Visitor::visitCheckInRange(const T& param, const T& lower, const T& upper, 
   if (visitor.mode != Visitor::Mode::kCheck) {
     return;
   }
-  visitor.checker.setFieldNamePrefix(visitor.name_prefix);
+  visitor.checker.setFieldNamePrefix(visitor.field_name_prefix);
   visitor.checker.checkInRange(param, lower, upper, name);
 }
 
-template <typename ConfigT>
-void Visitor::visitSubconfig(ConfigT& config, const std::string& field_name, const std::string& /* unit */) {
+template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
+void Visitor::visitField(ConfigT& config, const std::string& field_name, const std::string& /* unit */) {
+  // Visits a subconfig field.
   Visitor& visitor = Visitor::instance();
   MetaData& data = visitor.data;
 
@@ -204,7 +205,7 @@ void Visitor::visitSubconfig(ConfigT& config, const std::string& field_name, con
 
   // Visit subconfig.
   const std::string new_prefix =
-      visitor.name_prefix + (Settings::instance().index_subconfig_field_names ? field_name + "." : "");
+      visitor.field_name_prefix + (Settings::instance().index_subconfig_field_names ? field_name + "." : "");
   data.current_field_name = field_name;
   MetaData& new_data = data.sub_configs.emplace_back(Visitor::subVisit(config, false, new_prefix));
 
@@ -222,16 +223,11 @@ void Visitor::visitSubconfig(ConfigT& config, const std::string& field_name, con
 }
 
 template <typename ConfigT>
-void Visitor::visitBase(ConfigT& config, const std::string& sub_namespace) {
-  Visitor& visitor = Visitor::instance();
+void Visitor::visitBase(ConfigT& config) {
   // For now simply pass the call to the base config, treating it as a single config object.
   // NOTE(lschmid): Alternatives are to treat it as a subconfig for clearer readability.
-  const std::string name_space_before = visitor.name_space;
-  const std::string name_before = visitor.data.name;
-  visitor.name_space = joinNamespace(visitor.name_space, sub_namespace);
-  declare_config(config);
-  visitor.name_space = name_space_before;
-  visitor.data.name = name_before;
+  Visitor& visitor = Visitor::instance();
+  OpenNameSpace::performOperationWithGuardedNs(visitor.open_namespaces, [&config]() { declare_config(config); });
 }
 
 }  // namespace config::internal

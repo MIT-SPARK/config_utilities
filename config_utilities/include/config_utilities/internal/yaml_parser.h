@@ -39,11 +39,14 @@ class YamlParser {
    * @param name Name of the param to look up.
    * @param value Value to parse.
    * @param sub_namespace Sub-namespace of the param to look up.
-   * @param name_prefix Name prefix of the param used only for error logging.
+   * @param field_name_prefix Name prefix of the param used only for error logging.
    * @return true If the value was found and successfully parsed.
    */
   template <typename T>
-  bool fromYaml(const std::string& name, T& value, const std::string& sub_namespace, const std::string& name_prefix) {
+  bool fromYaml(const std::string& name,
+                T& value,
+                const std::string& sub_namespace,
+                const std::string& field_name_prefix) {
     YAML::Node child_node = lookupNamespace(root_node_, sub_namespace + "/" + name);
     if (!child_node) {
       // The param is not defined. This is not an error.
@@ -58,7 +61,7 @@ class YamlParser {
     if (error.empty()) {
       return true;
     }
-    errors_.emplace_back("Failed to parse param '" + name_prefix + name + "': " + error);
+    errors_.emplace_back("Failed to parse param '" + field_name_prefix + name + "': " + error);
     return false;
   }
 
@@ -70,14 +73,14 @@ class YamlParser {
    * @param name Name of the param to store.
    * @param value Value to parse.
    * @param sub_namespace Sub-namespace of the param to look parse.
-   * @param name_prefix Name prefix of the param used only for error logging.
+   * @param field_name_prefix Name prefix of the param used only for error logging.
    * @return true If the value was successfully parsed.
    */
   template <typename T>
   bool toYaml(const std::string& name,
               const T& value,
               const std::string& sub_namespace,
-              const std::string& name_prefix) {
+              const std::string& field_name_prefix) {
     YAML::Node node;
     std::string error;
     try {
@@ -91,7 +94,7 @@ class YamlParser {
       mergeYamlNodes(root_node_, node);
       return true;
     }
-    errors_.emplace_back("Failed to parse param '" + name_prefix + name + "': " + error);
+    errors_.emplace_back("Failed to parse param '" + field_name_prefix + name + "': " + error);
     return false;
   }
 

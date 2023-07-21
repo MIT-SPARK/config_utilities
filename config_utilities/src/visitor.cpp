@@ -14,7 +14,7 @@ Visitor::~Visitor() { instances.pop_back(); }
 bool Visitor::hasInstance() { return !instances.empty(); }
 
 Visitor::Visitor(Mode _mode, std::string _name_space, std::string _name_prefix)
-    : mode(_mode), name_space(std::move(_name_space)), name_prefix(std::move(_name_prefix)) {
+    : mode(_mode), name_space(std::move(_name_space)), field_name_prefix(std::move(_name_prefix)) {
   // Create instances in a stack per thread and store the reference to it.
   instances.emplace_back(this);
 }
@@ -22,7 +22,9 @@ Visitor::Visitor(Mode _mode, std::string _name_space, std::string _name_prefix)
 Visitor& Visitor::instance() {
   if (instances.empty()) {
     // This should never happen as visitors are managed internally. Caught here for debugging.
-    throw std::runtime_error("Visitor instance was accessed but no visitor was created before.");
+    throw std::runtime_error(
+        "Visitor instance was accessed but no visitor was created before. Visitor::instance() should only be called "
+        "from within a visitor.");
   }
   return *instances.back();
 }
@@ -42,7 +44,7 @@ void Visitor::visitCheckCondition(bool condition, const std::string& error_messa
   if (visitor.mode != Visitor::Mode::kCheck) {
     return;
   }
-  visitor.checker.setFieldNamePrefix(visitor.name_prefix);
+  visitor.checker.setFieldNamePrefix(visitor.field_name_prefix);
   visitor.checker.checkCondition(condition, error_message);
 }
 
@@ -62,7 +64,7 @@ std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set, bool is_optio
     if (is_set) {
       // Also write the type param back to file.
       visitor.parser.toYaml(
-          Settings::instance().factory_type_param_name, type, visitor.name_space, visitor.name_prefix);
+          Settings::instance().factory_type_param_name, type, visitor.name_space, visitor.field_name_prefix);
     }
   }
 

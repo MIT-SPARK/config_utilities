@@ -140,8 +140,8 @@ void declare_config(ObjectWithDerivedMembers::Config& config) {
   using namespace config;
   name("ObjectWithDerivedMembers");
   field(config.d, "d");
-  // Variable configs are declared like regular sub-configs and work exactly like them.
-  subconfig(config.base_config, "base_config");
+  // Variable configs are declared like regular sub-configs/fields and work exactly like them.
+  field(config.base_config, "base_config");
 }
 
 }  // namespace demo

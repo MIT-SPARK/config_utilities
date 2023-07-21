@@ -48,7 +48,7 @@ void NameSpace::exit() {
 }
 
 void enter_namespace(const std::string& name_space) {
-  internal::Visitor::instance().open_namespaces.emplace_back(name_space);
+  internal::Visitor::instance().open_namespaces.emplace_back(std::make_unique<internal::OpenNameSpace>(name_space));
 }
 
 void exit_namespace() {
@@ -58,12 +58,14 @@ void exit_namespace() {
     internal::Logger::logWarning("exit_namespace() called on empty namespace stack.");
     return;
   }
-  visitor.open_namespaces.pop_back();
+  if (!visitor.open_namespaces.back()->isLocked()) {
+    visitor.open_namespaces.pop_back();
+  }
 }
 
 void clear_namespaces() {
   internal::Visitor& visitor = internal::Visitor::instance();
-  while (!visitor.open_namespaces.empty()) {
+  while (!visitor.open_namespaces.empty() && !visitor.open_namespaces.back()->isLocked()) {
     visitor.open_namespaces.pop_back();
   }
 }
@@ -71,6 +73,40 @@ void clear_namespaces() {
 void switch_namespace(const std::string& name_space) {
   exit_namespace();
   enter_namespace(name_space);
+}
+
+std::string current_namespace() { return internal::Visitor::instance().name_space; }
+
+internal::OpenNameSpace::OpenNameSpace(const std::string& name_space) : ns(name_space) {}
+
+void internal::OpenNameSpace::lock() { ++locks; }
+
+void internal::OpenNameSpace::unlock() {
+  if (locks > 0) {
+    --locks;
+  }
+}
+
+bool internal::OpenNameSpace::isLocked() const { return locks > 0; }
+
+void internal::OpenNameSpace::performOperationWithGuardedNs(Stack& stack, const std::function<void()>& operation) {
+  // Lock each namespace in the stack. This should prevent namespace operations from changing existing namespaces.
+  for (const auto& ns : stack) {
+    ns->lock();
+  }
+
+  // Perform the operation.
+  operation();
+
+  // Unlock each namespace in the stack.
+  for (const auto& ns : stack) {
+    ns->unlock();
+  }
+
+  // Remove all trailing namespaces that are not locked anymore.
+  while (!stack.empty() && !stack.back()->isLocked()) {
+    stack.pop_back();
+  }
 }
 
 }  // namespace config
