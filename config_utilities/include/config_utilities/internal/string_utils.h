@@ -25,18 +25,25 @@ std::string printCenter(const std::string& text, int width, char symbol);
  * @brief Split a namespace string into a vector of all non-empty strings separated by a delimiter.
  *
  * @param text The text to be splitNamespace.
- * @param delimiter The delimiter to splitNamespace the text at.
- * @returns The vector of strings.
+ * @param delimiter The delimiter to split the text by.
+ * @returns A vector of all single valid namespaces.
  */
 std::vector<std::string> splitNamespace(const std::string& text, const std::string& delimiter = "/");
 
 /**
  * @brief Join a vector of strings into a single string separated by a delimiter.
+ * @param namespaces Namespaces to be joined. Each element is expected to be a single valid namespace.
+ * @param delimiter The delimiter to join the namespaces with.
+ * @returns The joined namespace.
  */
 std::string joinNamespace(const std::vector<std::string>& namespaces, const std::string& delimiter = "/");
 
 /**
- * @brief Join two namespace strings into a single namespace string separated by a delimiter.
+ * @brief Join two arbitrary namespace strings into a single namespace string separated by a delimiter.
+ * @param namespace_1 The first namespace.
+ * @param namespace_2 The second namespace.
+ * @param delimiter The delimiter to split and join the namespaces with.
+ * @returns The joined namespace.
  */
 std::string joinNamespace(const std::string& namespace_1,
                           const std::string& namespace_2,

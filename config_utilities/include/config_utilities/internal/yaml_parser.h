@@ -86,7 +86,8 @@ class YamlParser {
     }
 
     if (error.empty()) {
-      root_node_ = mergeYamlNodes(root_node_, moveDownNamespace(node_, sub_namespace));
+      moveDownNamespace(node_, sub_namespace);
+      mergeYamlNodes(root_node_, node_);
       return true;
     }
     errors_.emplace_back("Failed to parse param '" + name_prefix + name + "': " + error);

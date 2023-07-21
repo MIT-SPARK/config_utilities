@@ -214,7 +214,9 @@ void Visitor::visitSubconfig(ConfigT& config, const std::string& field_name, con
   // Aggregate data.
   if (visitor.mode == Visitor::Mode::kGet) {
     // When getting data add the new data also to the parent data node, using the correct namespace.
-    mergeYamlNodes(data.data, moveDownNamespace(new_data.data, sub_namespace));
+    YAML::Node new_node = YAML::Clone(new_data.data);
+    moveDownNamespace(new_node, sub_namespace);
+    mergeYamlNodes(data.data, new_node);
   }
 }
 

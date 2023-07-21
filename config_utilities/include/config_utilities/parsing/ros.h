@@ -69,7 +69,8 @@ inline YAML::Node rosToYaml(const ros::NodeHandle& nh) {
     // Convert data to yaml.
     YAML::Node local_node;
     local_node[local_name] = xmlRpcToYaml(value);
-    node = mergeYamlNodes(node, moveDownNamespace(local_node, sub_namespace));
+    moveDownNamespace(local_node, sub_namespace);
+    mergeYamlNodes(node, local_node);
   }
   return node;
 }
