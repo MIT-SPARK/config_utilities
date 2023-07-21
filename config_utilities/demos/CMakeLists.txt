@@ -14,6 +14,10 @@ if(CONFIG_UTILS_BUILD_DEMOS)
   if(ENABLE_Eigen3 AND ENABLE_roscpp)
     add_executable(demo_ros ros.cpp)
     target_link_libraries(demo_ros ${PROJECT_NAME})
+
+    include(GNUInstallDirs)
+    install(TARGETS demo_ros
+            RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME})
   endif()
 
 endif()
