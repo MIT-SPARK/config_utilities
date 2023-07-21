@@ -4,10 +4,10 @@
 #include <mutex>
 #include <optional>
 #include <string>
-#include <thread>
 #include <vector>
 
 #include "config_utilities/internal/meta_data.h"
+#include "config_utilities/internal/namespacing.h"
 #include "config_utilities/internal/validity_checker.h"
 #include "config_utilities/internal/yaml_parser.h"
 
@@ -20,6 +20,7 @@ namespace config::internal {
  */
 struct Visitor {
   ~Visitor();
+  static bool hasInstance();
 
   // Interfaces for all internal tools interact with configs through the visitor.
   // Set the data in the config from the node.
@@ -27,12 +28,14 @@ struct Visitor {
   static MetaData setValues(ConfigT& config,
                             const YAML::Node& node,
                             const bool print_warnings = true,
+                            const std::string& name_space = "",
                             const std::string& name_prefix = "");
 
   // Get the data stored in the config.
   template <typename ConfigT>
   static MetaData getValues(const ConfigT& config,
                             const bool print_warnings = true,
+                            const std::string& name_space = "",
                             const std::string& name_prefix = "");
 
   // Execute all checks specified in the config.
@@ -73,6 +76,11 @@ struct Visitor {
   static std::optional<YAML::Node> visitVirtualConfig(bool is_set, bool is_optional, const std::string& type);
 
  private:
+  friend class config::NameSpace;
+  friend void config::enter_namespace(const std::string& name);
+  friend void config::exit_namespace();
+  friend void config::clear_namespaces();
+
   // Which operations to perform on the data.
   enum class Mode { kGet, kSet, kCheck };
   const Mode mode;
@@ -81,29 +89,36 @@ struct Visitor {
   // objects. Note that meta data always needs to be created before it can be accessed. In short, 'instance()' is only
   // to be used within the 'declare_config()' function, whereas 'create()' is to be used to extract data from a struct
   // by calling 'declare_config()'.
-  explicit Visitor(Mode _mode, std::string _name_prefix = "");
+  explicit Visitor(Mode _mode, std::string _name_space = "", std::string _name_prefix = "");
 
   static Visitor& instance();
 
   // Utility function to manipulate data.
+  // Move errors from the checker and parser into the meta data.
   void extractErrors();
 
   // Messenger data.
   MetaData data;
 
   // Internal data to handle visits.
+  // Checker for validity checks.
   ValidityChecker checker;
+
+  // Parser for getting or setting yaml parsing.
   YamlParser parser;
+
+  // Storage for user specified namespaces. Managed by namespacing.h.
+  std::vector<NameSpace> open_namespaces;
+
+  // The current namespace used to get or set values.
   std::string name_space;
+
+  // Current name prefix to be put before filed names.
   std::string name_prefix;
 
   // Static registration to get access to the correct instance. Instancs are managed per thread and as a stack, i.e.
   // nested calls are possible and will always use the latest visitor.
-  inline static std::map<std::thread::id, std::vector<Visitor*>> instances;
-  inline static std::mutex instance_mutex;
-
-  // Member data.
-  const std::thread::id id;
+  static thread_local std::vector<Visitor*> instances;
 };
 
 }  // namespace config::internal

@@ -24,6 +24,7 @@ cs_add_library(${PROJECT_NAME}
         src/logger.cpp
         src/formatter.cpp
         src/globals.cpp
+        src/namespacing.cpp
         )
 target_link_libraries(${PROJECT_NAME} yaml-cpp)
 

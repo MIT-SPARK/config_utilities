@@ -7,36 +7,24 @@
 
 namespace config::internal {
 
-Visitor::~Visitor() {
-  std::lock_guard<std::mutex> lock(instance_mutex);
-  std::vector<Visitor*>& thread_instances = instances[id];
-  thread_instances.pop_back();
-  if (thread_instances.empty()) {
-    instances.erase(id);
-  }
-}
+thread_local std::vector<Visitor*> Visitor::instances = {};
 
-Visitor::Visitor(Mode _mode, std::string _name_prefix)
-    : mode(_mode), name_prefix(std::move(_name_prefix)), id(std::this_thread::get_id()) {
+Visitor::~Visitor() { instances.pop_back(); }
+
+bool Visitor::hasInstance() { return !instances.empty(); }
+
+Visitor::Visitor(Mode _mode, std::string _name_space, std::string _name_prefix)
+    : mode(_mode), name_space(std::move(_name_space)), name_prefix(std::move(_name_prefix)) {
   // Create instances in a stack per thread and store the reference to it.
-  std::lock_guard<std::mutex> lock(instance_mutex);
-  if (instances.find(id) == instances.end()) {
-    instances[id] = std::vector<Visitor*>();
-  }
-  instances[id].emplace_back(this);
+  instances.emplace_back(this);
 }
 
 Visitor& Visitor::instance() {
-  std::lock_guard<std::mutex> lock(instance_mutex);
-  const std::thread::id id = std::this_thread::get_id();
-  auto it = instances.find(id);
-  if (it == instances.end() || it->second.empty()) {
+  if (instances.empty()) {
     // This should never happen as visitors are managed internally. Caught here for debugging.
-    std::stringstream ss;
-    ss << "Visitor for thread " << id << " accessed but none were created.";
-    throw std::runtime_error(ss.str());
+    throw std::runtime_error("Visitor instance was accessed but no visitor was created before.");
   }
-  return *it->second.back();
+  return *instances.back();
 }
 
 void Visitor::extractErrors() {
