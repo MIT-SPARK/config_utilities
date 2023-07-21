@@ -18,8 +18,9 @@ option(CONFIG_UTILS_INSTALL_TESTS "Install test executable" ON)
 option(CONFIG_UTILS_BUILD_DEMOS "Build demo executables" ON)
 
 find_package(yaml-cpp REQUIRED)
-find_optional(roscpp CONFIG_UTILS_ENABLE_ROS)
-find_optional(Eigen3 CONFIG_UTILS_ENABLE_EIGEN)
+FIND_OPTIONAL(roscpp CONFIG_UTILS_ENABLE_ROS)
+FIND_OPTIONAL(Eigen3 CONFIG_UTILS_ENABLE_EIGEN)
+FIND_OPTIONAL_PKGCFG(libglog CONFIG_UTILS_ENABLE_GLOG)
 
 add_library(
   ${PROJECT_NAME}
@@ -49,6 +50,14 @@ endif()
 if(ENABLE_Eigen3)
   target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen)
 endif()
+
+if(ENABLE_libglog)
+  target_link_libraries(${PROJECT_NAME} PUBLIC PkgConfig::libglog)
+endif()
+
+message(STATUS "Eigen features enabled: ${ENABLE_Eigen3}")
+message(STATUS "ROS features enabled:   ${ENABLE_roscpp}")
+message(STATUS "glog features enabled:  ${ENABLE_libglog}")
 
 add_subdirectory(demos)
 
