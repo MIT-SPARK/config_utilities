@@ -9,6 +9,15 @@
 
 namespace config::test {
 
+struct SubSubConfig {
+  int i = 1;
+};
+
+struct SubConfig {
+  int i = 1;
+  SubSubConfig sub_sub_config;
+};
+
 struct DefaultConfig {
   int i = 1;
   float f = 2.1f;
@@ -22,7 +31,13 @@ struct DefaultConfig {
   Eigen::Matrix<double, 3, 3> mat = Eigen::Matrix<double, 3, 3>::Identity();
   enum class Enum { kA, kB, kC } my_enum = Enum::kA;
   enum class StrangeEnum : int { kX = 0, kY = 42, kZ = -7 } my_strange_enum = StrangeEnum::kX;
+  SubConfig sub_config;
+  SubSubConfig sub_sub_config;
 };
+
+void declare_config(SubSubConfig& config);
+
+void declare_config(SubConfig& config);
 
 void declare_config(DefaultConfig& config);
 

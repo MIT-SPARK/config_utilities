@@ -7,6 +7,19 @@
 
 namespace config::test {
 
+void declare_config(SubSubConfig& config) {
+  config::name("SubSubConfig");
+  config::field(config.i, "i");
+  config::checkGT(config.i, 0, "i");
+}
+
+void declare_config(SubConfig& config) {
+  config::name("SubConfig");
+  config::field(config.i, "i");
+  config::subconfig(config.sub_sub_config, "sub_sub_config", "nested_sub_ns");
+  config::checkGT(config.i, 0, "i");
+}
+
 void declare_config(DefaultConfig& config) {
   config::name("DefaultConfig");
   config::field(config.i, "i");
@@ -25,6 +38,8 @@ void declare_config(DefaultConfig& config) {
                      {{DefaultConfig::StrangeEnum::kX, "X"},
                       {DefaultConfig::StrangeEnum::kY, "Y"},
                       {DefaultConfig::StrangeEnum::kZ, "Z"}});
+  config::subconfig(config.sub_config, "sub_config", "sub_ns");
+  config::subconfig(config.sub_sub_config, "sub_sub_config", "sub_sub_ns");
 
   config::checkGT(config.i, 0, "i");
   config::checkGE(config.f, 0.f, "f");
@@ -51,6 +66,9 @@ void expextDefaultValues(const DefaultConfig& config) {
   EXPECT_EQ(config.mat, mat);
   EXPECT_EQ(config.my_enum, DefaultConfig::Enum::kA);
   EXPECT_EQ(config.my_strange_enum, DefaultConfig::StrangeEnum::kX);
+  EXPECT_EQ(config.sub_config.i, 1);
+  EXPECT_EQ(config.sub_config.sub_sub_config.i, 1);
+  EXPECT_EQ(config.sub_sub_config.i, 1);
 }
 
 void expectModifiedValues(const DefaultConfig& config) {
@@ -69,6 +87,9 @@ void expectModifiedValues(const DefaultConfig& config) {
   EXPECT_EQ(config.mat, mat);
   EXPECT_EQ(config.my_enum, DefaultConfig::Enum::kB);
   EXPECT_EQ(config.my_strange_enum, DefaultConfig::StrangeEnum::kZ);
+  EXPECT_EQ(config.sub_config.i, 2);
+  EXPECT_EQ(config.sub_config.sub_sub_config.i, 3);
+  EXPECT_EQ(config.sub_sub_config.i, 4);
 }
 
 }  // namespace config::test
