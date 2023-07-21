@@ -106,8 +106,7 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  std::string my_root_path = argv[1];
-  my_root_path += "/";
+  const std::string my_root_path = std::string(argv[1]) + "/";
 
   config::Settings().index_subconfig_field_names = true;
 
