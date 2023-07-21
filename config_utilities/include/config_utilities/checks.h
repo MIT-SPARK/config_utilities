@@ -26,6 +26,9 @@ class Check : public CheckBase {
   std::string message_;
 };
 
+/** @brief Trait to determine warning message for binary comparison operator
+ * Specialize for your type to change the warning message when a check fails.
+ */
 template <typename Compare>
 struct CompareMessageTrait {
   static std::string message() { return "did not pass comparison to"; };
@@ -41,8 +44,8 @@ class BinaryCheck : public CheckBase {
 
   virtual std::string message() const override {
     std::stringstream ss;
-    ss << "Param " << name_ << " with value " << param_ << " " << CompareMessageTrait<Compare>::message() << " "
-       << value_;
+    ss << "Check " << name_ << " failed. Param value " << param_ << " " << CompareMessageTrait<Compare>::message()
+       << " " << value_;
     return ss.str();
   }
 

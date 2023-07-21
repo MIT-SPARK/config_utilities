@@ -232,6 +232,6 @@ inline void checkCondition(bool condition, const std::string& warning) {
  *
  * @param check Custom check class to validate
  */
-inline void checkCondition(const CheckBase& check) { internal::Visitor::visitCheck(check); }
+inline void check(const CheckBase& check) { internal::Visitor::visitCheck(check); }
 
 }  // namespace config
