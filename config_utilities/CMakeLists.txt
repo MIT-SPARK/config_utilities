@@ -59,6 +59,8 @@ message(STATUS "Eigen features enabled: ${ENABLE_Eigen3}")
 message(STATUS "ROS features enabled:   ${ENABLE_roscpp}")
 message(STATUS "glog features enabled:  ${ENABLE_libglog}")
 
-add_subdirectory(demos)
+if(CONFIG_UTILS_BUILD_DEMOS)
+  add_subdirectory(demos)
+endif()
 
 include(HandleInstall)
