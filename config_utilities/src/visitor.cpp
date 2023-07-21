@@ -45,13 +45,13 @@ void Visitor::visitName(const std::string& name) {
   }
 }
 
-void Visitor::visitCheckCondition(bool condition, const std::string& error_message) {
+void Visitor::visitCheck(const CheckBase& check) {
   Visitor& visitor = Visitor::instance();
   if (visitor.mode != Visitor::Mode::kCheck) {
     return;
   }
   visitor.checker.setFieldNamePrefix(visitor.field_name_prefix);
-  visitor.checker.checkCondition(condition, error_message);
+  visitor.checker.checkCondition(check);
 }
 
 std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set, bool is_optional, const std::string& type) {
@@ -61,8 +61,8 @@ std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set, bool is_optio
   if (visitor.mode == Visitor::Mode::kCheck) {
     if (!is_set && !is_optional) {
       // The config is required and not set.
-      visitor.checker.checkCondition(
-          false, "Variable config '" + visitor.data.current_field_name + "' is required but not set.");
+      visitor.checker.markFailedCheck("Variable config '" + visitor.data.current_field_name +
+                                      "' is required but not set.");
     }
   }
 

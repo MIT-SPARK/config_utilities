@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include "config_utilities/checks.h"
 #include "config_utilities/internal/namespacing.h"
 #include "config_utilities/internal/visitor.h"
 #include "config_utilities/traits.h"
@@ -98,6 +99,26 @@ void base(ConfigT& config) {
 }
 
 /**
+ * @brief Execute a binary comparison check between the param and the value
+ *
+ * For example, if you wanted to validate that a param is greater than some value, you
+ * would use the check `checkBinary<std::greater>(...)`. Note that this casts the value
+ * to the same type as the parameter, so there may be some loss of precision in certain
+ * cases.
+ *
+ * @tparam Compare Binary comparison functor to use
+ * @tparam T Type of the parameter to be checked (inferred)
+ * @tparam P Type of the value to check against (inferred)
+ * @param param Value of the parameter to be checked
+ * @param value Value to check against
+ * @param name Name of the parameter to be reported in warning
+ */
+template <typename Compare, typename T, typename P>
+void checkBinary(const T& param, const P& value, const std::string& name) {
+  internal::Visitor::visitCheck(BinaryCheck<T, Compare>(param, static_cast<T>(value), name));
+}
+
+/**
  * @brief Execute a greater than (GT) check, i.e. param > value.
  *
  * @tparam T type of the parameter to be checked.
@@ -105,9 +126,9 @@ void base(ConfigT& config) {
  * @param value Value of the reference to compare to.
  * @param name Name of the parameter to be reported in the error summary.
  */
-template <typename T>
-void checkGT(const T& param, const T& value, const std::string& name) {
-  internal::Visitor::visitCheck(internal::Visitor::CheckMode::kGT, param, value, name);
+template <typename T, typename P>
+void checkGT(const T& param, const P& value, const std::string& name) {
+  checkBinary<std::greater<T>>(param, value, name);
 }
 
 /**
@@ -118,9 +139,9 @@ void checkGT(const T& param, const T& value, const std::string& name) {
  * @param value Value of the reference to compare to.
  * @param name Name of the parameter to be reported in the error summary.
  */
-template <typename T>
-void checkGE(const T& param, const T& value, const std::string& name) {
-  internal::Visitor::visitCheck(internal::Visitor::CheckMode::kGE, param, value, name);
+template <typename T, typename P>
+void checkGE(const T& param, const P& value, const std::string& name) {
+  checkBinary<std::greater_equal<T>>(param, value, name);
 }
 
 /**
@@ -131,9 +152,9 @@ void checkGE(const T& param, const T& value, const std::string& name) {
  * @param value Value of the reference to compare to.
  * @param name Name of the parameter to be reported in the error summary.
  */
-template <typename T>
-void checkLT(const T& param, const T& value, const std::string& name) {
-  internal::Visitor::visitCheck(internal::Visitor::CheckMode::kLT, param, value, name);
+template <typename T, typename P>
+void checkLT(const T& param, const P& value, const std::string& name) {
+  checkBinary<std::less<T>>(param, value, name);
 }
 
 /**
@@ -144,9 +165,9 @@ void checkLT(const T& param, const T& value, const std::string& name) {
  * @param value Value of the reference to compare to.
  * @param name Name of the parameter to be reported in the error summary.
  */
-template <typename T>
-void checkLE(const T& param, const T& value, const std::string& name) {
-  internal::Visitor::visitCheck(internal::Visitor::CheckMode::kLE, param, value, name);
+template <typename T, typename P>
+void checkLE(const T& param, const P& value, const std::string& name) {
+  checkBinary<std::less_equal<T>>(param, value, name);
 }
 
 /**
@@ -157,9 +178,9 @@ void checkLE(const T& param, const T& value, const std::string& name) {
  * @param value Value of the reference to compare to.
  * @param name Name of the parameter to be reported in the error summary.
  */
-template <typename T>
-void checkEQ(const T& param, const T& value, const std::string& name) {
-  internal::Visitor::visitCheck(internal::Visitor::CheckMode::kEQ, param, value, name);
+template <typename T, typename P>
+void checkEQ(const T& param, const P& value, const std::string& name) {
+  checkBinary<std::equal_to<T>>(param, value, name);
 }
 
 /**
@@ -170,9 +191,9 @@ void checkEQ(const T& param, const T& value, const std::string& name) {
  * @param value Value of the reference to compare to.
  * @param name Name of the parameter to be reported in the error summary.
  */
-template <typename T>
-void checkNE(const T& param, const T& value, const std::string& name) {
-  internal::Visitor::visitCheck(internal::Visitor::CheckMode::kNE, param, value, name);
+template <typename T, typename P>
+void checkNE(const T& param, const P& value, const std::string& name) {
+  checkBinary<std::not_equal_to<T>>(param, value, name);
 }
 
 /**
@@ -183,10 +204,17 @@ void checkNE(const T& param, const T& value, const std::string& name) {
  * @param lower Lower bound of valid values.
  * @param higher Higher bound of valid values.
  * @param name Name of the parameter to be reported in the error summary.
+ * @param lower_inclusive Whether the lower end of the range range is closed (i.e., [low, high] or open (low, high])
+ * @param upper_inclusive Whether the upper end of the range range is closed (i.e., [low, high] or open (low, high])
  */
 template <typename T>
-void checkInRange(const T& param, const T& lower, const T& higher, const std::string& name) {
-  internal::Visitor::visitCheckInRange(param, lower, higher, name);
+void checkInRange(const T& param,
+                  const T& lower,
+                  const T& higher,
+                  const std::string& name,
+                  bool lower_inclusive = true,
+                  bool upper_inclusive = true) {
+  internal::Visitor::visitCheck(CheckRange(param, lower, higher, name, lower_inclusive, upper_inclusive));
 }
 
 /**
@@ -196,7 +224,14 @@ void checkInRange(const T& param, const T& lower, const T& higher, const std::st
  * @param warning Message to be reported in the error summary.
  */
 inline void checkCondition(bool condition, const std::string& warning) {
-  internal::Visitor::visitCheckCondition(condition, warning);
+  internal::Visitor::visitCheck(Check(condition, warning));
 }
+
+/**
+ * @brief Execute a custom check
+ *
+ * @param check Custom check class to validate
+ */
+inline void checkCondition(const CheckBase& check) { internal::Visitor::visitCheck(check); }
 
 }  // namespace config

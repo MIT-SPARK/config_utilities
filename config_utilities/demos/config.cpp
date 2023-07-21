@@ -88,6 +88,7 @@ void declare_config(MyConfig& config) {
   // displayed. Implemented checks are GT (>), GE (>=), LT (<), LE (<=), EQ (==), NE (!=).
   // TODO(lschmid): Would be nice to not duplicate the name but didn't find a nice way to do this.
   config::checkGT(config.i, 0, "i");
+  config::checkLT(config.i, -2, "i");
 
   // Double sided checks can be invoked as in range.
   config::checkInRange(config.distance, 0.0, 100.0, "distance");

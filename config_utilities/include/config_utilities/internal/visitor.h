@@ -54,15 +54,7 @@ struct Visitor {
                              const std::string& field_name,
                              const std::map<EnumT, std::string>& enum_names);
 
-  enum class CheckMode { kGT, kGE, kLT, kLE, kEQ, kNE };
-
-  template <typename T>
-  static void visitCheck(Visitor::CheckMode mode, const T& param, const T& value, const std::string& name);
-
-  template <typename T>
-  static void visitCheckInRange(const T& param, const T& lower, const T& upper, const std::string& name);
-
-  static void visitCheckCondition(bool condition, const std::string& error_message);
+  static void visitCheck(const CheckBase& check);
 
   template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
   static void visitField(ConfigT& config, const std::string& field_name, const std::string& /* unit */);
