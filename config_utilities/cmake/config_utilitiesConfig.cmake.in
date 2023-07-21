@@ -1,5 +1,6 @@
 @PACKAGE_INIT@
 
+get_filename_component(config_utilities_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 include(CMakeFindDependencyMacro)
 
 if(@ENABLE_Eigen3@)
@@ -15,3 +16,5 @@ if(NOT TARGET config_utilities::config_utilities)
 endif()
 
 set(config_utilities_LIBRARIES config_utilities::config_utilities)
+
+check_required_components(config_utilities)
