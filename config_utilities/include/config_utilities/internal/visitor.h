@@ -27,14 +27,12 @@ struct Visitor {
   static MetaData setValues(ConfigT& config,
                             const YAML::Node& node,
                             const bool print_warnings = true,
-                            const std::string& sub_namespace = "",
                             const std::string& name_prefix = "");
 
   // Get the data stored in the config.
   template <typename ConfigT>
   static MetaData getValues(const ConfigT& config,
                             const bool print_warnings = true,
-                            const std::string& sub_namespace = "",
                             const std::string& name_prefix = "");
 
   // Execute all checks specified in the config.
@@ -43,10 +41,7 @@ struct Visitor {
 
   // Extend the current visitor with a sub-visitor, replicating the previous specification.
   template <typename ConfigT>
-  static MetaData subVisit(ConfigT& config,
-                           const bool print_warnings = true,
-                           const std::string& sub_namespace = "",
-                           const std::string& name_prefix = "");
+  static MetaData subVisit(ConfigT& config, const bool print_warnings = true, const std::string& name_prefix = "");
 
   // Interfaces for the config declaration interfaces to to expose their info to the visitor.
   static void visitName(const std::string& name);
@@ -70,7 +65,7 @@ struct Visitor {
   static void visitCheckCondition(bool condition, const std::string& error_message);
 
   template <typename ConfigT>
-  static void visitSubconfig(ConfigT& config, const std::string& field_name, const std::string& sub_namespace);
+  static void visitSubconfig(ConfigT& config, const std::string& field_name, const std::string& /* unit */);
 
   template <typename ConfigT>
   static void visitBase(ConfigT& config, const std::string& sub_namespace);
@@ -86,7 +81,7 @@ struct Visitor {
   // objects. Note that meta data always needs to be created before it can be accessed. In short, 'instance()' is only
   // to be used within the 'declare_config()' function, whereas 'create()' is to be used to extract data from a struct
   // by calling 'declare_config()'.
-  explicit Visitor(Mode _mode, std::string _sub_namespace = "", std::string _name_prefix = "");
+  explicit Visitor(Mode _mode, std::string _name_prefix = "");
 
   static Visitor& instance();
 

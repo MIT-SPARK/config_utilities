@@ -1,6 +1,7 @@
 #pragma once
 
 #include <exception>
+#include <iostream>
 #include <map>
 #include <memory>
 #include <set>
@@ -23,9 +24,8 @@ template <typename ConfigT>
 MetaData Visitor::setValues(ConfigT& config,
                             const YAML::Node& node,
                             const bool print_warnings,
-                            const std::string& sub_namespace,
                             const std::string& name_prefix) {
-  Visitor visitor(Mode::kSet, sub_namespace, name_prefix);
+  Visitor visitor(Mode::kSet, name_prefix);
   visitor.parser.setNode(node);
   declare_config(config);
   visitor.extractErrors();
@@ -37,11 +37,8 @@ MetaData Visitor::setValues(ConfigT& config,
 }
 
 template <typename ConfigT>
-MetaData Visitor::getValues(const ConfigT& config,
-                            const bool print_warnings,
-                            const std::string& sub_namespace,
-                            const std::string& name_prefix) {
-  Visitor visitor(Mode::kGet, sub_namespace, name_prefix);
+MetaData Visitor::getValues(const ConfigT& config, const bool print_warnings, const std::string& name_prefix) {
+  Visitor visitor(Mode::kGet, name_prefix);
   // NOTE: We know that in mode kGet, the config is not modified.
   declare_config(const_cast<ConfigT&>(config));
   visitor.extractErrors();
@@ -64,16 +61,13 @@ MetaData Visitor::getChecks(const ConfigT& config) {
 }
 
 template <typename ConfigT>
-MetaData Visitor::subVisit(ConfigT& config,
-                           const bool print_warnings,
-                           const std::string& sub_namespace,
-                           const std::string& name_prefix) {
+MetaData Visitor::subVisit(ConfigT& config, const bool print_warnings, const std::string& name_prefix) {
   Visitor& current_visitor = Visitor::instance();
   switch (current_visitor.mode) {
     case Visitor::Mode::kGet:
-      return getValues(config, print_warnings, sub_namespace, name_prefix);
+      return getValues(config, print_warnings, name_prefix);
     case Visitor::Mode::kSet:
-      return setValues(config, current_visitor.parser.getNode(), print_warnings, sub_namespace, name_prefix);
+      return setValues(config, current_visitor.parser.getNode(), print_warnings, name_prefix);
     case Visitor::Mode::kCheck:
       return getChecks(config);
     default:
@@ -189,7 +183,7 @@ void Visitor::visitCheckInRange(const T& param, const T& lower, const T& upper, 
 }
 
 template <typename ConfigT>
-void Visitor::visitSubconfig(ConfigT& config, const std::string& field_name, const std::string& sub_namespace) {
+void Visitor::visitSubconfig(ConfigT& config, const std::string& field_name, const std::string& /* unit */) {
   Visitor& visitor = Visitor::instance();
   MetaData& data = visitor.data;
 
@@ -205,18 +199,21 @@ void Visitor::visitSubconfig(ConfigT& config, const std::string& field_name, con
   info.subconfig_id = data.sub_configs.size();
 
   // Visit subconfig.
-  const std::string new_namespace = joinNamespace(visitor.name_space, sub_namespace);
   const std::string new_prefix =
       visitor.name_prefix + (Settings::instance().index_subconfig_field_names ? field_name + "." : "");
   data.current_field_name = field_name;
-  MetaData& new_data = data.sub_configs.emplace_back(Visitor::subVisit(config, false, new_namespace, new_prefix));
+  MetaData& new_data = data.sub_configs.emplace_back(Visitor::subVisit(config, false, new_prefix));
 
   // Aggregate data.
   if (visitor.mode == Visitor::Mode::kGet) {
     // When getting data add the new data also to the parent data node, using the correct namespace.
+    std::cout << "GETTING " << field_name << std::endl;
+    std::cout << "new_node: \n" << new_data.data << std::endl;
     YAML::Node new_node = YAML::Clone(new_data.data);
-    moveDownNamespace(new_node, sub_namespace);
+    // TODO(lschmid): Figure out how to resolve subconfig namespaces if they exist.
+    // moveDownNamespace(new_node, sub_namespace);
     mergeYamlNodes(data.data, new_node);
+    std::cout << "combined data: \n" << data.data << std::endl;
   }
 }
 

@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include "config_utilities/internal/namespacing.h"
 #include "config_utilities/internal/visitor.h"
 #include "config_utilities/traits.h"
 
@@ -50,6 +51,10 @@ inline void name(const std::string& name) { internal::Visitor::visitName(name); 
 template <typename T, typename std::enable_if<!isConfig<T>(), bool>::type = true>
 void field(T& field, const std::string& field_name, const std::string& unit = "") {
   internal::Visitor::visitField(field, field_name, unit);
+}
+template <typename T, typename std::enable_if<isConfig<T>(), bool>::type = true>
+void field(T& field, const std::string& field_name, const std::string& unit = "") {
+  internal::Visitor::visitSubconfig(field, field_name, unit);
 }
 
 /**

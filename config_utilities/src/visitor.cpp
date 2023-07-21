@@ -16,11 +16,8 @@ Visitor::~Visitor() {
   }
 }
 
-Visitor::Visitor(Mode _mode, std::string _name_space, std::string _name_prefix)
-    : mode(_mode),
-      name_space(std::move(_name_space)),
-      name_prefix(std::move(_name_prefix)),
-      id(std::this_thread::get_id()) {
+Visitor::Visitor(Mode _mode, std::string _name_prefix)
+    : mode(_mode), name_prefix(std::move(_name_prefix)), id(std::this_thread::get_id()) {
   // Create instances in a stack per thread and store the reference to it.
   std::lock_guard<std::mutex> lock(instance_mutex);
   if (instances.find(id) == instances.end()) {
