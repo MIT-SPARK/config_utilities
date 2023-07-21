@@ -101,12 +101,17 @@ class DerivedObject : public BaseObject {
 }  // namespace demo
 
 int main(int argc, char** argv) {
+  if (argc < 2) {
+    std::cerr << "invalid usage! expected resource directory as argument" << std::endl;
+    return 1;
+  }
+
+  std::string my_root_path = argv[1];
+  my_root_path += "/";
+
   config::Settings().index_subconfig_field_names = true;
 
   // ===================================== Checking whether a struct is a config =====================================
-
-  // TODO(lschmid): Make this nicer.
-  const std::string my_root_path = "/home/lukas/khronos_ws/src/config_utilities/config_utilities/demos/";
 
   // Create the config like any other.
   auto config = config::fromYamlFile<demo::DerivedConfig>(my_root_path + "demo_inheritance.yaml", "valid_ns");

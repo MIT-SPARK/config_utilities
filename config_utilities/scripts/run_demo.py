@@ -15,8 +15,18 @@ def _get_resource_path():
     return project_dir / "demos" / "resources"
 
 
-def _run_demo(build_path, name, resource_path):
-    subprocess.run([str(build_path / name), str(resource_path)])
+def _verify_name(build_path, name):
+    demo_path = build_path / "demos"
+    executable_path = demo_path / f"demo_{name}"
+    if not executable_path.exists():
+        demos = [x for x in demo_path.glob("demo_*")]
+        print("available demos:")
+        for demo in demos:
+            print(f"  - {demo.stem[5:]}")
+
+        return None
+
+    return executable_path
 
 
 def main():
@@ -43,7 +53,11 @@ def main():
         print(f"{build_path} does not exist")
         sys.exit(1)
 
-    executable_path = build_path / "demos" / f"demo_{args.name}"
+    executable_path = _verify_name(build_path, args.name)
+    if not executable_path:
+        print("invalid demo name")
+        sys.exit(1)
+
     subprocess.run([str(executable_path), str(resource_path)])
 
 

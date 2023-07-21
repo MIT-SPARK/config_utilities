@@ -147,6 +147,14 @@ void declare_config(ObjectWithDerivedMembers::Config& config) {
 }  // namespace demo
 
 int main(int argc, char** argv) {
+  if (argc < 2) {
+    std::cerr << "invalid usage! expected resource directory as argument" << std::endl;
+    return 1;
+  }
+
+  std::string my_root_path = argv[1];
+  my_root_path += "/";
+
   // --------------- Creating strig-identified objects ----------------
 
   // Create an object of type Base using the factory.
@@ -174,9 +182,6 @@ int main(int argc, char** argv) {
   config::Settings().factory_type_param_name = "type";
 
   // Create an object of type and with config as specified in a file.
-  // TODO(lschmid): Make this nicer.
-  const std::string my_root_path = "/home/lukas/khronos_ws/src/config_utilities/config_utilities/demos/";
-
   object = config::createFromYamlFile<demo::Base>(my_root_path + "demo_factory.yaml", 123);
   object->print();
 

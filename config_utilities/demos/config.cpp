@@ -115,6 +115,14 @@ void declare_config(SubSubConfig& config) {
 }  // namespace demo
 
 int main(int argc, char** argv) {
+  if (argc < 2) {
+    std::cerr << "invalid usage! expected resource directory as argument" << std::endl;
+    return 1;
+  }
+
+  std::string my_root_path = argv[1];
+  my_root_path += "/";
+
   // GLobal settings can be set at runtime to change the behavior and presentation of configs.
   config::Settings().index_subconfig_field_names = true;
 
@@ -156,7 +164,6 @@ int main(int argc, char** argv) {
   std::cout << "\n\n----- Reading the config from file -----\n\n" << std::endl;
 
   // Read the config from file.
-  const std::string my_root_path = "/home/lukas/khronos_ws/src/config_utilities/config_utilities/demos/";
   config = config::fromYamlFile<demo::MyConfig>(my_root_path + "demo_params.yaml");
 
   std::cout << "Read values i='" << config.i << "', s='" << config.s << "', distance='" << config.distance
