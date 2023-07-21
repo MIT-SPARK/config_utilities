@@ -7,7 +7,17 @@ import sys
 
 
 def _autodetect_build_path():
-    return None
+    script_path = pathlib.Path(__file__).absolute().parent
+    ret = subprocess.run(
+        ["catkin", "locate", "-b", "config_utilities"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        cwd=str(script_path),
+    )
+    if ret.returncode != 0:
+        return None
+
+    return pathlib.Path(ret.stdout.decode("utf-8").strip("\n"))
 
 
 def _get_resource_path():
