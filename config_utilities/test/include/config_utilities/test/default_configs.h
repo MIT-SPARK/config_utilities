@@ -26,4 +26,8 @@ struct DefaultConfig {
 
 void declare_config(DefaultConfig& config);
 
+void expextDefaultValues(const DefaultConfig& config);
+
+void expectModifiedValues(const DefaultConfig& config);
+
 }  // namespace config::test

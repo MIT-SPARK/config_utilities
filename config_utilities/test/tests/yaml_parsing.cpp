@@ -109,35 +109,77 @@ TEST(YamlParsing, parsefromYaml) {
   // not important for now.
 }
 
+TEST(YamlParsing, setValues) {
+  YAML::Node data = loadResource("modified_config_values");
+  DefaultConfig config;
+  internal::MetaData meta_data = internal::Visitor::setValues(config, data);
+  expectModifiedValues(config);
+  EXPECT_FALSE(meta_data.hasErrors());
+
+  // Make sure the input node is not modified.
+  expectEqual(data, loadResource("modified_config_values"));
+
+  // Test that the config is not modified if no data is found is empty.
+  data = YAML::Node();
+  meta_data = internal::Visitor::setValues(config, data);
+  expectModifiedValues(config);
+  EXPECT_FALSE(meta_data.hasErrors());
+
+  data["i"] = "Not an int";
+  data["u8"] = -1;
+  data["d"] = static_cast<long double>(std::numeric_limits<double>::max()) * 2;
+  data["vec"] = std::map<std::string, int>({{"1_str", 1}, {"2_str", 2}});
+  data["map"] = std::vector<int>({1, 2, 3});
+  data["set"] = std::vector<float>({11.11, 22.22, 33.33, 44.44, 11.11});
+  data["mat"].push_back(std::vector<int>({1, 2, 3}));
+  data["mat"].push_back(std::vector<int>({1, 2, 3, 4}));
+  data["mat"].push_back(std::vector<int>({1, 2, 3}));
+  data["my_enum"] = "OutOfList";
+  meta_data = internal::Visitor::setValues(config, data);
+  expectModifiedValues(config);
+  EXPECT_TRUE(meta_data.hasErrors());
+  EXPECT_EQ(meta_data.errors.size(), 8);
+}
+
+TEST(YamlParsing, getValues) {
+  DefaultConfig config;
+  internal::MetaData meta_data = internal::Visitor::getValues(config);
+  expextDefaultValues(config);
+  expectEqual(meta_data.data, loadResource("default_config_values"));
+  EXPECT_FALSE(meta_data.hasErrors());
+  EXPECT_EQ(meta_data.errors.size(), 0);
+  for (const auto& field : meta_data.field_infos) {
+    // EXPECT_TRUE(field.is_default);
+  }
+  EXPECT_EQ(meta_data.name, "DefaultConfig");
+
+  internal::Visitor::setValues(config, loadResource("modified_config_values"));
+  meta_data = internal::Visitor::getValues(config);
+  expectModifiedValues(config);
+  expectEqual(meta_data.data, loadResource("modified_config_values"));
+  EXPECT_FALSE(meta_data.hasErrors());
+  EXPECT_EQ(meta_data.errors.size(), 0);
+  for (const auto& field : meta_data.field_infos) {
+    // EXPECT_FALSE(field.is_default);
+  }
+  EXPECT_EQ(meta_data.name, "DefaultConfig");
+}
+
 TEST(YamlParsing, configFromYaml) {
   const YAML::Node data = loadResource("modified_config_values");
   auto config = fromYaml<DefaultConfig>(data);
-  EXPECT_EQ(config.i, 2);
-  EXPECT_EQ(config.f, -1.f);
-  EXPECT_EQ(config.d, 3.1415926);
-  EXPECT_EQ(config.b, false);
-  EXPECT_EQ(config.u8, 255);
-  EXPECT_EQ(config.s, "a different test string");
-  EXPECT_EQ(config.vec, std::vector<int>({2, 3, 4, 5}));
-  const std::map<std::string, int> map({{"x", 24}, {"y", 25}, {"z", 26}});
-  EXPECT_EQ(config.map, map);
-  EXPECT_EQ(config.set, std::set<float>({11.11, 22.22, 33.33, 44.44}));
-  Eigen::Matrix3d mat;
-  mat << 1, 2, 3, 4, 5, 6, 7, 8, 9;
-  EXPECT_EQ(config.mat, mat);
-  EXPECT_EQ(config.my_enum, DefaultConfig::Enum::kB);
-  EXPECT_EQ(config.my_strange_enum, DefaultConfig::StrangeEnum::kZ);
+  expectModifiedValues(config);
 
   // Make sure the input node is not modified.
   expectEqual(data, loadResource("modified_config_values"));
 }
 
-TEST(YamlParsing, configToYaml) {
+TEST(YamlParsing, configToYAML) {
   DefaultConfig config;
   expectEqual(toYaml(config), loadResource("default_config_values"));
 
-  auto modified_config = fromYaml<DefaultConfig>(loadResource("modified_config_values"));
-  expectEqual(toYaml(modified_config), loadResource("modified_config_values"));
+  config = fromYaml<DefaultConfig>(loadResource("modified_config_values"));
+  expectEqual(toYaml(config), loadResource("modified_config_values"));
 }
 
 }  // namespace config::test

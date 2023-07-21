@@ -1,6 +1,8 @@
 
 #include "config_utilities/test/default_configs.h"
 
+#include <gtest/gtest.h>
+
 #include "config_utilities/config.h"
 
 namespace config::test {
@@ -32,6 +34,41 @@ void declare_config(DefaultConfig& config) {
   config::checkNE(config.b, false, "b");
   config::checkCondition(config.vec.size() == 3, "Param 'vec' must b of size '3'");
   config::checkInRange(config.d, 0.0, 500.0, "d");
+}
+
+void expextDefaultValues(const DefaultConfig& config) {
+  EXPECT_EQ(config.i, 1);
+  EXPECT_EQ(config.f, 2.1f);
+  EXPECT_EQ(config.d, 3.2);
+  EXPECT_EQ(config.b, true);
+  EXPECT_EQ(config.u8, 4);
+  EXPECT_EQ(config.s, "test string");
+  EXPECT_EQ(config.vec, std::vector<int>({1, 2, 3}));
+  const std::map<std::string, int> map({{"a", 1}, {"b", 2}, {"c", 3}});
+  EXPECT_EQ(config.map, map);
+  EXPECT_EQ(config.set, std::set<float>({1.1f, 2.2, 3.3f}));
+  const auto mat = Eigen::Matrix<double, 3, 3>::Identity();
+  EXPECT_EQ(config.mat, mat);
+  EXPECT_EQ(config.my_enum, DefaultConfig::Enum::kA);
+  EXPECT_EQ(config.my_strange_enum, DefaultConfig::StrangeEnum::kX);
+}
+
+void expectModifiedValues(const DefaultConfig& config) {
+  EXPECT_EQ(config.i, 2);
+  EXPECT_EQ(config.f, -1.f);
+  EXPECT_EQ(config.d, 3.1415926);
+  EXPECT_EQ(config.b, false);
+  EXPECT_EQ(config.u8, 255);
+  EXPECT_EQ(config.s, "a different test string");
+  EXPECT_EQ(config.vec, std::vector<int>({2, 3, 4, 5}));
+  const std::map<std::string, int> map({{"x", 24}, {"y", 25}, {"z", 26}});
+  EXPECT_EQ(config.map, map);
+  EXPECT_EQ(config.set, std::set<float>({11.11, 22.22, 33.33, 44.44}));
+  Eigen::Matrix3d mat;
+  mat << 1, 2, 3, 4, 5, 6, 7, 8, 9;
+  EXPECT_EQ(config.mat, mat);
+  EXPECT_EQ(config.my_enum, DefaultConfig::Enum::kB);
+  EXPECT_EQ(config.my_strange_enum, DefaultConfig::StrangeEnum::kZ);
 }
 
 }  // namespace config::test
