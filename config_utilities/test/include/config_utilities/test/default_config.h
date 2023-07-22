@@ -33,6 +33,11 @@ struct DefaultConfig {
   enum class StrangeEnum : int { kX = 0, kY = 42, kZ = -7 } my_strange_enum = StrangeEnum::kX;
   SubConfig sub_config;
   SubSubConfig sub_sub_config;
+
+  static YAML::Node defaultValues();
+  static YAML::Node modifiedValues();
+  void expextDefaultValues();
+  void expectModifiedValues();
 };
 
 void declare_config(SubSubConfig& config);
@@ -40,9 +45,5 @@ void declare_config(SubSubConfig& config);
 void declare_config(SubConfig& config);
 
 void declare_config(DefaultConfig& config);
-
-void expextDefaultValues(const DefaultConfig& config);
-
-void expectModifiedValues(const DefaultConfig& config);
 
 }  // namespace config::test

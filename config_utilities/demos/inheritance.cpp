@@ -12,7 +12,6 @@
 #include "config_utilities/parsing/yaml.h"           // Enable fromYamlFile().
 #include "config_utilities/printing.h"               // Enable toString()
 #include "config_utilities/traits.h"                 // Enables isConfig()
-#include "config_utilities/types/eigen_matrix.h"     // Enable parsing and printing of Eigen::Matrix types.
 #include "config_utilities/validity_checks.h"        // Enable isValid() and checkValid().
 
 namespace demo {
@@ -103,12 +102,16 @@ class DerivedObject : public BaseObject {
 }  // namespace demo
 
 int main(int argc, char** argv) {
+  if (argc < 2) {
+    std::cerr << "invalid usage! expected resource directory as argument" << std::endl;
+    return 1;
+  }
+
+  const std::string my_root_path = std::string(argv[1]) + "/";
+
   config::Settings().index_subconfig_field_names = true;
 
   // ===================================== Checking whether a struct is a config =====================================
-
-  // TODO(lschmid): Make this nicer.
-  const std::string my_root_path = "/home/lukas/khronos_ws/src/config_utilities/config_utilities/demos/";
 
   // Create the config like any other.
   auto config = config::fromYamlFile<demo::DerivedConfig>(my_root_path + "demo_inheritance.yaml", "valid_ns");

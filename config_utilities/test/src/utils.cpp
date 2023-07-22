@@ -1,13 +1,8 @@
 #include "config_utilities/test/utils.h"
 
 #include <gtest/gtest.h>
-#include <ros/package.h>
 
 namespace config::test {
-
-std::string getResourcePath() { return ros::package::getPath("config_utilities") + "/test/resources/"; }
-
-YAML::Node loadResource(const std::string& name) { return YAML::LoadFile(getResourcePath() + name + ".yaml"); }
 
 bool expectEqual(const YAML::Node& a, const YAML::Node& b) {
   EXPECT_EQ(a.Type(), b.Type());

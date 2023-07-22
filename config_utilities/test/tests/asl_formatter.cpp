@@ -4,7 +4,7 @@
 #include "config_utilities/formatting/asl.h"
 #include "config_utilities/internal/meta_data.h"
 #include "config_utilities/internal/yaml_utils.h"
-#include "config_utilities/test/default_configs.h"
+#include "config_utilities/test/default_config.h"
 #include "config_utilities/test/utils.h"
 
 namespace config::test {
@@ -210,7 +210,7 @@ TEST(AslFormatter, formatDefaultValues) {
   EXPECT_EQ(formatted, expected);
 
   TestConfig modified_config;
-  internal::Visitor::setValues(modified_config, loadResource("modified_config_values"));
+  internal::Visitor::setValues(modified_config, DefaultConfig::modifiedValues());
   const internal::MetaData modified_data = internal::Visitor::getValues(modified_config);
   formatted = internal::Formatter::formatConfig(modified_data);
   expected =

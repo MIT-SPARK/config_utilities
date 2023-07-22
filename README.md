@@ -35,7 +35,20 @@ Directory of headers to include depending on which functionality you need. All c
     └── eigen_matrix.h
 ```
 
+# Running Demos
 
+The (non-ros) demos can be run via the `run_demo.py` utility in the scripts directory. If you are building this library via catkin, you can run one of the following:
+```
+python3 scripts/run_demo.py config
+python3 scripts/run_demo.py inheritance
+python3 scripts/run_demo.py factory
+```
+to see the results of one of the corresponding demo files. If you're building via cmake, you can point `run_demo.py` to the build directory with `-b/--build_path`.
+
+The ros demo can be run via
+```
+roslaunch config_utilities demo_ros.launch
+```
 
 # Known Limitatons
 - [ ] Minor: Virtual Configs currently do not print defaults. Possible remedies: Make Virtual Configs templated only on creation, or integrate getting default values into C++ struct visitation.

@@ -4,7 +4,7 @@
 
 #include "config_utilities/internal/yaml_utils.h"
 #include "config_utilities/parsing/yaml.h"
-#include "config_utilities/test/default_configs.h"
+#include "config_utilities/test/default_config.h"
 #include "config_utilities/test/utils.h"
 
 namespace config::test {
@@ -69,7 +69,7 @@ TEST(YamlParsing, moveDownNamespace) {
 TEST(YamlParsing, parsefromYaml) {
   DefaultConfig config;
   internal::YamlParser parser;
-  YAML::Node data = loadResource("modified_config_values");
+  YAML::Node data = DefaultConfig::modifiedValues();
   parser.setNode(data);
 
   parser.fromYaml("i", config.i, "", "");
@@ -110,19 +110,19 @@ TEST(YamlParsing, parsefromYaml) {
 }
 
 TEST(YamlParsing, setValues) {
-  YAML::Node data = loadResource("modified_config_values");
+  YAML::Node data = DefaultConfig::modifiedValues();
   DefaultConfig config;
   internal::MetaData meta_data = internal::Visitor::setValues(config, data);
-  expectModifiedValues(config);
+  config.expectModifiedValues();
   EXPECT_FALSE(meta_data.hasErrors());
 
   // Make sure the input node is not modified.
-  expectEqual(data, loadResource("modified_config_values"));
+  expectEqual(data, DefaultConfig::modifiedValues());
 
   // Test that the config is not modified if no data is found is empty.
   data = YAML::Node();
   meta_data = internal::Visitor::setValues(config, data);
-  expectModifiedValues(config);
+  config.expectModifiedValues();
   EXPECT_FALSE(meta_data.hasErrors());
 
   data["i"] = "Not an int";
@@ -136,7 +136,7 @@ TEST(YamlParsing, setValues) {
   data["mat"].push_back(std::vector<int>({1, 2, 3}));
   data["my_enum"] = "OutOfList";
   meta_data = internal::Visitor::setValues(config, data);
-  expectModifiedValues(config);
+  config.expectModifiedValues();
   EXPECT_TRUE(meta_data.hasErrors());
   EXPECT_EQ(meta_data.errors.size(), 8ul);
 }
@@ -145,8 +145,8 @@ TEST(YamlParsing, getValues) {
   DefaultConfig config;
   internal::MetaData meta_data = internal::Visitor::getValues(config);
 
-  expextDefaultValues(config);
-  expectEqual(meta_data.data, loadResource("default_config_values"));
+  config.expextDefaultValues();
+  expectEqual(meta_data.data, DefaultConfig::defaultValues());
   EXPECT_FALSE(meta_data.hasErrors());
   EXPECT_EQ(meta_data.errors.size(), 0ul);
   meta_data.performOnAll([](const internal::MetaData& d) {
@@ -156,10 +156,10 @@ TEST(YamlParsing, getValues) {
   });
   EXPECT_EQ(meta_data.name, "DefaultConfig");
 
-  internal::Visitor::setValues(config, loadResource("modified_config_values"));
+  internal::Visitor::setValues(config, DefaultConfig::modifiedValues());
   meta_data = internal::Visitor::getValues(config);
-  expectModifiedValues(config);
-  expectEqual(meta_data.data, loadResource("modified_config_values"));
+  config.expectModifiedValues();
+  expectEqual(meta_data.data, DefaultConfig::modifiedValues());
   EXPECT_FALSE(meta_data.hasErrors());
   EXPECT_EQ(meta_data.errors.size(), 0ul);
   meta_data.performOnAll([](const internal::MetaData& d) {
@@ -168,21 +168,22 @@ TEST(YamlParsing, getValues) {
     }
   });
 }
+
 TEST(YamlParsing, configFromYaml) {
-  const YAML::Node data = loadResource("modified_config_values");
+  const YAML::Node data = DefaultConfig::modifiedValues();
   auto config = fromYaml<DefaultConfig>(data);
-  expectModifiedValues(config);
+  config.expectModifiedValues();
 
   // Make sure the input node is not modified.
-  expectEqual(data, loadResource("modified_config_values"));
+  expectEqual(data, DefaultConfig::modifiedValues());
 }
 
 TEST(YamlParsing, configToYAML) {
   DefaultConfig config;
-  expectEqual(toYaml(config), loadResource("default_config_values"));
+  expectEqual(toYaml(config), DefaultConfig::defaultValues());
 
-  config = fromYaml<DefaultConfig>(loadResource("modified_config_values"));
-  expectEqual(toYaml(config), loadResource("modified_config_values"));
+  config = fromYaml<DefaultConfig>(DefaultConfig::modifiedValues());
+  expectEqual(toYaml(config), DefaultConfig::modifiedValues());
 }
 
 }  // namespace config::test

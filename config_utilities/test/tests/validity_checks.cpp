@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "config_utilities/test/default_configs.h"
+#include "config_utilities/test/default_config.h"
 
 namespace config::test {
 

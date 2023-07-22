@@ -124,7 +124,6 @@ void declare_config(DerivedB::Config& config) {
 int main(int argc, char** argv) {
   ros::init(argc, argv, "demo_ros");
   ros::NodeHandle nh("~");
-  google::InstallFailureSignalHandler();
 
   // Ther parsing/ros.h header enables getting of configs from ros.
   auto config = config::fromRos<demo::MyConfig>(nh);
