@@ -92,6 +92,8 @@ void declare_config(MyConfig& config) {
 
   // Double sided checks can be invoked as in range.
   config::checkInRange(config.distance, 0.0, 100.0, "distance");
+  config::check<config::internal::CheckRange>(config.distance, 0.0, 50.0, "distance via template");
+  config::check<config::internal::Check>(false, "normal check via template");
 
   // Any other checks can be implmented using the generic condition check.
   config::checkCondition(config.distance < config.i, "Param 'distance' must be < 'i'.");

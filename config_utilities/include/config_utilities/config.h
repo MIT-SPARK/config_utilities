@@ -201,4 +201,25 @@ inline void checkCondition(bool condition, const std::string& warning) {
  */
 inline void check(const internal::CheckBase& check) { internal::Visitor::visitCheck(check); }
 
+/**
+ * @brief Execute a custom check
+ * @tparam CheckType Check type to actually perform
+ * @param args Arguments to check constructor
+ */
+template <typename CheckType, typename... Ts>
+inline void check(Ts... args) {
+  internal::Visitor::visitCheck(CheckType(std::forward<Ts>(args)...));
+}
+
+/**
+ * @brief Execute a custom check
+ * @note Only differs in allowing parameter inference for template check types
+ * @tparam CheckType Check type to actually perform
+ * @param args Arguments to check constructor
+ */
+template <template <typename...> typename CheckType, typename... Ts>
+inline void check(Ts... args) {
+  internal::Visitor::visitCheck(CheckType(std::forward<Ts>(args)...));
+}
+
 }  // namespace config
