@@ -33,7 +33,7 @@ std::string toString(const ConfigT& config, bool print_warnings = true) {
         internal::Formatter::formatErrors(data, "Errors parsing config", internal::Severity::kWarning));
   }
 
-  return internal::Formatter::formatToString(data);
+  return internal::Formatter::formatConfig(data);
 }
 
 }  // namespace config

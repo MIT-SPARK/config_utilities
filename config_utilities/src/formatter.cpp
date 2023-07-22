@@ -7,11 +7,9 @@ std::string Formatter::formatErrors(const MetaData& data, const std::string& wha
   return formatter_->formatErrorsImpl(data, what, severity);
 }
 
-std::string Formatter::formatToString(const MetaData& data) { return formatter_->formatToStringImpl(data); }
+std::string Formatter::formatConfig(const MetaData& data) { return formatter_->formatConfigImpl(data); }
 
-std::string Formatter::formatToString(const std::vector<MetaData>& data) {
-  return formatter_->formatToStringImpl(data);
-}
+std::string Formatter::formatConfigs(const std::vector<MetaData>& data) { return formatter_->formatConfigsImpl(data); }
 
 void Formatter::setFormatter(Formatter::Ptr formatter) {
   if (formatter) {
@@ -23,11 +21,11 @@ std::string Formatter::formatErrorsImpl(const MetaData& data, const std::string&
   return "No format specified. Specify a format by including one of 'config_utilities/formatters/<preferred_style>.h'.";
 }
 
-std::string Formatter::formatToStringImpl(const MetaData& data) {
+std::string Formatter::formatConfigImpl(const MetaData& data) {
   return "No format specified. Specify a format by including one of 'config_utilities/formatters/<preferred_style>.h'.";
 }
 
-std::string Formatter::formatToStringImpl(const std::vector<MetaData>& data) {
+std::string Formatter::formatConfigsImpl(const std::vector<MetaData>& data) {
   return "No format specified. Specify a format by including one of 'config_utilities/formatters/<preferred_style>.h'.";
 }
 

@@ -23,13 +23,13 @@ void declare_config(SubConfig& config) {
 
 void declare_config(DefaultConfig& config) {
   config::name("DefaultConfig");
-  config::field(config.i, "i");
-  config::field(config.f, "f");
-  config::field(config.d, "d");
+  config::field(config.i, "i", "m");
+  config::field(config.f, "f", "s");
+  config::field(config.d, "d", "m/s");
   config::field(config.b, "b");
   config::field(config.u8, "u8");
   config::field(config.s, "s");
-  config::field(config.vec, "vec");
+  config::field(config.vec, "vec", "frames");
   config::field(config.map, "map");
   config::field(config.set, "set");
   config::field(config.mat, "mat");

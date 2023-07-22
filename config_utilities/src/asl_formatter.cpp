@@ -29,18 +29,18 @@ std::string AslFormatter::formatErrorsInternal(const MetaData& data,
   return result;
 }
 
-std::string AslFormatter::formatToStringImpl(const MetaData& data) {
+std::string AslFormatter::formatConfigImpl(const MetaData& data) {
   return internal::printCenter(resolveConfigName(data), Settings::instance().print_width, '=') + "\n" +
          toStringInternal(data, 0) + std::string(Settings::instance().print_width, '=');
 }
 
-std::string AslFormatter::formatToStringImpl(const std::vector<MetaData>& data) {
+std::string AslFormatter::formatConfigsImpl(const std::vector<MetaData>& data) {
   if (data.empty()) {
     return "";
   }
   std::string result;
   for (const MetaData& config : data) {
-    std::string entry = formatToStringImpl(config);
+    std::string entry = formatConfigImpl(config);
     entry.erase(entry.find_last_of("\n"));
     result += entry + "\n";
   }
@@ -66,7 +66,8 @@ std::string AslFormatter::formatSubconfig(const MetaData& data, const FieldInfo&
   if (indicate_subconfig_types_) {
     header += " [" + resolveConfigName(data) + "]";
   }
-  if (indicate_subconfig_default_ && info.is_default && !data.is_virtual_config) {
+  if (Settings::instance().indicate_default_values && indicate_subconfig_default_ && info.is_default &&
+      !data.is_virtual_config) {
     header += " (default)";
   }
   if (resolveConfigName(data) != "Uninitialized Virtual Config") {
@@ -82,9 +83,8 @@ std::string AslFormatter::formatField(const FieldInfo& info, size_t indent) cons
   const size_t global_indent = Settings::instance().print_indent;
 
   // field is the stringified value, The header is the field name.
-
   std::string field = dataToString(info.value);
-  if (info.is_default) {
+  if (info.is_default && Settings::instance().indicate_default_values) {
     field += " (default)";
   }
   std::string header = std::string(indent, ' ') + info.name;

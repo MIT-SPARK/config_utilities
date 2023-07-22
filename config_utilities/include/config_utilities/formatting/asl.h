@@ -21,8 +21,8 @@ class AslFormatter : public Formatter {
 
  protected:
   std::string formatErrorsImpl(const MetaData& data, const std::string& what, const Severity severity) override;
-  std::string formatToStringImpl(const MetaData& data) override;
-  std::string formatToStringImpl(const std::vector<MetaData>& data) override;
+  std::string formatConfigImpl(const MetaData& data) override;
+  std::string formatConfigsImpl(const std::vector<MetaData>& data) override;
 
  private:
   // Factory registration to allow setting of formatters via Settings::setDefaultFormatter().
