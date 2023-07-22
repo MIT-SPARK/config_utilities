@@ -43,12 +43,6 @@ struct Visitor {
   template <typename ConfigT>
   static MetaData getChecks(const ConfigT& config);
 
-  // Extend the current visitor with a sub-visitor, replicating the previous specification.
-  template <typename ConfigT>
-  static MetaData subVisit(ConfigT& config,
-                           const bool print_warnings = true,
-                           const std::string& field_name_prefix = "");
-
   // Interfaces for the config declaration interfaces to to expose their info to the visitor.
   static void visitName(const std::string& name);
 
@@ -105,10 +99,14 @@ struct Visitor {
   template <typename ConfigT>
   static void flagDefaultValues(MetaData& data);
 
-  // Messenger data.
-  MetaData data;
+  // Extend the current visitor with a sub-visitor, replicating the previous specification.
+  template <typename ConfigT>
+  static MetaData subVisit(ConfigT& config, const bool print_warnings, const std::string& field_name_prefix);
 
   /* Internal data to handle visits. */
+  // The messenger data to read from and return eventually.
+  MetaData data;
+
   // Checker for validity checks.
   ValidityChecker checker;
 
@@ -127,6 +125,7 @@ struct Visitor {
   // Keep track of which base configs were already visited to avoid duplicates in diamond inheritance.
   std::set<std::string> visited_base_configs;
 
+  /* Member variables. */
   // Static registration to get access to the correct instance. Instancs are managed per thread and as a stack, i.e.
   // nested calls are possible and will always use the latest visitor.
   static thread_local std::vector<Visitor*> instances;

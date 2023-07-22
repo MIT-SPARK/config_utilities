@@ -213,9 +213,11 @@ class YamlParser {
   // Verify data overflow.
   template <typename T, typename std::enable_if<is_int<T>, bool>::type = true>
   static bool checkIntRange(const T& value, const YAML::Node& node, std::string& error) {
-    const auto min = node.as<int64_t>();
-    const uint64_t max = min < 0 ? min : node.as<uint64_t>();
-    if (max > static_cast<uint64_t>(std::numeric_limits<T>::max())) {
+    // NOTE(lschmid): We assume we don't get integers larger than 64 bit. Also bool, uchar, and string are checked
+    // separately.
+    const int64_t min = node.as<int64_t>();
+    const uint64_t max = node.as<uint64_t>();
+    if (min > 0 && max > static_cast<uint64_t>(std::numeric_limits<T>::max())) {
       std::stringstream ss;
       ss << "Value '" << max << "' overflows storage max of '" << std::numeric_limits<T>::max() << "'.";
       error = ss.str();

@@ -6,6 +6,7 @@
 #include "config_utilities/internal/yaml_utils.h"
 #include "config_utilities/test/default_configs.h"
 #include "config_utilities/test/utils.h"
+
 namespace config::test {
 
 int countLines(const std::string& str) {
