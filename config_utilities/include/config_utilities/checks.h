@@ -16,9 +16,9 @@ struct CheckBase {
 
   std::string toString() const {
     const auto check_name = name();
-    const auto rendered_name = check_name.empty() ? "" : "'" + check_name + "' ";
+    const auto rendered_name = check_name.empty() ? "" : " for '" + check_name + "'";
     std::stringstream ss;
-    ss << "Check " << rendered_name << "failed: " << message();
+    ss << "Check failed" << rendered_name << ": " << message();
     return ss.str();
   }
 };
@@ -123,7 +123,7 @@ class CheckRange : public CheckBase {
   std::string message() const override {
     std::stringstream ss;
     ss << "param within " << (lower_inclusive_ ? "[" : "(") << lower_ << ", " << upper_
-       << (upper_inclusive_ ? "]" : ")") << " (is: '" << param_ << "').";
+       << (upper_inclusive_ ? "]" : ")") << " (is: '" << param_ << "')";
     return ss.str();
   }
 
