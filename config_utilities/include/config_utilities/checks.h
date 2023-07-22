@@ -7,9 +7,20 @@ namespace internal {
 
 struct CheckBase {
   virtual ~CheckBase() = default;
-  inline operator bool() const { return valid(); }
+
   virtual bool valid() const = 0;
   virtual std::string message() const = 0;
+  virtual std::string name() const { return ""; }
+
+  inline operator bool() const { return valid(); }
+
+  std::string toString() const {
+    const auto check_name = name();
+    const auto rendered_name = check_name.empty() ? "" : "'" + check_name + "' ";
+    std::stringstream ss;
+    ss << "Check " << rendered_name << "failed: " << message();
+    return ss.str();
+  }
 };
 
 class Check : public CheckBase {
@@ -32,7 +43,7 @@ class Check : public CheckBase {
  */
 template <typename Compare>
 struct CompareMessageTrait {
-  static std::string message() { return "did not pass comparison to"; };
+  static std::string message() { return "compared to"; };
 };
 
 template <typename T, typename Compare>
@@ -45,10 +56,11 @@ class BinaryCheck : public CheckBase {
 
   std::string message() const override {
     std::stringstream ss;
-    ss << "Check " << name_ << " failed. Param value " << param_ << " " << CompareMessageTrait<Compare>::message()
-       << " " << value_;
+    ss << "param " << CompareMessageTrait<Compare>::message() << " " << value_ << " (is: '" << param_ << "')";
     return ss.str();
   }
+
+  std::string name() const override { return name_; }
 
  protected:
   T param_;
@@ -58,32 +70,32 @@ class BinaryCheck : public CheckBase {
 
 template <typename T>
 struct CompareMessageTrait<std::greater<T>> {
-  static std::string message() { return "is not greater than"; };
+  static std::string message() { return ">"; };
 };
 
 template <typename T>
 struct CompareMessageTrait<std::greater_equal<T>> {
-  static std::string message() { return "is not greater than or equal to"; };
+  static std::string message() { return ">= "; };
 };
 
 template <typename T>
 struct CompareMessageTrait<std::less<T>> {
-  static std::string message() { return "is not less than"; };
+  static std::string message() { return "<"; };
 };
 
 template <typename T>
 struct CompareMessageTrait<std::less_equal<T>> {
-  static std::string message() { return "is not less than or equal to"; };
+  static std::string message() { return "<="; };
 };
 
 template <typename T>
 struct CompareMessageTrait<std::equal_to<T>> {
-  static std::string message() { return "is not equal to"; };
+  static std::string message() { return "=="; };
 };
 
 template <typename T>
 struct CompareMessageTrait<std::not_equal_to<T>> {
-  static std::string message() { return "is equal to"; };
+  static std::string message() { return "!="; };
 };
 
 template <typename T>
@@ -110,10 +122,12 @@ class CheckRange : public CheckBase {
 
   std::string message() const override {
     std::stringstream ss;
-    ss << "Param '" << name_ << "' is expected to be within " << (lower_inclusive_ ? "[" : "(") << lower_ << ", "
-       << upper_ << (upper_inclusive_ ? "]" : ")") << " (is: '" << param_ << "').";
+    ss << "param within " << (lower_inclusive_ ? "[" : "(") << lower_ << ", " << upper_
+       << (upper_inclusive_ ? "]" : ")") << " (is: '" << param_ << "').";
     return ss.str();
   }
+
+  std::string name() const override { return name_; }
 
  protected:
   T param_;
