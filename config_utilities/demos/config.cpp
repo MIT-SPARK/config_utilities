@@ -87,8 +87,8 @@ void declare_config(MyConfig& config) {
   // Specify all checks to denote a valid configuration. Checks are specified as param, value, and param name to be
   // displayed. Implemented checks are GT (>), GE (>=), LT (<), LE (<=), EQ (==), NE (!=).
   // TODO(lschmid): Would be nice to not duplicate the name but didn't find a nice way to do this.
-  config::checkGT(config.i, 0, "i");
-  config::checkLT(config.i, -2, "i");
+  config::check(config.i, config::CheckMode::GT, 0, "i");
+  config::check(config.i, config::CheckMode::LT, -2, "i");
 
   // Double sided checks can be invoked as in range.
   config::checkInRange(config.distance, 0.0, 100.0, "distance");
@@ -105,7 +105,7 @@ void declare_config(SubConfig& config) {
   field(config.f, "f");
   field(config.s, "s");
   field(config.sub_sub_config, "sub_sub_config");
-  checkGT(config.f, 0.f, "f");
+  check(config.f, CheckMode::GT, 0, "f");
 }
 
 void declare_config(SubSubConfig& config) {
@@ -113,7 +113,7 @@ void declare_config(SubSubConfig& config) {
   name("SubSubConfig");
   field(config.color, "color");
   field(config.size, "size");
-  checkEQ(config.size, size_t(5), "size");
+  check(config.size, CheckMode::EQ, size_t(5), "size");
 }
 
 }  // namespace demo

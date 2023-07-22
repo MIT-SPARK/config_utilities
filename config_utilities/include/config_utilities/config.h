@@ -115,85 +115,52 @@ void base(ConfigT& config) {
  */
 template <typename Compare, typename T, typename P>
 void checkBinary(const T& param, const P& value, const std::string& name) {
-  internal::Visitor::visitCheck(BinaryCheck<T, Compare>(param, static_cast<T>(value), name));
+  internal::Visitor::visitCheck(internal::BinaryCheck<T, Compare>(param, static_cast<T>(value), name));
 }
+
+/**
+ * @brief Comparison mode
+ */
+enum class CheckMode {
+  GT /**< greater than (>) */,
+  GE /**< greater than or equal to (>=) */,
+  LT /**< less than (<) */,
+  LE /**< less than or equal to (<=) */,
+  EQ /** equal to (==) */,
+  NE /** not equal to (!=) */
+};
 
 /**
  * @brief Execute a greater than (GT) check, i.e. param > value.
  *
  * @tparam T type of the parameter to be checked.
  * @param param Value of the parameter to be compared.
+ * @param mode Comparison mode
  * @param value Value of the reference to compare to.
  * @param name Name of the parameter to be reported in the error summary.
  */
 template <typename T, typename P>
-void checkGT(const T& param, const P& value, const std::string& name) {
-  checkBinary<std::greater<T>>(param, value, name);
-}
-
-/**
- * @brief Execute a greater equal (GE) check, i.e. param >= value.
- *
- * @tparam T type of the parameter to be checked.
- * @param param Value of the parameter to be compared.
- * @param value Value of the reference to compare to.
- * @param name Name of the parameter to be reported in the error summary.
- */
-template <typename T, typename P>
-void checkGE(const T& param, const P& value, const std::string& name) {
-  checkBinary<std::greater_equal<T>>(param, value, name);
-}
-
-/**
- * @brief Execute a less than (LT) check, i.e. param < value.
- *
- * @tparam T type of the parameter to be checked.
- * @param param Value of the parameter to be compared.
- * @param value Value of the reference to compare to.
- * @param name Name of the parameter to be reported in the error summary.
- */
-template <typename T, typename P>
-void checkLT(const T& param, const P& value, const std::string& name) {
-  checkBinary<std::less<T>>(param, value, name);
-}
-
-/**
- * @brief Execute a less equal (LE) check, i.e. param <= value.
- *
- * @tparam T type of the parameter to be checked.
- * @param param Value of the parameter to be compared.
- * @param value Value of the reference to compare to.
- * @param name Name of the parameter to be reported in the error summary.
- */
-template <typename T, typename P>
-void checkLE(const T& param, const P& value, const std::string& name) {
-  checkBinary<std::less_equal<T>>(param, value, name);
-}
-
-/**
- * @brief Execute an equal (EQ) check, i.e. param == value.
- *
- * @tparam T type of the parameter to be checked.
- * @param param Value of the parameter to be compared.
- * @param value Value of the reference to compare to.
- * @param name Name of the parameter to be reported in the error summary.
- */
-template <typename T, typename P>
-void checkEQ(const T& param, const P& value, const std::string& name) {
-  checkBinary<std::equal_to<T>>(param, value, name);
-}
-
-/**
- * @brief Execute a not equal (NE) check, i.e. param != value.
- *
- * @tparam T type of the parameter to be checked.
- * @param param Value of the parameter to be compared.
- * @param value Value of the reference to compare to.
- * @param name Name of the parameter to be reported in the error summary.
- */
-template <typename T, typename P>
-void checkNE(const T& param, const P& value, const std::string& name) {
-  checkBinary<std::not_equal_to<T>>(param, value, name);
+void check(const T& param, CheckMode mode, const P& value, const std::string& name) {
+  switch (mode) {
+    case CheckMode::GT:
+      checkBinary<std::greater<T>>(param, value, name);
+      break;
+    case CheckMode::GE:
+      checkBinary<std::greater_equal<T>>(param, value, name);
+      break;
+    case CheckMode::LT:
+      checkBinary<std::less<T>>(param, value, name);
+      break;
+    case CheckMode::LE:
+      checkBinary<std::less_equal<T>>(param, value, name);
+      break;
+    case CheckMode::EQ:
+      checkBinary<std::equal_to<T>>(param, value, name);
+      break;
+    case CheckMode::NE:
+      checkBinary<std::not_equal_to<T>>(param, value, name);
+      break;
+  }
 }
 
 /**
@@ -205,7 +172,7 @@ void checkNE(const T& param, const P& value, const std::string& name) {
  * @param higher Higher bound of valid values.
  * @param name Name of the parameter to be reported in the error summary.
  * @param lower_inclusive Whether the lower end of the range range is closed (i.e., [low, high] or open (low, high])
- * @param upper_inclusive Whether the upper end of the range range is closed (i.e., [low, high] or open (low, high])
+ * @param upper_inclusive Whether the upper end of the range range is closed (i.e., [low, high] or open [low, high))
  */
 template <typename T>
 void checkInRange(const T& param,
@@ -214,7 +181,7 @@ void checkInRange(const T& param,
                   const std::string& name,
                   bool lower_inclusive = true,
                   bool upper_inclusive = true) {
-  internal::Visitor::visitCheck(CheckRange(param, lower, higher, name, lower_inclusive, upper_inclusive));
+  internal::Visitor::visitCheck(internal::CheckRange(param, lower, higher, name, lower_inclusive, upper_inclusive));
 }
 
 /**
@@ -224,7 +191,7 @@ void checkInRange(const T& param,
  * @param warning Message to be reported in the error summary.
  */
 inline void checkCondition(bool condition, const std::string& warning) {
-  internal::Visitor::visitCheck(Check(condition, warning));
+  internal::Visitor::visitCheck(internal::Check(condition, warning));
 }
 
 /**
@@ -232,6 +199,6 @@ inline void checkCondition(bool condition, const std::string& warning) {
  *
  * @param check Custom check class to validate
  */
-inline void check(const CheckBase& check) { internal::Visitor::visitCheck(check); }
+inline void check(const internal::CheckBase& check) { internal::Visitor::visitCheck(check); }
 
 }  // namespace config

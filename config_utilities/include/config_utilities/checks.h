@@ -3,6 +3,7 @@
 #include <string>
 
 namespace config {
+namespace internal {
 
 struct CheckBase {
   virtual ~CheckBase() = default;
@@ -17,9 +18,9 @@ class Check : public CheckBase {
 
   virtual ~Check() = default;
 
-  inline virtual bool valid() const override { return valid_; }
+  inline bool valid() const override { return valid_; }
 
-  inline virtual std::string message() const override { return message_; }
+  inline std::string message() const override { return message_; }
 
  protected:
   bool valid_;
@@ -40,9 +41,9 @@ class BinaryCheck : public CheckBase {
   BinaryCheck(const T& param, const T& value, const std::string name = "")
       : param_(param), value_(value), name_(name) {}
 
-  virtual bool valid() const override { return Compare{}(param_, value_); }
+  bool valid() const override { return Compare{}(param_, value_); }
 
-  virtual std::string message() const override {
+  std::string message() const override {
     std::stringstream ss;
     ss << "Check " << name_ << " failed. Param value " << param_ << " " << CompareMessageTrait<Compare>::message()
        << " " << value_;
@@ -101,13 +102,13 @@ class CheckRange : public CheckBase {
         lower_inclusive_(lower_inclusive),
         upper_inclusive_(upper_inclusive) {}
 
-  virtual bool valid() const override {
+  bool valid() const override {
     bool lower_okay = lower_inclusive_ ? param_ >= lower_ : param_ > lower_;
     bool upper_okay = upper_inclusive_ ? param_ <= upper_ : param_ < upper_;
     return lower_okay && upper_okay;
   }
 
-  virtual std::string message() const override {
+  std::string message() const override {
     std::stringstream ss;
     ss << "Param '" << name_ << "' is expected to be within " << (lower_inclusive_ ? "[" : "(") << lower_ << ", "
        << upper_ << (upper_inclusive_ ? "]" : ")") << " (is: '" << param_ << "').";
@@ -123,4 +124,5 @@ class CheckRange : public CheckBase {
   bool upper_inclusive_;
 };
 
+}  // namespace internal
 }  // namespace config
