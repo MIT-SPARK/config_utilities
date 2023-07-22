@@ -48,6 +48,10 @@ MetaData Visitor::getValues(const ConfigT& config,
   visitor.extractErrors();
   mergeYamlNodes(visitor.data.data, visitor.parser.getNode());
 
+  if (Settings::instance().indicate_default_values) {
+    flagDefaultValues<ConfigT>(visitor.data);
+  }
+
   if (print_warnings && visitor.data.hasErrors()) {
     Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Severity::kWarning));
   }
@@ -75,6 +79,7 @@ MetaData Visitor::subVisit(ConfigT& config, const bool print_warnings, const std
     case Visitor::Mode::kCheck:
       return getChecks(config);
     default:
+
       return MetaData();
   }
 }
@@ -86,9 +91,10 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
     visitor.parser.fromYaml(field_name, field, visitor.name_space, visitor.field_name_prefix);
   }
 
-  if (visitor.mode == Visitor::Mode::kGet) {
+  if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetDefaults) {
     FieldInfo& info = visitor.data.field_infos.emplace_back();
     visitor.parser.toYaml(field_name, field, visitor.name_space, visitor.field_name_prefix);
+    info.value = YamlParser::toYaml(field);
     info.name = field_name;
     info.unit = unit;
   }
@@ -99,7 +105,7 @@ void Visitor::visitEnumField(EnumT& field,
                              const std::string& field_name,
                              const std::map<EnumT, std::string>& enum_names) {
   Visitor& visitor = Visitor::instance();
-  if (visitor.mode != Visitor::Mode::kSet && visitor.mode != Visitor::Mode::kGet) {
+  if (visitor.mode == Visitor::Mode::kCheck) {
     return;
   }
 
@@ -133,15 +139,18 @@ void Visitor::visitEnumField(EnumT& field,
     }
   }
 
-  if (visitor.mode == Visitor::Mode::kGet) {
+  if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetDefaults) {
     FieldInfo& info = visitor.data.field_infos.emplace_back();
     const auto it = enum_names.find(field);
+    std::string value;
     if (it == enum_names.end()) {
       visitor.data.errors.emplace_back("Value of enum field '" + field_name + "' is out of the defined range.");
-      visitor.parser.toYaml(field_name, "INVALID ENUM VALUE", visitor.name_space, visitor.field_name_prefix);
+      value = "<Invalid Enum Name>";
     } else {
-      visitor.parser.toYaml(field_name, it->second, visitor.name_space, visitor.field_name_prefix);
+      value = it->second;
     }
+    visitor.parser.toYaml(field_name, value, visitor.name_space, visitor.field_name_prefix);
+    info.value = YamlParser::toYaml(value);
     info.name = field_name;
   }
 }
@@ -190,6 +199,9 @@ template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::
 void Visitor::visitField(ConfigT& config, const std::string& field_name, const std::string& /* unit */) {
   // Visits a subconfig field.
   Visitor& visitor = Visitor::instance();
+  if (visitor.mode == Visitor::Mode::kGetDefaults) {
+    return;
+  }
   MetaData& data = visitor.data;
 
   // Add the field info.
@@ -207,6 +219,15 @@ void Visitor::visitField(ConfigT& config, const std::string& field_name, const s
   if (visitor.mode == Visitor::Mode::kGet) {
     // When getting data add the new data also to the parent data node. This automatically using the correct namespace.
     mergeYamlNodes(data.data, new_data.data);
+    if (Settings::instance().indicate_default_values) {
+      info.is_default = true;
+      for (const auto& sub_info : new_data.field_infos) {
+        if (!sub_info.is_default) {
+          info.is_default = false;
+          break;
+        }
+      }
+    }
   }
 }
 
@@ -216,6 +237,38 @@ void Visitor::visitBase(ConfigT& config) {
   // NOTE(lschmid): Alternatives are to treat it as a subconfig for clearer readability.
   Visitor& visitor = Visitor::instance();
   OpenNameSpace::performOperationWithGuardedNs(visitor.open_namespaces, [&config]() { declare_config(config); });
+}
+
+template <typename ConfigT>
+void Visitor::flagDefaultValues(MetaData& data) {
+  // Get defaults from a default constructed ConfigT. Extract the default values of all non-config fields. Subconfigs
+  // are managed separately.
+  ConfigT default_config;
+  Visitor visitor(Mode::kGetDefaults);
+  declare_config(default_config);
+  const MetaData& default_data = visitor.data;
+
+  // Compare all fields. These should always be in the same order if they are from the same config, but exclude
+  // subconfigs.
+  size_t i = 0;
+  for (FieldInfo& info : data.field_infos) {
+    if (info.subconfig_id >= 0) {
+      continue;
+    }
+    if (i >= default_data.field_infos.size()) {
+      // This should never happen. Caught here to avoid segfaults.
+      Logger::logError(
+          "Failed to flag default values. The number of fields in the config does not match the number of fields in "
+          "the default config.");
+      break;
+    }
+    const FieldInfo& default_info = default_data.field_infos[i++];
+    // NOTE(lschmid): Operator YAML::Node== checks for identity, not equality. Since these are all scalars, comparing
+    // the formatted strings should be identical.
+    if (internal::dataToString(info.value) == internal::dataToString(default_info.value)) {
+      info.is_default = true;
+    }
+  }
 }
 
 }  // namespace config::internal

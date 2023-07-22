@@ -223,7 +223,7 @@ TEST(Namespacing, enterNamespace) {
   checkNS(ns);
 
   // This should warn about improper use of NameSpace.enter()/exit().
-  EXPECT_EQ(logger->messages().size(), 2);
+  EXPECT_EQ(logger->messages().size(), 2ul);
 }
 
 TEST(Namespacing, enterNestedNamespaces) {

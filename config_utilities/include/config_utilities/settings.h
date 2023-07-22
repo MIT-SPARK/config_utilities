@@ -17,10 +17,7 @@ struct Settings {
   Settings& operator=(const Settings&& other) = delete;
 
   // Singleton access to the global settings.
-  static Settings& instance() {
-    static Settings settings;
-    return settings;
-  }
+  static Settings& instance();
 
   /* Printing Settings. TODO(lschmid): These should probabl be moved to a file or so for different formatters. */
 

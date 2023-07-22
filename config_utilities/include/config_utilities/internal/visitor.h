@@ -85,7 +85,7 @@ struct Visitor {
   friend std::string config::current_namespace();
 
   // Which operations to perform on the data.
-  enum class Mode { kGet, kSet, kCheck };
+  enum class Mode { kGet, kGetDefaults, kSet, kCheck };
   const Mode mode;
 
   // Create and access the meta data for the current thread. Lifetime of the meta data is managed internally by the
@@ -96,14 +96,18 @@ struct Visitor {
 
   static Visitor& instance();
 
-  // Utility function to manipulate data.
+  /* Utility function to manipulate data. */
   // Move errors from the checker and parser into the meta data.
   void extractErrors();
+
+  // Labels all fields in the data as default if they match the default values of ConfigT.
+  template <typename ConfigT>
+  static void flagDefaultValues(MetaData& data);
 
   // Messenger data.
   MetaData data;
 
-  // Internal data to handle visits.
+  /* Internal data to handle visits. */
   // Checker for validity checks.
   ValidityChecker checker;
 

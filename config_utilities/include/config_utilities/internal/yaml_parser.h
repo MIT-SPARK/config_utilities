@@ -98,6 +98,27 @@ class YamlParser {
     return false;
   }
 
+  /**
+   * @brief Diretly parse a single value to yaml without verbose errors, namespacing, or accumulating the root node.
+   * @param value Value to parse.
+   * @returns The parsed node. Defaults to 'Null' if the parsing failed.
+   */
+  template <typename T>
+  static YAML::Node toYaml(const T& value) {
+    YAML::Node node;
+    std::string error;
+    const std::string name = "value";
+    try {
+      node = toYamlImpl(name, value, error);
+    } catch (const std::exception& e) {
+      return YAML::Node(YAML::NodeType::Null);
+    }
+    if (error.empty()) {
+      return node[name];
+    }
+    return YAML::Node(YAML::NodeType::Null);
+  }
+
  private:
   // Generic types.
   template <typename T,

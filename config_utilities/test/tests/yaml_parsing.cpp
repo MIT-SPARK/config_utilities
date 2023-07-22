@@ -138,7 +138,7 @@ TEST(YamlParsing, setValues) {
   meta_data = internal::Visitor::setValues(config, data);
   expectModifiedValues(config);
   EXPECT_TRUE(meta_data.hasErrors());
-  EXPECT_EQ(meta_data.errors.size(), 8);
+  EXPECT_EQ(meta_data.errors.size(), 8ul);
 }
 
 TEST(YamlParsing, getValues) {
@@ -148,10 +148,12 @@ TEST(YamlParsing, getValues) {
   expextDefaultValues(config);
   expectEqual(meta_data.data, loadResource("default_config_values"));
   EXPECT_FALSE(meta_data.hasErrors());
-  EXPECT_EQ(meta_data.errors.size(), 0);
-  for (const auto& field : meta_data.field_infos) {
-    // EXPECT_TRUE(field.is_default);
-  }
+  EXPECT_EQ(meta_data.errors.size(), 0ul);
+  meta_data.performOnAll([](const internal::MetaData& d) {
+    for (const auto& field : d.field_infos) {
+      EXPECT_TRUE(field.is_default);
+    }
+  });
   EXPECT_EQ(meta_data.name, "DefaultConfig");
 
   internal::Visitor::setValues(config, loadResource("modified_config_values"));
@@ -159,13 +161,13 @@ TEST(YamlParsing, getValues) {
   expectModifiedValues(config);
   expectEqual(meta_data.data, loadResource("modified_config_values"));
   EXPECT_FALSE(meta_data.hasErrors());
-  EXPECT_EQ(meta_data.errors.size(), 0);
-  for (const auto& field : meta_data.field_infos) {
-    // EXPECT_FALSE(field.is_default);
-  }
-  EXPECT_EQ(meta_data.name, "DefaultConfig");
+  EXPECT_EQ(meta_data.errors.size(), 0ul);
+  meta_data.performOnAll([](const internal::MetaData& d) {
+    for (const auto& field : d.field_infos) {
+      EXPECT_FALSE(field.is_default);
+    }
+  });
 }
-
 TEST(YamlParsing, configFromYaml) {
   const YAML::Node data = loadResource("modified_config_values");
   auto config = fromYaml<DefaultConfig>(data);
@@ -180,8 +182,6 @@ TEST(YamlParsing, configToYAML) {
   expectEqual(toYaml(config), loadResource("default_config_values"));
 
   config = fromYaml<DefaultConfig>(loadResource("modified_config_values"));
-
-  YAML::Node data2 = toYaml(config);
   expectEqual(toYaml(config), loadResource("modified_config_values"));
 }
 
