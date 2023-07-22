@@ -3,6 +3,7 @@
 #include <map>
 #include <mutex>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -122,6 +123,9 @@ struct Visitor {
 
   // Current name prefix to be put before filed names.
   std::string field_name_prefix;
+
+  // Keep track of which base configs were already visited to avoid duplicates in diamond inheritance.
+  std::set<std::string> visited_base_configs;
 
   // Static registration to get access to the correct instance. Instancs are managed per thread and as a stack, i.e.
   // nested calls are possible and will always use the latest visitor.

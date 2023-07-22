@@ -54,9 +54,7 @@ std::string AslFormatter::toStringInternal(const MetaData& data, size_t indent) 
     if (info.subconfig_id >= 0) {
       result += formatSubconfig(data.sub_configs[info.subconfig_id], info, indent);
     } else {
-      // NOTE(lschmid): The clone is needed as for yaml nodes are internally references and operator[] occasionally
-      // messes up things.
-      result += formatField(YAML::Clone(data.data)[info.name], info, indent);
+      result += formatField(info, indent);
     }
   }
   return result;
@@ -78,14 +76,14 @@ std::string AslFormatter::formatSubconfig(const MetaData& data, const FieldInfo&
   return header + toStringInternal(data, indent + Settings::instance().subconfig_indent);
 }
 
-std::string AslFormatter::formatField(const YAML::Node& data, const FieldInfo& info, size_t indent) const {
+std::string AslFormatter::formatField(const FieldInfo& info, size_t indent) const {
   std::string result;
   const size_t print_width = Settings::instance().print_width;
   const size_t global_indent = Settings::instance().print_indent;
 
   // field is the stringified value, The header is the field name.
 
-  std::string field = dataToString(data);
+  std::string field = dataToString(info.value);
   if (info.is_default) {
     field += " (default)";
   }

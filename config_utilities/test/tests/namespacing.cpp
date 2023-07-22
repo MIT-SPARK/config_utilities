@@ -88,21 +88,19 @@ struct DerivedNs : public Ns {
   enum class Syntax { kNone, kNamespaceFunctions, kNameSpaceClass } const syntax = Syntax::kNone;
   explicit DerivedNs(Syntax syntax) : syntax(syntax) {}
 
-  Ns ns;
+  std::string ns_post;
 };
 
 void declare_config(DerivedNs& ns) {
   switch (ns.syntax) {
     case DerivedNs::Syntax::kNone: {
       config::base<Ns>(ns);
-      config::field(ns.ns, "ns");
       break;
     }
     case DerivedNs::Syntax::kNamespaceFunctions: {
       config::enter_namespace("function_ns");
       config::base<Ns>(ns);
       config::exit_namespace();
-      config::field(ns.ns, "ns");
       break;
     }
     case DerivedNs::Syntax::kNameSpaceClass: {
@@ -110,11 +108,10 @@ void declare_config(DerivedNs& ns) {
         NameSpace open_ns("class_ns");
         config::base<Ns>(ns);
       }
-      config::field(ns.ns, "ns");
-
       break;
     }
   }
+  ns.ns_post = config::current_namespace();
 }
 
 struct DoublyDerivedNs : public DerivedNs {
@@ -133,10 +130,8 @@ void declare_config(DoublyDerivedNs& ns) {
       break;
     }
     case DerivedNs::Syntax::kNameSpaceClass: {
-      {
-        NameSpace open_ns("double_class_ns");
-        config::base<DerivedNs>(ns);
-      }
+      NameSpace open_ns("double_class_ns");
+      config::base<DerivedNs>(ns);
       break;
     }
   }
@@ -231,32 +226,32 @@ TEST(Namespacing, enterNestedNamespaces) {
     auto derived_ns_none = DerivedNs(DerivedNs::Syntax::kNone);
     internal::Visitor::setValues(derived_ns_none, YAML::Node());
     checkNS(derived_ns_none);
-    checkNS(derived_ns_none.ns);
+    EXPECT_EQ(derived_ns_none.ns_post, "");
 
     auto derived_ns_class = DerivedNs(DerivedNs::Syntax::kNameSpaceClass);
     internal::Visitor::setValues(derived_ns_class, YAML::Node());
     checkNS(derived_ns_class, "class_ns");
-    checkNS(derived_ns_class.ns);
+    EXPECT_EQ(derived_ns_class.ns_post, "");
 
     auto derived_ns_fn = DerivedNs(DerivedNs::Syntax::kNamespaceFunctions);
     internal::Visitor::setValues(derived_ns_fn, YAML::Node());
     checkNS(derived_ns_fn, "function_ns");
-    checkNS(derived_ns_fn.ns);
+    EXPECT_EQ(derived_ns_fn.ns_post, "");
 
     auto doubly_derived_ns_none = DoublyDerivedNs(DerivedNs::Syntax::kNone);
     internal::Visitor::setValues(doubly_derived_ns_none, YAML::Node());
     checkNS(doubly_derived_ns_none);
-    checkNS(doubly_derived_ns_none.ns);
+    EXPECT_EQ(doubly_derived_ns_none.ns_post, "");
 
     auto doubly_derived_ns_class = DoublyDerivedNs(DerivedNs::Syntax::kNameSpaceClass);
     internal::Visitor::setValues(doubly_derived_ns_class, YAML::Node());
     checkNS(doubly_derived_ns_class, "double_class_ns/class_ns");
-    checkNS(doubly_derived_ns_class.ns, "double_class_ns");
+    EXPECT_EQ(doubly_derived_ns_class.ns_post, "double_class_ns");
 
     auto doubly_derived_ns_fn = DoublyDerivedNs(DerivedNs::Syntax::kNamespaceFunctions);
     internal::Visitor::setValues(doubly_derived_ns_fn, YAML::Node());
     checkNS(doubly_derived_ns_fn, "double_function_ns/function_ns");
-    checkNS(doubly_derived_ns_fn.ns, "double_function_ns");
+    EXPECT_EQ(doubly_derived_ns_fn.ns_post, "double_function_ns");
 
     NsWrapper ns_wrapper;
     internal::Visitor::setValues(ns_wrapper, YAML::Node());

@@ -7,6 +7,7 @@ catkin_add_gtest(
   tests/validity_checks.cpp
   tests/namespacing.cpp
   tests/yaml_parsing.cpp
+  tests/asl_formatter.cpp
 )
 target_include_directories(test_${PROJECT_NAME} PUBLIC include)
 target_link_libraries(test_${PROJECT_NAME} ${PROJECT_NAME})

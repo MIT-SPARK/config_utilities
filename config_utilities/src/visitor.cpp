@@ -37,7 +37,13 @@ void Visitor::extractErrors() {
   parser.resetErrors();
 }
 
-void Visitor::visitName(const std::string& name) { Visitor::instance().data.name = name; }
+void Visitor::visitName(const std::string& name) {
+  std::string& current_name = Visitor::instance().data.name;
+  // Avoid overriding names. If the name is to be set, it should be cleared previously.
+  if (current_name.empty()) {
+    current_name = name;
+  }
+}
 
 void Visitor::visitCheckCondition(bool condition, const std::string& error_message) {
   Visitor& visitor = Visitor::instance();

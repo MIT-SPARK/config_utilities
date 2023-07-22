@@ -236,7 +236,26 @@ void Visitor::visitBase(ConfigT& config) {
   // For now simply pass the call to the base config, treating it as a single config object.
   // NOTE(lschmid): Alternatives are to treat it as a subconfig for clearer readability.
   Visitor& visitor = Visitor::instance();
+
+  // Make sure each object is only visited once. The typeinfo and address of object should be a repeatable and unique
+  // identifier.
+  std::stringstream ss;
+  ss << typeid(ConfigT).name() << static_cast<ConfigT*>(&config);
+  const std::string key = ss.str();
+  if (visitor.visited_base_configs.find(key) != visitor.visited_base_configs.end()) {
+    return;
+  }
+  visitor.visited_base_configs.insert(key);
+
+  // Call declare_config of the base while making sure the namespaces are persistent afterwards.
+  const bool config_needs_name = visitor.data.name.empty();
   OpenNameSpace::performOperationWithGuardedNs(visitor.open_namespaces, [&config]() { declare_config(config); });
+
+  // If the config name has changed reset it to avoid name conflicts. Configs should always be named after the most
+  // derived config.
+  if (config_needs_name) {
+    visitor.data.name = "";
+  }
 }
 
 template <typename ConfigT>
