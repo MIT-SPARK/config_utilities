@@ -20,17 +20,20 @@ template <typename Scalar>
 Scalar convertNodeToScalar(const Node& node) {
   return node.as<Scalar>();
 }
+
 template <typename Scalar>
 void convertScalarToNode(const Scalar& scalar, Node& node) {
   node.push_back(scalar);
 }
+
 // Conversion specialization for uint8_t.
 template <>
-uint8_t convertNodeToScalar(const Node& node) {
+inline uint8_t convertNodeToScalar(const Node& node) {
   return node.as<uint16_t>();
 }
+
 template <>
-void convertScalarToNode(const uint8_t& scalar, Node& node) {
+inline void convertScalarToNode(const uint8_t& scalar, Node& node) {
   node.push_back(static_cast<uint16_t>(scalar));
 }
 

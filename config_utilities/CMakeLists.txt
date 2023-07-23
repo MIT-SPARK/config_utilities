@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.11)
 project(config_utilities VERSION 0.0.1)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -28,7 +28,8 @@ add_library(
   src/visitor.cpp
   src/yaml_parser.cpp
   src/settings.cpp
-  src/printing.cpp
+  src/namespacing.cpp
+  src/logger.cpp
   src/asl_formatter.cpp
   src/string_utils.cpp
   src/yaml_utils.cpp
@@ -61,6 +62,10 @@ message(STATUS "glog features enabled:  ${ENABLE_libglog}")
 
 if(CONFIG_UTILS_BUILD_DEMOS)
   add_subdirectory(demos)
+endif()
+
+if(CONFIG_UTILS_BUILD_TESTS)
+  add_subdirectory(test)
 endif()
 
 include(HandleInstall)

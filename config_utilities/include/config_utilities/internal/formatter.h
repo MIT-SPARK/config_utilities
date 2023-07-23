@@ -29,18 +29,18 @@ class Formatter {
                                   const Severity severity = Severity::kWarning);
 
   // Format the content of a single config the display string.
-  static std::string formatToString(const MetaData& data);
+  static std::string formatConfig(const MetaData& data);
 
   // Format the content of multiple configs the display string.
-  static std::string formatToString(const std::vector<MetaData>& data);
+  static std::string formatConfigs(const std::vector<MetaData>& data);
 
   // Set the global formatter.
   static void setFormatter(Formatter::Ptr formatter);
 
  protected:
   virtual std::string formatErrorsImpl(const MetaData& data, const std::string& what, const Severity severity);
-  virtual std::string formatToStringImpl(const MetaData& data);
-  virtual std::string formatToStringImpl(const std::vector<MetaData>& data);
+  virtual std::string formatConfigImpl(const MetaData& data);
+  virtual std::string formatConfigsImpl(const std::vector<MetaData>& data);
 
  private:
   inline static Formatter::Ptr formatter_ = std::make_shared<Formatter>();

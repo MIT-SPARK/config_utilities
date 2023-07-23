@@ -50,7 +50,8 @@ void declare_config(MyConfig& config) {
   config::field(config.map, "map");
   config::field(config.mat, "mat");
   config::enum_field(config.my_enum, "my_enum", {"A", "B", "C"});
-  config::subconfig(config.sub_config, "sub_config", "sub_ns");
+  config::NameSpace ns("sub_ns");
+  config::field(config.sub_config, "sub_config");
 
   config::checkGT(config.i, 0, "i");
 }

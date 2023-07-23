@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include "config_utilities/internal/namespacing.h"
 #include "config_utilities/internal/visitor.h"
 #include "config_utilities/traits.h"
 
@@ -47,7 +48,7 @@ inline void name(const std::string& name) { internal::Visitor::visitName(name); 
  * @param field_name The name of the field.
  * @param unit Optionally define the unit of the field during printing.
  */
-template <typename T, typename std::enable_if<!isConfig<T>(), bool>::type = true>
+template <typename T>
 void field(T& field, const std::string& field_name, const std::string& unit = "") {
   internal::Visitor::visitField(field, field_name, unit);
 }
@@ -84,28 +85,16 @@ void enum_field(EnumT& field, const std::string& field_name, const std::vector<s
 }
 
 /**
- * @brief Declare a struct that is also a config as field.
- *
- * @tparam ConfigT The config type.
- * @param config The config member that stores data.
- * @param field_name The name of the field.
- * @param sub_namespace Optionally define a sub namespace to read parameter values for the subconfig from.
- */
-template <typename ConfigT>
-void subconfig(ConfigT& config, const std::string& field_name, const std::string& sub_namespace = "") {
-  internal::Visitor::visitSubconfig(config, field_name, sub_namespace);
-}
-
-/**
- * @brief Declare that this config inherits from a base config.
+ * @brief Declare that this config inherits from a base config. Note that this call typically requires explicit template
+ * declaration or explicit casting for argument dependent look-up. E.g. 'base<BaseT>(config)' or '
+ * base(static_cast<BaseT&>(config))'.
  *
  * @tparam ConfigT The base config type.
  * @param config The config object that is being declared.
- * @param sub_namespace Optionally define a sub namespace to read parameter values for the base config from.
  */
 template <typename ConfigT>
-void base(ConfigT& config, const std::string& sub_namespace = "") {
-  internal::Visitor::visitBase(config, sub_namespace);
+void base(ConfigT& config) {
+  internal::Visitor::visitBase(config);
 }
 
 /**

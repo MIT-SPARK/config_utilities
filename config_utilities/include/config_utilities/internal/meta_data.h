@@ -19,6 +19,9 @@ struct FieldInfo {
   // Optional: Unit of the field.
   std::string unit;
 
+  // The value of the field if the field is not a config.
+  YAML::Node value;
+
   // Whether the field corresponds to its default value. Only queried if Settings().indicate_default_values is true.
   bool is_default = false;
 

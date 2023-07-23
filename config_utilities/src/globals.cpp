@@ -5,7 +5,7 @@
 namespace config {
 
 std::string printAllValidConfigs(bool clear) {
-  const std::string result = internal::Formatter::formatToString(internal::Globals::instance().valid_configs);
+  const std::string result = internal::Formatter::formatConfigs(internal::Globals::instance().valid_configs);
   if (clear) {
     internal::Globals::instance().valid_configs.clear();
   }

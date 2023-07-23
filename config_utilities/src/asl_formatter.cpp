@@ -5,7 +5,7 @@
 namespace config::internal {
 
 std::string AslFormatter::formatErrorsImpl(const MetaData& data, const std::string& what, const Severity severity) {
-  const std::string sev = severityToString(severity);
+  const std::string sev = severityToString(severity) + ": ";
   const size_t print_width = Settings::instance().print_width;
   std::string result = what + " '" + resolveConfigName(data) + "':\n";
   if (Settings::instance().index_subconfig_field_names) {
@@ -29,18 +29,18 @@ std::string AslFormatter::formatErrorsInternal(const MetaData& data,
   return result;
 }
 
-std::string AslFormatter::formatToStringImpl(const MetaData& data) {
+std::string AslFormatter::formatConfigImpl(const MetaData& data) {
   return internal::printCenter(resolveConfigName(data), Settings::instance().print_width, '=') + "\n" +
          toStringInternal(data, 0) + std::string(Settings::instance().print_width, '=');
 }
 
-std::string AslFormatter::formatToStringImpl(const std::vector<MetaData>& data) {
+std::string AslFormatter::formatConfigsImpl(const std::vector<MetaData>& data) {
   if (data.empty()) {
     return "";
   }
   std::string result;
   for (const MetaData& config : data) {
-    std::string entry = formatToStringImpl(config);
+    std::string entry = formatConfigImpl(config);
     entry.erase(entry.find_last_of("\n"));
     result += entry + "\n";
   }
@@ -54,9 +54,7 @@ std::string AslFormatter::toStringInternal(const MetaData& data, size_t indent) 
     if (info.subconfig_id >= 0) {
       result += formatSubconfig(data.sub_configs[info.subconfig_id], info, indent);
     } else {
-      // NOTE(lschmid): The clone is needed as for yaml nodes are internally references and operator[] occasionally
-      // messes up things.
-      result += formatField(YAML::Clone(data.data)[info.name], info, indent);
+      result += formatField(info, indent);
     }
   }
   return result;
@@ -68,7 +66,8 @@ std::string AslFormatter::formatSubconfig(const MetaData& data, const FieldInfo&
   if (indicate_subconfig_types_) {
     header += " [" + resolveConfigName(data) + "]";
   }
-  if (indicate_subconfig_default_ && info.is_default && !data.is_virtual_config) {
+  if (Settings::instance().indicate_default_values && indicate_subconfig_default_ && info.is_default &&
+      !data.is_virtual_config) {
     header += " (default)";
   }
   if (resolveConfigName(data) != "Uninitialized Virtual Config") {
@@ -78,15 +77,14 @@ std::string AslFormatter::formatSubconfig(const MetaData& data, const FieldInfo&
   return header + toStringInternal(data, indent + Settings::instance().subconfig_indent);
 }
 
-std::string AslFormatter::formatField(const YAML::Node& data, const FieldInfo& info, size_t indent) const {
+std::string AslFormatter::formatField(const FieldInfo& info, size_t indent) const {
   std::string result;
   const size_t print_width = Settings::instance().print_width;
   const size_t global_indent = Settings::instance().print_indent;
 
   // field is the stringified value, The header is the field name.
-
-  std::string field = dataToString(data);
-  if (info.is_default) {
+  std::string field = dataToString(info.value);
+  if (info.is_default && Settings::instance().indicate_default_values) {
     field += " (default)";
   }
   std::string header = std::string(indent, ' ') + info.name;

@@ -14,19 +14,6 @@
 
 namespace config {
 
-namespace internal {
-
-void checkDefaultValues(MetaData& data, const MetaData& default_data);
-
-template <typename ConfigT>
-MetaData getDefaultValues(const ConfigT& config) {
-  // For regular configs we use a default constructed object to get its data.
-  ConfigT defaults;
-  return internal::Visitor::getValues(defaults, false);
-}
-
-}  // namespace internal
-
 /**
  * @brief Returns a string representation of the config.
  *
@@ -40,19 +27,13 @@ std::string toString(const ConfigT& config, bool print_warnings = true) {
   // Get the data of the config.
   internal::MetaData data = internal::Visitor::getValues(config);
 
-  // If requested check default values by comparing against a default constructed config.
-  if (Settings().indicate_default_values) {
-    const internal::MetaData default_data = internal::getDefaultValues(config);
-    internal::checkDefaultValues(data, default_data);
-  }
-
   // Format the output data.
   if (print_warnings && data.hasErrors()) {
     internal::Logger::logWarning(
         internal::Formatter::formatErrors(data, "Errors parsing config", internal::Severity::kWarning));
   }
 
-  return internal::Formatter::formatToString(data);
+  return internal::Formatter::formatConfig(data);
 }
 
 }  // namespace config
