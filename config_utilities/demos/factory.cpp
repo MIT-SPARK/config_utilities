@@ -252,15 +252,24 @@ int main(int argc, char** argv) {
   // --------------- Using Optional Virtual Configs ----------------
   std::cout << "\n\n----- Using Optional Virtual Configs -----\n\n" << std::endl;
 
-  // Configs can be marked optional, so above nothing happened.
+  // Configs can be marked optional. As it was not specified, nothing happened above.
   YAML::Node data = YAML::LoadFile(my_root_path + "demo_factory.yaml");
   data["optional_sub_ns"]["type"] = "DerivedD";
 
   object_config = config::fromYaml<demo::ObjectWithDerivedMembers::Config>(data);
+  is_valid = config::isValid(object_config, true);
+  std::cout << "Config is valid: " << is_valid << std::endl;
   std::cout << object_config << std::endl;
 
+  // Now the object will have the additional optional member.
   demo::ObjectWithDerivedMembers object_with_optional_members(object_config, 654);
   object_with_optional_members.print();
+
+  // Not setting required fields will result in an error listing the name of the field.
+  data["type"] = "Not a registered type";
+  object_config = config::fromYaml<demo::ObjectWithDerivedMembers::Config>(data);
+  is_valid = config::isValid(object_config, true);
+  std::cout << "Config is valid: " << is_valid << std::endl;
 
   // --------------- Using Factory Creation Arrays ----------------
   std::cout << "\n\n----- Using Factory Creation Arrays -----\n\n" << std::endl;
