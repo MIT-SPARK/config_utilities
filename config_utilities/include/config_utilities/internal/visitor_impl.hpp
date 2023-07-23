@@ -49,7 +49,7 @@ MetaData Visitor::getValues(const ConfigT& config,
   mergeYamlNodes(visitor.data.data, visitor.parser.getNode());
 
   if (Settings::instance().indicate_default_values) {
-    flagDefaultValues<ConfigT>(visitor.data);
+    flagDefaultValues(config, visitor.data);
   }
 
   if (print_warnings && visitor.data.hasErrors()) {
@@ -258,14 +258,29 @@ void Visitor::visitBase(ConfigT& config) {
   }
 }
 
+template <typename ConfigT, typename std::enable_if<!is_virtual_config<ConfigT>::value, bool>::type = true>
+MetaData Visitor::getDefaults(const ConfigT& config) {
+  Visitor visitor(Mode::kGetDefaults);
+  ConfigT default_config;
+  declare_config(default_config);
+  return visitor.data;
+}
+
+template <typename ConfigT, typename std::enable_if<is_virtual_config<ConfigT>::value, bool>::type = true>
+MetaData Visitor::getDefaults(const ConfigT& config) {
+  Visitor visitor(Mode::kGetDefaults);
+  if (config.isSet()) {
+    auto default_config = config.config_->createDefault();
+    default_config->onDeclareConfig();
+  }
+  return visitor.data;
+}
+
 template <typename ConfigT>
-void Visitor::flagDefaultValues(MetaData& data) {
+void Visitor::flagDefaultValues(const ConfigT& config, MetaData& data) {
   // Get defaults from a default constructed ConfigT. Extract the default values of all non-config fields. Subconfigs
   // are managed separately.
-  ConfigT default_config;
-  Visitor visitor(Mode::kGetDefaults);
-  declare_config(default_config);
-  const MetaData& default_data = visitor.data;
+  const MetaData default_data = getDefaults(config);
 
   // Compare all fields. These should always be in the same order if they are from the same config, but exclude
   // subconfigs.

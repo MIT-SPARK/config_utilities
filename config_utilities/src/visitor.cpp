@@ -61,8 +61,10 @@ std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set, bool is_optio
   if (visitor.mode == Visitor::Mode::kCheck) {
     if (!is_set && !is_optional) {
       // The config is required and not set.
+      const std::string field_name =
+          visitor.data.current_field_name.empty() ? "" : "'" + visitor.data.current_field_name + "' ";
       visitor.checker.checkCondition(
-          false, "Variable config '" + visitor.data.current_field_name + "' is required but not set.");
+          false, "Virtual config " + visitor.data.current_field_name + "is not set and not marked optional.");
     }
   }
 

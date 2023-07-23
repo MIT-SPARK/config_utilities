@@ -95,9 +95,15 @@ struct Visitor {
   // Move errors from the checker and parser into the meta data.
   void extractErrors();
 
-  // Labels all fields in the data as default if they match the default values of ConfigT.
+  // Helper function to get the default values of a config.
+  template <typename ConfigT, typename std::enable_if<!is_virtual_config<ConfigT>::value, bool>::type = true>
+  static MetaData getDefaults(const ConfigT& config);
+  template <typename ConfigT, typename std::enable_if<is_virtual_config<ConfigT>::value, bool>::type = true>
+  static MetaData getDefaults(const ConfigT& config);
+
+  // Labels all fields in the data as default if they match the default values of the config.
   template <typename ConfigT>
-  static void flagDefaultValues(MetaData& data);
+  static void flagDefaultValues(const ConfigT& config, MetaData& data);
 
   // Extend the current visitor with a sub-visitor, replicating the previous specification.
   template <typename ConfigT>

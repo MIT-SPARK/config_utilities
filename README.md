@@ -4,7 +4,7 @@ Utility tools to work with C++ config structs.
 # TODO
 - [ ] Clean readme
 - [ ] Add Docs and how-to for most important features
-- [ ] Unit tests
+- [x] Unit tests
 
 # Structure
 
@@ -55,6 +55,6 @@ roslaunch config_utilities demo_ros.launch
 
 # Sort of nice but niche feature requests
 - [ ] Refactor Config checking to get names and types.
-- [ ] Make visitors sequential and some extra clean up.
-- [ ] Clean up linking, install, and deps.
-- [ ] Improve perfrmance (probably reduce yaml copies and check const-ness of yaml nodes)
+- [x] Make visitors sequential and some extra clean up.
+- [x] Clean up linking, install, and deps.
+- [x] Improve perfrmance (probably reduce yaml copies and check const-ness of yaml nodes)
