@@ -74,23 +74,33 @@ TEST(AslFormatter, formatErrors) {
   std::string formatted = internal::Formatter::formatErrors(data);
   EXPECT_EQ(countLines(formatted), 9);
 
-  std::string expected =
-      " 'Config 1':\n=================================== Config 1 ===================================\nWarning: "
-      "Error 1\nWarning: Error 2\nWarning: Error 3\nWarning: Error 4\nWarning: Error 5\nWarning: Error "
-      "6\n================================================================================";
+  std::string expected = R"""( 'Config 1':
+=================================== Config 1 ===================================
+Warning: Error 1
+Warning: Error 2
+Warning: Error 3
+Warning: Error 4
+Warning: Error 5
+Warning: Error 6
+================================================================================)""";
   EXPECT_EQ(formatted, expected);
 
   Settings().index_subconfig_field_names = false;
   formatted = internal::Formatter::formatErrors(data);
   EXPECT_EQ(countLines(formatted), 12);
 
-  expected =
-      " 'Config 1':\n=================================== Config 1 ===================================\nWarning: "
-      "Error 1\nWarning: Error 2\n=================================== Config 2 "
-      "===================================\nWarning: Error 3\nWarning: Error 4\n=================================== "
-      "Config 3 ===================================\nWarning: Error 5\n=================================== Config 4 "
-      "===================================\nWarning: Error "
-      "6\n================================================================================";
+  expected = R"""( 'Config 1':
+=================================== Config 1 ===================================
+Warning: Error 1
+Warning: Error 2
+=================================== Config 2 ===================================
+Warning: Error 3
+Warning: Error 4
+=================================== Config 3 ===================================
+Warning: Error 5
+=================================== Config 4 ===================================
+Warning: Error 6
+================================================================================)""";
   EXPECT_EQ(formatted, expected);
 }
 
@@ -102,41 +112,76 @@ TEST(AslFormatter, formatConfig) {
   Settings().index_subconfig_field_names = true;
   std::string formatted = internal::Formatter::formatConfig(data);
   std::string expected =
-      "================================= Test Config ==================================\ni:                            "
-      "1\nf:                            2.1\nd:                            3.2\nb:                            "
-      "true\nu8:                           4\ns:                            test string\nvec:                          "
-      "[1, 2, 3]\nmap:                          {a: 1, b: 2, c: 3}\nset:                          [1.1, 2.2, "
-      "3.3]\nmat:                          [[1, 0, 0],\n                               [0, 1, 0],\n                    "
-      "           [0, 0, 1]]\nmy_enum:                      A\nmy_strange_enum:              X\nsub_config "
-      "[SubConfig]:\n   i:                         1\n   sub_sub_config [SubSubConfig]:\n      i:                      "
-      "1\nsub_sub_config [SubSubConfig]:\n   i:                         1\nA ridiculously long field name that will "
-      "not be wrapped: Short Value\nA ridiculously long field name that will also not be wrapped: \n                   "
-      " "
-      "          A really really really ridiculously long string th\n                              at will be "
-      "wrapped.\nA really really really really really really ridiculously long field name that wi\nll be wrapped:      "
-      "          A really really really ridiculously long string th\n                              at will also be "
-      "wrapped.\n================================================================================";
+      R"""(================================= Test Config ==================================
+i:                            1
+f:                            2.1
+d:                            3.2
+b:                            true
+u8:                           4
+s:                            test string
+vec:                          [1, 2, 3]
+map:                          {a: 1, b: 2, c: 3}
+set:                          [1.1, 2.2, 3.3]
+mat:                          [[1, 0, 0],
+                               [0, 1, 0],
+                               [0, 0, 1]]
+my_enum:                      A
+my_strange_enum:              X
+sub_config [SubConfig]:
+   i:                         1
+   sub_sub_config [SubSubConfig]:
+      i:                      1
+sub_sub_config [SubSubConfig]:
+   i:                         1
+A ridiculously long field name that will not be wrapped: Short Value
+A ridiculously long field name that will also not be wrapped:
+                              A really really really ridiculously long string th
+                              at will be wrapped.
+A really really really really really really ridiculously long field name that wi
+ll be wrapped:                A really really really ridiculously long string th
+                              at will also be wrapped.
+================================================================================)""";
   EXPECT_EQ(formatted.size(), expected.size());
   EXPECT_EQ(formatted, expected);
 
   Settings().print_width = 50;
   formatted = internal::Formatter::formatConfig(data);
   expected =
-      "================== Test Config ===================\ni:                            1\nf:                         "
-      "   2.1\nd:                            3.2\nb:                            true\nu8:                           "
-      "4\ns:                            test string\nvec:                          [1, 2, 3]\nmap:                     "
-      "     {a: 1, b: 2, c: 3}\nset:                          [1.1, 2.2, 3.3]\nmat:                          [[1, 0, "
-      "0],\n                               [0, 1, 0],\n                               [0, 0, 1]]\nmy_enum:             "
-      "         A\nmy_strange_enum:              X\nsub_config [SubConfig]:\n   i:                         1\n   "
-      "sub_sub_config [SubSubConfig]:\n      i:                      1\nsub_sub_config [SubSubConfig]:\n   i:          "
-      "               1\nA ridiculously long field name that will not be wr\napped:                        Short "
-      "Value\nA ridiculously long field name that will also not \nbe wrapped:                   A really really real\n "
-      " "
-      "                            ly ridiculously long\n                               string that will be\n          "
-      "                     wrapped.\nA really really really really really really ridicu\nlously long field name that "
-      "will be wrapped: \n                              A really really real\n                              ly "
-      "ridiculously long\n                               string that will al\n                              so be "
-      "wrapped.\n==================================================";
+      R"""(================== Test Config ===================
+i:                            1
+f:                            2.1
+d:                            3.2
+b:                            true
+u8:                           4
+s:                            test string
+vec:                          [1, 2, 3]
+map:                          {a: 1, b: 2, c: 3}
+set:                          [1.1, 2.2, 3.3]
+mat:                          [[1, 0, 0],
+                               [0, 1, 0],
+                               [0, 0, 1]]
+my_enum:                      A
+my_strange_enum:              X
+sub_config [SubConfig]:
+   i:                         1
+   sub_sub_config [SubSubConfig]:
+      i:                      1
+sub_sub_config [SubSubConfig]:
+   i:                         1
+A ridiculously long field name that will not be wr
+apped:                        Short Value
+A ridiculously long field name that will also not
+be wrapped:                   A really really real
+                              ly ridiculously long
+                               string that will be
+                               wrapped.
+A really really really really really really ridicu
+lously long field name that will be wrapped:
+                              A really really real
+                              ly ridiculously long
+                               string that will al
+                              so be wrapped.
+==================================================)""";
   EXPECT_EQ(formatted.size(), expected.size());
   EXPECT_EQ(formatted, expected);
 
@@ -144,18 +189,35 @@ TEST(AslFormatter, formatConfig) {
   Settings().print_indent = 20;
   formatted = internal::Formatter::formatConfig(data);
   expected =
-      "================================= Test Config ==================================\ni:                  1\nf:     "
-      "             2.1\nd:                  3.2\nb:                  true\nu8:                 4\ns:                  "
-      "test string\nvec:                [1, 2, 3]\nmap:                {a: 1, b: 2, c: 3}\nset:                [1.1, "
-      "2.2, 3.3]\nmat:                [[1, 0, 0],\n                     [0, 1, 0],\n                     [0, 0, "
-      "1]]\nmy_enum:            A\nmy_strange_enum:    X\nsub_config [SubConfig]:\n   i:               1\n   "
-      "sub_sub_config [SubSubConfig]:\n      i:            1\nsub_sub_config [SubSubConfig]:\n   i:               1\nA "
-      "ridiculously long field name that will not be wrapped: Short Value\nA ridiculously long field name that will "
-      "also not be wrapped: \n                    A really really really ridiculously long string that will be\n       "
-      " "
-      "             wrapped.\nA really really really really really really ridiculously long field name that wi\nll be "
-      "wrapped:      A really really really ridiculously long string that will al\n                    so be "
-      "wrapped.\n================================================================================";
+      R"""(================================= Test Config ==================================
+i:                  1
+f:                  2.1
+d:                  3.2
+b:                  true
+u8:                 4
+s:                  test string
+vec:                [1, 2, 3]
+map:                {a: 1, b: 2, c: 3}
+set:                [1.1, 2.2, 3.3]
+mat:                [[1, 0, 0],
+                     [0, 1, 0],
+                     [0, 0, 1]]
+my_enum:            A
+my_strange_enum:    X
+sub_config [SubConfig]:
+   i:               1
+   sub_sub_config [SubSubConfig]:
+      i:            1
+sub_sub_config [SubSubConfig]:
+   i:               1
+A ridiculously long field name that will not be wrapped: Short Value
+A ridiculously long field name that will also not be wrapped:
+                    A really really really ridiculously long string that will be
+                     wrapped.
+A really really really really really really ridiculously long field name that wi
+ll be wrapped:      A really really really ridiculously long string that will al
+                    so be wrapped.
+================================================================================)""";
   EXPECT_EQ(formatted.size(), expected.size());
   EXPECT_EQ(formatted, expected);
 }
@@ -168,18 +230,36 @@ TEST(AslFormatter, formatUnits) {
   internal::MetaData data = internal::Visitor::getValues(TestConfig());
   const std::string formatted = internal::Formatter::formatConfig(data);
   const std::string expected =
-      "================================= Test Config ==================================\ni [m]:              1\nf [s]: "
-      "             2.1\nd [m/s]:            3.2\nb:                  true\nu8:                 4\ns:                  "
-      "test string\nvec [frames]:       [1, 2, 3]\nmap:                {a: 1, b: 2, c: 3}\nset:                [1.1, "
-      "2.2, 3.3]\nmat:                [[1, 0, 0],\n                     [0, 1, 0],\n                     [0, 0, "
-      "1]]\nmy_enum:            A\nmy_strange_enum:    X\nsub_config [SubConfig]:\n   i:               1\n   "
-      "sub_sub_config [SubSubConfig]:\n      i:            1\nsub_sub_config [SubSubConfig]:\n   i:               1\nA "
-      "ridiculously long field name that will not be wrapped [ms]: Short Value\nA ridiculously long field name that "
-      "will also not be wrapped [custom unit]: \n                    A really really really ridiculously long string "
-      "that will be\n                     wrapped.\nA really really really really really really ridiculously long "
-      "field name that wi\nll be wrapped [and has a long unit]: \n                    A really really really "
-      "ridiculously long string that will al\n                    so be "
-      "wrapped.\n================================================================================";
+      R"""(================================= Test Config ==================================
+i [m]:              1
+f [s]:              2.1
+d [m/s]:            3.2
+b:                  true
+u8:                 4
+s:                  test string
+vec [frames]:       [1, 2, 3]
+map:                {a: 1, b: 2, c: 3}
+set:                [1.1, 2.2, 3.3]
+mat:                [[1, 0, 0],
+                     [0, 1, 0],
+                     [0, 0, 1]]
+my_enum:            A
+my_strange_enum:    X
+sub_config [SubConfig]:
+   i:               1
+   sub_sub_config [SubSubConfig]:
+      i:            1
+sub_sub_config [SubSubConfig]:
+   i:               1
+A ridiculously long field name that will not be wrapped [ms]: Short Value
+A ridiculously long field name that will also not be wrapped [custom unit]:
+                    A really really really ridiculously long string that will be
+                     wrapped.
+A really really really really really really ridiculously long field name that wi
+ll be wrapped [and has a long unit]:
+                    A really really really ridiculously long string that will al
+                    so be wrapped.
+================================================================================)""";
   EXPECT_EQ(formatted.size(), expected.size());
   EXPECT_EQ(formatted, expected);
 }
@@ -191,21 +271,36 @@ TEST(AslFormatter, formatDefaultValues) {
 
   const internal::MetaData default_data = internal::Visitor::getValues(TestConfig());
   std::string formatted = internal::Formatter::formatConfig(default_data);
-  std::string expected =
-      "================================= Test Config ==================================\ni:                  1 "
-      "(default)\nf:                  2.1 (default)\nd:                  3.2 (default)\nb:                  true "
-      "(default)\nu8:                 4 (default)\ns:                  test string (default)\nvec:                [1, "
-      "2, 3] (default)\nmap:                {a: 1, b: 2, c: 3} (default)\nset:                [1.1, 2.2, 3.3] "
-      "(default)\nmat:                [[1, 0, 0],\n                     [0, 1, 0],\n                     [0, 0, 1]] "
-      "(default)\nmy_enum:            A (default)\nmy_strange_enum:    X (default)\nsub_config [SubConfig] "
-      "(default):\n   i:               1 (default)\n   sub_sub_config [SubSubConfig] (default):\n      i:            1 "
-      "(default)\nsub_sub_config [SubSubConfig] (default):\n   i:               1 (default)\nA ridiculously long field "
-      "name that will not be wrapped: Short Value (default)\nA ridiculously long field name that will also not be "
-      "wrapped: \n                    A really really really ridiculously long string that will be\n                   "
-      " "
-      " wrapped. (default)\nA really really really really really really ridiculously long field name that wi\nll be "
-      "wrapped:      A really really really ridiculously long string that will al\n                    so be wrapped. "
-      "(default)\n================================================================================";
+  std::string expected = R"""(================================= Test Config ==================================
+i:                  1 (default)
+f:                  2.1 (default)
+d:                  3.2 (default)
+b:                  true (default)
+u8:                 4 (default)
+s:                  test string (default)
+vec:                [1, 2, 3] (default)
+map:                {a: 1, b: 2, c: 3} (default)
+set:                [1.1, 2.2, 3.3] (default)
+mat:                [[1, 0, 0],
+                     [0, 1, 0],
+                     [0, 0, 1]] (default)
+my_enum:            A (default)
+my_strange_enum:    X (default)
+sub_config [SubConfig] (default):
+   i:               1 (default)
+   sub_sub_config [SubSubConfig] (default):
+      i:            1 (default)
+sub_sub_config [SubSubConfig] (default):
+   i:               1 (default)
+A ridiculously long field name that will not be wrapped: Short Value (default)
+A ridiculously long field name that will also not be wrapped:
+                    A really really really ridiculously long string that will be
+                     wrapped. (default)
+A really really really really really really ridiculously long field name that wi
+ll be wrapped:      A really really really ridiculously long string that will al
+                    so be wrapped. (default)
+================================================================================)""";
+
   EXPECT_EQ(formatted.size(), expected.size());
   EXPECT_EQ(formatted, expected);
 
@@ -213,19 +308,35 @@ TEST(AslFormatter, formatDefaultValues) {
   internal::Visitor::setValues(modified_config, DefaultConfig::modifiedValues());
   const internal::MetaData modified_data = internal::Visitor::getValues(modified_config);
   formatted = internal::Formatter::formatConfig(modified_data);
-  expected =
-      "================================= Test Config ==================================\ni:                  2\nf:     "
-      "             -1\nd:                  3.1415926\nb:                  false\nu8:                 255\ns:          "
-      "        a different test string\nvec:                [2, 3, 4, 5]\nmap:                {x: 24, y: 25, z: "
-      "26}\nset:                [11.11, 22.22, 33.33, 44.44]\nmat:                [[1, 2, 3],\n                     "
-      "[4, 5, 6],\n                     [7, 8, 9]]\nmy_enum:            B\nmy_strange_enum:    Z\nsub_config "
-      "[SubConfig]:\n   i:               2\n   sub_sub_config [SubSubConfig]:\n      i:            3\nsub_sub_config "
-      "[SubSubConfig]:\n   i:               4\nA ridiculously long field name that will not be wrapped: Short Value "
-      "(default)\nA ridiculously long field name that will also not be wrapped: \n                    A really really "
-      "really ridiculously long string that will be\n                     wrapped. (default)\nA really really really "
-      "really really really ridiculously long field name that wi\nll be wrapped:      A really really really "
-      "ridiculously long string that will al\n                    so be wrapped. "
-      "(default)\n================================================================================";
+  expected = R"""(================================= Test Config ==================================
+i:                  2
+f:                  -1
+d:                  3.1415926
+b:                  false
+u8:                 255
+s:                  a different test string
+vec:                [2, 3, 4, 5]
+map:                {x: 24, y: 25, z: 26}
+set:                [11.11, 22.22, 33.33, 44.44]
+mat:                [[1, 2, 3],
+                     [4, 5, 6],
+                     [7, 8, 9]]
+my_enum:            B
+my_strange_enum:    Z
+sub_config [SubConfig]:
+   i:               2
+   sub_sub_config [SubSubConfig]:
+      i:            3
+sub_sub_config [SubSubConfig]:
+   i:               4
+A ridiculously long field name that will not be wrapped: Short Value (default)
+A ridiculously long field name that will also not be wrapped:
+                    A really really really ridiculously long string that will be
+                     wrapped. (default)
+A really really really really really really ridiculously long field name that wi
+ll be wrapped:      A really really really ridiculously long string that will al
+                    so be wrapped. (default)
+================================================================================)""";
   EXPECT_EQ(formatted.size(), expected.size());
   EXPECT_EQ(formatted, expected);
 }
