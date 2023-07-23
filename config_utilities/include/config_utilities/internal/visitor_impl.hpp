@@ -296,14 +296,9 @@ void Visitor::flagDefaultValues(const ConfigT& config, MetaData& data) {
     if (info.subconfig_id >= 0) {
       continue;
     }
-    if (i >= default_data.field_infos.size()) {
-      // This should never happen. Caught here to avoid segfaults.
-      Logger::logError(
-          "Failed to flag default values. The number of fields in the config does not match the number of fields in "
-          "the default config.");
-      break;
-    }
-    const FieldInfo& default_info = default_data.field_infos[i++];
+   // Corresponding field info should always exist
+   const auto& default_info = default_data.field_infos.at(i);
+   ++i;
     // NOTE(lschmid): Operator YAML::Node== checks for identity, not equality. Since these are all scalars, comparing
     // the formatted strings should be identical.
     if (internal::dataToString(info.value) == internal::dataToString(default_info.value)) {
