@@ -10,7 +10,7 @@ namespace config::test {
 void declare_config(SubSubConfig& config) {
   config::name("SubSubConfig");
   config::field(config.i, "i");
-  config::checkGT(config.i, 0, "i");
+  config::check(config.i, CheckMode::GT, 0, "i");
 }
 
 void declare_config(SubConfig& config) {
@@ -18,7 +18,7 @@ void declare_config(SubConfig& config) {
   config::field(config.i, "i");
   config::enter_namespace("nested_ns");
   config::field(config.sub_sub_config, "sub_sub_config");
-  config::checkGT(config.i, 0, "i");
+  config::check(config.i, CheckMode::GT, 0, "i");
 }
 
 void declare_config(DefaultConfig& config) {
@@ -44,12 +44,12 @@ void declare_config(DefaultConfig& config) {
   config::switch_namespace("sub_sub_ns");
   config::field(config.sub_sub_config, "sub_sub_config", "sub_sub_ns");
 
-  config::checkGT(config.i, 0, "i");
-  config::checkGE(config.f, 0.f, "f");
-  config::checkLT(config.d, 4.0, "d");
-  config::checkLE(config.u8, uint8_t(5), "u8");
-  config::checkEQ(config.s, std::string("test string"), "s");
-  config::checkNE(config.b, false, "b");
+  config::check(config.i, CheckMode::GT, 0, "i");
+  config::check(config.f, CheckMode::GE, 0.f, "f");
+  config::check(config.d, CheckMode::LT, 4.0, "d");
+  config::check(config.u8, CheckMode::LE, uint8_t(5), "u8");
+  config::check(config.s, CheckMode::EQ, std::string("test string"), "s");
+  config::check(config.b, CheckMode::NE, false, "b");
   config::checkCondition(config.vec.size() == 3, "Param 'vec' must b of size '3'");
   config::checkInRange(config.d, 0.0, 500.0, "d");
 }
