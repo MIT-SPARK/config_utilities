@@ -48,6 +48,9 @@ struct Visitor {
   template <typename T, typename std::enable_if<!isConfig<T>(), bool>::type = true>
   static void visitField(T& field, const std::string& field_name, const std::string& unit);
 
+  template <typename Conversion, typename T, typename std::enable_if<!isConfig<T>(), bool>::type = true>
+  static void visitField(T& field, const std::string& field_name, const std::string& unit);
+
   template <typename EnumT>
   static void visitEnumField(EnumT& field,
                              const std::string& field_name,

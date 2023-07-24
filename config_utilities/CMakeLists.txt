@@ -35,6 +35,7 @@ add_library(
   src/yaml_utils.cpp
   src/validation.cpp
   src/formatter.cpp
+  src/conversions.cpp
   src/globals.cpp)
 target_link_libraries(${PROJECT_NAME} PUBLIC yaml-cpp)
 target_include_directories(

@@ -101,6 +101,25 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
   }
 }
 
+template <typename Conversion, typename T, typename std::enable_if<!isConfig<T>(), bool>::type = true>
+void Visitor::visitField(T& field, const std::string& field_name, const std::string& unit) {
+  Visitor& visitor = Visitor::instance();
+  if (visitor.mode == Visitor::Mode::kSet) {
+    auto intermediate = Conversion::toIntermediate(field);  // make sure current value isn't lost
+    visitor.parser.fromYaml(field_name, intermediate, visitor.name_space, visitor.field_name_prefix);
+    field = Conversion::fromIntermediate(intermediate);
+  }
+
+  if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetDefaults) {
+    FieldInfo& info = visitor.data.field_infos.emplace_back();
+    const auto intermediate = Conversion::toIntermediate(field);
+    visitor.parser.toYaml(field_name, intermediate, visitor.name_space, visitor.field_name_prefix);
+    info.value = YamlParser::toYaml(intermediate);
+    info.name = field_name;
+    info.unit = unit;
+  }
+}
+
 template <typename EnumT>
 void Visitor::visitEnumField(EnumT& field,
                              const std::string& field_name,

@@ -22,6 +22,7 @@ add_executable(
   tests/inheritance.cpp
   tests/factory.cpp
   tests/virtual_config.cpp
+  tests/conversions.cpp
 )
 target_include_directories(test_${PROJECT_NAME} PRIVATE include)
 target_link_libraries(test_${PROJECT_NAME} ${PROJECT_NAME} GTest::gtest_main)
