@@ -111,9 +111,8 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
     std::string error_string;
     field = Conversion::fromIntermediate(intermediate, error_string);
     if (!error_string.empty()) {
-      std::stringstream ss;
-      ss << "Failed to parse param '" + visitor.field_name_prefix << field_name << "': " << error_string;
-      visitor.data.errors.push_back(ss.str());
+      visitor.data.errors.emplace_back("Failed to parse param '" + visitor.field_name_prefix + field_name +
+                                       "': " + error_string);
     }
   }
 
