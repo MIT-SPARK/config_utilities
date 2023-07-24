@@ -82,7 +82,7 @@ void declare_config(DerivedC::Config& config) {
   // Declare the config using the config utilities.
   config::name("DerivedC");
   config::field(config.f, "f");
-  config::checkGE(config.f, 0.f, "f");
+  config::check(config.f, config::CheckMode::GE, 0.f, "f");
 }
 
 // Configs can be defined anywhere, e.g. also structs from different libraries as long as a 'void

@@ -226,6 +226,7 @@ TEST(AslFormatter, formatUnits) {
   Settings().indicate_default_values = false;
   Settings().indicate_units = true;
   Settings().index_subconfig_field_names = true;
+  Settings().print_width = 80;  // force print width to be consistent for tests
 
   internal::MetaData data = internal::Visitor::getValues(TestConfig());
   const std::string formatted = internal::Formatter::formatConfig(data);

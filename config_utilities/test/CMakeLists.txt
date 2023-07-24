@@ -1,8 +1,8 @@
 include(FetchContent)
 FetchContent_Declare(
   googletest
-  URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
-  DOWNLOAD_EXTRACT_TIMESTAMP true
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG b796f7d44681514f58a683a3a71ff17c94edb0c1 # v1.13.0
 )
 FetchContent_MakeAvailable(googletest)
 
@@ -19,14 +19,12 @@ add_executable(
   tests/yaml_parsing.cpp
   tests/asl_formatter.cpp
   tests/inheritance.cpp
+  tests/string_utils.cpp
   tests/factory.cpp
   tests/virtual_config.cpp
 )
 target_include_directories(test_${PROJECT_NAME} PRIVATE include)
 target_link_libraries(test_${PROJECT_NAME} ${PROJECT_NAME} GTest::gtest_main)
-
-include(GoogleTest)
-gtest_discover_tests(test_${PROJECT_NAME})
 
 if(${CONFIG_UTILS_INSTALL_TESTS})
   # note that ros uses libdir to handle finding executables by package, but this isn't

@@ -17,7 +17,7 @@ void declare_config(Base& config) {
   using namespace config;
   name("Base");
   field(config.i, "i");
-  checkGT(config.i, 0, "i");
+  check(config.i, CheckMode::GT, 0, "i");
 }
 
 struct Derived : virtual public Base {
@@ -29,7 +29,7 @@ void declare_config(Derived& config) {
   name("Derived");
   base<Base>(config);
   field(config.vec, "vec");
-  checkEQ(config.vec.size(), size_t(3), "vec.size()");
+  check(config.vec.size(), CheckMode::EQ, size_t(3), "vec.size()");
 }
 
 struct SequentialDerived : public Derived {
@@ -52,7 +52,7 @@ void declare_config(OtherBase& config) {
   using namespace config;
   name("OtherBase");
   field(config.f, "f");
-  checkGT(config.f, 1.f, "f");
+  check(config.f, CheckMode::GT, 1.f, "f");
 }
 
 struct MultipleDerived : virtual public Base, public OtherBase {
@@ -65,7 +65,7 @@ void declare_config(MultipleDerived& config) {
   base<Base>(config);
   base<OtherBase>(config);
   field(config.d, "d");
-  checkGT(config.d, 0.0, "d");
+  check(config.d, CheckMode::GT, 0.0, "d");
 }
 
 struct DiamondDerived : public Derived, public MultipleDerived {
@@ -78,7 +78,7 @@ void declare_config(DiamondDerived& config) {
   base<Derived>(config);
   base<MultipleDerived>(config);
   field(config.map, "map");
-  checkGE(config.map.size(), size_t(2), "map.size()");
+  check(config.map.size(), CheckMode::GE, 2, "map.size()");
 }
 
 YAML::Node defaultValues() {
