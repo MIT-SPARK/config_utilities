@@ -139,6 +139,10 @@ std::string wrapString(const std::string& str, size_t width, size_t indent, bool
     remaining = str.substr(first_line_length);
   }
 
+  if (remaining.empty()) {
+    return pruneTrailingWhitespace(result);
+  }
+
   // Wrap all other lines within the indent range.
   bool is_first_line = true;
   while (!remaining.empty()) {
@@ -157,15 +161,14 @@ std::string wrapString(const std::string& str, size_t width, size_t indent, bool
     }
     next_line = pruneTrailingWhitespace(next_line);
     if (next_line.empty()) {
-      continue;
+      return result;
     }
 
     // Aggregate line.
     if (!is_first_line) {
       result += "\n" + std::string(indent, ' ');
-    } else {
-      is_first_line = false;
     }
+    is_first_line = false;
     result += next_line;
   }
 

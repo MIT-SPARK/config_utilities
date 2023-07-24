@@ -91,7 +91,7 @@ std::string AslFormatter::formatField(const FieldInfo& info, size_t indent) cons
   if (Settings::instance().indicate_units && !info.unit.empty()) {
     header += " [" + info.unit + "]";
   }
-  header += ": ";
+  header += ":";
 
   // Multi-line formatting info for nested types.
   std::vector<size_t> linebreaks = findAllSubstrings(field, "}, ");
@@ -120,11 +120,15 @@ std::string AslFormatter::formatField(const FieldInfo& info, size_t indent) cons
   if (header_size < global_indent) {
     result += std::string(global_indent - header_size, ' ');
     header_size = global_indent;
-  } else if (print_width - header_size < field.length() || is_multiline) {
+  } else if (print_width - header_size - 1 < field.length() || is_multiline) {
     // If the field does not fit entirely or is multi-line anyways just start a new line.
     result = pruneTrailingWhitespace(result);
     result += "\n" + std::string(global_indent, ' ');
     header_size = global_indent;
+  } else {
+    // If the field fits partly on the same line, add a space after the header.
+    result += " ";
+    header_size += 1;
   }
 
   // First line of field could be shorter due to header over extension.
@@ -139,11 +143,11 @@ std::string AslFormatter::formatField(const FieldInfo& info, size_t indent) cons
                         std::count_if(closed_brackets.begin(), closed_brackets.end(), isBefore);
       std::string line = field.substr(prev_break, linebreak - prev_break + 2);
       line = std::string(num_open, ' ') + line;
-      line = wrapString(line, print_width, global_indent);
+      line = wrapString(line, print_width, global_indent) + "\n";
       if (prev_break == 0) {
         line = line.substr(global_indent);
       }
-      result += pruneTrailingWhitespace(line) + "\n";
+      result += pruneTrailingWhitespace(line);
       prev_break = linebreak + 3;
     }
   } else if (field.length() < available_length) {
@@ -152,7 +156,7 @@ std::string AslFormatter::formatField(const FieldInfo& info, size_t indent) cons
   } else {
     // Add as much as fits on the first line and fill the rest.
     result += pruneTrailingWhitespace(field.substr(0, available_length)) + "\n";
-    result += wrapString(field.substr(available_length), print_width, global_indent) + "\n";
+    result += wrapString(pruneLeadingWhitespace(field.substr(available_length)), print_width, global_indent) + "\n";
   }
   return result;
 }

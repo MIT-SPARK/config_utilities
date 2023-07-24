@@ -23,8 +23,16 @@ TEST(StringUtils, pruneWhitespace) {
 }
 
 TEST(StringUtils, wrapString) {
-  std::string str = "A very long string that needs to be wrapped to fit into a given width.";
+  std::string str = "short.";
   std::string wrapped = internal::wrapString(str, 12);
+  EXPECT_EQ(wrapped, str);
+
+  str = "short.        ";
+  wrapped = internal::wrapString(str, 12);
+  EXPECT_EQ(wrapped, "short.");
+
+  str = "A very long string that needs to be wrapped to fit into a given width.";
+  wrapped = internal::wrapString(str, 12);
   std::string expected = R"""(A very long
 string that
 needs to be
