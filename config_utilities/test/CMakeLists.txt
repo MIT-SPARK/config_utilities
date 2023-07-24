@@ -17,9 +17,9 @@ add_executable(
   tests/validity_checks.cpp
   tests/namespacing.cpp
   tests/yaml_parsing.cpp
+  tests/string_utils.cpp
   tests/asl_formatter.cpp
   tests/inheritance.cpp
-  tests/string_utils.cpp
   tests/factory.cpp
   tests/virtual_config.cpp
 )

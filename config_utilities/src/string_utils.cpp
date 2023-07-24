@@ -115,4 +115,61 @@ std::string pruneTrailingWhitespace(const std::string& text) {
   return text.substr(0, text.size() - i);
 }
 
+std::string pruneLeadingWhitespace(const std::string& text) {
+  const size_t pos = text.find_first_not_of(' ');
+  if (pos == std::string::npos) {
+    return "";
+  }
+  return text.substr(pos);
+}
+
+std::string pruneWhitespace(const std::string& text) { return pruneLeadingWhitespace(pruneTrailingWhitespace(text)); }
+
+std::string wrapString(const std::string& str, size_t width, size_t indent, bool indent_first_line) {
+  std::string result;
+  std::string remaining = str;
+  const size_t length = width - indent;
+
+  // Format the first line indent.
+  if (indent_first_line) {
+    result = std::string(indent, ' ');
+  } else {
+    const size_t first_line_length = std::min(indent, str.length());
+    result = str.substr(0, first_line_length);
+    remaining = str.substr(first_line_length);
+  }
+
+  // Wrap all other lines within the indent range.
+  bool is_first_line = true;
+  while (!remaining.empty()) {
+    std::string next_line = remaining.substr(0, std::min(length, remaining.length()));
+    remaining = remaining.substr(next_line.size());
+
+    // Prune leading and trailing whitespace of all lines except the first.
+    if (!is_first_line) {
+      while (!next_line.empty() && next_line.at(0) == ' ') {
+        next_line = next_line.substr(1);
+        if (!remaining.empty()) {
+          next_line += remaining.at(0);
+          remaining = remaining.substr(1);
+        }
+      }
+    }
+    next_line = pruneTrailingWhitespace(next_line);
+    if (next_line.empty()) {
+      continue;
+    }
+
+    // Aggregate line.
+    if (!is_first_line) {
+      result += "\n" + std::string(indent, ' ');
+    } else {
+      is_first_line = false;
+    }
+    result += next_line;
+  }
+
+  return result;
+}
+
 }  // namespace config::internal

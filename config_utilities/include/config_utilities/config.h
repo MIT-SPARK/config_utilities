@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <map>
 #include <string>
 #include <utility>
@@ -44,7 +45,6 @@ inline void name(const std::string& name) { internal::Visitor::visitName(name); 
 /**
  * @brief Declare string-named fields of the config. This string will be used to get the configs field values during
  * creation, and for checking of validity.
- *
  * @param field The config member that stores data.
  * @param field_name The name of the field.
  * @param unit Optionally define the unit of the field during printing.
@@ -73,8 +73,8 @@ void enum_field(EnumT& field, const std::string& field_name, const std::map<Enum
  * @tparam EnumT The enum type.
  * @param field The config member that stores data.
  * @param field_name The name of the field.
- * @param enum_names List of all possible enum names in identical order to the enum definition. These will be casted to
- * enum. Use only with sequential enums.
+ * @param enum_names List of all possible enum names in identical order to the enum definition. These will be casted
+ * to enum. Use only with sequential enums.
  */
 template <typename EnumT>
 void enum_field(EnumT& field, const std::string& field_name, const std::vector<std::string>& enum_names) {
@@ -86,8 +86,8 @@ void enum_field(EnumT& field, const std::string& field_name, const std::vector<s
 }
 
 /**
- * @brief Declare that this config inherits from a base config. Note that this call typically requires explicit template
- * declaration or explicit casting for argument dependent look-up. E.g. 'base<BaseT>(config)' or '
+ * @brief Declare that this config inherits from a base config. Note that this call typically requires explicit
+ * template declaration or explicit casting for argument dependent look-up. E.g. 'base<BaseT>(config)' or '
  * base(static_cast<BaseT&>(config))'.
  *
  * @tparam ConfigT The base config type.
@@ -186,7 +186,6 @@ void checkInRange(const T& param,
 
 /**
  * @brief Execute a condition check, i.e. whether condition is true.
- *
  * @param condition Condition that should evaluate to true if the config is valid.
  * @param warning Message to be reported in the error summary.
  */
@@ -196,7 +195,6 @@ inline void checkCondition(bool condition, const std::string& warning) {
 
 /**
  * @brief Execute a custom check
- *
  * @param check Custom check class to validate
  */
 inline void check(const internal::CheckBase& check) { internal::Visitor::visitCheck(check); }

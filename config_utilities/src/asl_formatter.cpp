@@ -23,7 +23,7 @@ std::string AslFormatter::formatErrorsInternal(const MetaData& data,
     result += internal::printCenter(resolveConfigName(data), Settings::instance().print_width, '=') + "\n";
   }
   for (const std::string& error : data.errors) {
-    result.append(wrapString(sev + error, sev.length(), length, false) + "\n");
+    result.append(wrapString(sev + error, length, sev.length(), false) + "\n");
   }
 
   return result;
@@ -114,7 +114,7 @@ std::string AslFormatter::formatField(const FieldInfo& info, size_t indent) cons
   }
 
   // Format the header to width.
-  result += wrapString(header, indent, print_width, false);
+  result += wrapString(header, print_width, indent, false);
   const size_t last_header_line = result.find_last_of('\n');
   size_t header_size = result.substr(last_header_line != std::string::npos ? last_header_line + 1 : 0).size();
   if (header_size < global_indent) {
@@ -139,7 +139,7 @@ std::string AslFormatter::formatField(const FieldInfo& info, size_t indent) cons
                         std::count_if(closed_brackets.begin(), closed_brackets.end(), isBefore);
       std::string line = field.substr(prev_break, linebreak - prev_break + 2);
       line = std::string(num_open, ' ') + line;
-      line = wrapString(line, global_indent, print_width);
+      line = wrapString(line, print_width, global_indent);
       if (prev_break == 0) {
         line = line.substr(global_indent);
       }
@@ -152,30 +152,9 @@ std::string AslFormatter::formatField(const FieldInfo& info, size_t indent) cons
   } else {
     // Add as much as fits on the first line and fill the rest.
     result += pruneTrailingWhitespace(field.substr(0, available_length)) + "\n";
-    result += wrapString(field.substr(available_length), global_indent, print_width) + "\n";
+    result += wrapString(field.substr(available_length), print_width, global_indent) + "\n";
   }
   return result;
-}
-
-std::string AslFormatter::wrapString(const std::string& str,
-                                     size_t indent,
-                                     size_t width,
-                                     bool indent_first_line) const {
-  std::string result;
-  std::string remaining = str;
-  if (indent_first_line) {
-    result = std::string(indent, ' ');
-  } else {
-    const size_t first_line_length = std::min(indent, str.length());
-    result = str.substr(0, first_line_length);
-    remaining = str.substr(first_line_length);
-  }
-  const size_t length = width - indent;
-  while (remaining.length() > length) {
-    result += pruneTrailingWhitespace(remaining.substr(0, length)) + "\n" + std::string(indent, ' ');
-    remaining = remaining.substr(length);
-  }
-  return result + remaining;
 }
 
 std::string AslFormatter::resolveConfigName(const MetaData& data) const {

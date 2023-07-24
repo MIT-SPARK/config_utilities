@@ -173,14 +173,14 @@ apped:                        Short Value
 A ridiculously long field name that will also not
 be wrapped:                   A really really real
                               ly ridiculously long
-                               string that will be
-                               wrapped.
+                              string that will be
+                              wrapped.
 A really really really really really really ridicu
 lously long field name that will be wrapped:
                               A really really real
                               ly ridiculously long
-                               string that will al
-                              so be wrapped.
+                              string that will als
+                              o be wrapped.
 ==================================================)""";
   EXPECT_EQ(formatted.size(), expected.size());
   EXPECT_EQ(formatted, expected);
@@ -213,7 +213,7 @@ sub_sub_config [SubSubConfig]:
 A ridiculously long field name that will not be wrapped: Short Value
 A ridiculously long field name that will also not be wrapped:
                     A really really really ridiculously long string that will be
-                     wrapped.
+                    wrapped.
 A really really really really really really ridiculously long field name that wi
 ll be wrapped:      A really really really ridiculously long string that will al
                     so be wrapped.
@@ -255,7 +255,7 @@ sub_sub_config [SubSubConfig]:
 A ridiculously long field name that will not be wrapped [ms]: Short Value
 A ridiculously long field name that will also not be wrapped [custom unit]:
                     A really really really ridiculously long string that will be
-                     wrapped.
+                    wrapped.
 A really really really really really really ridiculously long field name that wi
 ll be wrapped [and has a long unit]:
                     A really really really ridiculously long string that will al
@@ -296,7 +296,7 @@ sub_sub_config [SubSubConfig] (default):
 A ridiculously long field name that will not be wrapped: Short Value (default)
 A ridiculously long field name that will also not be wrapped:
                     A really really really ridiculously long string that will be
-                     wrapped. (default)
+                    wrapped. (default)
 A really really really really really really ridiculously long field name that wi
 ll be wrapped:      A really really really ridiculously long string that will al
                     so be wrapped. (default)
@@ -333,7 +333,7 @@ sub_sub_config [SubSubConfig]:
 A ridiculously long field name that will not be wrapped: Short Value (default)
 A ridiculously long field name that will also not be wrapped:
                     A really really really ridiculously long string that will be
-                     wrapped. (default)
+                    wrapped. (default)
 A really really really really really really ridiculously long field name that wi
 ll be wrapped:      A really really really ridiculously long string that will al
                     so be wrapped. (default)
