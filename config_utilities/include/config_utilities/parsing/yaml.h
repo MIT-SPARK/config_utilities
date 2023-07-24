@@ -94,7 +94,7 @@ bool toYamlFile(const ConfigT& config, const std::string& file_name) {
  */
 template <typename BaseT, typename... ConstructorArguments>
 std::unique_ptr<BaseT> createFromYaml(const YAML::Node& node, ConstructorArguments... args) {
-  return internal::Factory::createWithConfig<BaseT>(node, args...);
+  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(node, args...);
 }
 
 /**
@@ -116,7 +116,8 @@ template <typename BaseT, typename... ConstructorArguments>
 std::unique_ptr<BaseT> createFromYamlWithNamespace(const YAML::Node& node,
                                                    const std::string& name_space,
                                                    ConstructorArguments... args) {
-  return internal::Factory::createWithConfig<BaseT>(internal::lookupNamespace(node, name_space), args...);
+  const YAML::Node ns_node = internal::lookupNamespace(node, name_space);
+  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(ns_node, args...);
 }
 
 /**
@@ -134,7 +135,7 @@ std::unique_ptr<BaseT> createFromYamlWithNamespace(const YAML::Node& node,
  */
 template <typename BaseT, typename... ConstructorArguments>
 std::unique_ptr<BaseT> createFromYamlFile(const std::string& file_name, ConstructorArguments... args) {
-  return internal::Factory::createWithConfig<BaseT>(YAML::LoadFile(file_name), args...);
+  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(YAML::LoadFile(file_name), args...);
 }
 
 /**
@@ -157,7 +158,7 @@ std::unique_ptr<BaseT> createFromYamlFileWithNamespace(const std::string& file_n
                                                        const std::string& name_space,
                                                        ConstructorArguments... args) {
   const YAML::Node node = internal::lookupNamespace(YAML::LoadFile(file_name), name_space);
-  return internal::Factory::createWithConfig<BaseT>(node, args...);
+  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(node, args...);
 }
 
 }  // namespace config

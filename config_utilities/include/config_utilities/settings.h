@@ -11,11 +11,6 @@ namespace internal {
  * can be dynamically set and changed throughout a program.
  */
 struct Settings {
-  Settings(const Settings& other) = delete;
-  Settings(const Settings&& other) = delete;
-  Settings& operator=(const Settings& other) = delete;
-  Settings& operator=(const Settings&& other) = delete;
-
   // Singleton access to the global settings.
   static Settings& instance();
 
@@ -54,8 +49,14 @@ struct Settings {
   // Specify the formatter to be used for printing. Formatters register themselves if included.
   void setFormatter(const std::string& name);
 
+  // Reset all settings to their default values.
+  void restoreDefaults() { *this = Settings(); }
+
  private:
   Settings() = default;
+  Settings(const Settings& other) = default;
+  Settings& operator=(const Settings& other) = default;
+  static Settings instance_;
 };
 
 }  // namespace internal

@@ -30,18 +30,22 @@ struct Visitor {
                             const YAML::Node& node,
                             const bool print_warnings = true,
                             const std::string& name_space = "",
-                            const std::string& field_name_prefix = "");
+                            const std::string& field_name_prefix = "",
+                            const std::string& current_field_name = "");
 
   // Get the data stored in the config.
   template <typename ConfigT>
   static MetaData getValues(const ConfigT& config,
                             const bool print_warnings = true,
                             const std::string& name_space = "",
-                            const std::string& field_name_prefix = "");
+                            const std::string& field_name_prefix = "",
+                            const std::string& current_field_name = "");
 
   // Execute all checks specified in the config.
   template <typename ConfigT>
-  static MetaData getChecks(const ConfigT& config);
+  static MetaData getChecks(const ConfigT& config,
+                            const std::string& field_name_prefix = "",
+                            const std::string& current_field_name = "");
 
   // Interfaces for the config declaration interfaces to to expose their info to the visitor.
   static void visitName(const std::string& name);
@@ -54,15 +58,7 @@ struct Visitor {
                              const std::string& field_name,
                              const std::map<EnumT, std::string>& enum_names);
 
-  enum class CheckMode { kGT, kGE, kLT, kLE, kEQ, kNE };
-
-  template <typename T>
-  static void visitCheck(Visitor::CheckMode mode, const T& param, const T& value, const std::string& name);
-
-  template <typename T>
-  static void visitCheckInRange(const T& param, const T& lower, const T& upper, const std::string& name);
-
-  static void visitCheckCondition(bool condition, const std::string& error_message);
+  static void visitCheck(const CheckBase& check);
 
   template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
   static void visitField(ConfigT& config, const std::string& field_name, const std::string& /* unit */);
@@ -87,7 +83,10 @@ struct Visitor {
   // objects. Note that meta data always needs to be created before it can be accessed. In short, 'instance()' is only
   // to be used within the 'declare_config()' function, whereas 'create()' is to be used to extract data from a struct
   // by calling 'declare_config()'.
-  explicit Visitor(Mode _mode, std::string _name_space = "", std::string _name_prefix = "");
+  explicit Visitor(Mode _mode,
+                   const std::string& _name_space = "",
+                   const std::string& _name_prefix = "",
+                   const std::string& _current_field_name = "");
 
   static Visitor& instance();
 
@@ -95,13 +94,22 @@ struct Visitor {
   // Move errors from the checker and parser into the meta data.
   void extractErrors();
 
-  // Labels all fields in the data as default if they match the default values of ConfigT.
+  // Helper function to get the default values of a config.
+  template <typename ConfigT, typename std::enable_if<!is_virtual_config<ConfigT>::value, bool>::type = true>
+  static MetaData getDefaults(const ConfigT& config);
+  template <typename ConfigT, typename std::enable_if<is_virtual_config<ConfigT>::value, bool>::type = true>
+  static MetaData getDefaults(const ConfigT& config);
+
+  // Labels all fields in the data as default if they match the default values of the config.
   template <typename ConfigT>
-  static void flagDefaultValues(MetaData& data);
+  static void flagDefaultValues(const ConfigT& config, MetaData& data);
 
   // Extend the current visitor with a sub-visitor, replicating the previous specification.
   template <typename ConfigT>
-  static MetaData subVisit(ConfigT& config, const bool print_warnings, const std::string& field_name_prefix);
+  static MetaData subVisit(ConfigT& config,
+                           const bool print_warnings,
+                           const std::string& field_name_prefix,
+                           const std::string& current_field_name);
 
   /* Internal data to handle visits. */
   // The messenger data to read from and return eventually.
@@ -124,6 +132,9 @@ struct Visitor {
 
   // Keep track of which base configs were already visited to avoid duplicates in diamond inheritance.
   std::set<std::string> visited_base_configs;
+
+  // Temporary storage for field name that is being visited in subvisits.
+  std::string current_field_name;
 
   /* Member variables. */
   // Static registration to get access to the correct instance. Instancs are managed per thread and as a stack, i.e.

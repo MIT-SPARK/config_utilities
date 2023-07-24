@@ -82,7 +82,7 @@ void declare_config(DerivedC::Config& config) {
   // Declare the config using the config utilities.
   config::name("DerivedC");
   config::field(config.f, "f");
-  config::checkGE(config.f, 0.f, "f");
+  config::check(config.f, config::CheckMode::GE, 0.f, "f");
 }
 
 // Configs can be defined anywhere, e.g. also structs from different libraries as long as a 'void
@@ -119,21 +119,32 @@ class ObjectWithDerivedMembers {
   struct Config {
     double d = 0.123;
     config::VirtualConfig<Base> base_config;
+    config::VirtualConfig<Base> optional_config;
   };
 
-  explicit ObjectWithDerivedMembers(const Config& config, int base_i) : config_(config) {
+  ObjectWithDerivedMembers(const Config& config, int base_i) : config_(config) {
     config::checkValid(config_);
+
+    // Create the contained objects using 'VirtualConfig::create()'.
     base_ = config_.base_config.create(base_i);
+    if (config_.optional_config) {
+      optional_base_ = config_.optional_config.create(base_i + 1);
+    }
   }
 
   void print() const {
     std::cout << "I'm an ObjectWithDerivedMembers with d='" << config_.d << "' and base object: ";
     base_->print();
+    if (optional_base_) {
+      std::cout << "I also have an optional base object: ";
+      optional_base_->print();
+    }
   }
 
  private:
   const Config config_;
   std::unique_ptr<Base> base_;
+  std::unique_ptr<Base> optional_base_;
 };
 
 void declare_config(ObjectWithDerivedMembers::Config& config) {
@@ -142,6 +153,11 @@ void declare_config(ObjectWithDerivedMembers::Config& config) {
   field(config.d, "d");
   // Variable configs are declared like regular sub-configs/fields and work exactly like them.
   field(config.base_config, "base_config");
+
+  // By setting a config to optional, it is not required to be set.
+  config.optional_config.setOptional();
+  NameSpace ns("optional_sub_ns");
+  field(config.optional_config, "optional_config");
 }
 
 }  // namespace demo
@@ -155,6 +171,7 @@ int main(int argc, char** argv) {
   const std::string my_root_path = std::string(argv[1]) + "/";
 
   // --------------- Creating strig-identified objects ----------------
+  std::cout << "\n\n----- Creating string-identified objects -----\n\n" << std::endl;
 
   // Create an object of type Base using the factory.
   const std::string type = "DerivedA";
@@ -176,6 +193,7 @@ int main(int argc, char** argv) {
   object = config::create<demo::Base>("DerivedA", value, 1.f);
 
   // --------------- Creating objects from file ----------------
+  std::cout << "\n\n----- Creating objects from file -----\n\n" << std::endl;
 
   // Optionally specify the name of the type-identifying param. Default is 'type'.
   config::Settings().factory_type_param_name = "type";
@@ -198,9 +216,10 @@ int main(int argc, char** argv) {
   object =
       config::createFromYamlFileWithNamespace<demo::Base>(my_root_path + "demo_factory.yaml", "nonexistent_ns", 123);
 
-  // --------------- Storing Configs to Variable Objects ----------------
+  // --------------- Storing Configs to Virtual Objects ----------------
+  std::cout << "\n\n----- Storing Configs to Virtual Objects -----\n\n" << std::endl;
 
-  // Variable configs can be used to store configs of any derived type and create that object later.
+  // Virtual configs can be used to store configs of any derived type and create that object later.
   config::VirtualConfig<demo::Base> config;
 
   // An unitnitilized config is not valid.
@@ -208,27 +227,52 @@ int main(int argc, char** argv) {
   bool is_valid = config::isValid(config, true);
   std::cout << "Config is valid: " << is_valid << std::endl;
   std::cout << "Config has type: " << config.getType() << std::endl;
-  std::cout << "Config content:\n" << config::toString(config) << std::endl;
+  std::cout << "Config content:\n" << config << std::endl;
 
-  // Variable configs are created as any other.
+  // Virtual configs are created as any other.
   config = config::fromYamlFile<config::VirtualConfig<demo::Base>>(my_root_path + "demo_factory.yaml");
 
   std::cout << "Config is set: " << config.isSet() << std::endl;
   is_valid = config::isValid(config, true);
   std::cout << "Config is valid: " << is_valid << std::endl;
   std::cout << "Config has type: " << config.getType() << std::endl;
-  std::cout << "Config content:\n" << config::toString(config) << std::endl;
+  std::cout << "Config content:\n" << config << std::endl;
 
-  // Variable configs can be treated like any other as subconfigs.
+  // Virtual configs can be treated like any other as subconfigs.
   auto object_config = config::fromYamlFile<demo::ObjectWithDerivedMembers::Config>(my_root_path + "demo_factory.yaml");
 
-  std::cout << "Object config content:\n" << config::toString(object_config) << std::endl;
+  std::cout << "Object config content:\n" << object_config << std::endl;
 
   // Most importantly, they can delay the creation of the configured object, as is done in the constructor of
   // 'ObjectWithDerivedMembers'.
 
   demo::ObjectWithDerivedMembers object_with_members(object_config, 987);
   object_with_members.print();
+
+  // --------------- Using Optional Virtual Configs ----------------
+  std::cout << "\n\n----- Using Optional Virtual Configs -----\n\n" << std::endl;
+
+  // Configs can be marked optional. As it was not specified, nothing happened above.
+  YAML::Node data = YAML::LoadFile(my_root_path + "demo_factory.yaml");
+  data["optional_sub_ns"]["type"] = "DerivedD";
+
+  object_config = config::fromYaml<demo::ObjectWithDerivedMembers::Config>(data);
+  is_valid = config::isValid(object_config, true);
+  std::cout << "Config is valid: " << is_valid << std::endl;
+  std::cout << object_config << std::endl;
+
+  // Now the object will have the additional optional member.
+  demo::ObjectWithDerivedMembers object_with_optional_members(object_config, 654);
+  object_with_optional_members.print();
+
+  // Not setting required fields will result in an error listing the name of the field.
+  data["type"] = "Not a registered type";
+  object_config = config::fromYaml<demo::ObjectWithDerivedMembers::Config>(data);
+  is_valid = config::isValid(object_config, true);
+  std::cout << "Config is valid: " << is_valid << std::endl;
+
+  // --------------- Using Factory Creation Arrays ----------------
+  std::cout << "\n\n----- Using Factory Creation Arrays -----\n\n" << std::endl;
 
   return 0;
 }

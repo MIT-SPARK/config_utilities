@@ -53,7 +53,7 @@ void declare_config(MyConfig& config) {
   config::NameSpace ns("sub_ns");
   config::field(config.sub_config, "sub_config");
 
-  config::checkGT(config.i, 0, "i");
+  config::check(config.i, config::CheckMode::GT, 0, "i");
 }
 
 // Declaration of the subconfigs.
@@ -62,7 +62,7 @@ void declare_config(SubConfig& config) {
   name("SubConfig");
   field(config.f, "f");
   field(config.s, "s");
-  checkGT(config.f, 0.f, "f");
+  check(config.f, CheckMode::GT, 0.f, "f");
 }
 
 // Declare objects with configs to create from the factory.
@@ -94,7 +94,7 @@ void declare_config(DerivedA::Config& config) {
   // Declare the config using the config utilities.
   config::name("DerivedA");
   config::field(config.f, "f");
-  config::checkGE(config.f, 0.f, "f");
+  config::check(config.f, config::CheckMode::GE, 0.f, "f");
 }
 
 class DerivedB : public Base {

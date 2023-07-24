@@ -122,6 +122,7 @@ std::string AslFormatter::formatField(const FieldInfo& info, size_t indent) cons
     header_size = global_indent;
   } else if (print_width - header_size < field.length() || is_multiline) {
     // If the field does not fit entirely or is multi-line anyways just start a new line.
+    result = pruneTrailingWhitespace(result);
     result += "\n" + std::string(global_indent, ' ');
     header_size = global_indent;
   }
@@ -142,15 +143,15 @@ std::string AslFormatter::formatField(const FieldInfo& info, size_t indent) cons
       if (prev_break == 0) {
         line = line.substr(global_indent);
       }
-      result += line + "\n";
+      result += pruneTrailingWhitespace(line) + "\n";
       prev_break = linebreak + 3;
     }
   } else if (field.length() < available_length) {
     // Field fits on one line.
-    result += field + "\n";
+    result += pruneTrailingWhitespace(field) + "\n";
   } else {
     // Add as much as fits on the first line and fill the rest.
-    result += field.substr(0, available_length) + "\n";
+    result += pruneTrailingWhitespace(field.substr(0, available_length)) + "\n";
     result += wrapString(field.substr(available_length), global_indent, print_width) + "\n";
   }
   return result;
@@ -171,7 +172,7 @@ std::string AslFormatter::wrapString(const std::string& str,
   }
   const size_t length = width - indent;
   while (remaining.length() > length) {
-    result += remaining.substr(0, length) + "\n" + std::string(indent, ' ');
+    result += pruneTrailingWhitespace(remaining.substr(0, length)) + "\n" + std::string(indent, ' ');
     remaining = remaining.substr(length);
   }
   return result + remaining;

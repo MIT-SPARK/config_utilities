@@ -25,8 +25,9 @@ MetaData Visitor::setValues(ConfigT& config,
                             const YAML::Node& node,
                             const bool print_warnings,
                             const std::string& name_space,
-                            const std::string& field_name_prefix) {
-  Visitor visitor(Mode::kSet, name_space, field_name_prefix);
+                            const std::string& field_name_prefix,
+                            const std::string& current_field_name) {
+  Visitor visitor(Mode::kSet, name_space, field_name_prefix, current_field_name);
   visitor.parser.setNode(node);
   declare_config(config);
   visitor.extractErrors();
@@ -41,15 +42,16 @@ template <typename ConfigT>
 MetaData Visitor::getValues(const ConfigT& config,
                             const bool print_warnings,
                             const std::string& name_space,
-                            const std::string& field_name_prefix) {
-  Visitor visitor(Mode::kGet, name_space, field_name_prefix);
+                            const std::string& field_name_prefix,
+                            const std::string& current_field_name) {
+  Visitor visitor(Mode::kGet, name_space, field_name_prefix, current_field_name);
   // NOTE: We know that in mode kGet, the config is not modified.
   declare_config(const_cast<ConfigT&>(config));
   visitor.extractErrors();
   mergeYamlNodes(visitor.data.data, visitor.parser.getNode());
 
   if (Settings::instance().indicate_default_values) {
-    flagDefaultValues<ConfigT>(visitor.data);
+    flagDefaultValues(config, visitor.data);
   }
 
   if (print_warnings && visitor.data.hasErrors()) {
@@ -59,8 +61,10 @@ MetaData Visitor::getValues(const ConfigT& config,
 }
 
 template <typename ConfigT>
-MetaData Visitor::getChecks(const ConfigT& config) {
-  Visitor visitor(Mode::kCheck);
+MetaData Visitor::getChecks(const ConfigT& config,
+                            const std::string& field_name_prefix,
+                            const std::string& current_field_name) {
+  Visitor visitor(Mode::kCheck, "", field_name_prefix, current_field_name);
   // NOTE: We know that in mode kCheck, the config is not modified.
   declare_config(const_cast<ConfigT&>(config));
   visitor.extractErrors();
@@ -68,16 +72,23 @@ MetaData Visitor::getChecks(const ConfigT& config) {
 }
 
 template <typename ConfigT>
-MetaData Visitor::subVisit(ConfigT& config, const bool print_warnings, const std::string& field_name_prefix) {
+MetaData Visitor::subVisit(ConfigT& config,
+                           const bool print_warnings,
+                           const std::string& field_name_prefix,
+                           const std::string& current_field_name) {
   Visitor& current_visitor = Visitor::instance();
   switch (current_visitor.mode) {
     case Visitor::Mode::kGet:
-      return getValues(config, print_warnings, current_visitor.name_space, field_name_prefix);
+      return getValues(config, print_warnings, current_visitor.name_space, field_name_prefix, current_field_name);
     case Visitor::Mode::kSet:
-      return setValues(
-          config, current_visitor.parser.getNode(), print_warnings, current_visitor.name_space, field_name_prefix);
+      return setValues(config,
+                       current_visitor.parser.getNode(),
+                       print_warnings,
+                       current_visitor.name_space,
+                       field_name_prefix,
+                       current_field_name);
     case Visitor::Mode::kCheck:
-      return getChecks(config);
+      return getChecks(config, field_name_prefix, current_field_name);
     default:
 
       return MetaData();
@@ -155,46 +166,6 @@ void Visitor::visitEnumField(EnumT& field,
   }
 }
 
-template <typename T>
-void Visitor::visitCheck(Visitor::CheckMode mode, const T& param, const T& value, const std::string& name) {
-  Visitor& visitor = Visitor::instance();
-  if (visitor.mode != Visitor::Mode::kCheck) {
-    return;
-  }
-  visitor.checker.setFieldNamePrefix(visitor.field_name_prefix);
-
-  switch (mode) {
-    case Visitor::CheckMode::kGT:
-      visitor.checker.checkGT(param, value, name);
-      return;
-    case Visitor::CheckMode::kGE:
-      visitor.checker.checkGE(param, value, name);
-      return;
-    case Visitor::CheckMode::kLT:
-      visitor.checker.checkLT(param, value, name);
-      return;
-    case Visitor::CheckMode::kLE:
-      visitor.checker.checkLE(param, value, name);
-      return;
-    case Visitor::CheckMode::kEQ:
-      visitor.checker.checkEq(param, value, name);
-      return;
-    case Visitor::CheckMode::kNE:
-      visitor.checker.checkNE(param, value, name);
-      return;
-  }
-}
-
-template <typename T>
-void Visitor::visitCheckInRange(const T& param, const T& lower, const T& upper, const std::string& name) {
-  Visitor& visitor = Visitor::instance();
-  if (visitor.mode != Visitor::Mode::kCheck) {
-    return;
-  }
-  visitor.checker.setFieldNamePrefix(visitor.field_name_prefix);
-  visitor.checker.checkInRange(param, lower, upper, name);
-}
-
 template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
 void Visitor::visitField(ConfigT& config, const std::string& field_name, const std::string& /* unit */) {
   // Visits a subconfig field.
@@ -208,12 +179,10 @@ void Visitor::visitField(ConfigT& config, const std::string& field_name, const s
   FieldInfo& info = data.field_infos.emplace_back();
   info.name = field_name;
   info.subconfig_id = data.sub_configs.size();
-  data.current_field_name = field_name;
-
   // Visit subconfig.
   const std::string new_prefix =
       visitor.field_name_prefix + (Settings::instance().index_subconfig_field_names ? field_name + "." : "");
-  MetaData& new_data = data.sub_configs.emplace_back(Visitor::subVisit(config, false, new_prefix));
+  MetaData& new_data = data.sub_configs.emplace_back(Visitor::subVisit(config, false, new_prefix, field_name));
 
   // Aggregate data.
   if (visitor.mode == Visitor::Mode::kGet) {
@@ -258,14 +227,29 @@ void Visitor::visitBase(ConfigT& config) {
   }
 }
 
+template <typename ConfigT, typename std::enable_if<!is_virtual_config<ConfigT>::value, bool>::type = true>
+MetaData Visitor::getDefaults(const ConfigT& config) {
+  Visitor visitor(Mode::kGetDefaults);
+  ConfigT default_config;
+  declare_config(default_config);
+  return visitor.data;
+}
+
+template <typename ConfigT, typename std::enable_if<is_virtual_config<ConfigT>::value, bool>::type = true>
+MetaData Visitor::getDefaults(const ConfigT& config) {
+  Visitor visitor(Mode::kGetDefaults);
+  if (config.isSet()) {
+    auto default_config = config.config_->createDefault();
+    default_config->onDeclareConfig();
+  }
+  return visitor.data;
+}
+
 template <typename ConfigT>
-void Visitor::flagDefaultValues(MetaData& data) {
+void Visitor::flagDefaultValues(const ConfigT& config, MetaData& data) {
   // Get defaults from a default constructed ConfigT. Extract the default values of all non-config fields. Subconfigs
   // are managed separately.
-  ConfigT default_config;
-  Visitor visitor(Mode::kGetDefaults);
-  declare_config(default_config);
-  const MetaData& default_data = visitor.data;
+  const MetaData default_data = getDefaults(config);
 
   // Compare all fields. These should always be in the same order if they are from the same config, but exclude
   // subconfigs.
@@ -274,9 +258,9 @@ void Visitor::flagDefaultValues(MetaData& data) {
     if (info.subconfig_id >= 0) {
       continue;
     }
-   // Corresponding field info should always exist
-   const auto& default_info = default_data.field_infos.at(i);
-   ++i;
+    // Corresponding field info should always exist
+    const auto& default_info = default_data.field_infos.at(i);
+    ++i;
     // NOTE(lschmid): Operator YAML::Node== checks for identity, not equality. Since these are all scalars, comparing
     // the formatted strings should be identical.
     if (internal::dataToString(info.value) == internal::dataToString(default_info.value)) {

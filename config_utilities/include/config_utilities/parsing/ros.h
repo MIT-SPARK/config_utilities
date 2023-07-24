@@ -109,7 +109,7 @@ ConfigT fromRos(const ros::NodeHandle& nh, const std::string& name_space = "") {
  */
 template <typename BaseT, typename... ConstructorArguments>
 std::unique_ptr<BaseT> createFromROS(const ros::NodeHandle& nh, ConstructorArguments... args) {
-  return internal::Factory::createWithConfig<BaseT>(internal::rosToYaml(nh), args...);
+  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(internal::rosToYaml(nh), args...);
 }
 
 /**
@@ -132,7 +132,7 @@ std::unique_ptr<BaseT> createFromROSWithNamespace(const ros::NodeHandle& nh,
                                                   const std::string& name_space,
                                                   ConstructorArguments... args) {
   ros::NodeHandle ns_nh = ros::NodeHandle(nh, name_space);
-  return internal::Factory::createWithConfig<BaseT>(internal::rosToYaml(ns_nh), args...);
+  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(internal::rosToYaml(ns_nh), args...);
 }
 
 }  // namespace config

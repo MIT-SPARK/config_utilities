@@ -13,8 +13,11 @@ Visitor::~Visitor() { instances.pop_back(); }
 
 bool Visitor::hasInstance() { return !instances.empty(); }
 
-Visitor::Visitor(Mode _mode, std::string _name_space, std::string _name_prefix)
-    : mode(_mode), name_space(std::move(_name_space)), field_name_prefix(std::move(_name_prefix)) {
+Visitor::Visitor(Mode _mode,
+                 const std::string& _name_space,
+                 const std::string& _name_prefix,
+                 const std::string& _current_field_name)
+    : mode(_mode), name_space(_name_space), field_name_prefix(_name_prefix), current_field_name(_current_field_name) {
   // Create instances in a stack per thread and store the reference to it.
   instances.emplace_back(this);
 }
@@ -45,13 +48,13 @@ void Visitor::visitName(const std::string& name) {
   }
 }
 
-void Visitor::visitCheckCondition(bool condition, const std::string& error_message) {
+void Visitor::visitCheck(const CheckBase& check) {
   Visitor& visitor = Visitor::instance();
   if (visitor.mode != Visitor::Mode::kCheck) {
     return;
   }
   visitor.checker.setFieldNamePrefix(visitor.field_name_prefix);
-  visitor.checker.checkCondition(condition, error_message);
+  visitor.checker.checkCondition(check);
 }
 
 std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set, bool is_optional, const std::string& type) {
@@ -61,8 +64,8 @@ std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set, bool is_optio
   if (visitor.mode == Visitor::Mode::kCheck) {
     if (!is_set && !is_optional) {
       // The config is required and not set.
-      visitor.checker.checkCondition(
-          false, "Variable config '" + visitor.data.current_field_name + "' is required but not set.");
+      const std::string field_name = visitor.current_field_name.empty() ? "" : "'" + visitor.current_field_name + "' ";
+      visitor.checker.markFailedCheck("Virtual config " + field_name + "is not set and not marked optional.");
     }
   }
 

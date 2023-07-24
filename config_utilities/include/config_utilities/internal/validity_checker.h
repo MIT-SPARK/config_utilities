@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include "config_utilities/checks.h"
+
 namespace config::internal {
 
 /**
@@ -21,75 +23,13 @@ class ValidityChecker {
 
   void setFieldNamePrefix(const std::string& prefix) { name_prefix_ = prefix; }
 
-  template <typename T>
-  void checkGT(const T& param, const T& value, const std::string& name) {
-    if (param <= value) {
-      std::stringstream ss;
-      ss << "Param '" << name_prefix_ + name << "' is expected > '" << value << "' (is: '" << param << "').";
-      warnings_.emplace_back(ss.str());
+  void checkCondition(const CheckBase& check) {
+    if (!check) {
+      warnings_.emplace_back(check.toString(name_prefix_));
     }
   }
 
-  template <typename T>
-  void checkGE(const T& param, const T& value, const std::string& name) {
-    if (param < value) {
-      std::stringstream ss;
-      ss << "Param '" << name_prefix_ + name << "' is expected >= '" << value << "' (is: '" << param << "').";
-      warnings_.emplace_back(ss.str());
-    }
-  }
-
-  template <typename T>
-  void checkLT(const T& param, const T& value, const std::string& name) {
-    if (param >= value) {
-      std::stringstream ss;
-      ss << "Param '" << name_prefix_ + name << "' is expected < '" << value << "' (is: '" << param << "').";
-      warnings_.emplace_back(ss.str());
-    }
-  }
-
-  template <typename T>
-  void checkLE(const T& param, const T& value, const std::string& name) {
-    if (param > value) {
-      std::stringstream ss;
-      ss << "Param '" << name_prefix_ + name << "' is expected <= '" << value << "' (is: '" << param << "').";
-      warnings_.emplace_back(ss.str());
-    }
-  }
-
-  template <typename T>
-  void checkEq(const T& param, const T& value, const std::string& name) {
-    if (param != value) {
-      std::stringstream ss;
-      ss << "Param '" << name_prefix_ + name << "' is expected to be '" << value << "' (is: '" << param << "').";
-      warnings_.emplace_back(ss.str());
-    }
-  }
-
-  template <typename T>
-  void checkNE(const T& param, const T& value, const std::string& name) {
-    if (param == value) {
-      std::stringstream ss;
-      ss << "Param '" << name_prefix_ + name << "' is expected to be different from '" << value << "'.";
-      warnings_.emplace_back(ss.str());
-    }
-  }
-
-  template <typename T>
-  void checkInRange(const T& param, const T& lower, const T& higher, const std::string& name) {
-    if (param < lower || param > higher) {
-      std::stringstream ss;
-      ss << "Param '" << name_prefix_ + name << "' is expected to be within [" << lower << ", " << higher << "] (is: '"
-         << param << "').";
-      warnings_.emplace_back(ss.str());
-    }
-  }
-
-  void checkCondition(bool condition, const std::string& warning) {
-    if (!condition) {
-      warnings_.emplace_back(warning);
-    }
-  }
+  void markFailedCheck(const std::string& message) { warnings_.emplace_back(message); }
 
   void resetWarnings() { warnings_.clear(); }
   std::vector<std::string>& warnings() { return warnings_; }
