@@ -1,11 +1,18 @@
 #pragma once
 
-#include <functional>
-#include <optional>
+#include <memory>
 #include <string>
+#include <typeinfo>
 #include <vector>
 
 #include "config_utilities/internal/meta_data.h"
+
+// clang-format off
+#ifdef __GNUG__
+#include <cstdlib>
+#include <cxxabi.h>
+#endif
+// clang-format on
 
 namespace config::internal {
 
@@ -66,6 +73,23 @@ std::string dataToString(const YAML::Node& data);
  * @returns The vector of positions of the substring in the string.
  */
 std::vector<size_t> findAllSubstrings(const std::string& text, const std::string& substring);
+
+/**
+ * @brief Get a human readable type name of a type if cmopiled with GCC, otherwise default to the mangled typename.
+ * @tparam T The type to get the name of.
+ */
+template <typename T>
+inline std::string typeName() {
+  // See https://en.cppreference.com/w/cpp/types/type_info/name for more details.
+  const char* name = typeid(T).name();
+#ifdef __GNUG__
+  int status = -4;
+  std::unique_ptr<char, void (*)(void*)> res{abi::__cxa_demangle(name, NULL, NULL, &status), std::free};
+  return (status == 0) ? res.get() : name;
+#else
+  return name;
+#endif
+}
 
 /**
  * @brief Trim any trailing spaces at the end of a string.
