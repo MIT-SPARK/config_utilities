@@ -100,4 +100,19 @@ std::vector<size_t> findAllSubstrings(const std::string& text, const std::string
   return result;
 }
 
+std::string pruneTrailingWhitespace(const std::string& text) {
+  size_t i;
+  for (i = 0; i < text.size(); ++i) {
+    if (text.at(text.size() - i - 1) != ' ') {
+      break;
+    }
+  }
+
+  if (!i) {
+    return text;
+  }
+
+  return text.substr(0, text.size() - i);
+}
+
 }  // namespace config::internal
