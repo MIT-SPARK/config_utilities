@@ -28,7 +28,7 @@ void declare_config(BaseConfig& config) {
   name("BaseConfig");
   field(config.i, "i");
   field(config.f, "f");
-  checkGT(config.f, 0.f, "f");
+  check(config.f, CheckMode::GT, 0.f, "f");
 }
 
 class BaseObject {
@@ -53,7 +53,7 @@ void declare_config(DifferentBaseConfig& config) {
   // Use config::base() to declare that this config inherits from another config.
   base<BaseConfig>(config);
   field(config.vec, "vec");
-  checkEQ(config.vec.size(), size_t(3), "vec.size()");
+  check(config.vec.size(), CheckMode::EQ, 3, "vec.size()");
 }
 
 struct AnotherBaseConfig : virtual public BaseConfig {
@@ -65,7 +65,7 @@ void declare_config(AnotherBaseConfig& config) {
   name("AnotherBaseConfig");
   base<BaseConfig>(config);
   field(config.b, "b");
-  checkEQ(config.b, true, "b");
+  check(config.b, CheckMode::EQ, true, "b");
 }
 
 // Declare a derived config and object.
@@ -82,7 +82,7 @@ void declare_config(DerivedConfig& config) {
   base<AnotherBaseConfig>(config);
   field(config.d, "d");
   field(config.s, "s");
-  checkGT(config.d, 0.0, "d");
+  check(config.d, CheckMode::GT, 0.0, "d");
 }
 
 class DerivedObject : public BaseObject {

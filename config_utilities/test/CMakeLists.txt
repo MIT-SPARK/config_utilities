@@ -19,12 +19,10 @@ add_executable(
   tests/yaml_parsing.cpp
   tests/asl_formatter.cpp
   tests/inheritance.cpp
+  tests/string_utils.cpp
 )
 target_include_directories(test_${PROJECT_NAME} PRIVATE include)
 target_link_libraries(test_${PROJECT_NAME} ${PROJECT_NAME} GTest::gtest_main)
-
-include(GoogleTest)
-gtest_discover_tests(test_${PROJECT_NAME})
 
 if(${CONFIG_UTILS_INSTALL_TESTS})
   # note that ros uses libdir to handle finding executables by package, but this isn't

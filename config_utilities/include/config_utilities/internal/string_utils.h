@@ -67,4 +67,12 @@ std::string dataToString(const YAML::Node& data);
  */
 std::vector<size_t> findAllSubstrings(const std::string& text, const std::string& substring);
 
+/**
+ * @brief Trim any trailing spaces at the end of a string.
+ *
+ * @param text The line to be trimmed.
+ * @returns A version of the string with all trailing whitespace stripped
+ */
+std::string pruneTrailingWhitespace(const std::string& text);
+
 }  // namespace config::internal

@@ -155,46 +155,6 @@ void Visitor::visitEnumField(EnumT& field,
   }
 }
 
-template <typename T>
-void Visitor::visitCheck(Visitor::CheckMode mode, const T& param, const T& value, const std::string& name) {
-  Visitor& visitor = Visitor::instance();
-  if (visitor.mode != Visitor::Mode::kCheck) {
-    return;
-  }
-  visitor.checker.setFieldNamePrefix(visitor.field_name_prefix);
-
-  switch (mode) {
-    case Visitor::CheckMode::kGT:
-      visitor.checker.checkGT(param, value, name);
-      return;
-    case Visitor::CheckMode::kGE:
-      visitor.checker.checkGE(param, value, name);
-      return;
-    case Visitor::CheckMode::kLT:
-      visitor.checker.checkLT(param, value, name);
-      return;
-    case Visitor::CheckMode::kLE:
-      visitor.checker.checkLE(param, value, name);
-      return;
-    case Visitor::CheckMode::kEQ:
-      visitor.checker.checkEq(param, value, name);
-      return;
-    case Visitor::CheckMode::kNE:
-      visitor.checker.checkNE(param, value, name);
-      return;
-  }
-}
-
-template <typename T>
-void Visitor::visitCheckInRange(const T& param, const T& lower, const T& upper, const std::string& name) {
-  Visitor& visitor = Visitor::instance();
-  if (visitor.mode != Visitor::Mode::kCheck) {
-    return;
-  }
-  visitor.checker.setFieldNamePrefix(visitor.field_name_prefix);
-  visitor.checker.checkInRange(param, lower, upper, name);
-}
-
 template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
 void Visitor::visitField(ConfigT& config, const std::string& field_name, const std::string& /* unit */) {
   // Visits a subconfig field.

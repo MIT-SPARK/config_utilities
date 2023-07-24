@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include "config_utilities/checks.h"
 #include "config_utilities/internal/namespacing.h"
 #include "config_utilities/internal/visitor.h"
 #include "config_utilities/traits.h"
@@ -98,81 +99,68 @@ void base(ConfigT& config) {
 }
 
 /**
+ * @brief Execute a binary comparison check between the param and the value
+ *
+ * For example, if you wanted to validate that a param is greater than some value, you
+ * would use the check `checkBinary<std::greater>(...)`. Note that this casts the value
+ * to the same type as the parameter, so there may be some loss of precision in certain
+ * cases.
+ *
+ * @tparam Compare Binary comparison functor to use
+ * @tparam T Type of the parameter to be checked (inferred)
+ * @tparam P Type of the value to check against (inferred)
+ * @param param Value of the parameter to be checked
+ * @param value Value to check against
+ * @param name Name of the parameter to be reported in warning
+ */
+template <typename Compare, typename T, typename P>
+void checkBinary(const T& param, const P& value, const std::string& name) {
+  internal::Visitor::visitCheck(internal::BinaryCheck<T, Compare>(param, static_cast<T>(value), name));
+}
+
+/**
+ * @brief Comparison mode
+ */
+enum class CheckMode {
+  GT /**< greater than (>) */,
+  GE /**< greater than or equal to (>=) */,
+  LT /**< less than (<) */,
+  LE /**< less than or equal to (<=) */,
+  EQ /** equal to (==) */,
+  NE /** not equal to (!=) */
+};
+
+/**
  * @brief Execute a greater than (GT) check, i.e. param > value.
  *
  * @tparam T type of the parameter to be checked.
  * @param param Value of the parameter to be compared.
+ * @param mode Comparison mode
  * @param value Value of the reference to compare to.
  * @param name Name of the parameter to be reported in the error summary.
  */
-template <typename T>
-void checkGT(const T& param, const T& value, const std::string& name) {
-  internal::Visitor::visitCheck(internal::Visitor::CheckMode::kGT, param, value, name);
-}
-
-/**
- * @brief Execute a greater equal (GE) check, i.e. param >= value.
- *
- * @tparam T type of the parameter to be checked.
- * @param param Value of the parameter to be compared.
- * @param value Value of the reference to compare to.
- * @param name Name of the parameter to be reported in the error summary.
- */
-template <typename T>
-void checkGE(const T& param, const T& value, const std::string& name) {
-  internal::Visitor::visitCheck(internal::Visitor::CheckMode::kGE, param, value, name);
-}
-
-/**
- * @brief Execute a less than (LT) check, i.e. param < value.
- *
- * @tparam T type of the parameter to be checked.
- * @param param Value of the parameter to be compared.
- * @param value Value of the reference to compare to.
- * @param name Name of the parameter to be reported in the error summary.
- */
-template <typename T>
-void checkLT(const T& param, const T& value, const std::string& name) {
-  internal::Visitor::visitCheck(internal::Visitor::CheckMode::kLT, param, value, name);
-}
-
-/**
- * @brief Execute a less equal (LE) check, i.e. param <= value.
- *
- * @tparam T type of the parameter to be checked.
- * @param param Value of the parameter to be compared.
- * @param value Value of the reference to compare to.
- * @param name Name of the parameter to be reported in the error summary.
- */
-template <typename T>
-void checkLE(const T& param, const T& value, const std::string& name) {
-  internal::Visitor::visitCheck(internal::Visitor::CheckMode::kLE, param, value, name);
-}
-
-/**
- * @brief Execute an equal (EQ) check, i.e. param == value.
- *
- * @tparam T type of the parameter to be checked.
- * @param param Value of the parameter to be compared.
- * @param value Value of the reference to compare to.
- * @param name Name of the parameter to be reported in the error summary.
- */
-template <typename T>
-void checkEQ(const T& param, const T& value, const std::string& name) {
-  internal::Visitor::visitCheck(internal::Visitor::CheckMode::kEQ, param, value, name);
-}
-
-/**
- * @brief Execute a not equal (NE) check, i.e. param != value.
- *
- * @tparam T type of the parameter to be checked.
- * @param param Value of the parameter to be compared.
- * @param value Value of the reference to compare to.
- * @param name Name of the parameter to be reported in the error summary.
- */
-template <typename T>
-void checkNE(const T& param, const T& value, const std::string& name) {
-  internal::Visitor::visitCheck(internal::Visitor::CheckMode::kNE, param, value, name);
+template <typename T, typename P>
+void check(const T& param, CheckMode mode, const P& value, const std::string& name) {
+  switch (mode) {
+    case CheckMode::GT:
+      checkBinary<std::greater<T>>(param, value, name);
+      break;
+    case CheckMode::GE:
+      checkBinary<std::greater_equal<T>>(param, value, name);
+      break;
+    case CheckMode::LT:
+      checkBinary<std::less<T>>(param, value, name);
+      break;
+    case CheckMode::LE:
+      checkBinary<std::less_equal<T>>(param, value, name);
+      break;
+    case CheckMode::EQ:
+      checkBinary<std::equal_to<T>>(param, value, name);
+      break;
+    case CheckMode::NE:
+      checkBinary<std::not_equal_to<T>>(param, value, name);
+      break;
+  }
 }
 
 /**
@@ -183,10 +171,17 @@ void checkNE(const T& param, const T& value, const std::string& name) {
  * @param lower Lower bound of valid values.
  * @param higher Higher bound of valid values.
  * @param name Name of the parameter to be reported in the error summary.
+ * @param lower_inclusive Whether the lower end of the range range is closed (i.e., [low, high] or open (low, high])
+ * @param upper_inclusive Whether the upper end of the range range is closed (i.e., [low, high] or open [low, high))
  */
 template <typename T>
-void checkInRange(const T& param, const T& lower, const T& higher, const std::string& name) {
-  internal::Visitor::visitCheckInRange(param, lower, higher, name);
+void checkInRange(const T& param,
+                  const T& lower,
+                  const T& higher,
+                  const std::string& name,
+                  bool lower_inclusive = true,
+                  bool upper_inclusive = true) {
+  internal::Visitor::visitCheck(internal::CheckRange(param, lower, higher, name, lower_inclusive, upper_inclusive));
 }
 
 /**
@@ -196,7 +191,35 @@ void checkInRange(const T& param, const T& lower, const T& higher, const std::st
  * @param warning Message to be reported in the error summary.
  */
 inline void checkCondition(bool condition, const std::string& warning) {
-  internal::Visitor::visitCheckCondition(condition, warning);
+  internal::Visitor::visitCheck(internal::Check(condition, warning));
+}
+
+/**
+ * @brief Execute a custom check
+ *
+ * @param check Custom check class to validate
+ */
+inline void check(const internal::CheckBase& check) { internal::Visitor::visitCheck(check); }
+
+/**
+ * @brief Execute a custom check
+ * @tparam CheckType Check type to actually perform
+ * @param args Arguments to check constructor
+ */
+template <typename CheckType, typename... Ts>
+inline void check(Ts... args) {
+  internal::Visitor::visitCheck(CheckType(std::forward<Ts>(args)...));
+}
+
+/**
+ * @brief Execute a custom check
+ * @note Only differs in allowing parameter inference for template check types
+ * @tparam CheckType Check type to actually perform
+ * @param args Arguments to check constructor
+ */
+template <template <typename...> typename CheckType, typename... Ts>
+inline void check(Ts... args) {
+  internal::Visitor::visitCheck(CheckType(std::forward<Ts>(args)...));
 }
 
 }  // namespace config
