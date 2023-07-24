@@ -28,18 +28,27 @@ TEST(Conversions, CharConversionCorrect) {
   std::string too_long = "hello";
   std::string empty = "";
 
-  // TODO(nathan) test for logging
-  EXPECT_EQ(CharConversion::fromIntermediate(normal), 'h');
-  EXPECT_EQ(CharConversion::fromIntermediate(too_long), 'h');
-  EXPECT_EQ(CharConversion::fromIntermediate(empty), '\0');
+  std::string error_string = "";
+  EXPECT_EQ(CharConversion::fromIntermediate(normal, error_string), 'h');
+  EXPECT_TRUE(error_string.empty());
+
+  error_string = "";
+  EXPECT_EQ(CharConversion::fromIntermediate(too_long, error_string), 'h');
+  EXPECT_TRUE(!error_string.empty());
+
+  error_string = "";
+  EXPECT_EQ(CharConversion::fromIntermediate(empty, error_string), '\0');
+  EXPECT_TRUE(!error_string.empty());
 }
 
 // tests that we can default autodetection of the number of cores
 TEST(Conversions, ThreadNumConversionCorrect) {
   int auto_detect = -1;
   int manually_specified = 2;
-  EXPECT_GT(ThreadNumConversion::fromIntermediate(auto_detect), 0);
-  EXPECT_EQ(ThreadNumConversion::fromIntermediate(manually_specified), manually_specified);
+
+  std::string error_string = "";
+  EXPECT_GT(ThreadNumConversion::fromIntermediate(auto_detect, error_string), 0);
+  EXPECT_EQ(ThreadNumConversion::fromIntermediate(manually_specified, error_string), manually_specified);
 }
 
 // tests that conversions work as expected when parsing a config

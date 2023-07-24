@@ -107,7 +107,14 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
   if (visitor.mode == Visitor::Mode::kSet) {
     auto intermediate = Conversion::toIntermediate(field);  // make sure current value isn't lost
     visitor.parser.fromYaml(field_name, intermediate, visitor.name_space, visitor.field_name_prefix);
-    field = Conversion::fromIntermediate(intermediate);
+
+    std::string error_string;
+    field = Conversion::fromIntermediate(intermediate, error_string);
+    if (!error_string.empty()) {
+      std::stringstream ss;
+      ss << "Failed to parse param '" + visitor.field_name_prefix << field_name << "': " << error_string;
+      visitor.data.errors.push_back(ss.str());
+    }
   }
 
   if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetDefaults) {
