@@ -171,7 +171,7 @@ int main(int argc, char** argv) {
   const std::string my_root_path = std::string(argv[1]) + "/";
 
   // --------------- Creating strig-identified objects ----------------
-  std::cout << "\n\n----- Creating strig-identified objects -----\n\n" << std::endl;
+  std::cout << "\n\n----- Creating string-identified objects -----\n\n" << std::endl;
 
   // Create an object of type Base using the factory.
   const std::string type = "DerivedA";
