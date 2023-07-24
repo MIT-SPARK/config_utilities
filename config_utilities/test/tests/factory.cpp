@@ -4,6 +4,6 @@
 
 namespace config::test {
 
-TEST(Factory, createObject) {}
+TEST(Factory, createObject) { EXPECT_TRUE(true); }
 
 }  // namespace config::test

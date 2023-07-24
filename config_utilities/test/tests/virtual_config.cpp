@@ -4,6 +4,6 @@
 
 namespace config::test {
 
-TEST(VirtualConfig, isSet) {}
+TEST(VirtualConfig, isSet) { EXPECT_TRUE(true); }
 
 }  // namespace config::test

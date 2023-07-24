@@ -90,9 +90,9 @@ struct Visitor {
   // to be used within the 'declare_config()' function, whereas 'create()' is to be used to extract data from a struct
   // by calling 'declare_config()'.
   explicit Visitor(Mode _mode,
-                   std::string _name_space = "",
-                   std::string _name_prefix = "",
-                   std::string _current_field_name = "");
+                   const std::string& _name_space = "",
+                   const std::string& _name_prefix = "",
+                   const std::string& _current_field_name = "");
 
   static Visitor& instance();
 
