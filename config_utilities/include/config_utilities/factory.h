@@ -4,13 +4,13 @@
 #include <memory>
 #include <sstream>
 #include <string>
-#include <typeinfo>
 #include <unordered_map>
 #include <utility>
 
 #include <yaml-cpp/yaml.h>
 
 #include "config_utilities/internal/logger.h"
+#include "config_utilities/internal/string_utils.h"
 #include "config_utilities/internal/visitor.h"
 #include "config_utilities/settings.h"
 #include "config_utilities/traits.h"
@@ -78,9 +78,9 @@ struct ModuleMapBase {
 // Helper function to get human readable type infos.
 template <class BaseT, typename... Args>
 inline std::string typeInfo() {
-  std::string type_info = "BaseT='" + std::string(typeid(BaseT).name()) + "' and ConstructorArguments={";
+  std::string type_info = "BaseT='" + typeName<BaseT>() + "' and ConstructorArguments={";
   std::stringstream ss;
-  ((ss << typeid(Args).name() << "', '"), ...);
+  ((ss << typeName<Args>() << "', '"), ...);
   const std::string arguments = ss.str();
   if (!arguments.empty()) {
     type_info += "'" + arguments.substr(0, arguments.size() - 3);
@@ -98,7 +98,7 @@ inline bool getTypeImpl(const YAML::Node& data, std::string& type, const std::st
     return false;
   }
   try {
-    type = data[Settings::instance().factory_type_param_name].as<std::string>();
+    type = data[param_name].as<std::string>();
   } catch (const YAML::Exception& e) {
     return false;
   }
@@ -155,7 +155,7 @@ struct ConfigFactory {
   static std::unique_ptr<ConfigWrapper> create(const std::string& type) {
     if (ModuleMap::hasEntry(
             type,
-            "BaseT='" + std::string(typeid(BaseT).name()) + "'",
+            "BaseT='" + typeName<BaseT>() + "'",
             "config::RegistrationWithConfig<BaseT, DerivedT, DerivedConfigT, ConstructorArguments...>")) {
       const FactoryMethod creation_method = ModuleMap::getEntry(type);
       return std::unique_ptr<ConfigWrapper>(creation_method());

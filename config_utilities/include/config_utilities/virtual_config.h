@@ -73,6 +73,9 @@ class VirtualConfig {
    */
   template <typename... ConstructorArguments>
   std::unique_ptr<BaseT> create(ConstructorArguments... args) const {
+    if (!config_) {
+      return nullptr;
+    }
     // NOTE(lschmid): This is not the most beautiful but fairly general. Deserialize the config to YAML and use that to
     // create the object with the standard factory. We assume that every type that can be serialized into a config can
     // also be de-serialized so this should not result in any warnings, we print them anyways to be sure. The factory

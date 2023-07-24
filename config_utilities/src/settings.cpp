@@ -8,10 +8,9 @@
 
 namespace config::internal {
 
-Settings& Settings::instance() {
-  static Settings settings;
-  return settings;
-}
+Settings Settings::instance_;
+
+Settings& Settings::instance() { return instance_; }
 
 void Settings::setLogger(const std::string& name) {
   if (name == "none") {

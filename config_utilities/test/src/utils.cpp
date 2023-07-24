@@ -54,4 +54,15 @@ void TestLogger::logImpl(const internal::Severity severity, const std::string& m
   messages_.emplace_back(severity, message);
 }
 
+std::shared_ptr<TestLogger> TestLogger::create() {
+  auto logger = std::make_shared<TestLogger>();
+  internal::Logger::setLogger(logger);
+  return logger;
+}
+
+void TestLogger::print() const {
+  for (const auto& message : messages_) {
+    std::cout << internal::severityToString(message.first) << ": " << message.second << std::endl;
+  }
+}
 }  // namespace config::test

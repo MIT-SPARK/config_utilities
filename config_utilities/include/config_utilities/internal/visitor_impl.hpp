@@ -61,8 +61,10 @@ MetaData Visitor::getValues(const ConfigT& config,
 }
 
 template <typename ConfigT>
-MetaData Visitor::getChecks(const ConfigT& config, const std::string& current_field_name) {
-  Visitor visitor(Mode::kCheck, "", "", current_field_name);
+MetaData Visitor::getChecks(const ConfigT& config,
+                            const std::string& field_name_prefix,
+                            const std::string& current_field_name) {
+  Visitor visitor(Mode::kCheck, "", field_name_prefix, current_field_name);
   // NOTE: We know that in mode kCheck, the config is not modified.
   declare_config(const_cast<ConfigT&>(config));
   visitor.extractErrors();
@@ -86,7 +88,7 @@ MetaData Visitor::subVisit(ConfigT& config,
                        field_name_prefix,
                        current_field_name);
     case Visitor::Mode::kCheck:
-      return getChecks(config, current_field_name);
+      return getChecks(config, field_name_prefix, current_field_name);
     default:
 
       return MetaData();
@@ -296,9 +298,9 @@ void Visitor::flagDefaultValues(const ConfigT& config, MetaData& data) {
     if (info.subconfig_id >= 0) {
       continue;
     }
-   // Corresponding field info should always exist
-   const auto& default_info = default_data.field_infos.at(i);
-   ++i;
+    // Corresponding field info should always exist
+    const auto& default_info = default_data.field_infos.at(i);
+    ++i;
     // NOTE(lschmid): Operator YAML::Node== checks for identity, not equality. Since these are all scalars, comparing
     // the formatted strings should be identical.
     if (internal::dataToString(info.value) == internal::dataToString(default_info.value)) {

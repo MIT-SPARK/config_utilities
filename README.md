@@ -51,10 +51,16 @@ roslaunch config_utilities demo_ros.launch
 ```
 
 # Known Limitatons
-- [ ] Minor: Virtual Configs currently do not print defaults. Possible remedies: Make Virtual Configs templated only on creation, or integrate getting default values into C++ struct visitation.
+- [x] Minor: Virtual Configs currently do not print defaults. Possible remedies: Make Virtual Configs templated only on creation, or integrate getting default values into C++ struct visitation.
 
-# Sort of nice but niche feature requests
+# Sort of nice but not high prio feature requests
 - [ ] Refactor Config checking to get names and types.
 - [x] Make visitors sequential and some extra clean up.
 - [x] Clean up linking, install, and deps.
 - [x] Improve perfrmance (probably reduce yaml copies and check const-ness of yaml nodes)
+- [ ] Revamp demos.
+- [ ] List-based factory creation for processors
+- [x] Make global settings resettable
+- [ ] Make global settings itself a config that can be loaded/saved.
+- [ ] Json support?
+- [ ] Github CI / Release?

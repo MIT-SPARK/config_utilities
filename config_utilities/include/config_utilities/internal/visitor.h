@@ -43,7 +43,9 @@ struct Visitor {
 
   // Execute all checks specified in the config.
   template <typename ConfigT>
-  static MetaData getChecks(const ConfigT& config, const std::string& current_field_name = "");
+  static MetaData getChecks(const ConfigT& config,
+                            const std::string& field_name_prefix = "",
+                            const std::string& current_field_name = "");
 
   // Interfaces for the config declaration interfaces to to expose their info to the visitor.
   static void visitName(const std::string& name);

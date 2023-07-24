@@ -211,8 +211,7 @@ TEST(Namespacing, joinNamespace) {
 }
 
 TEST(Namespacing, enterNamespace) {
-  auto logger = std::make_shared<TestLogger>();
-  internal::Logger::setLogger(logger);
+  auto logger = TestLogger::create();
   Ns ns;
   internal::Visitor::setValues(ns, YAML::Node());
   checkNS(ns);
