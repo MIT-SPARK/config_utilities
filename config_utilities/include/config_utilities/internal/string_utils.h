@@ -5,13 +5,14 @@
 #include <typeinfo>
 #include <vector>
 
+#include "config_utilities/internal/meta_data.h"
+
+// clang-format off
 #ifdef __GNUG__
 #include <cstdlib>
-
 #include <cxxabi.h>
 #endif
-
-#include "config_utilities/internal/meta_data.h"
+// clang-format on
 
 namespace config::internal {
 
