@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>config_utilities</name>
-  <version>0.0.0</version>
+  <version>0.0.1</version>
   <description>Tools for working with C++ config structs.</description>
 
   <author email="lschmid@mit.edu">Lukas Schmid</author>
@@ -9,14 +9,9 @@
 
   <license>BSD</license>
 
-  <buildtool_depend>catkin</buildtool_depend>
-  <buildtool_depend>catkin_simple</buildtool_depend>
-
-  <!-- Optional Dependencies for optional parts of the library. -->
-  <depend>glog_catkin</depend>  <!-- logging/glog -->
-  <depend>eigen_catkin</depend>  <!-- types/eigen_matrix -->
-  <depend>roscpp</depend>  <!-- parsing/ros, logging/ros -->
+  <buildtool_depend>cmake</buildtool_depend>
 
   <export>
+      <build_type>cmake</build_type>
   </export>
 </package>

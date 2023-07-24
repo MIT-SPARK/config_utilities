@@ -7,39 +7,26 @@
 
 namespace config::internal {
 
-Visitor::~Visitor() {
-  std::lock_guard<std::mutex> lock(instance_mutex);
-  instances.erase(id);
-}
+thread_local std::vector<Visitor*> Visitor::instances = {};
 
-Visitor Visitor::create() {
-  const std::thread::id id = std::this_thread::get_id();
-  return Visitor(id);
+Visitor::~Visitor() { instances.pop_back(); }
+
+bool Visitor::hasInstance() { return !instances.empty(); }
+
+Visitor::Visitor(Mode _mode, std::string _name_space, std::string _name_prefix)
+    : mode(_mode), name_space(std::move(_name_space)), field_name_prefix(std::move(_name_prefix)) {
+  // Create instances in a stack per thread and store the reference to it.
+  instances.emplace_back(this);
 }
 
 Visitor& Visitor::instance() {
-  std::lock_guard<std::mutex> lock(instance_mutex);
-  const std::thread::id id = std::this_thread::get_id();
-  auto it = instances.find(id);
-  if (it == instances.end()) {
-    // This should never happen as meta data are managed internally. Caught here for debugging.
-    std::stringstream ss;
-    ss << "Visitor for thread " << id << " accessed but was not created.";
-    throw std::runtime_error(ss.str());
+  if (instances.empty()) {
+    // This should never happen as visitors are managed internally. Caught here for debugging.
+    throw std::runtime_error(
+        "Visitor instance was accessed but no visitor was created before. Visitor::instance() should only be called "
+        "from within a visitor.");
   }
-  return *instances.at(id);
-}
-
-Visitor::Visitor(std::thread::id _id) : id(_id) {
-  // Create one instance per thread and store the reference to it.
-  std::lock_guard<std::mutex> lock(instance_mutex);
-  if (instances.find(id) != instances.end()) {
-    // This should never happen as  meta data are managed internally. Caught here for debugging.
-    std::stringstream ss;
-    ss << "Tried to create Visitor for thread " << id << " which already exists.";
-    throw std::runtime_error(ss.str());
-  }
-  instances[id] = this;
+  return *instances.back();
 }
 
 void Visitor::extractErrors() {
@@ -50,13 +37,20 @@ void Visitor::extractErrors() {
   parser.resetErrors();
 }
 
-void Visitor::visitName(const std::string& name) { Visitor::instance().data.name = name; }
+void Visitor::visitName(const std::string& name) {
+  std::string& current_name = Visitor::instance().data.name;
+  // Avoid overriding names. If the name is to be set, it should be cleared previously.
+  if (current_name.empty()) {
+    current_name = name;
+  }
+}
 
 void Visitor::visitCheckCondition(bool condition, const std::string& error_message) {
   Visitor& visitor = Visitor::instance();
   if (visitor.mode != Visitor::Mode::kCheck) {
     return;
   }
+  visitor.checker.setFieldNamePrefix(visitor.field_name_prefix);
   visitor.checker.checkCondition(condition, error_message);
 }
 
@@ -76,13 +70,13 @@ std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set, bool is_optio
     if (is_set) {
       // Also write the type param back to file.
       visitor.parser.toYaml(
-          Settings::instance().factory_type_param_name, type, visitor.name_space, visitor.name_prefix);
+          Settings::instance().factory_type_param_name, type, visitor.name_space, visitor.field_name_prefix);
     }
   }
 
   if (visitor.mode == Visitor::Mode::kSet) {
     // Return the data to intialize the virtual config if this is the first time setting it.
-    return lookupNamespace(visitor.parser.node(), visitor.name_space);
+    return lookupNamespace(visitor.parser.getNode(), visitor.name_space);
   }
 
   return std::nullopt;

@@ -8,6 +8,11 @@
 
 namespace config::internal {
 
+Settings& Settings::instance() {
+  static Settings settings;
+  return settings;
+}
+
 void Settings::setLogger(const std::string& name) {
   std::unique_ptr<Logger> new_logger = Factory::create<Logger>(name);
   if (new_logger) {

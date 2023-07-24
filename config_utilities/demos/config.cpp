@@ -78,8 +78,11 @@ void declare_config(MyConfig& config) {
       "my_strange_enum",
       {{MyConfig::MyStrangeEnum::kX, "X"}, {MyConfig::MyStrangeEnum::kY, "Y"}, {MyConfig::MyStrangeEnum::kZ, "Z"}});
 
-  // Any other struct that has been declared a config can be a sub-config, with optional sub-namespace.
-  config::subconfig(config.sub_config, "sub_config", "sub_ns");
+  // Sub-namespaces can be used to group fields.
+  config::enter_namespace("sub_ns");
+
+  // Any other struct that has been declared a config can be a sub-config, declared as a regular field.
+  config::field(config.sub_config, "sub_config");
 
   // Specify all checks to denote a valid configuration. Checks are specified as param, value, and param name to be
   // displayed. Implemented checks are GT (>), GE (>=), LT (<), LE (<=), EQ (==), NE (!=).
@@ -100,7 +103,7 @@ void declare_config(SubConfig& config) {
   name("SubConfig");
   field(config.f, "f");
   field(config.s, "s");
-  subconfig(config.sub_sub_config, "sub_sub_config");  // Not specifying an additional sub-namespace.
+  field(config.sub_sub_config, "sub_sub_config");
   checkGT(config.f, 0.f, "f");
 }
 
@@ -115,6 +118,13 @@ void declare_config(SubSubConfig& config) {
 }  // namespace demo
 
 int main(int argc, char** argv) {
+  if (argc < 2) {
+    std::cerr << "invalid usage! expected resource directory as argument" << std::endl;
+    return 1;
+  }
+
+  const std::string my_root_path = std::string(argv[1]) + "/";
+
   // GLobal settings can be set at runtime to change the behavior and presentation of configs.
   config::Settings().index_subconfig_field_names = true;
 
@@ -156,7 +166,6 @@ int main(int argc, char** argv) {
   std::cout << "\n\n----- Reading the config from file -----\n\n" << std::endl;
 
   // Read the config from file.
-  const std::string my_root_path = "/home/lukas/khronos_ws/src/config_utilities/config_utilities/demos/";
   config = config::fromYamlFile<demo::MyConfig>(my_root_path + "demo_params.yaml");
 
   std::cout << "Read values i='" << config.i << "', s='" << config.s << "', distance='" << config.distance

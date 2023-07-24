@@ -12,12 +12,12 @@
 #include "config_utilities/parsing/yaml.h"           // Enable fromYamlFile().
 #include "config_utilities/printing.h"               // Enable toString()
 #include "config_utilities/traits.h"                 // Enables isConfig()
-#include "config_utilities/types/eigen_matrix.h"     // Enable parsing and printing of Eigen::Matrix types.
 #include "config_utilities/validity_checks.h"        // Enable isValid() and checkValid().
 
 namespace demo {
 
-// Declare a base config and object.
+// Declare a base config and object. Multiple and nested inheritance is supported, including diamond patterns.
+
 struct BaseConfig {
   int i = 1;
   float f = 2.34f;
@@ -43,33 +43,33 @@ class BaseObject {
   const BaseConfig config_;
 };
 
-// Multiple and nested inheritance is supported.
-struct BaseBaseConfig {
+struct DifferentBaseConfig : virtual public BaseConfig {
   std::vector<int> vec = {1, 2, 3};
 };
 
-void declare_config(BaseBaseConfig& config) {
+void declare_config(DifferentBaseConfig& config) {
   using namespace config;
-  name("BaseBaseConfig");
+  name("DifferentBaseConfig");
+  // Use config::base() to declare that this config inherits from another config.
+  base<BaseConfig>(config);
   field(config.vec, "vec");
   checkEQ(config.vec.size(), size_t(3), "vec.size()");
 }
 
-struct AnotherBaseConfig : public BaseBaseConfig {
+struct AnotherBaseConfig : virtual public BaseConfig {
   bool b = true;
 };
 
 void declare_config(AnotherBaseConfig& config) {
   using namespace config;
   name("AnotherBaseConfig");
-  // Use config::base() to declare that this config inherits from another config.
-  base<BaseBaseConfig>(config);
+  base<BaseConfig>(config);
   field(config.b, "b");
   checkEQ(config.b, true, "b");
 }
 
 // Declare a derived config and object.
-struct DerivedConfig : public BaseConfig, AnotherBaseConfig {
+struct DerivedConfig : public DifferentBaseConfig, public AnotherBaseConfig {
   double d = 5.67;
   std::string s = "Some text";
 };
@@ -78,7 +78,7 @@ void declare_config(DerivedConfig& config) {
   using namespace config;
   name("DerivedConfig");
   // Multiple inheritance can simply be defined sequentially.
-  base<BaseConfig>(config);
+  base<DifferentBaseConfig>(config);
   base<AnotherBaseConfig>(config);
   field(config.d, "d");
   field(config.s, "s");
@@ -102,12 +102,16 @@ class DerivedObject : public BaseObject {
 }  // namespace demo
 
 int main(int argc, char** argv) {
+  if (argc < 2) {
+    std::cerr << "invalid usage! expected resource directory as argument" << std::endl;
+    return 1;
+  }
+
+  const std::string my_root_path = std::string(argv[1]) + "/";
+
   config::Settings().index_subconfig_field_names = true;
 
   // ===================================== Checking whether a struct is a config =====================================
-
-  // TODO(lschmid): Make this nicer.
-  const std::string my_root_path = "/home/lukas/khronos_ws/src/config_utilities/config_utilities/demos/";
 
   // Create the config like any other.
   auto config = config::fromYamlFile<demo::DerivedConfig>(my_root_path + "demo_inheritance.yaml", "valid_ns");
@@ -127,6 +131,10 @@ int main(int argc, char** argv) {
 
   // TODO(lschmid): This exiting on the BaseConfig check is not the nicest but sort of hard to guarantee that it will be
   // checked for derived...
-  demo::DerivedObject invalid_object(invalid_config);
+  try {
+    demo::DerivedObject invalid_object(invalid_config);
+  } catch (const std::exception& e) {
+    std::cout << "Caught exception: " << e.what() << std::endl;
+  }
   return 0;
 }

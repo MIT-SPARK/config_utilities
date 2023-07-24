@@ -21,6 +21,11 @@ struct is_virtual_config : std::false_type {};
 template <class T>
 constexpr T static_const{};
 
+// Define which types are considered ints and floats to check overflow. Define these explicitly as we don't want
+// std::is_integral to account for bools.
+template <typename T>
+constexpr bool is_int = std::is_integral<T>::value && !std::is_same<T, bool>::value;
+
 }  // namespace internal
 
 /**
