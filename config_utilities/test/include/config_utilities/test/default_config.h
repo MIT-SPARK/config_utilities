@@ -36,7 +36,7 @@ struct DefaultConfig {
 
   static YAML::Node defaultValues();
   static YAML::Node modifiedValues();
-  void expextDefaultValues();
+  void expectDefaultValues();
   void expectModifiedValues();
 };
 

@@ -100,7 +100,7 @@ YAML::Node DefaultConfig::modifiedValues() {
   return data;
 }
 
-void DefaultConfig::expextDefaultValues() {
+void DefaultConfig::expectDefaultValues() {
   EXPECT_EQ(i, 1);
   EXPECT_EQ(f, 2.1f);
   EXPECT_EQ(d, 3.2);
