@@ -1,25 +1,42 @@
 #include "config_utilities/types/conversions.h"
 
+#include <thread>
+
 #include <gtest/gtest.h>
 
 #include "config_utilities/config.h"
 #include "config_utilities/parsing/yaml.h"
+#include "config_utilities/printing.h"
 
 namespace config::test {
 
+template <typename T>
+std::string toYamlString(const T& conf) {
+  const auto data = internal::Visitor::getValues(conf);
+  YAML::Emitter out;
+  out << data.data;
+  std::string rep(out.c_str());
+  return "\n" + rep + "\n";
+}
+
 struct ConversionStruct {
   int num_threads = 1;
-  int some_other_int = 1;
   char some_character = 'a';
-  uint8_t some_number = 'a';
+};
+
+struct NoConversionStruct {
+  int num_threads = 1;
+  uint8_t some_character = 'a';
 };
 
 void declare_config(ConversionStruct& conf) {
-  // note that this is probably not a very useful way to declare a config
   field<ThreadNumConversion>(conf.num_threads, "num_threads");
-  field(conf.some_other_int, "num_threads");
   field<CharConversion>(conf.some_character, "some_character");
-  field(conf.some_number, "some_character");
+}
+
+void declare_config(NoConversionStruct& conf) {
+  field(conf.num_threads, "num_threads");
+  field(conf.some_character, "some_character");
 }
 
 // tests that we pull the right character from a string
@@ -58,12 +75,27 @@ num_threads: -1
 some_character: c
 )yaml";
   const auto node = YAML::Load(yaml_string);
-  const auto conf = fromYaml<ConversionStruct>(node);
 
-  EXPECT_GT(conf.num_threads, 0);
-  EXPECT_EQ(conf.some_other_int, -1);
-  EXPECT_EQ(conf.some_character, 'c');
-  EXPECT_EQ(conf.some_number, static_cast<uint16_t>('a'));
+  const auto conv = fromYaml<ConversionStruct>(node);
+  EXPECT_GT(conv.num_threads, 0);
+  EXPECT_EQ(conv.some_character, 'c');
+
+  const auto no_conv = fromYaml<NoConversionStruct>(node);
+  EXPECT_EQ(no_conv.num_threads, -1);
+  EXPECT_EQ(no_conv.some_character, static_cast<uint16_t>('a'));
+
+  // we don't know the hardware concurrency in advance, so we have to build this string
+  std::stringstream conv_expected;
+  conv_expected << std::endl;
+  conv_expected << "num_threads: " << std::thread::hardware_concurrency() << std::endl;
+  conv_expected << "some_character: c" << std::endl;
+  EXPECT_EQ(conv_expected.str(), toYamlString(conv));
+
+  std::string no_conv_expected = R"yaml(
+num_threads: -1
+some_character: 97
+)yaml";
+  EXPECT_EQ(no_conv_expected, toYamlString(no_conv));
 }
 
 // tests that conversions don't interfere when parsing a config where they don't apply
@@ -73,12 +105,17 @@ num_threads: 5
 some_character: 5
 )yaml";
   const auto node = YAML::Load(yaml_string);
-  const auto conf = fromYaml<ConversionStruct>(node);
 
-  EXPECT_EQ(conf.num_threads, 5);
-  EXPECT_EQ(conf.some_other_int, 5);
-  EXPECT_EQ(conf.some_character, '5');
-  EXPECT_EQ(conf.some_number, 5);
+  const auto conv = fromYaml<ConversionStruct>(node);
+  EXPECT_EQ(conv.num_threads, 5);
+  EXPECT_EQ(conv.some_character, '5');
+
+  const auto no_conv = fromYaml<NoConversionStruct>(node);
+  EXPECT_EQ(no_conv.num_threads, 5);
+  EXPECT_EQ(no_conv.some_character, 5);
+
+  EXPECT_EQ(toYamlString(conv), yaml_string);
+  EXPECT_EQ(toYamlString(no_conv), yaml_string);
 }
 
 }  // namespace config::test
