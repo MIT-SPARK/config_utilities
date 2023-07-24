@@ -35,8 +35,6 @@ Visitor& Visitor::instance() {
 void Visitor::extractErrors() {
   // Move the errors from the parser and checker to the meta data.
   data.errors.insert(data.errors.end(), parser.getErrors().begin(), parser.getErrors().end());
-  data.errors.insert(data.errors.end(), checker.getWarnings().begin(), checker.getWarnings().end());
-  checker.resetWarnings();
   parser.resetErrors();
 }
 
@@ -53,8 +51,7 @@ void Visitor::visitCheck(const CheckBase& check) {
   if (visitor.mode != Visitor::Mode::kCheck) {
     return;
   }
-  visitor.checker.setFieldNamePrefix(visitor.field_name_prefix);
-  visitor.checker.checkCondition(check);
+  visitor.data.checks.emplace_back(check.clone());
 }
 
 std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set, bool is_optional, const std::string& type) {
@@ -65,7 +62,8 @@ std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set, bool is_optio
     if (!is_set && !is_optional) {
       // The config is required and not set.
       const std::string field_name = visitor.current_field_name.empty() ? "" : "'" + visitor.current_field_name + "' ";
-      visitor.checker.markFailedCheck("Virtual config " + field_name + "is not set and not marked optional.");
+      visitor.data.checks.emplace_back(
+          new Check(false, "Virtual config " + field_name + "is not set and not marked optional."));
     }
   }
 

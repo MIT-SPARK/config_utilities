@@ -91,11 +91,13 @@ void declare_config(MyConfig& config) {
   config::check(config.i, config::CheckMode::LT, -2, "i");
 
   // Double sided checks can be invoked as in range.
-  config::checkInRange(config.distance, 0.0, 100.0, "distance");
+  const bool lower_inclusive = true;
+  const bool upper_inclusive = false;
+  config::checkInRange(config.distance, 0.0, 100.0, "distance", lower_inclusive, upper_inclusive);
 
   // Any other checks can be implmented using the generic condition check.
-  config::checkCondition(config.distance < config.i, "Param 'distance' must be < 'i'.");
-  config::checkCondition(!config.s.empty(), "Param 's' may not be empty.");
+  config::checkCondition(config.distance < config.i, "Param 'distance' must be < 'i'");
+  config::checkCondition(!config.s.empty(), "Param 's' may not be empty");
 
   // Any check can be dispatched via templating and forwarded arguments
   config::check<config::internal::CheckRange>(config.distance, 0.0, 100.0, "distance via template");

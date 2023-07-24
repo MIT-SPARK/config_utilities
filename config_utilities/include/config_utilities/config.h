@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 
-#include "config_utilities/checks.h"
+#include "config_utilities/internal/checks.h"
 #include "config_utilities/internal/namespacing.h"
 #include "config_utilities/internal/visitor.h"
 #include "config_utilities/traits.h"
@@ -130,14 +130,30 @@ enum class CheckMode {
   NE /** not equal to (!=) */
 };
 
+// Also expose these in the config namespace.
+// NOTE(lschmid): I'm ok with not doing this but don't think it hurts and probably gets some shorter declarations.
+constexpr CheckMode GT = CheckMode::GT;
+constexpr CheckMode GE = CheckMode::GE;
+constexpr CheckMode LT = CheckMode::LT;
+constexpr CheckMode LE = CheckMode::LE;
+constexpr CheckMode EQ = CheckMode::EQ;
+constexpr CheckMode NE = CheckMode::NE;
+
 /**
- * @brief Execute a greater than (GT) check, i.e. param > value.
+ * @brief Execute a binary comparison check between the param and the value, where the kind of check to be performed is
+ * specified by the mode.
  *
- * @tparam T type of the parameter to be checked.
- * @param param Value of the parameter to be compared.
- * @param mode Comparison mode
- * @param value Value of the reference to compare to.
- * @param name Name of the parameter to be reported in the error summary.
+ * For example, if you wanted to validate that a param is greater than some value, you
+ * would use the check `check(param, config::GT, value, "param")`. Note that this casts the value
+ * to the same type as the parameter, so there may be some loss of precision in certain
+ * cases.
+ *
+ * @tparam T Type of the parameter to be checked (inferred).
+ * @tparam P Type of the value to check against (inferred).
+ * @param param Value of the parameter to be checked.
+ * @param mode comparison functor to use.
+ * @param value Value to check against.
+ * @param name Name of the parameter to be reported in warning.
  */
 template <typename T, typename P>
 void check(const T& param, CheckMode mode, const P& value, const std::string& name) {
@@ -194,8 +210,8 @@ inline void checkCondition(bool condition, const std::string& warning) {
 }
 
 /**
- * @brief Execute a custom check
- * @param check Custom check class to validate
+ * @brief Execute a custom check.
+ * @param check Custom check class to validate.
  */
 inline void check(const internal::CheckBase& check) { internal::Visitor::visitCheck(check); }
 

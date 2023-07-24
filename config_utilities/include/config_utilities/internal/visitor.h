@@ -9,7 +9,6 @@
 
 #include "config_utilities/internal/meta_data.h"
 #include "config_utilities/internal/namespacing.h"
-#include "config_utilities/internal/validity_checker.h"
 #include "config_utilities/internal/yaml_parser.h"
 
 namespace config::internal {
@@ -114,9 +113,6 @@ struct Visitor {
   /* Internal data to handle visits. */
   // The messenger data to read from and return eventually.
   MetaData data;
-
-  // Checker for validity checks.
-  ValidityChecker checker;
 
   // Parser for getting or setting yaml parsing.
   YamlParser parser;

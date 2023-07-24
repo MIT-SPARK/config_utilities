@@ -2,10 +2,13 @@
 
 #include <functional>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include <yaml-cpp/yaml.h>
+
+#include "config_utilities/internal/checks.h"
 
 namespace config::internal {
 
@@ -35,6 +38,16 @@ struct FieldInfo {
  * parsers can safely convert to yaml.
  */
 struct MetaData {
+  // Assignments and constructors.
+  MetaData() = default;
+  MetaData& operator=(const MetaData& other) {
+    getValues(other);
+    return *this;
+  }
+  MetaData(const MetaData& other) { getValues(other); }
+  MetaData(MetaData&& other) = default;
+  MetaData& operator=(MetaData&& other) = default;
+
   // Always get the name of the config if possible.
   std::string name;
 
@@ -47,7 +60,10 @@ struct MetaData {
   // All additional field information queried for printing.
   std::vector<FieldInfo> field_infos;
 
-  // All warnings issued by the validity checker or errors raised by the yaml parser.
+  // All checks that were performed on the config.
+  std::vector<std::unique_ptr<CheckBase>> checks;
+
+  // All other error messages issued by the yaml parser (and others).
   std::vector<std::string> errors;
 
   // If a config has sub-configs, they are stored here.
@@ -59,6 +75,19 @@ struct MetaData {
   // Utility function so not every class needs to write their own recursion.
   void performOnAll(const std::function<void(MetaData&)>& func);
   void performOnAll(const std::function<void(const MetaData&)>& func) const;
+
+ private:
+  void getValues(const MetaData& other) {
+    name = other.name;
+    is_virtual_config = other.is_virtual_config;
+    data = other.data;
+    field_infos = other.field_infos;
+    for (const auto& check : other.checks) {
+      checks.emplace_back(check->clone());
+    }
+    errors = other.errors;
+    sub_configs = other.sub_configs;
+  }
 };
 
 }  // namespace config::internal
