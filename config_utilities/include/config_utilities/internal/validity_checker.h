@@ -25,7 +25,7 @@ class ValidityChecker {
 
   void checkCondition(const CheckBase& check) {
     if (!check) {
-      warnings_.emplace_back(check.toString());
+      warnings_.emplace_back(check.toString(name_prefix_));
     }
   }
 

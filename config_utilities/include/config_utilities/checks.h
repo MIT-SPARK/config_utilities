@@ -1,4 +1,6 @@
 #pragma once
+
+#include <functional>
 #include <sstream>
 #include <string>
 
@@ -14,11 +16,11 @@ struct CheckBase {
 
   inline operator bool() const { return valid(); }
 
-  std::string toString() const {
+  std::string toString(const std::string name_prefix = "") const {
     const auto check_name = name();
-    const auto rendered_name = check_name.empty() ? "" : " for '" + check_name + "'";
+    const auto rendered_name = check_name.empty() ? "" : " for '" + name_prefix + check_name + "'";
     std::stringstream ss;
-    ss << "Check failed" << rendered_name << ": " << message();
+    ss << "Check failed" << rendered_name << ": " << message() << ".";
     return ss.str();
   }
 };
@@ -43,7 +45,7 @@ class Check : public CheckBase {
  */
 template <typename Compare>
 struct CompareMessageTrait {
-  static std::string message() { return "compared to"; };
+  static std::string message() { return "compared to"; }
 };
 
 template <typename T, typename Compare>
@@ -70,32 +72,32 @@ class BinaryCheck : public CheckBase {
 
 template <typename T>
 struct CompareMessageTrait<std::greater<T>> {
-  static std::string message() { return ">"; };
+  static std::string message() { return ">"; }
 };
 
 template <typename T>
 struct CompareMessageTrait<std::greater_equal<T>> {
-  static std::string message() { return ">= "; };
+  static std::string message() { return ">="; }
 };
 
 template <typename T>
 struct CompareMessageTrait<std::less<T>> {
-  static std::string message() { return "<"; };
+  static std::string message() { return "<"; }
 };
 
 template <typename T>
 struct CompareMessageTrait<std::less_equal<T>> {
-  static std::string message() { return "<="; };
+  static std::string message() { return "<="; }
 };
 
 template <typename T>
 struct CompareMessageTrait<std::equal_to<T>> {
-  static std::string message() { return "=="; };
+  static std::string message() { return "=="; }
 };
 
 template <typename T>
 struct CompareMessageTrait<std::not_equal_to<T>> {
-  static std::string message() { return "!="; };
+  static std::string message() { return "!="; }
 };
 
 template <typename T>

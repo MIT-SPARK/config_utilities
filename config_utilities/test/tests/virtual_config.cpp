@@ -35,7 +35,7 @@ void declare_config(Derived2::Config& config) {
   config::name("Derived2");
   config::field(config.f, "f", "m/s");
   config::field(config.s, "s");
-  config::checkGE(config.f, 0.f, "f");
+  config::check(config.f, config::CheckMode::GE, 0.f, "f");
 }
 
 class ObjectWithBase {
@@ -53,7 +53,7 @@ void declare_config(ObjectWithBase::Config& config) {
   // Declare the config using the config utilities.
   config::name("ObjectWithBase");
   config::field(config.d, "d", "kg/m^3");
-  config::checkGE(config.d, 0.0, "d");
+  config::check(config.d, config::CheckMode::GE, 0.0, "d");
   config::field(config.base_config, "base_config");
 }
 
@@ -173,7 +173,7 @@ s:                            test string (default)
   msg = logger->messages()[0].second;
   expected = R"""(Invalid config 'Virtual Config: Derived2':
 =========================== Virtual Config: Derived2 ===========================
-Warning: Param 'f' is expected >= '0' (is: '-1').
+Warning: Check failed for 'f': param >= 0 (is: '-1').
 ================================================================================)""";
   EXPECT_EQ(msg, expected);
 }
@@ -214,7 +214,7 @@ base_config [Virtual Config: Derived2]:
   msg = logger->messages()[0].second;
   expected = R"""(Invalid config 'ObjectWithBase':
 ================================ ObjectWithBase ================================
-Warning: Param 'base_config.f' is expected >= '0' (is: '-1').
+Warning: Check failed for 'base_config.f': param >= 0 (is: '-1').
 ================================================================================)""";
   EXPECT_EQ(msg, expected);
 }

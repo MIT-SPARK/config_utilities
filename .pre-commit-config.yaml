@@ -7,7 +7,6 @@ repos:
   - id: check-xml
   - id: end-of-file-fixer
   - id: trailing-whitespace
-    exclude: tests/
   - id: check-added-large-files
   - id: check-merge-conflict
 

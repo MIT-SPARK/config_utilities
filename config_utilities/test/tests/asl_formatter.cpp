@@ -134,7 +134,7 @@ sub_config [SubConfig]:
 sub_sub_config [SubSubConfig]:
    i:                         1
 A ridiculously long field name that will not be wrapped: Short Value
-A ridiculously long field name that will also not be wrapped: 
+A ridiculously long field name that will also not be wrapped:
                               A really really really ridiculously long string th
                               at will be wrapped.
 A really really really really really really ridiculously long field name that wi
@@ -170,13 +170,13 @@ sub_sub_config [SubSubConfig]:
    i:                         1
 A ridiculously long field name that will not be wr
 apped:                        Short Value
-A ridiculously long field name that will also not 
+A ridiculously long field name that will also not
 be wrapped:                   A really really real
                               ly ridiculously long
                                string that will be
                                wrapped.
 A really really really really really really ridicu
-lously long field name that will be wrapped: 
+lously long field name that will be wrapped:
                               A really really real
                               ly ridiculously long
                                string that will al
@@ -211,7 +211,7 @@ sub_config [SubConfig]:
 sub_sub_config [SubSubConfig]:
    i:               1
 A ridiculously long field name that will not be wrapped: Short Value
-A ridiculously long field name that will also not be wrapped: 
+A ridiculously long field name that will also not be wrapped:
                     A really really really ridiculously long string that will be
                      wrapped.
 A really really really really really really ridiculously long field name that wi
@@ -253,11 +253,11 @@ sub_config [SubConfig]:
 sub_sub_config [SubSubConfig]:
    i:               1
 A ridiculously long field name that will not be wrapped [ms]: Short Value
-A ridiculously long field name that will also not be wrapped [custom unit]: 
+A ridiculously long field name that will also not be wrapped [custom unit]:
                     A really really really ridiculously long string that will be
                      wrapped.
 A really really really really really really ridiculously long field name that wi
-ll be wrapped [and has a long unit]: 
+ll be wrapped [and has a long unit]:
                     A really really really ridiculously long string that will al
                     so be wrapped.
 ================================================================================)""";
@@ -294,7 +294,7 @@ sub_config [SubConfig] (default):
 sub_sub_config [SubSubConfig] (default):
    i:               1 (default)
 A ridiculously long field name that will not be wrapped: Short Value (default)
-A ridiculously long field name that will also not be wrapped: 
+A ridiculously long field name that will also not be wrapped:
                     A really really really ridiculously long string that will be
                      wrapped. (default)
 A really really really really really really ridiculously long field name that wi
@@ -331,7 +331,7 @@ sub_config [SubConfig]:
 sub_sub_config [SubSubConfig]:
    i:               4
 A ridiculously long field name that will not be wrapped: Short Value (default)
-A ridiculously long field name that will also not be wrapped: 
+A ridiculously long field name that will also not be wrapped:
                     A really really really ridiculously long string that will be
                      wrapped. (default)
 A really really really really really really ridiculously long field name that wi
