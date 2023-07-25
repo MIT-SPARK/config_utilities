@@ -210,6 +210,17 @@ inline void checkCondition(bool condition, const std::string& warning) {
 }
 
 /**
+ * @brief Execute a check whether a parameter is one of a set of candidates.
+ * @param param Parameter to check. Must implement operotr==.
+ * @param candidates List of candidates to check against.
+ * @param name Name of the parameter to be reported in the error summary.
+ */
+template <typename T>
+inline void checkIsOneOf(const T& param, const std::vector<T>& candidates, const std::string& name) {
+  internal::Visitor::visitCheck(internal::CheckIsOneOf(param, candidates, name));
+}
+
+/**
  * @brief Execute a custom check.
  * @param check Custom check class to validate.
  */

@@ -4,9 +4,9 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <vector>
 
-namespace config {
-namespace internal {
+namespace config::internal {
 
 struct CheckBase {
   virtual ~CheckBase() = default;
@@ -32,8 +32,8 @@ class Check : public CheckBase {
   inline std::unique_ptr<CheckBase> clone() const override { return std::make_unique<Check>(valid_, message_); }
 
  protected:
-  bool valid_;
-  std::string message_;
+  const bool valid_;
+  const std::string message_;
 };
 
 /** @brief Trait to determine warning message for binary comparison operator
@@ -136,13 +136,54 @@ class CheckRange : public CheckBase {
   }
 
  protected:
-  T param_;
-  T lower_;
-  T upper_;
-  std::string name_;
-  bool lower_inclusive_;
-  bool upper_inclusive_;
+  const T param_;
+  const T lower_;
+  const T upper_;
+  const std::string name_;
+  const bool lower_inclusive_;
+  const bool upper_inclusive_;
 };
 
-}  // namespace internal
-}  // namespace config
+template <typename T>
+class CheckIsOneOf : public CheckBase {
+ public:
+  CheckIsOneOf(const T& param, const std::vector<T>& candidates, const std::string& name)
+      : param_(param), candidates_(candidates), name_(name) {}
+
+  bool valid() const override {
+    for (const T& cadidate : candidates_) {
+      if (param_ == cadidate) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  std::string message() const override {
+    std::stringstream candidates;
+    bool is_first = true;
+    for (const T& candidate : candidates_) {
+      if (!is_first) {
+        candidates << ", ";
+      }
+      is_first = false;
+      candidates << "'" << candidate << "'";
+    }
+    std::stringstream ss;
+    ss << "param must be one of [" << candidates.str() << "] (is: '" << param_ << "')";
+    return ss.str();
+  }
+
+  std::string name() const override { return name_; }
+
+  std::unique_ptr<CheckBase> clone() const override {
+    return std::make_unique<CheckIsOneOf<T>>(param_, candidates_, name_);
+  }
+
+ private:
+  const T param_;
+  const std::vector<T> candidates_;
+  const std::string name_;
+};
+
+}  // namespace config::internal

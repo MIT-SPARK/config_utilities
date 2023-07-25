@@ -60,6 +60,19 @@ void declare_config(RangeConfig<LOpen, UOpen>& config) {
   checkInRange(*config.value, 0, 10, "value in range", !config.lower_open, !config.upper_open);
 }
 
+struct CustomIndex {
+  CustomIndex() = default;
+  CustomIndex(std::string _key, int _index) : key(std::move(_key)), index(_index) {}
+
+  bool operator==(const CustomIndex& other) const { return key == other.key && index == other.index; }
+
+  std::string key;
+  int index;
+};
+std::ostream& operator<<(std::ostream& os, const CustomIndex& index) {
+  return os << "<" << index.key << "," << index.index << ">";
+}
+
 // Tests.
 TEST(ValidityChecks, rangeBoundaries) {
   // declare three different ranges with the same underlying value
@@ -95,6 +108,34 @@ TEST(ValidityChecks, rangeBoundaries) {
   EXPECT_EQ(isValid(upper_open), false);
   EXPECT_EQ(isValid(both_open), false);
   EXPECT_EQ(isValid(closed), false);
+}
+
+TEST(ValidityChecks, isOneOf) {
+  internal::CheckIsOneOf check(1, {1, 2, 3}, "test");
+  EXPECT_TRUE(check.valid());
+  EXPECT_EQ(check.name(), "test");
+
+  internal::CheckIsOneOf failed_check(1, {2, 3}, "test");
+  EXPECT_FALSE(failed_check.valid());
+  EXPECT_EQ(failed_check.message(), "param must be one of ['2', '3'] (is: '1')");
+
+  internal::CheckIsOneOf empty_check(1, {}, "test");
+  EXPECT_FALSE(empty_check.valid());
+  EXPECT_EQ(empty_check.message(), "param must be one of [] (is: '1')");
+
+  internal::CheckIsOneOf single_check = internal::CheckIsOneOf(0, {1}, "test");
+  EXPECT_EQ(single_check.message(), "param must be one of ['1'] (is: '0')");
+
+  std::vector<CustomIndex> candidates;
+  candidates.emplace_back("a", 1);
+  candidates.emplace_back("a", 2);
+  candidates.emplace_back("b", 1);
+  internal::CheckIsOneOf custom_check(CustomIndex("a", 1), candidates, "test");
+  EXPECT_TRUE(custom_check.valid());
+
+  internal::CheckIsOneOf custom_failed_check(CustomIndex("b", 2), candidates, "test");
+  EXPECT_FALSE(custom_failed_check.valid());
+  EXPECT_EQ(custom_failed_check.message(), "param must be one of ['<a,1>', '<a,2>', '<b,1>'] (is: '<b,2>')");
 }
 
 TEST(ValidityChecks, isValid) {
