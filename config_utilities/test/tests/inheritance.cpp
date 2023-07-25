@@ -41,7 +41,7 @@ void declare_config(SequentialDerived& config) {
   name("SequentialDerived");
   base<Derived>(config);
   field(config.s, "s");
-  checkCondition(!config.s.empty(), "Param 's' may not be empty.");
+  checkCondition(!config.s.empty(), "param 's' may not be empty.");
 }
 
 struct OtherBase {

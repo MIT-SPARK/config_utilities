@@ -96,12 +96,12 @@ void declare_config(MyConfig& config) {
   config::checkInRange(config.distance, 0.0, 100.0, "distance", lower_inclusive, upper_inclusive);
 
   // Any other checks can be implmented using the generic condition check.
-  config::checkCondition(config.distance < config.i, "Param 'distance' must be < 'i'");
-  config::checkCondition(!config.s.empty(), "Param 's' may not be empty");
+  config::checkCondition(config.distance < config.i, "param 'distance' must be < 'i'");
+  config::checkCondition(!config.s.empty(), "param 's' may not be empty");
 
   // Any check can be dispatched via templating and forwarded arguments
   config::check<config::internal::CheckRange>(config.distance, 0.0, 100.0, "distance via template");
-  config::check<config::internal::Check>(!config.s.empty(), "Param 's' may not be empty (via template)");
+  config::check<config::internal::Check>(!config.s.empty(), "param 's' may not be empty (via template)");
 }
 
 // Declaration of the subconfigs.
