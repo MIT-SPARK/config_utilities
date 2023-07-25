@@ -178,7 +178,7 @@ TEST(YamlParsing, getValues) {
   DefaultConfig config;
   internal::MetaData meta_data = internal::Visitor::getValues(config);
 
-  config.expextDefaultValues();
+  config.expectDefaultValues();
   expectEqual(meta_data.data, DefaultConfig::defaultValues());
   EXPECT_FALSE(meta_data.hasErrors());
   EXPECT_EQ(meta_data.errors.size(), 0ul);

@@ -50,7 +50,7 @@ void declare_config(DefaultConfig& config) {
   config::check(config.u8, CheckMode::LE, uint8_t(5), "u8");
   config::check(config.s, CheckMode::EQ, std::string("test string"), "s");
   config::check(config.b, CheckMode::NE, false, "b");
-  config::checkCondition(config.vec.size() == 3, "Param 'vec' must b of size '3'");
+  config::checkCondition(config.vec.size() == 3, "param 'vec' must b of size '3'");
   config::checkInRange(config.d, 0.0, 500.0, "d");
 }
 
@@ -100,7 +100,7 @@ YAML::Node DefaultConfig::modifiedValues() {
   return data;
 }
 
-void DefaultConfig::expextDefaultValues() {
+void DefaultConfig::expectDefaultValues() {
   EXPECT_EQ(i, 1);
   EXPECT_EQ(f, 2.1f);
   EXPECT_EQ(d, 3.2);

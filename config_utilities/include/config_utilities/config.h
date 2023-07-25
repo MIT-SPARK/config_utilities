@@ -55,6 +55,22 @@ void field(T& field, const std::string& field_name, const std::string& unit = ""
 }
 
 /**
+ * @brief Declare string-named fields of the config. This string will be used to get the configs field values during
+ * creation, and for checking of validity.
+ *
+ * This version allows for declaring an intermediate value for both setting and getting the field
+ *
+ * @tparam Conversion Conversion struct must declare toIntermediate and fromIntermediate as static members
+ * @param field The config member that stores data.
+ * @param field_name The name of the field.
+ * @param unit Optionally define the unit of the field during printing.
+ */
+template <typename Conversion, typename T>
+void field(T& field, const std::string& field_name, const std::string& unit = "") {
+  internal::Visitor::visitField<Conversion>(field, field_name, unit);
+}
+
+/**
  * @brief Declare an enum to as field of a config, that will be parsed and checked by value names.
  *
  * @tparam EnumT The enum type.

@@ -132,7 +132,7 @@ Warning: Check [2/8] failed for 'f': param >= 0 (is: '-1').
 Warning: Check [3/8] failed for 'd': param < 4 (is: '1000').
 Warning: Check [5/8] failed for 's': param == test string (is: '').
 Warning: Check [6/8] failed for 'b': param != 0 (is: '0').
-Warning: Check [7/8] failed: Param 'vec' must b of size '3'.
+Warning: Check [7/8] failed: param 'vec' must b of size '3'.
 Warning: Check [8/8] failed for 'd': param within [0, 500] (is: '1000').
 ---------------------------------- SubConfig -----------------------------------
 Warning: Check [1/1] failed for 'i': param > 0 (is: '-1').
@@ -153,7 +153,7 @@ Warning: Check [2/11] failed for 'f': param >= 0 (is: '-1').
 Warning: Check [3/11] failed for 'd': param < 4 (is: '1000').
 Warning: Check [5/11] failed for 's': param == test string (is: '').
 Warning: Check [6/11] failed for 'b': param != 0 (is: '0').
-Warning: Check [7/11] failed: Param 'vec' must b of size '3'.
+Warning: Check [7/11] failed: param 'vec' must b of size '3'.
 Warning: Check [8/11] failed for 'd': param within [0, 500] (is: '1000').
 Warning: Check [9/11] failed for 'sub_config.i': param > 0 (is: '-1').
 Warning: Check [10/11] failed for 'sub_config.sub_sub_config.i': param > 0 (is:
