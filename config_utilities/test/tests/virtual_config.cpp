@@ -8,7 +8,7 @@
 #include "config_utilities/parsing/yaml.h"
 #include "config_utilities/printing.h"
 #include "config_utilities/test/utils.h"
-#include "config_utilities/validity_checks.h"
+#include "config_utilities/validation.h"
 
 namespace config::test {
 

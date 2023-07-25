@@ -12,7 +12,7 @@
 #include "config_utilities/logging/log_to_stdout.h"  // Simply including this file sets logging to stdout.
 #include "config_utilities/parsing/yaml.h"           // enables 'createFromYaml()' and 'createFromYamlFile()'
 #include "config_utilities/printing.h"               // enables 'toString()'
-#include "config_utilities/validity_checks.h"        // enables 'checkValid()'
+#include "config_utilities/validation.h"             // enables 'checkValid()'
 #include "config_utilities/virtual_config.h"         // enables 'VirtualConfig'
 
 namespace demo {
