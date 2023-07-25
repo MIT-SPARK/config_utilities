@@ -39,7 +39,7 @@ class AslFormatter : public Formatter {
   std::string formatErrorsInternal(const MetaData& data, const std::string& sev, const size_t length);
   std::string toStringInternal(const MetaData& data, size_t indent) const;
   std::string formatField(const FieldInfo& info, size_t indent) const;
-  std::string formatSubconfig(const MetaData& data, const FieldInfo& info, size_t indent) const;
+  std::string formatSubconfig(const MetaData& data, size_t indent) const;
   std::string resolveConfigName(const MetaData& data) const;
 
   // Formatting options, currently not exposed in global settings but work if want changed.

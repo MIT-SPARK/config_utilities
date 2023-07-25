@@ -163,11 +163,6 @@ void Visitor::visitField(ConfigT& config, const std::string& field_name, const s
   }
   MetaData& data = visitor.data;
 
-  // Add the field info.
-  FieldInfo& info = data.field_infos.emplace_back();
-  info.name = field_name;
-  info.subconfig_id = data.sub_configs.size();
-
   // Visit subconfig.
   MetaData& new_data = data.sub_configs.emplace_back(Visitor::subVisit(config, false, field_name));
 
@@ -175,15 +170,6 @@ void Visitor::visitField(ConfigT& config, const std::string& field_name, const s
   if (visitor.mode == Visitor::Mode::kGet) {
     // When getting data add the new data also to the parent data node. This automatically using the correct namespace.
     mergeYamlNodes(data.data, new_data.data);
-    if (Settings::instance().indicate_default_values) {
-      info.is_default = true;
-      for (const auto& sub_info : new_data.field_infos) {
-        if (!sub_info.is_default) {
-          info.is_default = false;
-          break;
-        }
-      }
-    }
   }
 }
 
@@ -238,16 +224,12 @@ void Visitor::flagDefaultValues(const ConfigT& config, MetaData& data) {
   // are managed separately.
   const MetaData default_data = getDefaults(config);
 
-  // Compare all fields. These should always be in the same order if they are from the same config, but exclude
+  // Compare all fields. These should always be in the same order if they are from the same config and exclude
   // subconfigs.
-  size_t i = 0;
-  for (FieldInfo& info : data.field_infos) {
-    if (info.subconfig_id >= 0) {
-      continue;
-    }
+  for (size_t i = 0; i < data.field_infos.size(); ++i) {
     // Corresponding field info should always exist
-    const auto& default_info = default_data.field_infos.at(i);
-    ++i;
+    FieldInfo& info = data.field_infos.at(i);
+    const FieldInfo& default_info = default_data.field_infos.at(i);
     // NOTE(lschmid): Operator YAML::Node== checks for identity, not equality. Since these are all scalars, comparing
     // the formatted strings should be identical.
     if (internal::dataToString(info.value) == internal::dataToString(default_info.value)) {

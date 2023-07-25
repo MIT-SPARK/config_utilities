@@ -102,24 +102,31 @@ std::string AslFormatter::formatConfigsImpl(const std::vector<MetaData>& data) {
 std::string AslFormatter::toStringInternal(const MetaData& data, size_t indent) const {
   std::string result;
   for (const FieldInfo& info : data.field_infos) {
-    if (info.subconfig_id >= 0) {
-      result += formatSubconfig(data.sub_configs[info.subconfig_id], info, indent);
-    } else {
-      result += formatField(info, indent);
-    }
+    result += formatField(info, indent);
+  }
+  for (const MetaData& sub_data : data.sub_configs) {
+    result += formatSubconfig(sub_data, indent);
   }
   return result;
 }
 
-std::string AslFormatter::formatSubconfig(const MetaData& data, const FieldInfo& info, size_t indent) const {
+std::string AslFormatter::formatSubconfig(const MetaData& data, size_t indent) const {
   // Header.
-  std::string header = std::string(indent, ' ') + info.name;
+  std::string header = std::string(indent, ' ') + data.field_name;
   if (indicate_subconfig_types_) {
     header += " [" + resolveConfigName(data) + "]";
   }
-  if (Settings::instance().indicate_default_values && indicate_subconfig_default_ && info.is_default &&
-      !data.is_virtual_config) {
-    header += " (default)";
+  if (Settings::instance().indicate_default_values && indicate_subconfig_default_ && !data.is_virtual_config) {
+    bool is_default = true;
+    for (const FieldInfo& info : data.field_infos) {
+      if (!info.is_default) {
+        is_default = false;
+        break;
+      }
+    }
+    if (is_default) {
+      header += " (default)";
+    }
   }
   if (resolveConfigName(data) != "Uninitialized Virtual Config") {
     header += ":";
