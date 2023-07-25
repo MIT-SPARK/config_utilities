@@ -10,5 +10,5 @@
 #include "config_utilities/logging/log_to_stdout.h"
 #include "config_utilities/printing.h"
 #include "config_utilities/settings.h"
-#include "config_utilities/validity_checks.h"
+#include "config_utilities/validation.h"
 #include "config_utilities/virtual_config.h"

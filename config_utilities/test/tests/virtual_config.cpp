@@ -8,7 +8,7 @@
 #include "config_utilities/parsing/yaml.h"
 #include "config_utilities/printing.h"
 #include "config_utilities/test/utils.h"
-#include "config_utilities/validity_checks.h"
+#include "config_utilities/validation.h"
 
 namespace config::test {
 
@@ -136,7 +136,7 @@ TEST(VirtualConfig, isOptional) {
   std::string msg = logger->messages()[0].second;
   std::string expected = R"""(Invalid config 'Uninitialized Virtual Config':
 ========================= Uninitialized Virtual Config =========================
-Warning: Virtual config is not set and not marked optional.
+Warning: Check [1/1] failed: Virtual config is not set and not marked optional.
 ================================================================================)""";
   EXPECT_EQ(msg, expected);
 
@@ -173,7 +173,7 @@ s:                            test string (default)
   msg = logger->messages()[0].second;
   expected = R"""(Invalid config 'Virtual Config: Derived2':
 =========================== Virtual Config: Derived2 ===========================
-Warning: Check failed for 'f': param >= 0 (is: '-1').
+Warning: Check [2/2] failed for 'f': param >= 0 (is: '-1').
 ================================================================================)""";
   EXPECT_EQ(msg, expected);
 }
@@ -214,7 +214,7 @@ base_config [Virtual Config: Derived2]:
   msg = logger->messages()[0].second;
   expected = R"""(Invalid config 'ObjectWithBase':
 ================================ ObjectWithBase ================================
-Warning: Check failed for 'base_config.f': param >= 0 (is: '-1').
+Warning: Check [3/3] failed for 'base_config.f': param >= 0 (is: '-1').
 ================================================================================)""";
   EXPECT_EQ(msg, expected);
 }

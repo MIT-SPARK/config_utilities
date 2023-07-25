@@ -1,11 +1,12 @@
 #pragma once
 
+#include <functional>
 #include <map>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "config_utilities/checks.h"
+#include "config_utilities/internal/checks.h"
 #include "config_utilities/internal/namespacing.h"
 #include "config_utilities/internal/visitor.h"
 #include "config_utilities/traits.h"
@@ -44,7 +45,6 @@ inline void name(const std::string& name) { internal::Visitor::visitName(name); 
 /**
  * @brief Declare string-named fields of the config. This string will be used to get the configs field values during
  * creation, and for checking of validity.
- *
  * @param field The config member that stores data.
  * @param field_name The name of the field.
  * @param unit Optionally define the unit of the field during printing.
@@ -73,8 +73,8 @@ void enum_field(EnumT& field, const std::string& field_name, const std::map<Enum
  * @tparam EnumT The enum type.
  * @param field The config member that stores data.
  * @param field_name The name of the field.
- * @param enum_names List of all possible enum names in identical order to the enum definition. These will be casted to
- * enum. Use only with sequential enums.
+ * @param enum_names List of all possible enum names in identical order to the enum definition. These will be casted
+ * to enum. Use only with sequential enums.
  */
 template <typename EnumT>
 void enum_field(EnumT& field, const std::string& field_name, const std::vector<std::string>& enum_names) {
@@ -86,8 +86,8 @@ void enum_field(EnumT& field, const std::string& field_name, const std::vector<s
 }
 
 /**
- * @brief Declare that this config inherits from a base config. Note that this call typically requires explicit template
- * declaration or explicit casting for argument dependent look-up. E.g. 'base<BaseT>(config)' or '
+ * @brief Declare that this config inherits from a base config. Note that this call typically requires explicit
+ * template declaration or explicit casting for argument dependent look-up. E.g. 'base<BaseT>(config)' or '
  * base(static_cast<BaseT&>(config))'.
  *
  * @tparam ConfigT The base config type.
@@ -130,14 +130,30 @@ enum class CheckMode {
   NE /** not equal to (!=) */
 };
 
+// Also expose these in the config namespace.
+// NOTE(lschmid): I'm ok with not doing this but don't think it hurts and probably gets some shorter declarations.
+constexpr CheckMode GT = CheckMode::GT;
+constexpr CheckMode GE = CheckMode::GE;
+constexpr CheckMode LT = CheckMode::LT;
+constexpr CheckMode LE = CheckMode::LE;
+constexpr CheckMode EQ = CheckMode::EQ;
+constexpr CheckMode NE = CheckMode::NE;
+
 /**
- * @brief Execute a greater than (GT) check, i.e. param > value.
+ * @brief Execute a binary comparison check between the param and the value, where the kind of check to be performed is
+ * specified by the mode.
  *
- * @tparam T type of the parameter to be checked.
- * @param param Value of the parameter to be compared.
- * @param mode Comparison mode
- * @param value Value of the reference to compare to.
- * @param name Name of the parameter to be reported in the error summary.
+ * For example, if you wanted to validate that a param is greater than some value, you
+ * would use the check `check(param, config::GT, value, "param")`. Note that this casts the value
+ * to the same type as the parameter, so there may be some loss of precision in certain
+ * cases.
+ *
+ * @tparam T Type of the parameter to be checked (inferred).
+ * @tparam P Type of the value to check against (inferred).
+ * @param param Value of the parameter to be checked.
+ * @param mode comparison functor to use.
+ * @param value Value to check against.
+ * @param name Name of the parameter to be reported in warning.
  */
 template <typename T, typename P>
 void check(const T& param, CheckMode mode, const P& value, const std::string& name) {
@@ -186,7 +202,6 @@ void checkInRange(const T& param,
 
 /**
  * @brief Execute a condition check, i.e. whether condition is true.
- *
  * @param condition Condition that should evaluate to true if the config is valid.
  * @param warning Message to be reported in the error summary.
  */
@@ -195,9 +210,8 @@ inline void checkCondition(bool condition, const std::string& warning) {
 }
 
 /**
- * @brief Execute a custom check
- *
- * @param check Custom check class to validate
+ * @brief Execute a custom check.
+ * @param check Custom check class to validate.
  */
 inline void check(const internal::CheckBase& check) { internal::Visitor::visitCheck(check); }
 

@@ -9,7 +9,6 @@
 
 #include "config_utilities/internal/meta_data.h"
 #include "config_utilities/internal/namespacing.h"
-#include "config_utilities/internal/validity_checker.h"
 #include "config_utilities/internal/yaml_parser.h"
 
 namespace config::internal {
@@ -30,22 +29,18 @@ struct Visitor {
                             const YAML::Node& node,
                             const bool print_warnings = true,
                             const std::string& name_space = "",
-                            const std::string& field_name_prefix = "",
-                            const std::string& current_field_name = "");
+                            const std::string& field_name = "");
 
   // Get the data stored in the config.
   template <typename ConfigT>
   static MetaData getValues(const ConfigT& config,
                             const bool print_warnings = true,
                             const std::string& name_space = "",
-                            const std::string& field_name_prefix = "",
-                            const std::string& current_field_name = "");
+                            const std::string& field_name = "");
 
   // Execute all checks specified in the config.
   template <typename ConfigT>
-  static MetaData getChecks(const ConfigT& config,
-                            const std::string& field_name_prefix = "",
-                            const std::string& current_field_name = "");
+  static MetaData getChecks(const ConfigT& config, const std::string& field_name = "");
 
   // Interfaces for the config declaration interfaces to to expose their info to the visitor.
   static void visitName(const std::string& name);
@@ -83,17 +78,11 @@ struct Visitor {
   // objects. Note that meta data always needs to be created before it can be accessed. In short, 'instance()' is only
   // to be used within the 'declare_config()' function, whereas 'create()' is to be used to extract data from a struct
   // by calling 'declare_config()'.
-  explicit Visitor(Mode _mode,
-                   const std::string& _name_space = "",
-                   const std::string& _name_prefix = "",
-                   const std::string& _current_field_name = "");
+  explicit Visitor(Mode _mode, const std::string& _name_space = "", const std::string& _field_name = "");
 
   static Visitor& instance();
 
   /* Utility function to manipulate data. */
-  // Move errors from the checker and parser into the meta data.
-  void extractErrors();
-
   // Helper function to get the default values of a config.
   template <typename ConfigT, typename std::enable_if<!is_virtual_config<ConfigT>::value, bool>::type = true>
   static MetaData getDefaults(const ConfigT& config);
@@ -106,20 +95,11 @@ struct Visitor {
 
   // Extend the current visitor with a sub-visitor, replicating the previous specification.
   template <typename ConfigT>
-  static MetaData subVisit(ConfigT& config,
-                           const bool print_warnings,
-                           const std::string& field_name_prefix,
-                           const std::string& current_field_name);
+  static MetaData subVisit(ConfigT& config, const bool print_warnings, const std::string& field_name = "");
 
   /* Internal data to handle visits. */
   // The messenger data to read from and return eventually.
   MetaData data;
-
-  // Checker for validity checks.
-  ValidityChecker checker;
-
-  // Parser for getting or setting yaml parsing.
-  YamlParser parser;
 
   // Storage for user specified namespaces. Managed by namespacing.h.
   OpenNameSpace::Stack open_namespaces;
@@ -127,14 +107,8 @@ struct Visitor {
   // The current namespace used to get or set values.
   std::string name_space;
 
-  // Current name prefix to be put before filed names.
-  std::string field_name_prefix;
-
   // Keep track of which base configs were already visited to avoid duplicates in diamond inheritance.
   std::set<std::string> visited_base_configs;
-
-  // Temporary storage for field name that is being visited in subvisits.
-  std::string current_field_name;
 
   /* Member variables. */
   // Static registration to get access to the correct instance. Instancs are managed per thread and as a stack, i.e.

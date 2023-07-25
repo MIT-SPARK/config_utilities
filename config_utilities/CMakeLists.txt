@@ -33,6 +33,7 @@ add_library(
   src/asl_formatter.cpp
   src/string_utils.cpp
   src/yaml_utils.cpp
+  src/validation.cpp
   src/formatter.cpp
   src/globals.cpp)
 target_link_libraries(${PROJECT_NAME} PUBLIC yaml-cpp)

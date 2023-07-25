@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <memory>
 #include <sstream>
 #include <string>
 
@@ -13,16 +14,9 @@ struct CheckBase {
   virtual bool valid() const = 0;
   virtual std::string message() const = 0;
   virtual std::string name() const { return ""; }
+  virtual std::unique_ptr<CheckBase> clone() const = 0;
 
   inline operator bool() const { return valid(); }
-
-  std::string toString(const std::string name_prefix = "") const {
-    const auto check_name = name();
-    const auto rendered_name = check_name.empty() ? "" : " for '" + name_prefix + check_name + "'";
-    std::stringstream ss;
-    ss << "Check failed" << rendered_name << ": " << message() << ".";
-    return ss.str();
-  }
 };
 
 class Check : public CheckBase {
@@ -34,6 +28,8 @@ class Check : public CheckBase {
   inline bool valid() const override { return valid_; }
 
   inline std::string message() const override { return message_; }
+
+  inline std::unique_ptr<CheckBase> clone() const override { return std::make_unique<Check>(valid_, message_); }
 
  protected:
   bool valid_;
@@ -63,6 +59,10 @@ class BinaryCheck : public CheckBase {
   }
 
   std::string name() const override { return name_; }
+
+  std::unique_ptr<CheckBase> clone() const override {
+    return std::make_unique<BinaryCheck<T, Compare>>(param_, value_, name_);
+  }
 
  protected:
   T param_;
@@ -130,6 +130,10 @@ class CheckRange : public CheckBase {
   }
 
   std::string name() const override { return name_; }
+
+  std::unique_ptr<CheckBase> clone() const override {
+    return std::make_unique<CheckRange<T>>(param_, lower_, upper_, name_, lower_inclusive_, upper_inclusive_);
+  }
 
  protected:
   T param_;

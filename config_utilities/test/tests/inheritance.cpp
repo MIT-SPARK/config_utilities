@@ -140,8 +140,10 @@ TEST(Inheritance, sequentialInheritanceCheck) {
   SequentialDerived config;
   internal::Visitor::setValues(config, invalidValues());
   const internal::MetaData data = internal::Visitor::getChecks(config);
-  EXPECT_TRUE(data.hasErrors());
-  EXPECT_EQ(data.errors.size(), 3ul);
+  EXPECT_EQ(data.checks.size(), 3);
+  for (const auto& check : data.checks) {
+    EXPECT_FALSE(check->valid());
+  }
 }
 
 TEST(Inheritance, multipleInheritanceGet) {
@@ -167,8 +169,10 @@ TEST(Inheritance, multipleInheritanceCheck) {
   MultipleDerived config;
   internal::Visitor::setValues(config, invalidValues());
   const internal::MetaData data = internal::Visitor::getChecks(config);
-  EXPECT_TRUE(data.hasErrors());
-  EXPECT_EQ(data.errors.size(), 3ul);
+  EXPECT_EQ(data.checks.size(), 3);
+  for (const auto& check : data.checks) {
+    EXPECT_FALSE(check->valid());
+  }
 }
 
 TEST(Inheritance, diamondInheritanceGet) {
@@ -199,8 +203,10 @@ TEST(Inheritance, diamondInheritanceCheck) {
   DiamondDerived config;
   internal::Visitor::setValues(config, invalidValues());
   const internal::MetaData data = internal::Visitor::getChecks(config);
-  EXPECT_TRUE(data.hasErrors());
-  EXPECT_EQ(data.errors.size(), 5ul);
+  EXPECT_EQ(data.checks.size(), 5);
+  for (const auto& check : data.checks) {
+    EXPECT_FALSE(check->valid());
+  }
 }
 
 }  // namespace config::test

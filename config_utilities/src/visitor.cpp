@@ -13,11 +13,9 @@ Visitor::~Visitor() { instances.pop_back(); }
 
 bool Visitor::hasInstance() { return !instances.empty(); }
 
-Visitor::Visitor(Mode _mode,
-                 const std::string& _name_space,
-                 const std::string& _name_prefix,
-                 const std::string& _current_field_name)
-    : mode(_mode), name_space(_name_space), field_name_prefix(_name_prefix), current_field_name(_current_field_name) {
+Visitor::Visitor(Mode _mode, const std::string& _name_space, const std::string& field_name)
+    : mode(_mode), name_space(_name_space) {
+  data.field_name = field_name;
   // Create instances in a stack per thread and store the reference to it.
   instances.emplace_back(this);
 }
@@ -30,14 +28,6 @@ Visitor& Visitor::instance() {
         "from within a visitor.");
   }
   return *instances.back();
-}
-
-void Visitor::extractErrors() {
-  // Move the errors from the parser and checker to the meta data.
-  data.errors.insert(data.errors.end(), parser.getErrors().begin(), parser.getErrors().end());
-  data.errors.insert(data.errors.end(), checker.getWarnings().begin(), checker.getWarnings().end());
-  checker.resetWarnings();
-  parser.resetErrors();
 }
 
 void Visitor::visitName(const std::string& name) {
@@ -53,33 +43,37 @@ void Visitor::visitCheck(const CheckBase& check) {
   if (visitor.mode != Visitor::Mode::kCheck) {
     return;
   }
-  visitor.checker.setFieldNamePrefix(visitor.field_name_prefix);
-  visitor.checker.checkCondition(check);
+  visitor.data.checks.emplace_back(check.clone());
 }
 
 std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set, bool is_optional, const std::string& type) {
   Visitor& visitor = Visitor::instance();
   visitor.data.is_virtual_config = true;
 
+  // Treat the validity of virtual configs as checks.
   if (visitor.mode == Visitor::Mode::kCheck) {
     if (!is_set && !is_optional) {
-      // The config is required and not set.
-      const std::string field_name = visitor.current_field_name.empty() ? "" : "'" + visitor.current_field_name + "' ";
-      visitor.checker.markFailedCheck("Virtual config " + field_name + "is not set and not marked optional.");
+      const std::string field_name = visitor.data.field_name.empty() ? "" : "'" + visitor.data.field_name + "' ";
+      visitor.data.checks.emplace_back(
+          new Check(false, "Virtual config " + field_name + "is not set and not marked optional"));
+    } else {
+      visitor.data.checks.emplace_back(new Check(true, ""));
     }
   }
 
   if (visitor.mode == Visitor::Mode::kGet) {
     if (is_set) {
       // Also write the type param back to file.
-      visitor.parser.toYaml(
-          Settings::instance().factory_type_param_name, type, visitor.name_space, visitor.field_name_prefix);
+      std::string error;
+      YAML::Node type_node =
+          YamlParser::toYaml(Settings::instance().factory_type_param_name, type, visitor.name_space, error);
+      mergeYamlNodes(visitor.data.data, type_node);
     }
   }
 
   if (visitor.mode == Visitor::Mode::kSet) {
     // Return the data to intialize the virtual config if this is the first time setting it.
-    return lookupNamespace(visitor.parser.getNode(), visitor.name_space);
+    return lookupNamespace(visitor.data.data, visitor.name_space);
   }
 
   return std::nullopt;

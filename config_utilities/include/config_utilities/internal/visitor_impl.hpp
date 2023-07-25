@@ -25,13 +25,10 @@ MetaData Visitor::setValues(ConfigT& config,
                             const YAML::Node& node,
                             const bool print_warnings,
                             const std::string& name_space,
-                            const std::string& field_name_prefix,
-                            const std::string& current_field_name) {
-  Visitor visitor(Mode::kSet, name_space, field_name_prefix, current_field_name);
-  visitor.parser.setNode(node);
+                            const std::string& field_name) {
+  Visitor visitor(Mode::kSet, name_space, field_name);
+  visitor.data.data.reset(node);
   declare_config(config);
-  visitor.extractErrors();
-
   if (print_warnings && visitor.data.hasErrors()) {
     Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Severity::kWarning));
   }
@@ -42,18 +39,13 @@ template <typename ConfigT>
 MetaData Visitor::getValues(const ConfigT& config,
                             const bool print_warnings,
                             const std::string& name_space,
-                            const std::string& field_name_prefix,
-                            const std::string& current_field_name) {
-  Visitor visitor(Mode::kGet, name_space, field_name_prefix, current_field_name);
+                            const std::string& field_name) {
+  Visitor visitor(Mode::kGet, name_space, field_name);
   // NOTE: We know that in mode kGet, the config is not modified.
   declare_config(const_cast<ConfigT&>(config));
-  visitor.extractErrors();
-  mergeYamlNodes(visitor.data.data, visitor.parser.getNode());
-
   if (Settings::instance().indicate_default_values) {
     flagDefaultValues(config, visitor.data);
   }
-
   if (print_warnings && visitor.data.hasErrors()) {
     Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Severity::kWarning));
   }
@@ -61,36 +53,24 @@ MetaData Visitor::getValues(const ConfigT& config,
 }
 
 template <typename ConfigT>
-MetaData Visitor::getChecks(const ConfigT& config,
-                            const std::string& field_name_prefix,
-                            const std::string& current_field_name) {
-  Visitor visitor(Mode::kCheck, "", field_name_prefix, current_field_name);
+MetaData Visitor::getChecks(const ConfigT& config, const std::string& field_name) {
+  Visitor visitor(Mode::kCheck, "", field_name);
   // NOTE: We know that in mode kCheck, the config is not modified.
   declare_config(const_cast<ConfigT&>(config));
-  visitor.extractErrors();
   return visitor.data;
 }
 
 template <typename ConfigT>
-MetaData Visitor::subVisit(ConfigT& config,
-                           const bool print_warnings,
-                           const std::string& field_name_prefix,
-                           const std::string& current_field_name) {
+MetaData Visitor::subVisit(ConfigT& config, const bool print_warnings, const std::string& field_name) {
   Visitor& current_visitor = Visitor::instance();
   switch (current_visitor.mode) {
     case Visitor::Mode::kGet:
-      return getValues(config, print_warnings, current_visitor.name_space, field_name_prefix, current_field_name);
+      return getValues(config, print_warnings, current_visitor.name_space, field_name);
     case Visitor::Mode::kSet:
-      return setValues(config,
-                       current_visitor.parser.getNode(),
-                       print_warnings,
-                       current_visitor.name_space,
-                       field_name_prefix,
-                       current_field_name);
+      return setValues(config, current_visitor.data.data, print_warnings, current_visitor.name_space, field_name);
     case Visitor::Mode::kCheck:
-      return getChecks(config, field_name_prefix, current_field_name);
+      return getChecks(config, field_name);
     default:
-
       return MetaData();
   }
 }
@@ -99,15 +79,25 @@ template <typename T, typename std::enable_if<!isConfig<T>(), bool>::type = true
 void Visitor::visitField(T& field, const std::string& field_name, const std::string& unit) {
   Visitor& visitor = Visitor::instance();
   if (visitor.mode == Visitor::Mode::kSet) {
-    visitor.parser.fromYaml(field_name, field, visitor.name_space, visitor.field_name_prefix);
+    std::string error;
+    YamlParser::fromYaml(visitor.data.data, field_name, field, visitor.name_space, error);
+    if (!error.empty()) {
+      visitor.data.errors.emplace_back(new Warning(field_name, error));
+    }
   }
 
   if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetDefaults) {
     FieldInfo& info = visitor.data.field_infos.emplace_back();
-    visitor.parser.toYaml(field_name, field, visitor.name_space, visitor.field_name_prefix);
-    info.value = YamlParser::toYaml(field);
+    std::string error;
+    YAML::Node node = YamlParser::toYaml(field_name, field, visitor.name_space, error);
+    mergeYamlNodes(visitor.data.data, node);
+    // This stores a reference to the node in the data.
+    info.value = lookupNamespace(node, joinNamespace(visitor.name_space, field_name));
     info.name = field_name;
     info.unit = unit;
+    if (!error.empty()) {
+      visitor.data.errors.emplace_back(new Warning(field_name, error));
+    }
   }
 }
 
@@ -124,26 +114,25 @@ void Visitor::visitEnumField(EnumT& field,
   std::set<std::string> names;
   for (const auto& [_, name] : enum_names) {
     if (names.find(name) != names.end()) {
-      visitor.data.errors.emplace_back("Value '" + name + "' is defined multiple times for enum field '" + field_name +
-                                       "'.");
+      visitor.data.errors.emplace_back(new Warning(field_name, "Enum Value '" + name + "' is defined multiple times"));
     }
     names.insert(name);
   }
 
   // Parse enums. These are internally stored as strings.
+  std::string error;
   if (visitor.mode == Visitor::Mode::kSet) {
     std::string place_holder;
-    if (visitor.parser.fromYaml(field_name, place_holder, visitor.name_space, visitor.field_name_prefix)) {
+    if (YamlParser::fromYaml(visitor.data.data, field_name, place_holder, visitor.name_space, error)) {
       const auto it = std::find_if(enum_names.begin(), enum_names.end(), [&place_holder](const auto& pair) {
         return pair.second == place_holder;
       });
       if (it == enum_names.end()) {
-        std::string error = "Failed to parse param '" + field_name + "': Invalid value '" + place_holder +
-                            "' for enum field with values ";
+        std::string error = "Invalid value '" + place_holder + "' for enum with values ";
         for (const auto& [_, name] : enum_names) {
           error += "'" + name + "', ";
         }
-        visitor.data.errors.emplace_back(error.substr(0, error.size() - 2) + ".");
+        visitor.data.errors.emplace_back(new Warning(field_name, error.substr(0, error.size() - 2)));
       } else {
         field = it->first;
       }
@@ -155,48 +144,41 @@ void Visitor::visitEnumField(EnumT& field,
     const auto it = enum_names.find(field);
     std::string value;
     if (it == enum_names.end()) {
-      visitor.data.errors.emplace_back("Value of enum field '" + field_name + "' is out of the defined range.");
+      std::stringstream ss;
+      ss << "Enum value '" << static_cast<int>(field) << "' is out of the defined range";
+      visitor.data.errors.emplace_back(new Warning(field_name, ss.str()));
       value = "<Invalid Enum Name>";
     } else {
       value = it->second;
     }
-    visitor.parser.toYaml(field_name, value, visitor.name_space, visitor.field_name_prefix);
-    info.value = YamlParser::toYaml(value);
+    YAML::Node node = YamlParser::toYaml(field_name, value, visitor.name_space, error);
+    mergeYamlNodes(visitor.data.data, node);
+    // This stores a reference to the node in the data.
+    info.value = lookupNamespace(node, joinNamespace(visitor.name_space, field_name));
     info.name = field_name;
+  }
+
+  if (!error.empty()) {
+    visitor.data.errors.emplace_back(new Warning(field_name, error));
   }
 }
 
+// Visits a subconfig field.
 template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
 void Visitor::visitField(ConfigT& config, const std::string& field_name, const std::string& /* unit */) {
-  // Visits a subconfig field.
   Visitor& visitor = Visitor::instance();
   if (visitor.mode == Visitor::Mode::kGetDefaults) {
     return;
   }
   MetaData& data = visitor.data;
 
-  // Add the field info.
-  FieldInfo& info = data.field_infos.emplace_back();
-  info.name = field_name;
-  info.subconfig_id = data.sub_configs.size();
   // Visit subconfig.
-  const std::string new_prefix =
-      visitor.field_name_prefix + (Settings::instance().index_subconfig_field_names ? field_name + "." : "");
-  MetaData& new_data = data.sub_configs.emplace_back(Visitor::subVisit(config, false, new_prefix, field_name));
+  MetaData& new_data = data.sub_configs.emplace_back(Visitor::subVisit(config, false, field_name));
 
   // Aggregate data.
   if (visitor.mode == Visitor::Mode::kGet) {
     // When getting data add the new data also to the parent data node. This automatically using the correct namespace.
     mergeYamlNodes(data.data, new_data.data);
-    if (Settings::instance().indicate_default_values) {
-      info.is_default = true;
-      for (const auto& sub_info : new_data.field_infos) {
-        if (!sub_info.is_default) {
-          info.is_default = false;
-          break;
-        }
-      }
-    }
   }
 }
 
@@ -251,16 +233,12 @@ void Visitor::flagDefaultValues(const ConfigT& config, MetaData& data) {
   // are managed separately.
   const MetaData default_data = getDefaults(config);
 
-  // Compare all fields. These should always be in the same order if they are from the same config, but exclude
+  // Compare all fields. These should always be in the same order if they are from the same config and exclude
   // subconfigs.
-  size_t i = 0;
-  for (FieldInfo& info : data.field_infos) {
-    if (info.subconfig_id >= 0) {
-      continue;
-    }
+  for (size_t i = 0; i < data.field_infos.size(); ++i) {
     // Corresponding field info should always exist
-    const auto& default_info = default_data.field_infos.at(i);
-    ++i;
+    FieldInfo& info = data.field_infos.at(i);
+    const FieldInfo& default_info = default_data.field_infos.at(i);
     // NOTE(lschmid): Operator YAML::Node== checks for identity, not equality. Since these are all scalars, comparing
     // the formatted strings should be identical.
     if (internal::dataToString(info.value) == internal::dataToString(default_info.value)) {

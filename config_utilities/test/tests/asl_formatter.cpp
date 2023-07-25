@@ -58,48 +58,107 @@ TEST(AslFormatter, dataToString) {
 TEST(AslFormatter, formatErrors) {
   internal::MetaData data;
   data.name = "Config 1";
-  data.errors.push_back("Error 1");
-  data.errors.push_back("Error 2");
+  data.errors.emplace_back(new internal::Warning("Field 1", "Error 1"));
+  data.errors.emplace_back(new internal::Warning("", "Error 2"));
   internal::MetaData& d = data.sub_configs.emplace_back();
   d.name = "Config 2";
-  d.errors.push_back("Error 3");
-  d.errors.push_back("Error 4");
+  d.errors.emplace_back(new internal::Warning("Field 3", "Error 3"));
+  d.errors.emplace_back(new internal::Warning("Field 4", "Error 4"));
   internal::MetaData& d2 = data.sub_configs.emplace_back();
-  d2.name = "Config 3";
-  d2.errors.push_back("Error 5");
   internal::MetaData& d3 = d2.sub_configs.emplace_back();
-  d3.name = "Config 4";
-  d3.errors.push_back("Error 6");
+  d3.name = "Config 3";
+  d3.errors.emplace_back(new internal::Warning("", "Error 5"));
+  internal::MetaData& d4 = d3.sub_configs.emplace_back();
+  d4.name = "Config 4";
+  d4.errors.emplace_back(new internal::Warning("Field 6", "Error 6"));
 
   std::string formatted = internal::Formatter::formatErrors(data);
   EXPECT_EQ(countLines(formatted), 9);
 
   std::string expected = R"""( 'Config 1':
 =================================== Config 1 ===================================
-Warning: Error 1
-Warning: Error 2
-Warning: Error 3
-Warning: Error 4
-Warning: Error 5
-Warning: Error 6
+Warning: Failed to parse param 'Field 1': Error 1.
+Warning: Failed to parse param: Error 2.
+Warning: Failed to parse param 'Field 3': Error 3.
+Warning: Failed to parse param 'Field 4': Error 4.
+Warning: Failed to parse param: Error 5.
+Warning: Failed to parse param 'Field 6': Error 6.
 ================================================================================)""";
   EXPECT_EQ(formatted, expected);
 
-  Settings().index_subconfig_field_names = false;
+  Settings().inline_subconfig_field_names = false;
   formatted = internal::Formatter::formatErrors(data);
   EXPECT_EQ(countLines(formatted), 12);
 
   expected = R"""( 'Config 1':
 =================================== Config 1 ===================================
-Warning: Error 1
-Warning: Error 2
-=================================== Config 2 ===================================
-Warning: Error 3
-Warning: Error 4
-=================================== Config 3 ===================================
-Warning: Error 5
-=================================== Config 4 ===================================
-Warning: Error 6
+Warning: Failed to parse param 'Field 1': Error 1.
+Warning: Failed to parse param: Error 2.
+----------------------------------- Config 2 -----------------------------------
+Warning: Failed to parse param 'Field 3': Error 3.
+Warning: Failed to parse param 'Field 4': Error 4.
+----------------------------------- Config 3 -----------------------------------
+Warning: Failed to parse param: Error 5.
+----------------------------------- Config 4 -----------------------------------
+Warning: Failed to parse param 'Field 6': Error 6.
+================================================================================)""";
+  EXPECT_EQ(formatted, expected);
+}
+
+TEST(AslFormatter, formatChecks) {
+  DefaultConfig config;
+  config.i = -1;
+  config.f = -1.f;
+  config.d = 100.0;
+  // TODO(lschmid): u8 formatting is currently not supported in the checks. Maybe using the field declaration and yaml
+  // parser could potentially resolve this.
+  // config.u8 = 26;
+  config.s = "";
+  config.vec = {1, 2};
+  config.b = false;
+  config.d = 1000.0;
+  config.sub_config.i = -1;
+  config.sub_sub_config.i = -1;
+  config.sub_config.sub_sub_config.i = -1;
+
+  Settings().restoreDefaults();
+  Settings().inline_subconfig_field_names = false;
+  internal::MetaData data = internal::Visitor::getChecks(config);
+  std::string formatted = internal::Formatter::formatErrors(data);
+  std::string expected = R"""( 'DefaultConfig':
+================================ DefaultConfig =================================
+Warning: Check [1/8] failed for 'i': param > 0 (is: '-1').
+Warning: Check [2/8] failed for 'f': param >= 0 (is: '-1').
+Warning: Check [3/8] failed for 'd': param < 4 (is: '1000').
+Warning: Check [5/8] failed for 's': param == test string (is: '').
+Warning: Check [6/8] failed for 'b': param != 0 (is: '0').
+Warning: Check [7/8] failed: Param 'vec' must b of size '3'.
+Warning: Check [8/8] failed for 'd': param within [0, 500] (is: '1000').
+---------------------------------- SubConfig -----------------------------------
+Warning: Check [1/1] failed for 'i': param > 0 (is: '-1').
+--------------------------------- SubSubConfig ---------------------------------
+Warning: Check [1/1] failed for 'i': param > 0 (is: '-1').
+--------------------------------- SubSubConfig ---------------------------------
+Warning: Check [1/1] failed for 'i': param > 0 (is: '-1').
+================================================================================
+  )""";
+
+  Settings().inline_subconfig_field_names = true;
+  data = internal::Visitor::getChecks(config);
+  formatted = internal::Formatter::formatErrors(data);
+  expected = R"""( 'DefaultConfig':
+================================ DefaultConfig =================================
+Warning: Check [1/11] failed for 'i': param > 0 (is: '-1').
+Warning: Check [2/11] failed for 'f': param >= 0 (is: '-1').
+Warning: Check [3/11] failed for 'd': param < 4 (is: '1000').
+Warning: Check [5/11] failed for 's': param == test string (is: '').
+Warning: Check [6/11] failed for 'b': param != 0 (is: '0').
+Warning: Check [7/11] failed: Param 'vec' must b of size '3'.
+Warning: Check [8/11] failed for 'd': param within [0, 500] (is: '1000').
+Warning: Check [9/11] failed for 'sub_config.i': param > 0 (is: '-1').
+Warning: Check [10/11] failed for 'sub_config.sub_sub_config.i': param > 0 (is:
+         '-1').
+Warning: Check [11/11] failed for 'sub_sub_config.i': param > 0 (is: '-1').
 ================================================================================)""";
   EXPECT_EQ(formatted, expected);
 }
@@ -109,7 +168,7 @@ TEST(AslFormatter, formatConfig) {
 
   Settings().indicate_default_values = false;
   Settings().indicate_units = false;
-  Settings().index_subconfig_field_names = true;
+  Settings().inline_subconfig_field_names = true;
   std::string formatted = internal::Formatter::formatConfig(data);
   std::string expected =
       R"""(================================= Test Config ==================================
@@ -127,12 +186,6 @@ mat:                          [[1, 0, 0],
                                [0, 0, 1]]
 my_enum:                      A
 my_strange_enum:              X
-sub_config [SubConfig]:
-   i:                         1
-   sub_sub_config [SubSubConfig]:
-      i:                      1
-sub_sub_config [SubSubConfig]:
-   i:                         1
 A ridiculously long field name that will not be wrapped: Short Value
 A ridiculously long field name that will also not be wrapped:
                               A really really really ridiculously long string th
@@ -140,6 +193,12 @@ A ridiculously long field name that will also not be wrapped:
 A really really really really really really ridiculously long field name that wi
 ll be wrapped:                A really really really ridiculously long string th
                               at will also be wrapped.
+sub_config [SubConfig]:
+   i:                         1
+   sub_sub_config [SubSubConfig]:
+      i:                      1
+sub_sub_config [SubSubConfig]:
+   i:                         1
 ================================================================================)""";
   EXPECT_EQ(formatted.size(), expected.size());
   EXPECT_EQ(formatted, expected);
@@ -162,25 +221,25 @@ mat:                          [[1, 0, 0],
                                [0, 0, 1]]
 my_enum:                      A
 my_strange_enum:              X
+A ridiculously long field name that will not be wr
+apped:                        Short Value
+A ridiculously long field name that will also not
+be wrapped:                   A really really real
+                              ly ridiculously long
+                              string that will be
+                              wrapped.
+A really really really really really really ridicu
+lously long field name that will be wrapped:
+                              A really really real
+                              ly ridiculously long
+                              string that will als
+                              o be wrapped.
 sub_config [SubConfig]:
    i:                         1
    sub_sub_config [SubSubConfig]:
       i:                      1
 sub_sub_config [SubSubConfig]:
    i:                         1
-A ridiculously long field name that will not be wr
-apped:                        Short Value
-A ridiculously long field name that will also not
-be wrapped:                   A really really real
-                              ly ridiculously long
-                               string that will be
-                               wrapped.
-A really really really really really really ridicu
-lously long field name that will be wrapped:
-                              A really really real
-                              ly ridiculously long
-                               string that will al
-                              so be wrapped.
 ==================================================)""";
   EXPECT_EQ(formatted.size(), expected.size());
   EXPECT_EQ(formatted, expected);
@@ -204,19 +263,19 @@ mat:                [[1, 0, 0],
                      [0, 0, 1]]
 my_enum:            A
 my_strange_enum:    X
+A ridiculously long field name that will not be wrapped: Short Value
+A ridiculously long field name that will also not be wrapped:
+                    A really really really ridiculously long string that will be
+                    wrapped.
+A really really really really really really ridiculously long field name that wi
+ll be wrapped:      A really really really ridiculously long string that will al
+                    so be wrapped.
 sub_config [SubConfig]:
    i:               1
    sub_sub_config [SubSubConfig]:
       i:            1
 sub_sub_config [SubSubConfig]:
    i:               1
-A ridiculously long field name that will not be wrapped: Short Value
-A ridiculously long field name that will also not be wrapped:
-                    A really really really ridiculously long string that will be
-                     wrapped.
-A really really really really really really ridiculously long field name that wi
-ll be wrapped:      A really really really ridiculously long string that will al
-                    so be wrapped.
 ================================================================================)""";
   EXPECT_EQ(formatted.size(), expected.size());
   EXPECT_EQ(formatted, expected);
@@ -225,7 +284,7 @@ ll be wrapped:      A really really really ridiculously long string that will al
 TEST(AslFormatter, formatUnits) {
   Settings().indicate_default_values = false;
   Settings().indicate_units = true;
-  Settings().index_subconfig_field_names = true;
+  Settings().inline_subconfig_field_names = true;
   Settings().print_width = 80;  // force print width to be consistent for tests
 
   internal::MetaData data = internal::Visitor::getValues(TestConfig());
@@ -246,20 +305,20 @@ mat:                [[1, 0, 0],
                      [0, 0, 1]]
 my_enum:            A
 my_strange_enum:    X
+A ridiculously long field name that will not be wrapped [ms]: Short Value
+A ridiculously long field name that will also not be wrapped [custom unit]:
+                    A really really really ridiculously long string that will be
+                    wrapped.
+A really really really really really really ridiculously long field name that wi
+ll be wrapped [and has a long unit]:
+                    A really really really ridiculously long string that will al
+                    so be wrapped.
 sub_config [SubConfig]:
    i:               1
    sub_sub_config [SubSubConfig]:
       i:            1
 sub_sub_config [SubSubConfig]:
    i:               1
-A ridiculously long field name that will not be wrapped [ms]: Short Value
-A ridiculously long field name that will also not be wrapped [custom unit]:
-                    A really really really ridiculously long string that will be
-                     wrapped.
-A really really really really really really ridiculously long field name that wi
-ll be wrapped [and has a long unit]:
-                    A really really really ridiculously long string that will al
-                    so be wrapped.
 ================================================================================)""";
   EXPECT_EQ(formatted.size(), expected.size());
   EXPECT_EQ(formatted, expected);
@@ -268,7 +327,7 @@ ll be wrapped [and has a long unit]:
 TEST(AslFormatter, formatDefaultValues) {
   Settings().indicate_default_values = true;
   Settings().indicate_units = false;
-  Settings().index_subconfig_field_names = true;
+  Settings().inline_subconfig_field_names = true;
 
   const internal::MetaData default_data = internal::Visitor::getValues(TestConfig());
   std::string formatted = internal::Formatter::formatConfig(default_data);
@@ -287,21 +346,20 @@ mat:                [[1, 0, 0],
                      [0, 0, 1]] (default)
 my_enum:            A (default)
 my_strange_enum:    X (default)
+A ridiculously long field name that will not be wrapped: Short Value (default)
+A ridiculously long field name that will also not be wrapped:
+                    A really really really ridiculously long string that will be
+                    wrapped. (default)
+A really really really really really really ridiculously long field name that wi
+ll be wrapped:      A really really really ridiculously long string that will al
+                    so be wrapped. (default)
 sub_config [SubConfig] (default):
    i:               1 (default)
    sub_sub_config [SubSubConfig] (default):
       i:            1 (default)
 sub_sub_config [SubSubConfig] (default):
    i:               1 (default)
-A ridiculously long field name that will not be wrapped: Short Value (default)
-A ridiculously long field name that will also not be wrapped:
-                    A really really really ridiculously long string that will be
-                     wrapped. (default)
-A really really really really really really ridiculously long field name that wi
-ll be wrapped:      A really really really ridiculously long string that will al
-                    so be wrapped. (default)
 ================================================================================)""";
-
   EXPECT_EQ(formatted.size(), expected.size());
   EXPECT_EQ(formatted, expected);
 
@@ -324,19 +382,19 @@ mat:                [[1, 2, 3],
                      [7, 8, 9]]
 my_enum:            B
 my_strange_enum:    Z
+A ridiculously long field name that will not be wrapped: Short Value (default)
+A ridiculously long field name that will also not be wrapped:
+                    A really really really ridiculously long string that will be
+                    wrapped. (default)
+A really really really really really really ridiculously long field name that wi
+ll be wrapped:      A really really really ridiculously long string that will al
+                    so be wrapped. (default)
 sub_config [SubConfig]:
    i:               2
    sub_sub_config [SubSubConfig]:
       i:            3
 sub_sub_config [SubSubConfig]:
    i:               4
-A ridiculously long field name that will not be wrapped: Short Value (default)
-A ridiculously long field name that will also not be wrapped:
-                    A really really really ridiculously long string that will be
-                     wrapped. (default)
-A really really really really really really ridiculously long field name that wi
-ll be wrapped:      A really really really ridiculously long string that will al
-                    so be wrapped. (default)
 ================================================================================)""";
   EXPECT_EQ(formatted.size(), expected.size());
   EXPECT_EQ(formatted, expected);

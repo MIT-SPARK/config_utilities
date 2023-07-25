@@ -68,45 +68,78 @@ TEST(YamlParsing, moveDownNamespace) {
 
 TEST(YamlParsing, parsefromYaml) {
   DefaultConfig config;
-  internal::YamlParser parser;
   YAML::Node data = DefaultConfig::modifiedValues();
-  parser.setNode(data);
+  std::string error;
 
-  parser.fromYaml("i", config.i, "", "");
+  internal::YamlParser::fromYaml(data, "i", config.i, "", error);
   EXPECT_EQ(config.i, 2);
 
-  parser.fromYaml("f", config.f, "", "");
+  internal::YamlParser::fromYaml(data, "f", config.f, "", error);
   EXPECT_EQ(config.f, -1.f);
 
-  parser.fromYaml("d", config.d, "", "");
+  internal::YamlParser::fromYaml(data, "d", config.d, "", error);
   EXPECT_EQ(config.d, 3.1415926);
 
-  parser.fromYaml("b", config.b, "", "");
+  internal::YamlParser::fromYaml(data, "b", config.b, "", error);
   EXPECT_EQ(config.b, false);
 
-  parser.fromYaml("u8", config.u8, "", "");
+  internal::YamlParser::fromYaml(data, "u8", config.u8, "", error);
   EXPECT_EQ(config.u8, 255);
 
-  parser.fromYaml("s", config.s, "", "");
+  internal::YamlParser::fromYaml(data, "s", config.s, "", error);
   EXPECT_EQ(config.s, "a different test string");
 
-  parser.fromYaml("vec", config.vec, "", "");
+  internal::YamlParser::fromYaml(data, "vec", config.vec, "", error);
   EXPECT_EQ(config.vec, std::vector<int>({2, 3, 4, 5}));
 
-  parser.fromYaml("map", config.map, "", "");
+  internal::YamlParser::fromYaml(data, "map", config.map, "", error);
   const std::map<std::string, int> map({{"x", 24}, {"y", 25}, {"z", 26}});
   EXPECT_EQ(config.map, map);
 
-  parser.fromYaml("set", config.set, "", "");
+  internal::YamlParser::fromYaml(data, "set", config.set, "", error);
   EXPECT_EQ(config.set, std::set<float>({11.11, 22.22, 33.33, 44.44}));
 
-  parser.fromYaml("mat", config.mat, "", "");
+  internal::YamlParser::fromYaml(data, "mat", config.mat, "", error);
   Eigen::Matrix3d mat;
   mat << 1, 2, 3, 4, 5, 6, 7, 8, 9;
   EXPECT_EQ(config.mat, mat);
+}
 
-  // TODO(lschmid): Could add tests that correct warnings are issued and that unset params don't modfy the config but
-  // not important for now.
+TEST(YamlParsing, conversionFailure) {
+  DefaultConfig config;
+  YAML::Node node = YAML::Load(R"yaml(
+vec: "Invalid Value to create a vector from"
+map: "Invalid Value to create a map from"
+mat:
+  - [1, 2, 3]
+  - [4, 5, 6]
+  - [7, 8, 9, 10]
+i: "Value that can't be cast to int"
+my_enum: "D"
+sub_ns:
+  i: "Value that can't be cast to int"
+  nested_ns:
+    i: "Value that can't be cast to int"
+  )yaml");
+  internal::MetaData data = internal::Visitor::setValues(config, node);
+  std::vector<std::unique_ptr<internal::Warning>> errors;
+  data.performOnAll([&errors](const internal::MetaData& d) {
+    for (const auto& error : d.errors) {
+      errors.emplace_back(error->clone());
+    }
+  });
+  EXPECT_EQ(data.errors.size(), 5ul);
+  EXPECT_EQ(errors.size(), 7ul);
+  EXPECT_EQ(errors[0]->name(), "i");
+  EXPECT_EQ(errors[1]->name(), "vec");
+  EXPECT_EQ(errors[2]->name(), "map");
+  EXPECT_EQ(errors[3]->name(), "mat");
+  EXPECT_EQ(errors[4]->name(), "my_enum");
+  EXPECT_EQ(errors[5]->name(), "i");
+  EXPECT_EQ(errors[6]->name(), "i");
+  EXPECT_EQ(errors[1]->message(), "Data is not a sequence");
+  EXPECT_EQ(errors[2]->message(), "Data is not a map");
+  EXPECT_EQ(errors[4]->message(), "Invalid value 'D' for enum with values 'A', 'B', 'C'");
 }
 
 TEST(YamlParsing, setValues) {

@@ -38,7 +38,6 @@ struct Globals {
 
 /**
  * @brief Return a printed string of all configs that were checked valid (as a proxy for all configs that were created).
- *
  * @param clear If true, clear the list of valid configs after printing.
  * @returns The formatted string of all validated configs so far.
  */

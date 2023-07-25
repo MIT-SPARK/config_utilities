@@ -7,25 +7,75 @@ namespace config::internal {
 std::string AslFormatter::formatErrorsImpl(const MetaData& data, const std::string& what, const Severity severity) {
   const std::string sev = severityToString(severity) + ": ";
   const size_t print_width = Settings::instance().print_width;
-  std::string result = what + " '" + resolveConfigName(data) + "':\n";
-  if (Settings::instance().index_subconfig_field_names) {
-    result += internal::printCenter(resolveConfigName(data), print_width, '=') + "\n";
+  is_first_divider_ = true;
+  name_prefix_ = "";
+  current_check_ = 0;
+  if (indicate_num_checks_ && Settings::instance().inline_subconfig_field_names) {
+    total_num_checks_ = 0;
+    data.performOnAll([this](const MetaData& data) { total_num_checks_ += data.checks.size(); });
   }
-  data.performOnAll([&](const MetaData& data) { result += formatErrorsInternal(data, sev, print_width); });
+
+  // Header line.
+  std::string result = what + " '" + resolveConfigName(data) + "':\n" +
+                       internal::printCenter(resolveConfigName(data), print_width, '=') + "\n";
+
+  // Format all checks and errors.
+  result += formatErrorsRecursive(data, sev, print_width);
   return result + std::string(print_width, '=');
 }
 
-std::string AslFormatter::formatErrorsInternal(const MetaData& data,
-                                               const std::string& sev,
-                                               const size_t length) const {
-  std::string result;
-  if (!Settings::instance().index_subconfig_field_names && !data.errors.empty()) {
-    result += internal::printCenter(resolveConfigName(data), Settings::instance().print_width, '=') + "\n";
+std::string AslFormatter::formatErrorsRecursive(const MetaData& data, const std::string& sev, const size_t length) {
+  const std::string name_prefix_before = name_prefix_;
+  if (Settings::instance().inline_subconfig_field_names) {
+    if (!data.field_name.empty()) {
+      name_prefix_ += data.field_name + ".";
+    }
+  } else {
+    current_check_ = 0;
+    total_num_checks_ = data.checks.size();
   }
-  for (const std::string& error : data.errors) {
-    result.append(wrapString(sev + error, sev.length(), length, false) + "\n");
+  std::string result = formatChecksInternal(data, sev, length) + formatErrorsInternal(data, sev, length);
+
+  // Add more dividers if necessary.
+  if (!Settings::instance().inline_subconfig_field_names && !result.empty()) {
+    if (is_first_divider_) {
+      is_first_divider_ = false;
+    } else {
+      result = internal::printCenter(resolveConfigName(data), Settings::instance().print_width, '-') + "\n" + result;
+    }
   }
 
+  for (const MetaData& sub_data : data.sub_configs) {
+    result += formatErrorsRecursive(sub_data, sev, length);
+  }
+  name_prefix_ = name_prefix_before;
+  return result;
+}
+
+std::string AslFormatter::formatChecksInternal(const MetaData& data, const std::string& sev, const size_t length) {
+  std::string result;
+  for (const auto& check : data.checks) {
+    current_check_++;
+    if (check->valid()) {
+      continue;
+    }
+    const std::string rendered_name = check->name().empty() ? "" : " for '" + name_prefix_ + check->name() + "'";
+    const std::string rendered_num =
+        indicate_num_checks_ ? "[" + std::to_string(current_check_) + "/" + std::to_string(total_num_checks_) + "] "
+                             : "";
+    const std::string msg = sev + "Check " + rendered_num + "failed" + rendered_name + ": " + check->message() + ".";
+    result.append(wrapString(msg, length, sev.length(), false) + "\n");
+  }
+  return result;
+}
+
+std::string AslFormatter::formatErrorsInternal(const MetaData& data, const std::string& sev, const size_t length) {
+  std::string result;
+  for (const auto& error : data.errors) {
+    const std::string rendered_name = error->name().empty() ? "" : " '" + name_prefix_ + error->name() + "'";
+    const std::string msg = sev + "Failed to parse param" + rendered_name + ": " + error->message() + ".";
+    result.append(wrapString(msg, length, sev.length(), false) + "\n");
+  }
   return result;
 }
 
@@ -51,24 +101,31 @@ std::string AslFormatter::formatConfigsImpl(const std::vector<MetaData>& data) {
 std::string AslFormatter::toStringInternal(const MetaData& data, size_t indent) const {
   std::string result;
   for (const FieldInfo& info : data.field_infos) {
-    if (info.subconfig_id >= 0) {
-      result += formatSubconfig(data.sub_configs[info.subconfig_id], info, indent);
-    } else {
-      result += formatField(info, indent);
-    }
+    result += formatField(info, indent);
+  }
+  for (const MetaData& sub_data : data.sub_configs) {
+    result += formatSubconfig(sub_data, indent);
   }
   return result;
 }
 
-std::string AslFormatter::formatSubconfig(const MetaData& data, const FieldInfo& info, size_t indent) const {
+std::string AslFormatter::formatSubconfig(const MetaData& data, size_t indent) const {
   // Header.
-  std::string header = std::string(indent, ' ') + info.name;
+  std::string header = std::string(indent, ' ') + data.field_name;
   if (indicate_subconfig_types_) {
     header += " [" + resolveConfigName(data) + "]";
   }
-  if (Settings::instance().indicate_default_values && indicate_subconfig_default_ && info.is_default &&
-      !data.is_virtual_config) {
-    header += " (default)";
+  if (Settings::instance().indicate_default_values && indicate_subconfig_default_ && !data.is_virtual_config) {
+    bool is_default = true;
+    for (const FieldInfo& info : data.field_infos) {
+      if (!info.is_default) {
+        is_default = false;
+        break;
+      }
+    }
+    if (is_default) {
+      header += " (default)";
+    }
   }
   if (resolveConfigName(data) != "Uninitialized Virtual Config") {
     header += ":";
@@ -91,7 +148,7 @@ std::string AslFormatter::formatField(const FieldInfo& info, size_t indent) cons
   if (Settings::instance().indicate_units && !info.unit.empty()) {
     header += " [" + info.unit + "]";
   }
-  header += ": ";
+  header += ":";
 
   // Multi-line formatting info for nested types.
   std::vector<size_t> linebreaks = findAllSubstrings(field, "}, ");
@@ -114,17 +171,21 @@ std::string AslFormatter::formatField(const FieldInfo& info, size_t indent) cons
   }
 
   // Format the header to width.
-  result += wrapString(header, indent, print_width, false);
+  result += wrapString(header, print_width, indent, false);
   const size_t last_header_line = result.find_last_of('\n');
   size_t header_size = result.substr(last_header_line != std::string::npos ? last_header_line + 1 : 0).size();
   if (header_size < global_indent) {
     result += std::string(global_indent - header_size, ' ');
     header_size = global_indent;
-  } else if (print_width - header_size < field.length() || is_multiline) {
+  } else if (print_width - header_size - 1 < field.length() || is_multiline) {
     // If the field does not fit entirely or is multi-line anyways just start a new line.
     result = pruneTrailingWhitespace(result);
     result += "\n" + std::string(global_indent, ' ');
     header_size = global_indent;
+  } else {
+    // If the field fits partly on the same line, add a space after the header.
+    result += " ";
+    header_size += 1;
   }
 
   // First line of field could be shorter due to header over extension.
@@ -139,11 +200,11 @@ std::string AslFormatter::formatField(const FieldInfo& info, size_t indent) cons
                         std::count_if(closed_brackets.begin(), closed_brackets.end(), isBefore);
       std::string line = field.substr(prev_break, linebreak - prev_break + 2);
       line = std::string(num_open, ' ') + line;
-      line = wrapString(line, global_indent, print_width);
+      line = wrapString(line, print_width, global_indent) + "\n";
       if (prev_break == 0) {
         line = line.substr(global_indent);
       }
-      result += pruneTrailingWhitespace(line) + "\n";
+      result += pruneTrailingWhitespace(line);
       prev_break = linebreak + 3;
     }
   } else if (field.length() < available_length) {
@@ -152,30 +213,9 @@ std::string AslFormatter::formatField(const FieldInfo& info, size_t indent) cons
   } else {
     // Add as much as fits on the first line and fill the rest.
     result += pruneTrailingWhitespace(field.substr(0, available_length)) + "\n";
-    result += wrapString(field.substr(available_length), global_indent, print_width) + "\n";
+    result += wrapString(pruneLeadingWhitespace(field.substr(available_length)), print_width, global_indent) + "\n";
   }
   return result;
-}
-
-std::string AslFormatter::wrapString(const std::string& str,
-                                     size_t indent,
-                                     size_t width,
-                                     bool indent_first_line) const {
-  std::string result;
-  std::string remaining = str;
-  if (indent_first_line) {
-    result = std::string(indent, ' ');
-  } else {
-    const size_t first_line_length = std::min(indent, str.length());
-    result = str.substr(0, first_line_length);
-    remaining = str.substr(first_line_length);
-  }
-  const size_t length = width - indent;
-  while (remaining.length() > length) {
-    result += pruneTrailingWhitespace(remaining.substr(0, length)) + "\n" + std::string(indent, ' ');
-    remaining = remaining.substr(length);
-  }
-  return result + remaining;
 }
 
 std::string AslFormatter::resolveConfigName(const MetaData& data) const {

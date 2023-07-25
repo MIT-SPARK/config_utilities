@@ -13,7 +13,7 @@
 #include "config_utilities/printing.h"               // Enable toString()
 #include "config_utilities/traits.h"                 // Enables isConfig()
 #include "config_utilities/types/eigen_matrix.h"     // Enable parsing and printing of Eigen::Matrix types.
-#include "config_utilities/validity_checks.h"        // Enable isValid() and checkValid().
+#include "config_utilities/validation.h"             // Enable isValid() and checkValid().
 
 namespace demo {
 
@@ -91,11 +91,13 @@ void declare_config(MyConfig& config) {
   config::check(config.i, config::CheckMode::LT, -2, "i");
 
   // Double sided checks can be invoked as in range.
-  config::checkInRange(config.distance, 0.0, 100.0, "distance");
+  const bool lower_inclusive = true;
+  const bool upper_inclusive = false;
+  config::checkInRange(config.distance, 0.0, 100.0, "distance", lower_inclusive, upper_inclusive);
 
   // Any other checks can be implmented using the generic condition check.
-  config::checkCondition(config.distance < config.i, "Param 'distance' must be < 'i'.");
-  config::checkCondition(!config.s.empty(), "Param 's' may not be empty.");
+  config::checkCondition(config.distance < config.i, "Param 'distance' must be < 'i'");
+  config::checkCondition(!config.s.empty(), "Param 's' may not be empty");
 
   // Any check can be dispatched via templating and forwarded arguments
   config::check<config::internal::CheckRange>(config.distance, 0.0, 100.0, "distance via template");
@@ -131,7 +133,7 @@ int main(int argc, char** argv) {
   const std::string my_root_path = std::string(argv[1]) + "/";
 
   // GLobal settings can be set at runtime to change the behavior and presentation of configs.
-  config::Settings().index_subconfig_field_names = true;
+  config::Settings().inline_subconfig_field_names = true;
 
   // ===================================== Checking whether a struct is a config =====================================
   std::cout << "\n\n----- Checking whether a struct is a config -----\n\n" << std::endl;

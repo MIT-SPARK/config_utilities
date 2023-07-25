@@ -12,7 +12,7 @@
 #include "config_utilities/parsing/yaml.h"           // Enable fromYamlFile().
 #include "config_utilities/printing.h"               // Enable toString()
 #include "config_utilities/traits.h"                 // Enables isConfig()
-#include "config_utilities/validity_checks.h"        // Enable isValid() and checkValid().
+#include "config_utilities/validation.h"             // Enable isValid() and checkValid().
 
 namespace demo {
 
@@ -109,7 +109,7 @@ int main(int argc, char** argv) {
 
   const std::string my_root_path = std::string(argv[1]) + "/";
 
-  config::Settings().index_subconfig_field_names = true;
+  config::Settings().inline_subconfig_field_names = true;
 
   // ===================================== Checking whether a struct is a config =====================================
 

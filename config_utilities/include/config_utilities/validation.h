@@ -13,6 +13,12 @@
 
 namespace config {
 
+namespace internal {
+
+bool hasNoInvalidChecks(const MetaData& data);
+
+}  // namespace internal
+
 /**
  * @brief Check if a config is valid.
  *
@@ -27,7 +33,8 @@ bool isValid(const ConfigT& config, bool print_warnings = false) {
                 "Can not use 'config::isValid()' on non-config type. Please implement 'void declare_config(ConfigT&)' "
                 "for your struct.");
   internal::MetaData data = internal::Visitor::getChecks(config);
-  if (!data.hasErrors()) {
+
+  if (internal::hasNoInvalidChecks(data)) {
     return true;
   }
   if (print_warnings) {
@@ -51,10 +58,7 @@ const ConfigT& checkValid(const ConfigT& config) {
       "for your struct.");
   internal::MetaData data = internal::Visitor::getChecks(config);
 
-  if (!data.hasErrors()) {
-    if (Settings().store_valid_configs) {
-      internal::Globals::instance().valid_configs.push_back(internal::Visitor::getValues(config, false));
-    }
+  if (internal::hasNoInvalidChecks(data)) {
     return config;
   }
 
