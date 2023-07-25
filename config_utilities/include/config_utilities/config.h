@@ -131,7 +131,6 @@ enum class CheckMode {
 };
 
 // Also expose these in the config namespace.
-// NOTE(lschmid): I'm ok with not doing this but don't think it hurts and probably gets some shorter declarations.
 constexpr CheckMode GT = CheckMode::GT;
 constexpr CheckMode GE = CheckMode::GE;
 constexpr CheckMode LT = CheckMode::LT;
