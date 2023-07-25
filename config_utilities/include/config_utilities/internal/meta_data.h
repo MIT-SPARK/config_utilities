@@ -51,6 +51,9 @@ struct MetaData {
   // Always get the name of the config if possible.
   std::string name;
 
+  // Name of the field if the data is a sub-config.
+  std::string field_name;
+
   // Whether the data stored belongs to a virtual config.
   bool is_virtual_config = false;
 

@@ -13,11 +13,7 @@ Visitor::~Visitor() { instances.pop_back(); }
 
 bool Visitor::hasInstance() { return !instances.empty(); }
 
-Visitor::Visitor(Mode _mode,
-                 const std::string& _name_space,
-                 const std::string& _name_prefix,
-                 const std::string& _current_field_name)
-    : mode(_mode), name_space(_name_space), field_name_prefix(_name_prefix), current_field_name(_current_field_name) {
+Visitor::Visitor(Mode _mode, const std::string& _name_space) : mode(_mode), name_space(_name_space) {
   // Create instances in a stack per thread and store the reference to it.
   instances.emplace_back(this);
 }

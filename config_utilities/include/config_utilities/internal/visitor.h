@@ -28,23 +28,17 @@ struct Visitor {
   static MetaData setValues(ConfigT& config,
                             const YAML::Node& node,
                             const bool print_warnings = true,
-                            const std::string& name_space = "",
-                            const std::string& field_name_prefix = "",
-                            const std::string& current_field_name = "");
+                            const std::string& name_space = "");
 
   // Get the data stored in the config.
   template <typename ConfigT>
   static MetaData getValues(const ConfigT& config,
                             const bool print_warnings = true,
-                            const std::string& name_space = "",
-                            const std::string& field_name_prefix = "",
-                            const std::string& current_field_name = "");
+                            const std::string& name_space = "");
 
   // Execute all checks specified in the config.
   template <typename ConfigT>
-  static MetaData getChecks(const ConfigT& config,
-                            const std::string& field_name_prefix = "",
-                            const std::string& current_field_name = "");
+  static MetaData getChecks(const ConfigT& config);
 
   // Interfaces for the config declaration interfaces to to expose their info to the visitor.
   static void visitName(const std::string& name);
@@ -82,10 +76,7 @@ struct Visitor {
   // objects. Note that meta data always needs to be created before it can be accessed. In short, 'instance()' is only
   // to be used within the 'declare_config()' function, whereas 'create()' is to be used to extract data from a struct
   // by calling 'declare_config()'.
-  explicit Visitor(Mode _mode,
-                   const std::string& _name_space = "",
-                   const std::string& _name_prefix = "",
-                   const std::string& _current_field_name = "");
+  explicit Visitor(Mode _mode, const std::string& _name_space = "");
 
   static Visitor& instance();
 
@@ -105,10 +96,7 @@ struct Visitor {
 
   // Extend the current visitor with a sub-visitor, replicating the previous specification.
   template <typename ConfigT>
-  static MetaData subVisit(ConfigT& config,
-                           const bool print_warnings,
-                           const std::string& field_name_prefix,
-                           const std::string& current_field_name);
+  static MetaData subVisit(ConfigT& config, const bool print_warnings);
 
   /* Internal data to handle visits. */
   // The messenger data to read from and return eventually.
