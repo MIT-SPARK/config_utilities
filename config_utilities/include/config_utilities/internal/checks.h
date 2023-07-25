@@ -17,14 +17,6 @@ struct CheckBase {
   virtual std::unique_ptr<CheckBase> clone() const = 0;
 
   inline operator bool() const { return valid(); }
-
-  std::string toString(const std::string& name_prefix = "") const {
-    const auto check_name = name();
-    const auto rendered_name = check_name.empty() ? "" : " for '" + name_prefix + check_name + "'";
-    std::stringstream ss;
-    ss << "Check failed" << rendered_name << ": " << message() << ".";
-    return ss.str();
-  }
 };
 
 class Check : public CheckBase {

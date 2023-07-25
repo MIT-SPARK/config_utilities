@@ -32,7 +32,7 @@ struct Settings {
   bool indicate_units = true;
 
   // If true integrate subconfig fields into the main config, if false print them separately.
-  bool index_subconfig_field_names = true;
+  bool inline_subconfig_field_names = true;
 
   // If true, store all validated configs for global printing.
   bool store_valid_configs = true;

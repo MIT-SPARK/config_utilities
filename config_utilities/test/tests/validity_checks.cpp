@@ -147,7 +147,6 @@ TEST(ValidityChecks, isValid) {
 
 TEST(ValidityChecks, numChecks) {
   DefaultConfig config;
-  std::cout << numChecks(config) << std::endl;
   EXPECT_EQ(numChecks(config), 11);
   EXPECT_EQ(numFailedChecks(config), 0);
 

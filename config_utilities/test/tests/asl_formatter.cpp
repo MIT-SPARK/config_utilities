@@ -73,6 +73,7 @@ TEST(AslFormatter, formatErrors) {
 
   std::string formatted = internal::Formatter::formatErrors(data);
   EXPECT_EQ(countLines(formatted), 9);
+  std::cout << formatted << std::endl;
 
   std::string expected = R"""( 'Config 1':
 =================================== Config 1 ===================================
@@ -85,31 +86,35 @@ Warning: Error 6
 ================================================================================)""";
   EXPECT_EQ(formatted, expected);
 
-  Settings().index_subconfig_field_names = false;
+  Settings().inline_subconfig_field_names = false;
   formatted = internal::Formatter::formatErrors(data);
   EXPECT_EQ(countLines(formatted), 12);
+
+  std::cout << formatted << std::endl;
 
   expected = R"""( 'Config 1':
 =================================== Config 1 ===================================
 Warning: Error 1
 Warning: Error 2
-=================================== Config 2 ===================================
+----------------------------------- Config 2 -----------------------------------
 Warning: Error 3
 Warning: Error 4
-=================================== Config 3 ===================================
+----------------------------------- Config 3 -----------------------------------
 Warning: Error 5
-=================================== Config 4 ===================================
+----------------------------------- Config 4 -----------------------------------
 Warning: Error 6
 ================================================================================)""";
   EXPECT_EQ(formatted, expected);
 }
+
+TEST(AslFormatter, formatChecks) {}
 
 TEST(AslFormatter, formatConfig) {
   internal::MetaData data = internal::Visitor::getValues(TestConfig());
 
   Settings().indicate_default_values = false;
   Settings().indicate_units = false;
-  Settings().index_subconfig_field_names = true;
+  Settings().inline_subconfig_field_names = true;
   std::string formatted = internal::Formatter::formatConfig(data);
   std::string expected =
       R"""(================================= Test Config ==================================
@@ -225,7 +230,7 @@ ll be wrapped:      A really really really ridiculously long string that will al
 TEST(AslFormatter, formatUnits) {
   Settings().indicate_default_values = false;
   Settings().indicate_units = true;
-  Settings().index_subconfig_field_names = true;
+  Settings().inline_subconfig_field_names = true;
   Settings().print_width = 80;  // force print width to be consistent for tests
 
   internal::MetaData data = internal::Visitor::getValues(TestConfig());
@@ -268,7 +273,7 @@ ll be wrapped [and has a long unit]:
 TEST(AslFormatter, formatDefaultValues) {
   Settings().indicate_default_values = true;
   Settings().indicate_units = false;
-  Settings().index_subconfig_field_names = true;
+  Settings().inline_subconfig_field_names = true;
 
   const internal::MetaData default_data = internal::Visitor::getValues(TestConfig());
   std::string formatted = internal::Formatter::formatConfig(default_data);

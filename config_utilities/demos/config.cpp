@@ -133,7 +133,7 @@ int main(int argc, char** argv) {
   const std::string my_root_path = std::string(argv[1]) + "/";
 
   // GLobal settings can be set at runtime to change the behavior and presentation of configs.
-  config::Settings().index_subconfig_field_names = true;
+  config::Settings().inline_subconfig_field_names = true;
 
   // ===================================== Checking whether a struct is a config =====================================
   std::cout << "\n\n----- Checking whether a struct is a config -----\n\n" << std::endl;
