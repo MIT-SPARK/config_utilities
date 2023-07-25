@@ -18,15 +18,13 @@ TEST(Globals, PrintValidChecks) {
   checkValid(config);
   checkValid(config);
   EXPECT_EQ(internal::Globals::instance().valid_configs.size(), 2);
-  auto logger = TestLogger::create();
 
   config.i = 123;
   config.f = 456.7f;
   checkValid(config);
   EXPECT_EQ(internal::Globals::instance().valid_configs.size(), 3);
-  logger->print();
 
-  // auto logger = TestLogger::create();
+  auto logger = TestLogger::create();
   config.i = -1;
   checkValid(config);
   EXPECT_EQ(logger->messages().back().first, internal::Severity::kFatal);
