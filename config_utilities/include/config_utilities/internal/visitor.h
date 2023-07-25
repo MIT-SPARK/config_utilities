@@ -83,9 +83,6 @@ struct Visitor {
   static Visitor& instance();
 
   /* Utility function to manipulate data. */
-  // Move errors from the checker and parser into the meta data.
-  void extractErrors();
-
   // Helper function to get the default values of a config.
   template <typename ConfigT, typename std::enable_if<!is_virtual_config<ConfigT>::value, bool>::type = true>
   static MetaData getDefaults(const ConfigT& config);
@@ -104,16 +101,11 @@ struct Visitor {
   // The messenger data to read from and return eventually.
   MetaData data;
 
-  // Parser for getting or setting yaml parsing.
-  YamlParser parser;
-
   // Storage for user specified namespaces. Managed by namespacing.h.
   OpenNameSpace::Stack open_namespaces;
 
   // The current namespace used to get or set values.
   std::string name_space;
-
-  std::string field_name_prefix;
 
   // Keep track of which base configs were already visited to avoid duplicates in diamond inheritance.
   std::set<std::string> visited_base_configs;

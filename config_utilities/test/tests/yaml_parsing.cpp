@@ -68,39 +68,38 @@ TEST(YamlParsing, moveDownNamespace) {
 
 TEST(YamlParsing, parsefromYaml) {
   DefaultConfig config;
-  internal::YamlParser parser;
   YAML::Node data = DefaultConfig::modifiedValues();
-  parser.setNode(data);
+  std::string error;
 
-  parser.fromYaml("i", config.i, "", "");
+  internal::YamlParser::fromYaml(data, "i", config.i, "", error);
   EXPECT_EQ(config.i, 2);
 
-  parser.fromYaml("f", config.f, "", "");
+  internal::YamlParser::fromYaml(data, "f", config.f, "", error);
   EXPECT_EQ(config.f, -1.f);
 
-  parser.fromYaml("d", config.d, "", "");
+  internal::YamlParser::fromYaml(data, "d", config.d, "", error);
   EXPECT_EQ(config.d, 3.1415926);
 
-  parser.fromYaml("b", config.b, "", "");
+  internal::YamlParser::fromYaml(data, "b", config.b, "", error);
   EXPECT_EQ(config.b, false);
 
-  parser.fromYaml("u8", config.u8, "", "");
+  internal::YamlParser::fromYaml(data, "u8", config.u8, "", error);
   EXPECT_EQ(config.u8, 255);
 
-  parser.fromYaml("s", config.s, "", "");
+  internal::YamlParser::fromYaml(data, "s", config.s, "", error);
   EXPECT_EQ(config.s, "a different test string");
 
-  parser.fromYaml("vec", config.vec, "", "");
+  internal::YamlParser::fromYaml(data, "vec", config.vec, "", error);
   EXPECT_EQ(config.vec, std::vector<int>({2, 3, 4, 5}));
 
-  parser.fromYaml("map", config.map, "", "");
+  internal::YamlParser::fromYaml(data, "map", config.map, "", error);
   const std::map<std::string, int> map({{"x", 24}, {"y", 25}, {"z", 26}});
   EXPECT_EQ(config.map, map);
 
-  parser.fromYaml("set", config.set, "", "");
+  internal::YamlParser::fromYaml(data, "set", config.set, "", error);
   EXPECT_EQ(config.set, std::set<float>({11.11, 22.22, 33.33, 44.44}));
 
-  parser.fromYaml("mat", config.mat, "", "");
+  internal::YamlParser::fromYaml(data, "mat", config.mat, "", error);
   Eigen::Matrix3d mat;
   mat << 1, 2, 3, 4, 5, 6, 7, 8, 9;
   EXPECT_EQ(config.mat, mat);

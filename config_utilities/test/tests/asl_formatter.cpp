@@ -58,31 +58,31 @@ TEST(AslFormatter, dataToString) {
 TEST(AslFormatter, formatErrors) {
   internal::MetaData data;
   data.name = "Config 1";
-  data.errors.push_back("Error 1");
-  data.errors.push_back("Error 2");
+  data.errors.emplace_back(new internal::Warning("Field 1", "Error 1"));
+  data.errors.emplace_back(new internal::Warning("", "Error 2"));
   internal::MetaData& d = data.sub_configs.emplace_back();
   d.name = "Config 2";
-  d.errors.push_back("Error 3");
-  d.errors.push_back("Error 4");
+  d.errors.emplace_back(new internal::Warning("Field 3", "Error 3"));
+  d.errors.emplace_back(new internal::Warning("Field 4", "Error 4"));
   internal::MetaData& d2 = data.sub_configs.emplace_back();
   internal::MetaData& d3 = d2.sub_configs.emplace_back();
   d3.name = "Config 3";
-  d3.errors.push_back("Error 5");
+  d3.errors.emplace_back(new internal::Warning("", "Error 5"));
   internal::MetaData& d4 = d3.sub_configs.emplace_back();
   d4.name = "Config 4";
-  d4.errors.push_back("Error 6");
+  d4.errors.emplace_back(new internal::Warning("Field 6", "Error 6"));
 
   std::string formatted = internal::Formatter::formatErrors(data);
   EXPECT_EQ(countLines(formatted), 9);
 
   std::string expected = R"""( 'Config 1':
 =================================== Config 1 ===================================
-Warning: Error 1
-Warning: Error 2
-Warning: Error 3
-Warning: Error 4
-Warning: Error 5
-Warning: Error 6
+Warning: Failed to parse param 'Field 1': Error 1.
+Warning: Failed to parse param: Error 2.
+Warning: Failed to parse param 'Field 3': Error 3.
+Warning: Failed to parse param 'Field 4': Error 4.
+Warning: Failed to parse param: Error 5.
+Warning: Failed to parse param 'Field 6': Error 6.
 ================================================================================)""";
   EXPECT_EQ(formatted, expected);
 
@@ -92,15 +92,15 @@ Warning: Error 6
 
   expected = R"""( 'Config 1':
 =================================== Config 1 ===================================
-Warning: Error 1
-Warning: Error 2
+Warning: Failed to parse param 'Field 1': Error 1.
+Warning: Failed to parse param: Error 2.
 ----------------------------------- Config 2 -----------------------------------
-Warning: Error 3
-Warning: Error 4
+Warning: Failed to parse param 'Field 3': Error 3.
+Warning: Failed to parse param 'Field 4': Error 4.
 ----------------------------------- Config 3 -----------------------------------
-Warning: Error 5
+Warning: Failed to parse param: Error 5.
 ----------------------------------- Config 4 -----------------------------------
-Warning: Error 6
+Warning: Failed to parse param 'Field 6': Error 6.
 ================================================================================)""";
   EXPECT_EQ(formatted, expected);
 }

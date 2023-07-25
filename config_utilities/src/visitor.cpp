@@ -30,12 +30,6 @@ Visitor& Visitor::instance() {
   return *instances.back();
 }
 
-void Visitor::extractErrors() {
-  // Move the errors from the parser and checker to the meta data.
-  data.errors.insert(data.errors.end(), parser.getErrors().begin(), parser.getErrors().end());
-  parser.resetErrors();
-}
-
 void Visitor::visitName(const std::string& name) {
   std::string& current_name = Visitor::instance().data.name;
   // Avoid overriding names. If the name is to be set, it should be cleared previously.
@@ -70,13 +64,16 @@ std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set, bool is_optio
   if (visitor.mode == Visitor::Mode::kGet) {
     if (is_set) {
       // Also write the type param back to file.
-      visitor.parser.toYaml(Settings::instance().factory_type_param_name, type, visitor.name_space, "");
+      std::string error;
+      YAML::Node type_node =
+          YamlParser::toYaml(Settings::instance().factory_type_param_name, type, visitor.name_space, error);
+      mergeYamlNodes(visitor.data.data, type_node);
     }
   }
 
   if (visitor.mode == Visitor::Mode::kSet) {
     // Return the data to intialize the virtual config if this is the first time setting it.
-    return lookupNamespace(visitor.parser.getNode(), visitor.name_space);
+    return lookupNamespace(visitor.data.data, visitor.name_space);
   }
 
   return std::nullopt;

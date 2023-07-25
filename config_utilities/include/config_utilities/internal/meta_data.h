@@ -29,6 +29,19 @@ struct FieldInfo {
   bool is_default = false;
 };
 
+// Struct to issue warnings. Currently used for parsing errors but can be extended to other warnings in the future.
+struct Warning {
+  virtual ~Warning() = default;
+  Warning(const std::string& name, const std::string& message) : name_(name), message_(message) {}
+  virtual std::string name() const { return name_; }
+  virtual std::string message() const { return message_; }
+  virtual std::unique_ptr<Warning> clone() const { return std::make_unique<Warning>(name_, message_); }
+
+ private:
+  std::string name_;
+  std::string message_;
+};
+
 /**
  * @brief Meta-information struct that interfaces all the communication data when interacting with the configs. YAML is
  * used as internal data representation, so all conversions can be checked against yaml and all formatters, factories,
@@ -38,10 +51,10 @@ struct MetaData {
   // Assignments and constructors.
   MetaData() = default;
   MetaData& operator=(const MetaData& other) {
-    getValues(other);
+    copyValues(other);
     return *this;
   }
-  MetaData(const MetaData& other) { getValues(other); }
+  MetaData(const MetaData& other) { copyValues(other); }
   MetaData(MetaData&& other) = default;
   MetaData& operator=(MetaData&& other) = default;
 
@@ -63,8 +76,8 @@ struct MetaData {
   // All checks that were performed on the config.
   std::vector<std::unique_ptr<CheckBase>> checks;
 
-  // All other error messages issued by the yaml parser (and others).
-  std::vector<std::string> errors;
+  // All error messages issued by the yaml parser (and potentially others in the future).
+  std::vector<std::unique_ptr<Warning>> errors;
 
   // If a config has sub-configs, they are stored here.
   std::vector<MetaData> sub_configs;
@@ -77,7 +90,7 @@ struct MetaData {
   void performOnAll(const std::function<void(const MetaData&)>& func) const;
 
  private:
-  void getValues(const MetaData& other) {
+  void copyValues(const MetaData& other) {
     name = other.name;
     is_virtual_config = other.is_virtual_config;
     data = other.data;
@@ -85,7 +98,9 @@ struct MetaData {
     for (const auto& check : other.checks) {
       checks.emplace_back(check->clone());
     }
-    errors = other.errors;
+    for (const auto& error : other.errors) {
+      errors.emplace_back(error->clone());
+    }
     field_name = other.field_name;
     sub_configs = other.sub_configs;
   }

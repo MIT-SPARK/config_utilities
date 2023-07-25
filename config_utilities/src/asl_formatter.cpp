@@ -71,11 +71,10 @@ std::string AslFormatter::formatChecksInternal(const MetaData& data, const std::
 
 std::string AslFormatter::formatErrorsInternal(const MetaData& data, const std::string& sev, const size_t length) {
   std::string result;
-  if (data.errors.empty()) {
-    return result;
-  }
-  for (const std::string& error : data.errors) {
-    result.append(wrapString(sev + error, length, sev.length(), false) + "\n");
+  for (const auto& error : data.errors) {
+    const std::string rendered_name = error->name().empty() ? "" : " '" + name_prefix_ + error->name() + "'";
+    const std::string msg = sev + "Failed to parse param" + rendered_name + ": " + error->message() + ".";
+    result.append(wrapString(msg, length, sev.length(), false) + "\n");
   }
   return result;
 }
