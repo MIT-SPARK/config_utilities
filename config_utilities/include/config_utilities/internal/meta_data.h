@@ -93,7 +93,7 @@ struct MetaData {
   void copyValues(const MetaData& other) {
     name = other.name;
     is_virtual_config = other.is_virtual_config;
-    data = other.data;
+    data = YAML::Clone(other.data);
     field_infos = other.field_infos;
     for (const auto& check : other.checks) {
       checks.emplace_back(check->clone());
