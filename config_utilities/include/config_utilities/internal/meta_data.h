@@ -89,6 +89,7 @@ struct MetaData {
       checks.emplace_back(check->clone());
     }
     errors = other.errors;
+    field_name = other.field_name;
     sub_configs = other.sub_configs;
   }
 };

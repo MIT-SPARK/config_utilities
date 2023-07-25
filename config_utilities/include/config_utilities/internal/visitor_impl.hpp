@@ -162,8 +162,10 @@ void Visitor::visitField(ConfigT& config, const std::string& field_name, const s
   FieldInfo& info = data.field_infos.emplace_back();
   info.name = field_name;
   info.subconfig_id = data.sub_configs.size();
+
   // Visit subconfig.
   MetaData& new_data = data.sub_configs.emplace_back(Visitor::subVisit(config, false));
+  new_data.field_name = field_name;
 
   // Aggregate data.
   if (visitor.mode == Visitor::Mode::kGet) {

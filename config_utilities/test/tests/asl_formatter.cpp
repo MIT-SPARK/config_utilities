@@ -65,15 +65,15 @@ TEST(AslFormatter, formatErrors) {
   d.errors.push_back("Error 3");
   d.errors.push_back("Error 4");
   internal::MetaData& d2 = data.sub_configs.emplace_back();
-  d2.name = "Config 3";
-  d2.errors.push_back("Error 5");
   internal::MetaData& d3 = d2.sub_configs.emplace_back();
-  d3.name = "Config 4";
-  d3.errors.push_back("Error 6");
+  d3.name = "Config 3";
+  d3.errors.push_back("Error 5");
+  internal::MetaData& d4 = d3.sub_configs.emplace_back();
+  d4.name = "Config 4";
+  d4.errors.push_back("Error 6");
 
   std::string formatted = internal::Formatter::formatErrors(data);
   EXPECT_EQ(countLines(formatted), 9);
-  std::cout << formatted << std::endl;
 
   std::string expected = R"""( 'Config 1':
 =================================== Config 1 ===================================
@@ -90,8 +90,6 @@ Warning: Error 6
   formatted = internal::Formatter::formatErrors(data);
   EXPECT_EQ(countLines(formatted), 12);
 
-  std::cout << formatted << std::endl;
-
   expected = R"""( 'Config 1':
 =================================== Config 1 ===================================
 Warning: Error 1
@@ -107,7 +105,63 @@ Warning: Error 6
   EXPECT_EQ(formatted, expected);
 }
 
-TEST(AslFormatter, formatChecks) {}
+TEST(AslFormatter, formatChecks) {
+  DefaultConfig config;
+  config.i = -1;
+  config.f = -1.f;
+  config.d = 100.0;
+  // TODO(lschmid): u8 formatting is currently not supported in the checks. Maybe using the field declaration and yaml
+  // parser could potentially resolve this.
+  // config.u8 = 26;
+  config.s = "";
+  config.vec = {1, 2};
+  config.b = false;
+  config.d = 1000.0;
+  config.sub_config.i = -1;
+  config.sub_sub_config.i = -1;
+  config.sub_config.sub_sub_config.i = -1;
+
+  Settings().restoreDefaults();
+  Settings().inline_subconfig_field_names = false;
+  internal::MetaData data = internal::Visitor::getChecks(config);
+  std::string formatted = internal::Formatter::formatErrors(data);
+  std::string expected = R"""( 'DefaultConfig':
+================================ DefaultConfig =================================
+Warning: Check [1/8] failed for 'i': param > 0 (is: '-1').
+Warning: Check [2/8] failed for 'f': param >= 0 (is: '-1').
+Warning: Check [3/8] failed for 'd': param < 4 (is: '1000').
+Warning: Check [5/8] failed for 's': param == test string (is: '').
+Warning: Check [6/8] failed for 'b': param != 0 (is: '0').
+Warning: Check [7/8] failed: Param 'vec' must b of size '3'.
+Warning: Check [8/8] failed for 'd': param within [0, 500] (is: '1000').
+---------------------------------- SubConfig -----------------------------------
+Warning: Check [1/1] failed for 'i': param > 0 (is: '-1').
+--------------------------------- SubSubConfig ---------------------------------
+Warning: Check [1/1] failed for 'i': param > 0 (is: '-1').
+--------------------------------- SubSubConfig ---------------------------------
+Warning: Check [1/1] failed for 'i': param > 0 (is: '-1').
+================================================================================
+  )""";
+
+  Settings().inline_subconfig_field_names = true;
+  data = internal::Visitor::getChecks(config);
+  formatted = internal::Formatter::formatErrors(data);
+  expected = R"""( 'DefaultConfig':
+================================ DefaultConfig =================================
+Warning: Check [1/11] failed for 'i': param > 0 (is: '-1').
+Warning: Check [2/11] failed for 'f': param >= 0 (is: '-1').
+Warning: Check [3/11] failed for 'd': param < 4 (is: '1000').
+Warning: Check [5/11] failed for 's': param == test string (is: '').
+Warning: Check [6/11] failed for 'b': param != 0 (is: '0').
+Warning: Check [7/11] failed: Param 'vec' must b of size '3'.
+Warning: Check [8/11] failed for 'd': param within [0, 500] (is: '1000').
+Warning: Check [9/11] failed for 'sub_config.i': param > 0 (is: '-1').
+Warning: Check [10/11] failed for 'sub_config.sub_sub_config.i': param > 0 (is:
+         '-1').
+Warning: Check [11/11] failed for 'sub_sub_config.i': param > 0 (is: '-1').
+================================================================================)""";
+  EXPECT_EQ(formatted, expected);
+}
 
 TEST(AslFormatter, formatConfig) {
   internal::MetaData data = internal::Visitor::getValues(TestConfig());

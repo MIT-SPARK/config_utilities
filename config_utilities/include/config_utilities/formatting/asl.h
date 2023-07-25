@@ -34,6 +34,7 @@ class AslFormatter : public Formatter {
   } initializer_;
 
   // Helper functions.
+  std::string formatErrorsRecursive(const MetaData& data, const std::string& sev, const size_t length);
   std::string formatChecksInternal(const MetaData& data, const std::string& sev, const size_t length);
   std::string formatErrorsInternal(const MetaData& data, const std::string& sev, const size_t length);
   std::string toStringInternal(const MetaData& data, size_t indent) const;
@@ -56,6 +57,7 @@ class AslFormatter : public Formatter {
   std::string name_prefix_;
   size_t total_num_checks_;
   size_t current_check_;
+  bool is_first_divider_;
 };
 
 }  // namespace config::internal
