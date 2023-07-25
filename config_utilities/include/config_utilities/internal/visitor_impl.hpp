@@ -128,7 +128,7 @@ void Visitor::visitEnumField(EnumT& field,
         return pair.second == place_holder;
       });
       if (it == enum_names.end()) {
-        std::string error = "Invalid value '" + place_holder + "' for enum field with values ";
+        std::string error = "Invalid value '" + place_holder + "' for enum with values ";
         for (const auto& [_, name] : enum_names) {
           error += "'" + name + "', ";
         }

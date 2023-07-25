@@ -103,9 +103,43 @@ TEST(YamlParsing, parsefromYaml) {
   Eigen::Matrix3d mat;
   mat << 1, 2, 3, 4, 5, 6, 7, 8, 9;
   EXPECT_EQ(config.mat, mat);
+}
 
-  // TODO(lschmid): Could add tests that correct warnings are issued and that unset params don't modfy the config but
-  // not important for now.
+TEST(YamlParsing, conversionFailure) {
+  DefaultConfig config;
+  YAML::Node node = YAML::Load(R"yaml(
+vec: "Invalid Value to create a vector from"
+map: "Invalid Value to create a map from"
+mat:
+  - [1, 2, 3]
+  - [4, 5, 6]
+  - [7, 8, 9, 10]
+i: "Value that can't be cast to int"
+my_enum: "D"
+sub_ns:
+  i: "Value that can't be cast to int"
+  nested_ns:
+    i: "Value that can't be cast to int"
+  )yaml");
+  internal::MetaData data = internal::Visitor::setValues(config, node);
+  std::vector<std::unique_ptr<internal::Warning>> errors;
+  data.performOnAll([&errors](const internal::MetaData& d) {
+    for (const auto& error : d.errors) {
+      errors.emplace_back(error->clone());
+    }
+  });
+  EXPECT_EQ(data.errors.size(), 5ul);
+  EXPECT_EQ(errors.size(), 7ul);
+  EXPECT_EQ(errors[0]->name(), "i");
+  EXPECT_EQ(errors[1]->name(), "vec");
+  EXPECT_EQ(errors[2]->name(), "map");
+  EXPECT_EQ(errors[3]->name(), "mat");
+  EXPECT_EQ(errors[4]->name(), "my_enum");
+  EXPECT_EQ(errors[5]->name(), "i");
+  EXPECT_EQ(errors[6]->name(), "i");
+  EXPECT_EQ(errors[1]->message(), "Data is not a sequence");
+  EXPECT_EQ(errors[2]->message(), "Data is not a map");
+  EXPECT_EQ(errors[4]->message(), "Invalid value 'D' for enum with values 'A', 'B', 'C'");
 }
 
 TEST(YamlParsing, setValues) {
