@@ -2,6 +2,7 @@
 
 #include "config_utilities/config.h"
 #include "config_utilities/test/default_config.h"
+#include "config_utilities/test/utils.h"
 #include "config_utilities/validation.h"
 
 namespace config::test {
@@ -25,15 +26,6 @@ int numFailedChecks(const DefaultConfig& config) {
     }
   });
   return num_checks;
-}
-
-bool throwsException(const DefaultConfig& config) {
-  try {
-    checkValid(config);
-  } catch (...) {
-    return true;
-  }
-  return false;
 }
 
 template <bool LOpen, bool UOpen>
@@ -228,10 +220,14 @@ TEST(ValidityChecks, numChecks) {
 
 TEST(ValidityChecks, checkValid) {
   DefaultConfig config;
-  EXPECT_FALSE(throwsException(config));
+  auto logger = TestLogger::create();
+  checkValid(config);
+  EXPECT_TRUE(logger->messages().empty());
 
   config.i = -1;
-  EXPECT_TRUE(throwsException(config));
+  checkValid(config);
+  EXPECT_EQ(logger->messages().size(), 1);
+  EXPECT_EQ(logger->messages().back().first, internal::Severity::kFatal);
 }
 
 }  // namespace config::test

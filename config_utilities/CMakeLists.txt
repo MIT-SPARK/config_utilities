@@ -24,19 +24,19 @@ FIND_OPTIONAL_PKGCFG(libglog CONFIG_UTILS_ENABLE_GLOG)
 
 add_library(
   ${PROJECT_NAME}
+  src/asl_formatter.cpp
+  src/conversions.cpp
+  src/formatter.cpp
+  src/globals.cpp
+  src/logger.cpp
   src/meta_data.cpp
+  src/namespacing.cpp
+  src/settings.cpp
+  src/string_utils.cpp
+  src/validation.cpp
   src/visitor.cpp
   src/yaml_parser.cpp
-  src/settings.cpp
-  src/namespacing.cpp
-  src/logger.cpp
-  src/asl_formatter.cpp
-  src/string_utils.cpp
-  src/yaml_utils.cpp
-  src/validation.cpp
-  src/formatter.cpp
-  src/conversions.cpp
-  src/globals.cpp)
+  src/yaml_utils.cpp)
 target_link_libraries(${PROJECT_NAME} PUBLIC yaml-cpp)
 target_include_directories(
   ${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>

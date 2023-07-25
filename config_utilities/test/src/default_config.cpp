@@ -8,50 +8,50 @@
 namespace config::test {
 
 void declare_config(SubSubConfig& config) {
-  config::name("SubSubConfig");
-  config::field(config.i, "i");
-  config::check(config.i, CheckMode::GT, 0, "i");
+  name("SubSubConfig");
+  field(config.i, "i");
+  check(config.i, CheckMode::GT, 0, "i");
 }
 
 void declare_config(SubConfig& config) {
-  config::name("SubConfig");
-  config::field(config.i, "i");
-  config::enter_namespace("nested_ns");
-  config::field(config.sub_sub_config, "sub_sub_config");
-  config::check(config.i, CheckMode::GT, 0, "i");
+  name("SubConfig");
+  field(config.i, "i");
+  enter_namespace("nested_ns");
+  field(config.sub_sub_config, "sub_sub_config");
+  check(config.i, CheckMode::GT, 0, "i");
 }
 
 void declare_config(DefaultConfig& config) {
-  config::name("DefaultConfig");
-  config::field(config.i, "i", "m");
-  config::field(config.f, "f", "s");
-  config::field(config.d, "d", "m/s");
-  config::field(config.b, "b");
-  config::field(config.u8, "u8");
-  config::field(config.s, "s");
-  config::field(config.vec, "vec", "frames");
-  config::field(config.map, "map");
-  config::field(config.set, "set");
-  config::field(config.mat, "mat");
-  config::enum_field(config.my_enum, "my_enum", {"A", "B", "C"});
-  config::enum_field(config.my_strange_enum,
-                     "my_strange_enum",
-                     {{DefaultConfig::StrangeEnum::kX, "X"},
-                      {DefaultConfig::StrangeEnum::kY, "Y"},
-                      {DefaultConfig::StrangeEnum::kZ, "Z"}});
-  config::enter_namespace("sub_ns");
-  config::field(config.sub_config, "sub_config", "sub_ns");
-  config::switch_namespace("sub_sub_ns");
-  config::field(config.sub_sub_config, "sub_sub_config", "sub_sub_ns");
+  name("DefaultConfig");
+  field(config.i, "i", "m");
+  field(config.f, "f", "s");
+  field(config.d, "d", "m/s");
+  field(config.b, "b");
+  field(config.u8, "u8");
+  field(config.s, "s");
+  field(config.vec, "vec", "frames");
+  field(config.map, "map");
+  field(config.set, "set");
+  field(config.mat, "mat");
+  enum_field(config.my_enum, "my_enum", {"A", "B", "C"});
+  enum_field(config.my_strange_enum,
+             "my_strange_enum",
+             {{DefaultConfig::StrangeEnum::kX, "X"},
+              {DefaultConfig::StrangeEnum::kY, "Y"},
+              {DefaultConfig::StrangeEnum::kZ, "Z"}});
+  enter_namespace("sub_ns");
+  field(config.sub_config, "sub_config", "sub_ns");
+  switch_namespace("sub_sub_ns");
+  field(config.sub_sub_config, "sub_sub_config", "sub_sub_ns");
 
-  config::check(config.i, CheckMode::GT, 0, "i");
-  config::check(config.f, CheckMode::GE, 0.f, "f");
-  config::check(config.d, CheckMode::LT, 4.0, "d");
-  config::check(config.u8, CheckMode::LE, uint8_t(5), "u8");
-  config::check(config.s, CheckMode::EQ, std::string("test string"), "s");
-  config::check(config.b, CheckMode::NE, false, "b");
-  config::checkCondition(config.vec.size() == 3, "param 'vec' must b of size '3'");
-  config::checkInRange(config.d, 0.0, 500.0, "d");
+  check(config.i, CheckMode::GT, 0, "i");
+  check(config.f, CheckMode::GE, 0.f, "f");
+  check(config.d, CheckMode::LT, 4.0, "d");
+  check(config.u8, CheckMode::LE, uint8_t(5), "u8");
+  check(config.s, CheckMode::EQ, std::string("test string"), "s");
+  check(config.b, CheckMode::NE, false, "b");
+  checkCondition(config.vec.size() == 3, "param 'vec' must b of size '3'");
+  checkInRange(config.d, 0.0, 500.0, "d");
 }
 
 YAML::Node DefaultConfig::defaultValues() {

@@ -30,18 +30,19 @@ enable_testing()
 add_executable(
   test_${PROJECT_NAME}
   main.cpp
-  src/utils.cpp
   src/default_config.cpp
+  src/utils.cpp
+  tests/asl_formatter.cpp
+  tests/conversions.cpp
+  tests/factory.cpp
+  tests/globals.cpp
+  tests/inheritance.cpp
+  tests/namespacing.cpp
+  tests/string_utils.cpp
   tests/traits.cpp
   tests/validity_checks.cpp
-  tests/namespacing.cpp
-  tests/yaml_parsing.cpp
-  tests/string_utils.cpp
-  tests/asl_formatter.cpp
-  tests/inheritance.cpp
-  tests/factory.cpp
   tests/virtual_config.cpp
-  tests/conversions.cpp
+  tests/yaml_parsing.cpp
 )
 target_include_directories(test_${PROJECT_NAME} PRIVATE include)
 target_link_libraries(test_${PROJECT_NAME} PRIVATE ${PROJECT_NAME}
