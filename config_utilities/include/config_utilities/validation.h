@@ -60,6 +60,9 @@ const ConfigT& checkValid(const ConfigT& config) {
 
   if (internal::hasNoInvalidChecks(data)) {
     return config;
+    if (Settings().store_valid_configs) {
+      internal::Globals::instance().valid_configs.emplace_back(data);
+    }
   }
 
   internal::Logger::logFatal(internal::Formatter::formatErrors(data, "Invalid config", internal::Severity::kFatal));
