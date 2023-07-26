@@ -22,4 +22,6 @@ endif()
 
 set(config_utilities_LIBRARIES config_utilities::config_utilities)
 
+set(config_utilities_FOUND_CATKIN_PROJECT TRUE)
+
 check_required_components(config_utilities)
