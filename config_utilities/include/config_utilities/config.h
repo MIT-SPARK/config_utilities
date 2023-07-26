@@ -15,7 +15,7 @@ namespace config {
 
 namespace internal {
 
-// argument-dependent-lookup (ADL) so definitions of 'declare_config()' can be found anywher. See the following:
+// argument-dependent-lookup (ADL) so definitions of 'declare_config()' can be found anywhere. See the following:
 // - http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4381.html
 // - https:://github.com/nlohmann/json/blob/develop/include/nlohmann/adl_serializer.hpp
 
@@ -31,7 +31,7 @@ struct declare_config_fn {
 
 namespace {
 
-constexpr const auto& declare_config = config::internal::static_const<internal::declare_config_fn>;
+constexpr const auto& declare_config = internal::static_const<internal::declare_config_fn>;
 
 }  // namespace
 
