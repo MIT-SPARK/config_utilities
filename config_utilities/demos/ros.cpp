@@ -16,6 +16,7 @@
 #include "config_utilities/printing.h"            // Enable toString()
 #include "config_utilities/traits.h"              // Enables isConfig()
 #include "config_utilities/types/eigen_matrix.h"  // Enable parsing and printing of Eigen::Matrix types.
+#include "config_utilities/types/enum.h"          // Enable 'Enum<>' for parsing of enums.
 #include "config_utilities/validation.h"          // Enable isValid() and checkValid().
 
 namespace demo {
@@ -39,6 +40,9 @@ struct MyConfig {
   SubConfig sub_config;
 };
 
+auto enum_init = config::Enum<MyConfig::MyEnum>::Initializer(
+    {{MyConfig::MyEnum::kA, "A"}, {MyConfig::MyEnum::kB, "B"}, {MyConfig::MyEnum::kC, "C"}});
+
 // Defining 'void declare_config(T& config)' function labels a struct as config. All config properties are specified
 // within it.
 void declare_config(MyConfig& config) {
@@ -49,7 +53,7 @@ void declare_config(MyConfig& config) {
   config::field(config.vec, "vec");
   config::field(config.map, "map");
   config::field(config.mat, "mat");
-  config::enum_field(config.my_enum, "my_enum", {"A", "B", "C"});
+  config::field<config::Enum<MyConfig::MyEnum>>(config.my_enum, "my_enum");
   config::NameSpace ns("sub_ns");
   config::field(config.sub_config, "sub_config");
 

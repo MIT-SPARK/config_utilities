@@ -72,37 +72,6 @@ void field(T& field, const std::string& field_name, const std::string& unit = ""
 }
 
 /**
- * @brief Declare an enum to as field of a config, that will be parsed and checked by value names.
- *
- * @tparam EnumT The enum type.
- * @param field The config member that stores data.
- * @param field_name The name of the field.
- * @param enum_names Map of enum values to names for non-sequential enums.
- */
-template <typename EnumT>
-void enum_field(EnumT& field, const std::string& field_name, const std::map<EnumT, std::string>& enum_names) {
-  internal::Visitor::visitEnumField(field, field_name, enum_names);
-}
-
-/**
- * @brief Declare an enum to as field of a config, that will be parsed and checked by value names.
- *
- * @tparam EnumT The enum type.
- * @param field The config member that stores data.
- * @param field_name The name of the field.
- * @param enum_names List of all possible enum names in identical order to the enum definition. These will be casted
- * to enum. Use only with sequential enums.
- */
-template <typename EnumT>
-void enum_field(EnumT& field, const std::string& field_name, const std::vector<std::string>& enum_names) {
-  std::map<EnumT, std::string> enum_map;
-  for (size_t i = 0; i < enum_names.size(); ++i) {
-    enum_map[static_cast<EnumT>(i)] = enum_names[i];
-  }
-  enum_field(field, field_name, enum_map);
-}
-
-/**
  * @brief Declare that this config inherits from a base config. Note that this call typically requires explicit
  * template declaration or explicit casting for argument dependent look-up. E.g. 'base<BaseT>(config)' or '
  * base(static_cast<BaseT&>(config))'.

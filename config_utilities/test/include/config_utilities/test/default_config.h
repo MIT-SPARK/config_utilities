@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "config_utilities/types/eigen_matrix.h"
+#include "config_utilities/types/enum.h"
 
 namespace config::test {
 
@@ -38,6 +39,11 @@ struct DefaultConfig {
   static YAML::Node modifiedValues();
   void expectDefaultValues();
   void expectModifiedValues();
+
+ private:
+  inline static const auto init = config::Enum<Enum>::Initializer({{Enum::kA, "A"}, {Enum::kB, "B"}, {Enum::kC, "C"}});
+  inline static const auto strange_init =
+      config::Enum<StrangeEnum>::Initializer({{StrangeEnum::kX, "X"}, {StrangeEnum::kY, "Y"}, {StrangeEnum::kZ, "Z"}});
 };
 
 void declare_config(SubSubConfig& config);

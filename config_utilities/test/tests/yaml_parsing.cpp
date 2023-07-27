@@ -139,7 +139,7 @@ sub_ns:
   EXPECT_EQ(errors[6]->name(), "i");
   EXPECT_EQ(errors[1]->message(), "Data is not a sequence");
   EXPECT_EQ(errors[2]->message(), "Data is not a map");
-  EXPECT_EQ(errors[4]->message(), "Invalid value 'D' for enum with values 'A', 'B', 'C'");
+  EXPECT_EQ(errors[4]->message(), "Value 'D' is out of bounds for enum with names ['A', 'B', 'C']");
 }
 
 TEST(YamlParsing, setValues) {

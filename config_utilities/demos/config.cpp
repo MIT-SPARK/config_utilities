@@ -13,6 +13,7 @@
 #include "config_utilities/printing.h"               // Enable toString()
 #include "config_utilities/traits.h"                 // Enables isConfig()
 #include "config_utilities/types/eigen_matrix.h"     // Enable parsing and printing of Eigen::Matrix types.
+#include "config_utilities/types/enum.h"             // Enable 'Enum<>' for parsing of enums.
 #include "config_utilities/validation.h"             // Enable isValid() and checkValid().
 
 namespace demo {
@@ -44,9 +45,13 @@ struct MyConfig {
   std::map<std::string, int> map = {{"a", 1}, {"b", 2}, {"c", 3}};
   Eigen::Matrix<double, 3, 3> mat = Eigen::Matrix<double, 3, 3>::Identity();
   enum class MyEnum { kA, kB, kC } my_enum = MyEnum::kA;
-  enum MyStrangeEnum : int { kX = 0, kY = 42, kZ = -7 } my_strange_enum = MyStrangeEnum::kX;
   SubConfig sub_config;
 };
+
+// String-based enum conversion and verification is supported. Valid values can be specified for using an Enum
+// Converter:
+auto enum_init = config::Enum<MyConfig::MyEnum>::Initializer(
+    {{MyConfig::MyEnum::kA, "A"}, {MyConfig::MyEnum::kB, "B"}, {MyConfig::MyEnum::kC, "C"}});
 
 // Another struct that will not be declared a config.
 struct NotAConfig {};
@@ -70,13 +75,8 @@ void declare_config(MyConfig& config) {
   config::field(config.map, "map");
   config::field(config.mat, "mat");
 
-  // String-based enum conversion and verification is supported. Valid values can be specified as a list of names for
-  // sequential enums or as a map for non-sequential enums.
-  config::enum_field(config.my_enum, "my_enum", {"A", "B", "C"});
-  config::enum_field(
-      config.my_strange_enum,
-      "my_strange_enum",
-      {{MyConfig::MyStrangeEnum::kX, "X"}, {MyConfig::MyStrangeEnum::kY, "Y"}, {MyConfig::MyStrangeEnum::kZ, "Z"}});
+  // String-based enum conversion and verification is enabled by specifying the enum as a converter.
+  config::field<config::Enum<MyConfig::MyEnum>>(config.my_enum, "my_enum");
 
   // Sub-namespaces can be used to group fields.
   config::enter_namespace("sub_ns");
