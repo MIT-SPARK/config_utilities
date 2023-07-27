@@ -33,8 +33,12 @@ void declare_config(DefaultConfig& config) {
   field(config.map, "map");
   field(config.set, "set");
   field(config.mat, "mat");
-  field<config::Enum<DefaultConfig::Enum>>(config.my_enum, "my_enum");
-  field<config::Enum<DefaultConfig::StrangeEnum>>(config.my_strange_enum, "my_strange_enum");
+  enum_field(config.my_enum, "my_enum", {"A", "B", "C"});
+  enum_field(config.my_strange_enum,
+             "my_strange_enum",
+             {{DefaultConfig::StrangeEnum::kX, "X"},
+              {DefaultConfig::StrangeEnum::kY, "Y"},
+              {DefaultConfig::StrangeEnum::kZ, "Z"}});
   enter_namespace("sub_ns");
   field(config.sub_config, "sub_config", "sub_ns");
   switch_namespace("sub_sub_ns");
