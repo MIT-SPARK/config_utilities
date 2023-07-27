@@ -8,22 +8,22 @@
 
 namespace config {
 
-std::string CharConversion::toIntermediate(char value) { return {value}; }
+std::string CharConversion::toIntermediate(char value, std::string&) { return {value}; }
 
-char CharConversion::fromIntermediate(const std::string& value, std::string& error_string) {
+char CharConversion::fromIntermediate(const std::string& value, std::string& error) {
   if (value.empty()) {
-    error_string = "Unable to parse char from empty string";
+    error = "Unable to parse char from empty string";
     return '\0';
   }
 
   if (value.size() > 1) {
-    error_string = "Multiple character string will result in the first character being used";
+    error = "Multiple character string will result in the first character being used";
   }
 
   return value.at(0);
 }
 
-int ThreadNumConversion::toIntermediate(int value) { return value; }
+int ThreadNumConversion::toIntermediate(int value, std::string&) { return value; }
 
 int ThreadNumConversion::fromIntermediate(int value, std::string&) {
   if (value <= 0) {

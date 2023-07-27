@@ -105,14 +105,19 @@ template <typename Conversion, typename T, typename std::enable_if<!isConfig<T>(
 void Visitor::visitField(T& field, const std::string& field_name, const std::string& unit) {
   Visitor& visitor = Visitor::instance();
   if (visitor.mode == Visitor::Mode::kSet) {
-    auto intermediate = Conversion::toIntermediate(field);  // make sure current value isn't lost.
     std::string error;
+    auto intermediate = Conversion::toIntermediate(field, error);  // make sure current value isn't lost.
+    if (!error.empty()) {
+      visitor.data.errors.emplace_back(new Warning(field_name, error));
+      error.clear();
+    }
+
     YamlParser::fromYaml(visitor.data.data, field_name, intermediate, visitor.name_space, error);
     if (!error.empty()) {
       visitor.data.errors.emplace_back(new Warning(field_name, error));
+      error.clear();
     }
 
-    error.clear();
     field = Conversion::fromIntermediate(intermediate, error);
     if (!error.empty()) {
       visitor.data.errors.emplace_back(new Warning(field_name, error));
@@ -121,8 +126,12 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
 
   if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetDefaults) {
     FieldInfo& info = visitor.data.field_infos.emplace_back();
-    const auto intermediate = Conversion::toIntermediate(field);
     std::string error;
+    const auto intermediate = Conversion::toIntermediate(field, error);
+    if (!error.empty()) {
+      visitor.data.errors.emplace_back(new Warning(field_name, error));
+      error.clear();
+    }
     YAML::Node node = YamlParser::toYaml(field_name, intermediate, visitor.name_space, error);
     mergeYamlNodes(visitor.data.data, node);
     // This stores a reference to the node in the data.

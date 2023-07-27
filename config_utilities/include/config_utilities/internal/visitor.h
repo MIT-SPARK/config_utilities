@@ -10,6 +10,7 @@
 #include "config_utilities/internal/meta_data.h"
 #include "config_utilities/internal/namespacing.h"
 #include "config_utilities/internal/yaml_parser.h"
+#include "config_utilities/types/enum.h"
 
 namespace config::internal {
 
