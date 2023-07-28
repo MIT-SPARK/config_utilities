@@ -20,6 +20,21 @@ void declare_config(ConfigWithEnums& config) {
   field<Enum<OddEnum>>(config.odd_enum, "odd_enum");
 }
 
+struct ConfigWithCustomEnumNames {
+  MyEnum reggular_enum;
+  MyEnum enum_with_custom_name;
+  OddEnum odd_enum_with_custom_name;
+};
+
+void declare_config(ConfigWithCustomEnumNames& config) {
+  name("ConfigWithCustomEnumNames");
+  enum_field(config.reggular_enum, "reggular_enum");
+  enum_field(config.enum_with_custom_name, "enum_with_custom_name", {"AAA", "BBB", "CCC"});
+  enum_field(config.odd_enum_with_custom_name,
+             "odd_enum_with_custom_name",
+             {{OddEnum::X, "X-X"}, {OddEnum::Y, "Y-Y"}, {OddEnum::Z, "Z-Z"}});
+}
+
 auto init = Enum<OddEnum>::Initializer({{OddEnum::X, "X"}, {OddEnum::Y, "Y"}, {OddEnum::Z, "Z"}});
 
 TEST(Enums, UserConversion) {
@@ -114,6 +129,60 @@ TEST(Enums, FieldConversion) {
   EXPECT_EQ(meta_data.errors.size(), 2);
   EXPECT_EQ(meta_data.data["my_enum"].as<std::string>(), "<Invalid Enum Value>");
   EXPECT_EQ(meta_data.data["odd_enum"].as<std::string>(), "<Invalid Enum Value>");
+}
+
+TEST(Enums, enum_field) {
+  YAML::Node data;
+  data["reggular_enum"] = "B";
+  data["enum_with_custom_name"] = "CCC";
+  data["odd_enum_with_custom_name"] = "Z-Z";
+
+  // Setting fields.
+  ConfigWithCustomEnumNames config;
+  internal::Visitor::setValues(config, data);
+  EXPECT_EQ(config.reggular_enum, MyEnum::B);
+  EXPECT_EQ(config.enum_with_custom_name, MyEnum::C);
+  EXPECT_EQ(config.odd_enum_with_custom_name, OddEnum::Z);
+
+  // Invalid names.
+  data["reggular_enum"] = "D";
+  data["enum_with_custom_name"] = "D";
+  data["odd_enum_with_custom_name"] = "D";
+  internal::MetaData meta_data = internal::Visitor::setValues(config, data);
+  EXPECT_EQ(config.reggular_enum, MyEnum::B);
+  EXPECT_EQ(config.enum_with_custom_name, MyEnum::C);
+  EXPECT_EQ(config.odd_enum_with_custom_name, OddEnum::Z);
+  EXPECT_EQ(meta_data.errors.size(), 3);
+
+  // Getting fields.
+  meta_data = internal::Visitor::getValues(config);
+  EXPECT_EQ(meta_data.errors.size(), 0);
+  EXPECT_EQ(meta_data.data["reggular_enum"].as<std::string>(), "B");
+  EXPECT_EQ(meta_data.data["enum_with_custom_name"].as<std::string>(), "CCC");
+  EXPECT_EQ(meta_data.data["odd_enum_with_custom_name"].as<std::string>(), "Z-Z");
+
+  // Invalid values.
+  config.reggular_enum = static_cast<MyEnum>(5);
+  config.enum_with_custom_name = static_cast<MyEnum>(5);
+  config.odd_enum_with_custom_name = static_cast<OddEnum>(1);
+  meta_data = internal::Visitor::getValues(config);
+  EXPECT_EQ(meta_data.errors.size(), 3);
+  EXPECT_EQ(meta_data.data["reggular_enum"].as<std::string>(), "<Invalid Enum Value>");
+  EXPECT_EQ(meta_data.data["enum_with_custom_name"].as<std::string>(), "<Invalid Enum Value>");
+  EXPECT_EQ(meta_data.data["odd_enum_with_custom_name"].as<std::string>(), "<Invalid Enum Value>");
+
+  // Check the global enum names are unchanged valid.
+  MyEnum e = MyEnum::A;
+  std::string name = Enum<MyEnum>::toString(e);
+  EXPECT_EQ(name, "A");
+  e = Enum<MyEnum>::fromString("C");
+  EXPECT_EQ(e, MyEnum::C);
+
+  OddEnum odd_e = OddEnum::X;
+  name = Enum<OddEnum>::toString(odd_e);
+  EXPECT_EQ(name, "X");
+  odd_e = Enum<OddEnum>::fromString("Z");
+  EXPECT_EQ(odd_e, OddEnum::Z);
 }
 
 }  // namespace config::test
