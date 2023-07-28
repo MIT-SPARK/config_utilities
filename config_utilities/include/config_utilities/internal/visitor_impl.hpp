@@ -144,68 +144,6 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
   }
 }
 
-template <typename EnumT>
-void Visitor::visitEnumField(EnumT& field,
-                             const std::string& field_name,
-                             const std::map<EnumT, std::string>& enum_names) {
-  Visitor& visitor = Visitor::instance();
-  if (visitor.mode == Visitor::Mode::kCheck) {
-    return;
-  }
-
-  // Check uniqueness of enum names.
-  std::set<std::string> names;
-  for (const auto& [_, name] : enum_names) {
-    if (names.find(name) != names.end()) {
-      visitor.data.errors.emplace_back(new Warning(field_name, "Enum Value '" + name + "' is defined multiple times"));
-    }
-    names.insert(name);
-  }
-
-  // Parse enums. These are internally stored as strings.
-  std::string error;
-  if (visitor.mode == Visitor::Mode::kSet) {
-    std::string place_holder;
-    if (YamlParser::fromYaml(visitor.data.data, field_name, place_holder, visitor.name_space, error)) {
-      const auto it = std::find_if(enum_names.begin(), enum_names.end(), [&place_holder](const auto& pair) {
-        return pair.second == place_holder;
-      });
-      if (it == enum_names.end()) {
-        std::string error = "Invalid value '" + place_holder + "' for enum with values ";
-        for (const auto& [_, name] : enum_names) {
-          error += "'" + name + "', ";
-        }
-        visitor.data.errors.emplace_back(new Warning(field_name, error.substr(0, error.size() - 2)));
-      } else {
-        field = it->first;
-      }
-    }
-  }
-
-  if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetDefaults) {
-    FieldInfo& info = visitor.data.field_infos.emplace_back();
-    const auto it = enum_names.find(field);
-    std::string value;
-    if (it == enum_names.end()) {
-      std::stringstream ss;
-      ss << "Enum value '" << static_cast<int>(field) << "' is out of the defined range";
-      visitor.data.errors.emplace_back(new Warning(field_name, ss.str()));
-      value = "<Invalid Enum Name>";
-    } else {
-      value = it->second;
-    }
-    YAML::Node node = YamlParser::toYaml(field_name, value, visitor.name_space, error);
-    mergeYamlNodes(visitor.data.data, node);
-    // This stores a reference to the node in the data.
-    info.value = lookupNamespace(node, joinNamespace(visitor.name_space, field_name));
-    info.name = field_name;
-  }
-
-  if (!error.empty()) {
-    visitor.data.errors.emplace_back(new Warning(field_name, error));
-  }
-}
-
 // Visits a subconfig field.
 template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
 void Visitor::visitField(ConfigT& config, const std::string& field_name, const std::string& /* unit */) {

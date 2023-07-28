@@ -10,7 +10,6 @@
 #include "config_utilities/internal/meta_data.h"
 #include "config_utilities/internal/namespacing.h"
 #include "config_utilities/internal/yaml_parser.h"
-#include "config_utilities/types/enum.h"
 
 namespace config::internal {
 
@@ -51,11 +50,6 @@ struct Visitor {
 
   template <typename Conversion, typename T, typename std::enable_if<!isConfig<T>(), bool>::type = true>
   static void visitField(T& field, const std::string& field_name, const std::string& unit);
-
-  template <typename EnumT>
-  static void visitEnumField(EnumT& field,
-                             const std::string& field_name,
-                             const std::map<EnumT, std::string>& enum_names);
 
   static void visitCheck(const CheckBase& check);
 

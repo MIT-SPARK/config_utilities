@@ -4,7 +4,6 @@
 
 #include "config_utilities/config.h"
 #include "config_utilities/formatting/asl.h"
-#include "config_utilities/logging/log_to_stdout.h"
 #include "config_utilities/parsing/yaml.h"
 #include "config_utilities/printing.h"
 #include "config_utilities/test/utils.h"
