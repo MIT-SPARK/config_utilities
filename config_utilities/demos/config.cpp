@@ -13,6 +13,7 @@
 #include "config_utilities/printing.h"               // Enable toString()
 #include "config_utilities/traits.h"                 // Enables isConfig()
 #include "config_utilities/types/eigen_matrix.h"     // Enable parsing and printing of Eigen::Matrix types.
+#include "config_utilities/types/enum.h"             // Enable parsing and printing of enum types.
 #include "config_utilities/validation.h"             // Enable isValid() and checkValid().
 
 namespace demo {

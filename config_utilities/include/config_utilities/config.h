@@ -15,11 +15,12 @@ namespace config {
 
 namespace internal {
 
-// argument-dependent-lookup (ADL) so definitions of 'declare_config()' can be found anywhere. See the following:
+// argument-dependent-lookup (ADL) so definitions of 'declare_config()' can be found anywhere. Note that
+// 'declare_config' needs to be defined in the same namespace as the object it refers to.See the following:
 // - http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4381.html
 // - https:://github.com/nlohmann/json/blob/develop/include/nlohmann/adl_serializer.hpp
 
-// adl indirection
+// ADL indirection.
 struct declare_config_fn {
   template <typename ConfigT>
   constexpr auto operator()(ConfigT& config) const -> decltype(declare_config(config)) {
@@ -27,13 +28,13 @@ struct declare_config_fn {
   }
 };
 
-}  // namespace internal
-
 namespace {
 
-constexpr const auto& declare_config = internal::static_const<internal::declare_config_fn>;
+constexpr const auto& declare_config = static_const<internal::declare_config_fn>;
 
 }  // namespace
+
+}  // namespace internal
 
 // Public interfaces to declare properties in declare_config.
 
@@ -58,9 +59,10 @@ void field(T& field, const std::string& field_name, const std::string& unit = ""
  * @brief Declare string-named fields of the config. This string will be used to get the configs field values during
  * creation, and for checking of validity.
  *
- * This version allows for declaring an intermediate value for both setting and getting the field
+ * This version allows for declaring an intermediate conversion for both setting and getting the field.
  *
- * @tparam Conversion Conversion struct must declare toIntermediate and fromIntermediate as static members
+ * @tparam Conversion Conversion struct. Must declare 'static IntT toIntermediate(T value, std::string& error)' and
+ * 'static void fromIntermediate(IntT intermediate, T& value, std::string& error)'.
  * @param field The config member that stores data.
  * @param field_name The name of the field.
  * @param unit Optionally define the unit of the field during printing.
@@ -68,37 +70,6 @@ void field(T& field, const std::string& field_name, const std::string& unit = ""
 template <typename Conversion, typename T>
 void field(T& field, const std::string& field_name, const std::string& unit = "") {
   internal::Visitor::visitField<Conversion>(field, field_name, unit);
-}
-
-/**
- * @brief Declare an enum to as field of a config, that will be parsed and checked by value names.
- *
- * @tparam EnumT The enum type.
- * @param field The config member that stores data.
- * @param field_name The name of the field.
- * @param enum_names Map of enum values to names for non-sequential enums.
- */
-template <typename EnumT>
-void enum_field(EnumT& field, const std::string& field_name, const std::map<EnumT, std::string>& enum_names) {
-  internal::Visitor::visitEnumField(field, field_name, enum_names);
-}
-
-/**
- * @brief Declare an enum to as field of a config, that will be parsed and checked by value names.
- *
- * @tparam EnumT The enum type.
- * @param field The config member that stores data.
- * @param field_name The name of the field.
- * @param enum_names List of all possible enum names in identical order to the enum definition. These will be casted
- * to enum. Use only with sequential enums.
- */
-template <typename EnumT>
-void enum_field(EnumT& field, const std::string& field_name, const std::vector<std::string>& enum_names) {
-  std::map<EnumT, std::string> enum_map;
-  for (size_t i = 0; i < enum_names.size(); ++i) {
-    enum_map[static_cast<EnumT>(i)] = enum_names[i];
-  }
-  enum_field(field, field_name, enum_map);
 }
 
 /**

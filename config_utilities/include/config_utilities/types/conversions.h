@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cstdint>
 #include <string>
 #include <type_traits>
@@ -11,8 +13,8 @@ namespace config {
  * disallows non-ascii characters.
  */
 struct CharConversion {
-  static std::string toIntermediate(char value);
-  static char fromIntermediate(const std::string& value, std::string& error_string);
+  static std::string toIntermediate(char value, std::string& error);
+  static void fromIntermediate(const std::string& intermediate, char& value, std::string& error);
 };
 
 /** @brief Conversion that remaps a specified number of threads to the total number of avaiable cores
@@ -21,8 +23,8 @@ struct CharConversion {
  * otherwise it returns the originally specified value.
  */
 struct ThreadNumConversion {
-  static int toIntermediate(int value);
-  static int fromIntermediate(int value, std::string& error_string);
+  static int toIntermediate(int value, std::string& error);
+  static void fromIntermediate(int intermediate, int& value, std::string& error);
 };
 
 }  // namespace config

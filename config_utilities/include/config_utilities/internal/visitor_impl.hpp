@@ -105,15 +105,17 @@ template <typename Conversion, typename T, typename std::enable_if<!isConfig<T>(
 void Visitor::visitField(T& field, const std::string& field_name, const std::string& unit) {
   Visitor& visitor = Visitor::instance();
   if (visitor.mode == Visitor::Mode::kSet) {
-    auto intermediate = Conversion::toIntermediate(field);  // make sure current value isn't lost.
     std::string error;
+    auto intermediate = Conversion::toIntermediate(field, error);
+    error.clear();  // We don't care about setting up the intermediate just to get data.
+
     YamlParser::fromYaml(visitor.data.data, field_name, intermediate, visitor.name_space, error);
     if (!error.empty()) {
       visitor.data.errors.emplace_back(new Warning(field_name, error));
+      error.clear();
     }
 
-    error.clear();
-    field = Conversion::fromIntermediate(intermediate, error);
+    Conversion::fromIntermediate(intermediate, field, error);
     if (!error.empty()) {
       visitor.data.errors.emplace_back(new Warning(field_name, error));
     }
@@ -121,8 +123,12 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
 
   if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetDefaults) {
     FieldInfo& info = visitor.data.field_infos.emplace_back();
-    const auto intermediate = Conversion::toIntermediate(field);
     std::string error;
+    const auto intermediate = Conversion::toIntermediate(field, error);
+    if (!error.empty()) {
+      visitor.data.errors.emplace_back(new Warning(field_name, error));
+      error.clear();
+    }
     YAML::Node node = YamlParser::toYaml(field_name, intermediate, visitor.name_space, error);
     mergeYamlNodes(visitor.data.data, node);
     // This stores a reference to the node in the data.
@@ -132,68 +138,6 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
     if (!error.empty()) {
       visitor.data.errors.emplace_back(new Warning(field_name, error));
     }
-  }
-}
-
-template <typename EnumT>
-void Visitor::visitEnumField(EnumT& field,
-                             const std::string& field_name,
-                             const std::map<EnumT, std::string>& enum_names) {
-  Visitor& visitor = Visitor::instance();
-  if (visitor.mode == Visitor::Mode::kCheck) {
-    return;
-  }
-
-  // Check uniqueness of enum names.
-  std::set<std::string> names;
-  for (const auto& [_, name] : enum_names) {
-    if (names.find(name) != names.end()) {
-      visitor.data.errors.emplace_back(new Warning(field_name, "Enum Value '" + name + "' is defined multiple times"));
-    }
-    names.insert(name);
-  }
-
-  // Parse enums. These are internally stored as strings.
-  std::string error;
-  if (visitor.mode == Visitor::Mode::kSet) {
-    std::string place_holder;
-    if (YamlParser::fromYaml(visitor.data.data, field_name, place_holder, visitor.name_space, error)) {
-      const auto it = std::find_if(enum_names.begin(), enum_names.end(), [&place_holder](const auto& pair) {
-        return pair.second == place_holder;
-      });
-      if (it == enum_names.end()) {
-        std::string error = "Invalid value '" + place_holder + "' for enum with values ";
-        for (const auto& [_, name] : enum_names) {
-          error += "'" + name + "', ";
-        }
-        visitor.data.errors.emplace_back(new Warning(field_name, error.substr(0, error.size() - 2)));
-      } else {
-        field = it->first;
-      }
-    }
-  }
-
-  if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetDefaults) {
-    FieldInfo& info = visitor.data.field_infos.emplace_back();
-    const auto it = enum_names.find(field);
-    std::string value;
-    if (it == enum_names.end()) {
-      std::stringstream ss;
-      ss << "Enum value '" << static_cast<int>(field) << "' is out of the defined range";
-      visitor.data.errors.emplace_back(new Warning(field_name, ss.str()));
-      value = "<Invalid Enum Name>";
-    } else {
-      value = it->second;
-    }
-    YAML::Node node = YamlParser::toYaml(field_name, value, visitor.name_space, error);
-    mergeYamlNodes(visitor.data.data, node);
-    // This stores a reference to the node in the data.
-    info.value = lookupNamespace(node, joinNamespace(visitor.name_space, field_name));
-    info.name = field_name;
-  }
-
-  if (!error.empty()) {
-    visitor.data.errors.emplace_back(new Warning(field_name, error));
   }
 }
 

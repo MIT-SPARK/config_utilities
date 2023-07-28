@@ -10,5 +10,7 @@
 #include "config_utilities/logging/log_to_stdout.h"
 #include "config_utilities/printing.h"
 #include "config_utilities/settings.h"
+#include "config_utilities/types/conversions.h"
+#include "config_utilities/types/enum.h"
 #include "config_utilities/validation.h"
 #include "config_utilities/virtual_config.h"

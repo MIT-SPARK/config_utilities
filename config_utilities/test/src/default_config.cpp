@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "config_utilities/config.h"
+#include "config_utilities/types/enum.h"
 
 namespace config::test {
 
