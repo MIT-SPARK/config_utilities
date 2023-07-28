@@ -106,11 +106,8 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
   Visitor& visitor = Visitor::instance();
   if (visitor.mode == Visitor::Mode::kSet) {
     std::string error;
-    auto intermediate = Conversion::toIntermediate(field, error);  // make sure current value isn't lost.
-    if (!error.empty()) {
-      visitor.data.errors.emplace_back(new Warning(field_name, error));
-      error.clear();
-    }
+    auto intermediate = Conversion::toIntermediate(field, error);
+    error.clear();  // We don't care about setting up the intermediate just to get data.
 
     YamlParser::fromYaml(visitor.data.data, field_name, intermediate, visitor.name_space, error);
     if (!error.empty()) {
@@ -118,7 +115,7 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
       error.clear();
     }
 
-    field = Conversion::fromIntermediate(intermediate, error);
+    Conversion::fromIntermediate(intermediate, field, error);
     if (!error.empty()) {
       visitor.data.errors.emplace_back(new Warning(field_name, error));
     }

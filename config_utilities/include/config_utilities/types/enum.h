@@ -99,13 +99,11 @@ struct Enum {
     return result;
   }
 
-  static EnumT fromIntermediate(const std::string& value, std::string& error) {
-    auto result = EnumT();
+  static void fromIntermediate(const std::string& intermediate, EnumT& value, std::string& error) {
     std::lock_guard<std::mutex> lock(instance().mutex_);
-    if (!instance().parse(value, result)) {
-      error = "Name '" + value + "' is out of bounds for enum with names [" + instance().printNameList() + "]";
+    if (!instance().parse(intermediate, value)) {
+      error = "Name '" + intermediate + "' is out of bounds for enum with names [" + instance().printNameList() + "]";
     }
-    return result;
   }
 
   // Tools to print the enum names and values for error messages. These are therefore not locked.

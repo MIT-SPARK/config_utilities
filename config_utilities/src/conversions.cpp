@@ -10,27 +10,23 @@ namespace config {
 
 std::string CharConversion::toIntermediate(char value, std::string&) { return {value}; }
 
-char CharConversion::fromIntermediate(const std::string& value, std::string& error) {
-  if (value.empty()) {
+void CharConversion::fromIntermediate(const std::string& intermediate, char& value, std::string& error) {
+  if (intermediate.empty()) {
     error = "Unable to parse char from empty string";
-    return '\0';
+    return;
   }
 
-  if (value.size() > 1) {
+  if (intermediate.size() > 1) {
     error = "Multiple character string will result in the first character being used";
+    return;
   }
-
-  return value.at(0);
+  value = intermediate.at(0);
 }
 
 int ThreadNumConversion::toIntermediate(int value, std::string&) { return value; }
 
-int ThreadNumConversion::fromIntermediate(int value, std::string&) {
-  if (value <= 0) {
-    return std::thread::hardware_concurrency();
-  } else {
-    return value;
-  }
+void ThreadNumConversion::fromIntermediate(int intermediate, int& value, std::string& error) {
+  value = intermediate <= 0 ? std::thread::hardware_concurrency() : intermediate;
 }
 
 }  // namespace config

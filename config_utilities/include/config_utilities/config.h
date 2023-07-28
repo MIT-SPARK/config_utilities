@@ -59,9 +59,10 @@ void field(T& field, const std::string& field_name, const std::string& unit = ""
  * @brief Declare string-named fields of the config. This string will be used to get the configs field values during
  * creation, and for checking of validity.
  *
- * This version allows for declaring an intermediate value for both setting and getting the field
+ * This version allows for declaring an intermediate conversion for both setting and getting the field.
  *
- * @tparam Conversion Conversion struct must declare toIntermediate and fromIntermediate as static members
+ * @tparam Conversion Conversion struct. Must declare 'static IntT toIntermediate(T value, std::string& error)' and
+ * 'static void fromIntermediate(IntT intermediate, T& value, std::string& error)'.
  * @param field The config member that stores data.
  * @param field_name The name of the field.
  * @param unit Optionally define the unit of the field during printing.

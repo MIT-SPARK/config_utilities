@@ -14,7 +14,7 @@ namespace config {
  */
 struct CharConversion {
   static std::string toIntermediate(char value, std::string& error);
-  static char fromIntermediate(const std::string& value, std::string& error);
+  static void fromIntermediate(const std::string& intermediate, char& value, std::string& error);
 };
 
 /** @brief Conversion that remaps a specified number of threads to the total number of avaiable cores
@@ -24,7 +24,7 @@ struct CharConversion {
  */
 struct ThreadNumConversion {
   static int toIntermediate(int value, std::string& error);
-  static int fromIntermediate(int value, std::string& error);
+  static void fromIntermediate(int intermediate, int& value, std::string& error);
 };
 
 }  // namespace config

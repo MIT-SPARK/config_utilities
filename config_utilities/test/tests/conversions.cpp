@@ -46,16 +46,21 @@ TEST(Conversions, CharConversionCorrect) {
   std::string empty = "";
 
   std::string error_string = "";
-  EXPECT_EQ(CharConversion::fromIntermediate(normal, error_string), 'h');
+  char value;
+  CharConversion::fromIntermediate(normal, value, error_string);
+  EXPECT_EQ(value, 'h');
   EXPECT_TRUE(error_string.empty());
 
+  // Expect the field to be unchanged if the conversion fails.
   error_string = "";
-  EXPECT_EQ(CharConversion::fromIntermediate(too_long, error_string), 'h');
-  EXPECT_TRUE(!error_string.empty());
+  CharConversion::fromIntermediate(too_long, value, error_string);
+  EXPECT_EQ(value, 'h');
+  EXPECT_FALSE(error_string.empty());
 
   error_string = "";
-  EXPECT_EQ(CharConversion::fromIntermediate(empty, error_string), '\0');
-  EXPECT_TRUE(!error_string.empty());
+  CharConversion::fromIntermediate(empty, value, error_string);
+  EXPECT_EQ(value, 'h');
+  EXPECT_FALSE(error_string.empty());
 }
 
 // tests that we can default autodetection of the number of cores
@@ -64,8 +69,13 @@ TEST(Conversions, ThreadNumConversionCorrect) {
   int manually_specified = 2;
 
   std::string error_string = "";
-  EXPECT_GT(ThreadNumConversion::fromIntermediate(auto_detect, error_string), 0);
-  EXPECT_EQ(ThreadNumConversion::fromIntermediate(manually_specified, error_string), manually_specified);
+  int value = 0;
+  ThreadNumConversion::fromIntermediate(auto_detect, value, error_string);
+  EXPECT_GT(value, 0);
+
+  value = 0;
+  ThreadNumConversion::fromIntermediate(manually_specified, value, error_string);
+  EXPECT_EQ(value, manually_specified);
 }
 
 // tests that conversions work as expected when parsing a config
