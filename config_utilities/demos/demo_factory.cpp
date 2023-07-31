@@ -2,12 +2,11 @@
  * TODO: Shows how to use factories.
  */
 
-#include "config_utilities/factory.h"  // enables 'create()'
-
 #include <iostream>
 #include <string>
 
 #include "config_utilities/config.h"                 // Required for config declaration
+#include "config_utilities/factory.h"                // enables 'create()'
 #include "config_utilities/formatting/asl.h"         // Simply including this file sets a style to format output.
 #include "config_utilities/logging/log_to_stdout.h"  // Simply including this file sets logging to stdout.
 #include "config_utilities/parsing/yaml.h"           // enables 'createFromYaml()' and 'createFromYamlFile()'
@@ -199,22 +198,21 @@ int main(int argc, char** argv) {
   config::Settings().factory_type_param_name = "type";
 
   // Create an object of type and with config as specified in a file.
-  object = config::createFromYamlFile<demo::Base>(my_root_path + "demo_factory.yaml", 123);
+  object = config::createFromYamlFile<demo::Base>(my_root_path + "factory.yaml", 123);
   object->print();
 
   // By changing the type param, a different object can be created.
-  YAML::Node file_data = YAML::LoadFile(my_root_path + "demo_factory.yaml");
+  YAML::Node file_data = YAML::LoadFile(my_root_path + "factory.yaml");
   file_data["type"] = "DerivedD";
   object = config::createFromYaml<demo::Base>(file_data, 123);
   object->print();
 
   // Objects can also be created from separate namespaces.
-  object = config::createFromYamlFileWithNamespace<demo::Base>(my_root_path + "demo_factory.yaml", "special_ns", 123);
+  object = config::createFromYamlFileWithNamespace<demo::Base>(my_root_path + "factory.yaml", "special_ns", 123);
   object->print();
 
   // If the type param is not specified, a warning will be printed.
-  object =
-      config::createFromYamlFileWithNamespace<demo::Base>(my_root_path + "demo_factory.yaml", "nonexistent_ns", 123);
+  object = config::createFromYamlFileWithNamespace<demo::Base>(my_root_path + "factory.yaml", "nonexistent_ns", 123);
 
   // --------------- Storing Configs to Virtual Objects ----------------
   std::cout << "\n\n----- Storing Configs to Virtual Objects -----\n\n" << std::endl;
@@ -230,7 +228,7 @@ int main(int argc, char** argv) {
   std::cout << "Config content:\n" << config << std::endl;
 
   // Virtual configs are created as any other.
-  config = config::fromYamlFile<config::VirtualConfig<demo::Base>>(my_root_path + "demo_factory.yaml");
+  config = config::fromYamlFile<config::VirtualConfig<demo::Base>>(my_root_path + "factory.yaml");
 
   std::cout << "Config is set: " << config.isSet() << std::endl;
   is_valid = config::isValid(config, true);
@@ -239,7 +237,7 @@ int main(int argc, char** argv) {
   std::cout << "Config content:\n" << config << std::endl;
 
   // Virtual configs can be treated like any other as subconfigs.
-  auto object_config = config::fromYamlFile<demo::ObjectWithDerivedMembers::Config>(my_root_path + "demo_factory.yaml");
+  auto object_config = config::fromYamlFile<demo::ObjectWithDerivedMembers::Config>(my_root_path + "factory.yaml");
 
   std::cout << "Object config content:\n" << object_config << std::endl;
 
@@ -253,7 +251,7 @@ int main(int argc, char** argv) {
   std::cout << "\n\n----- Using Optional Virtual Configs -----\n\n" << std::endl;
 
   // Configs can be marked optional. As it was not specified, nothing happened above.
-  YAML::Node data = YAML::LoadFile(my_root_path + "demo_factory.yaml");
+  YAML::Node data = YAML::LoadFile(my_root_path + "factory.yaml");
   data["optional_sub_ns"]["type"] = "DerivedD";
 
   object_config = config::fromYaml<demo::ObjectWithDerivedMembers::Config>(data);
@@ -270,9 +268,6 @@ int main(int argc, char** argv) {
   object_config = config::fromYaml<demo::ObjectWithDerivedMembers::Config>(data);
   is_valid = config::isValid(object_config, true);
   std::cout << "Config is valid: " << is_valid << std::endl;
-
-  // --------------- Using Factory Creation Arrays ----------------
-  std::cout << "\n\n----- Using Factory Creation Arrays -----\n\n" << std::endl;
 
   return 0;
 }

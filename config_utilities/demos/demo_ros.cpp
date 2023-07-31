@@ -2,8 +2,6 @@
  * TODO(lschmid): Shows how to use configs.
  */
 
-#include "config_utilities/parsing/ros.h"  // Enable fromRos().
-
 #include <iostream>
 #include <string>
 
@@ -13,6 +11,7 @@
 #include "config_utilities/config.h"              // Enables declare_config().
 #include "config_utilities/formatting/asl.h"      // Simply including this file sets a style to format output.
 #include "config_utilities/logging/log_to_ros.h"  // Simply including this file sets logging to roslog.
+#include "config_utilities/parsing/ros.h"         // Enable fromRos().
 #include "config_utilities/printing.h"            // Enable toString()
 #include "config_utilities/traits.h"              // Enables isConfig()
 #include "config_utilities/types/eigen_matrix.h"  // Enable parsing and printing of Eigen::Matrix types.
