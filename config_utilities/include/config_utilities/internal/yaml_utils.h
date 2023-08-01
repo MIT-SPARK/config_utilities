@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include <yaml-cpp/yaml.h>
 
@@ -29,5 +30,12 @@ void moveDownNamespace(YAML::Node& node, const std::string& name_space, const st
  * equality, scalar values will be compared by string representation.
  */
 bool isEqual(const YAML::Node& a, const YAML::Node& b);
+
+/**
+ * @brief Convert a yaml node that contains a map or sequence to a list of corresponding nodes.
+ * @param node The node to convert.
+ * @return The list of nodes. Nodes stored in this struct are references to the original data.
+ */
+std::vector<YAML::Node> getNodeArray(const YAML::Node& node);
 
 }  // namespace config::internal

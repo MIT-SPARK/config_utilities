@@ -3,6 +3,7 @@
 #include <fstream>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <yaml-cpp/yaml.h>
 
@@ -13,10 +14,33 @@
 
 namespace config {
 
+namespace internal {
+
+// Disambiguation for vector of configs.
+template <typename ConfigT>
+ConfigT fromYamlImpl(const YAML::Node& node, const std::string& name_space, ConfigT*) {
+  ConfigT config;
+  internal::Visitor::setValues(config, internal::lookupNamespace(node, name_space));
+  return config;
+}
+
+template <typename ConfigT>
+std::vector<ConfigT> fromYamlImpl(const YAML::Node& node, const std::string& name_space, std::vector<ConfigT>*) {
+  std::vector<ConfigT> configs;
+  std::vector<YAML::Node> nodes = internal::getNodeArray(internal::lookupNamespace(node, name_space));
+  for (const YAML::Node& n : nodes) {
+    ConfigT& config = configs.emplace_back();
+    internal::Visitor::setValues(config, n);
+  }
+  return configs;
+}
+
+}  // namespace internal
+
 /**
  * @brief Loads a config from a yaml node.
  *
- * @tparam ConfigT The config type.
+ * @tparam ConfigT The config type. This can also be a VirtualConfig<BaseT> or a std::vector<ConfigT>.
  * @param node The yaml node to load from.
  * @param name_space Optionally specify a name space to create the config from. Separate names with slashes '/'.
  * Example: "my_config/my_sub_config".
@@ -24,9 +48,7 @@ namespace config {
  */
 template <typename ConfigT>
 ConfigT fromYaml(const YAML::Node& node, const std::string& name_space = "") {
-  ConfigT config;
-  internal::Visitor::setValues(config, internal::lookupNamespace(node, name_space));
-  return config;
+  return internal::fromYamlImpl(node, name_space, static_cast<ConfigT*>(nullptr));
 }
 
 /**
@@ -45,7 +67,7 @@ YAML::Node toYaml(const ConfigT& config) {
 /**
  * @brief Loads a config from a yaml file.
  *
- * @tparam ConfigT The config type.
+ * @tparam ConfigT The config type. This can also be a VirtualConfig<BaseT> or a std::vector<ConfigT>.
  * @param file_name The file name to load as full path.
  * @param name_space Optionally specify a name space to load from the yaml file. If empty, the whole file is loaded.
  * Separate names with slashes '/'. Example: "my_config/my_sub_config".
@@ -53,10 +75,8 @@ YAML::Node toYaml(const ConfigT& config) {
  */
 template <typename ConfigT>
 ConfigT fromYamlFile(const std::string& file_name, const std::string& name_space = "") {
-  YAML::Node node = internal::lookupNamespace(YAML::LoadFile(file_name), name_space);
-  ConfigT config;
-  internal::Visitor::setValues(config, node);
-  return config;
+  const YAML::Node node = internal::lookupNamespace(YAML::LoadFile(file_name), name_space);
+  return internal::fromYamlImpl(node, "", static_cast<ConfigT*>(nullptr));
 }
 
 /**

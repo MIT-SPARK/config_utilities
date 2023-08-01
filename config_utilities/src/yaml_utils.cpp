@@ -99,4 +99,19 @@ bool isEqual(const YAML::Node& a, const YAML::Node& b) {
   return false;
 }
 
+std::vector<YAML::Node> getNodeArray(const YAML::Node& node) {
+  std::vector<YAML::Node> result;
+  if (node.IsMap()) {
+    for (const auto& kv_pair : node) {
+      result.emplace_back(kv_pair.second);
+    }
+  } else if (node.IsSequence()) {
+    for (const auto& sub_node : node) {
+      result.emplace_back(sub_node);
+    }
+  }
+  // TODO(lschmid): Should this raise an error or be silent about empty or invalid source data?
+  return result;
+}
+
 }  // namespace config::internal
