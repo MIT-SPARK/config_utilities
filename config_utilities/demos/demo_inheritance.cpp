@@ -114,7 +114,7 @@ int main(int argc, char** argv) {
   // ===================================== Checking whether a struct is a config =====================================
 
   // Create the config like any other.
-  auto config = config::fromYamlFile<demo::DerivedConfig>(my_root_path + "demo_inheritance.yaml", "valid_ns");
+  auto config = config::fromYamlFile<demo::DerivedConfig>(my_root_path + "inheritance.yaml", "valid_ns");
   bool is_valid = config::isValid(config);
   std::cout << "Config is valid: " << std::boolalpha << is_valid << std::endl;
   std::cout << config << std::endl;
@@ -124,7 +124,7 @@ int main(int argc, char** argv) {
   object.print();
 
   // Invalid configs will be warned about as usual
-  auto invalid_config = config::fromYamlFile<demo::DerivedConfig>(my_root_path + "demo_inheritance.yaml", "invalid_ns");
+  auto invalid_config = config::fromYamlFile<demo::DerivedConfig>(my_root_path + "inheritance.yaml", "invalid_ns");
   is_valid = config::isValid(invalid_config, true);
   std::cout << "Config is valid: " << std::boolalpha << is_valid << std::endl;
   std::cout << invalid_config << std::endl;
