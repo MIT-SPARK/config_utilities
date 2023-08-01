@@ -67,6 +67,9 @@ struct MetaData {
   // Whether the data stored belongs to a virtual config.
   bool is_virtual_config = false;
 
+  // If this config is part of an array config, this is the index of the array.
+  int array_config_index = -1;
+
   // Yaml node used to get or set the data of a config.
   YAML::Node data;
 
@@ -103,6 +106,7 @@ struct MetaData {
     }
     field_name = other.field_name;
     sub_configs = other.sub_configs;
+    array_config_index = other.array_config_index;
   }
 };
 

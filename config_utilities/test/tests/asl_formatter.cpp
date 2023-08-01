@@ -35,7 +35,26 @@ void declare_config(TestConfig& config) {
                 "and has a long unit");
 }
 
-TEST(AslFormatter, dataToString) {
+struct ArrayConfig {
+  float f = 0.f;
+};
+
+void declare_config(ArrayConfig& config) {
+  name("ArrayConfig");
+  field(config.f, "f");
+  check(config.f, GE, 0, "f");
+}
+
+struct ConfigUsingArrays {
+  std::vector<ArrayConfig> arr;
+};
+
+void declare_config(ConfigUsingArrays& config) {
+  name("ConfigUsingArrays");
+  field(config.arr, "arr");
+}
+
+TEST(AslFormatter, DataToString) {
   YAML::Node data = internal::Visitor::getValues(TestConfig()).data;
   EXPECT_EQ(internal::dataToString(data["i"]), "1");
   EXPECT_EQ(internal::dataToString(data["f"]), "2.1");
@@ -55,7 +74,7 @@ TEST(AslFormatter, dataToString) {
   EXPECT_EQ(internal::dataToString(nested_set), "{a: {x: 1, y: 2}, b: {x: 3, y: 4}}");
 }
 
-TEST(AslFormatter, formatErrors) {
+TEST(AslFormatter, FormatErrors) {
   internal::MetaData data;
   data.name = "Config 1";
   data.errors.emplace_back(new internal::Warning("Field 1", "Error 1"));
@@ -105,7 +124,7 @@ Warning: Failed to parse param 'Field 6': Error 6.
   EXPECT_EQ(formatted, expected);
 }
 
-TEST(AslFormatter, formatChecks) {
+TEST(AslFormatter, FormatChecks) {
   DefaultConfig config;
   config.i = -1;
   config.f = -1.f;
@@ -163,7 +182,7 @@ Warning: Check [11/11] failed for 'sub_sub_config.i': param > 0 (is: '-1').
   EXPECT_EQ(formatted, expected);
 }
 
-TEST(AslFormatter, formatConfig) {
+TEST(AslFormatter, FormatConfig) {
   internal::MetaData data = internal::Visitor::getValues(TestConfig());
 
   Settings().indicate_default_values = false;
@@ -281,7 +300,7 @@ sub_sub_config [SubSubConfig]:
   EXPECT_EQ(formatted, expected);
 }
 
-TEST(AslFormatter, formatUnits) {
+TEST(AslFormatter, FormatUnits) {
   Settings().indicate_default_values = false;
   Settings().indicate_units = true;
   Settings().inline_subconfig_field_names = true;
@@ -324,7 +343,7 @@ sub_sub_config [SubSubConfig]:
   EXPECT_EQ(formatted, expected);
 }
 
-TEST(AslFormatter, formatDefaultValues) {
+TEST(AslFormatter, FormatDefaultValues) {
   Settings().indicate_default_values = true;
   Settings().indicate_units = false;
   Settings().inline_subconfig_field_names = true;
@@ -398,6 +417,42 @@ sub_sub_config [SubSubConfig]:
 ================================================================================)""";
   EXPECT_EQ(formatted.size(), expected.size());
   EXPECT_EQ(formatted, expected);
+}
+
+TEST(AslFormatter, FormatArrayChecks) {
+  ConfigUsingArrays config;
+  config.arr.emplace_back().f = -1.f;
+  config.arr.emplace_back().f = -2.f;
+  config.arr.emplace_back().f = -3.f;
+
+  const internal::MetaData data = internal::Visitor::getChecks(config);
+  const std::string formatted = internal::Formatter::formatErrors(data);
+  const std::string expected = R"""( 'ConfigUsingArrays':
+============================== ConfigUsingArrays ===============================
+Warning: Check [1/3] failed for 'arr[0].f': param >= 0 (is: '-1').
+Warning: Check [2/3] failed for 'arr[1].f': param >= 0 (is: '-2').
+Warning: Check [3/3] failed for 'arr[2].f': param >= 0 (is: '-3').
+================================================================================)""";
+  EXPECT_EQ(formatted, expected);
+}
+
+TEST(AslFormatter, FormatArrayConfigs) {
+  ConfigUsingArrays config;
+  config.arr.emplace_back().f = 1.f;
+  config.arr.emplace_back().f = 2.f;
+  config.arr.emplace_back().f = 3.f;
+
+  const internal::MetaData data = internal::Visitor::getValues(config);
+  const std::string formatted = internal::Formatter::formatConfig(data);
+  const std::string expected = R"""(============================== ConfigUsingArrays ===============================
+arr[0] [ArrayConfig]:
+   f:               1
+arr[1] [ArrayConfig]:
+   f:               2
+arr[2] [ArrayConfig]:
+   f:               3
+================================================================================)""";
+  std::cout << formatted << std::endl;
 }
 
 }  // namespace config::test
