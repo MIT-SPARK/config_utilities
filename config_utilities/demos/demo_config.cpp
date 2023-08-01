@@ -2,11 +2,10 @@
  * TODO(lschmid): Shows how to use configs.
  */
 
-#include "config_utilities/config.h"  // Enables declare_config().
-
 #include <iostream>
 #include <string>
 
+#include "config_utilities/config.h"                 // Enables declare_config().
 #include "config_utilities/formatting/asl.h"         // Simply including this file sets a style to format output.
 #include "config_utilities/logging/log_to_stdout.h"  // Simply including this file sets logging to stdout.
 #include "config_utilities/parsing/yaml.h"           // Enable fromYamlFile().
@@ -88,8 +87,8 @@ void declare_config(MyConfig& config) {
   // Specify all checks to denote a valid configuration. Checks are specified as param, value, and param name to be
   // displayed. Implemented checks are GT (>), GE (>=), LT (<), LE (<=), EQ (==), NE (!=).
   // TODO(lschmid): Would be nice to not duplicate the name but didn't find a nice way to do this.
-  config::check(config.i, config::CheckMode::GT, 0, "i");
-  config::check(config.i, config::CheckMode::LT, -2, "i");
+  config::check(config.i, config::GT, 0, "i");
+  config::check(config.i, config::LT, -2, "i");
 
   // Double sided checks can be invoked as in range.
   const bool lower_inclusive = true;
@@ -174,14 +173,14 @@ int main(int argc, char** argv) {
   std::cout << "\n\n----- Reading the config from file -----\n\n" << std::endl;
 
   // Read the config from file.
-  config = config::fromYamlFile<demo::MyConfig>(my_root_path + "demo_params.yaml");
+  config = config::fromYamlFile<demo::MyConfig>(my_root_path + "params.yaml");
 
   std::cout << "Read values i='" << config.i << "', s='" << config.s << "', distance='" << config.distance
             << "' from file." << std::endl;
   std::cout << "Enum 'config.my_enum' is now B: " << (config.my_enum == demo::MyConfig::MyEnum::kB) << std::endl;
 
   // Any errors parsing configs will print verbose warnings if desired and use the default values.
-  invalid_config = config::fromYamlFile<demo::MyConfig>(my_root_path + "demo_invalid_params.yaml");
+  invalid_config = config::fromYamlFile<demo::MyConfig>(my_root_path + "invalid_params.yaml");
 
   // ======================================== Printing configs to string ========================================
   std::cout << "\n\n----- Printing configs to string -----\n\n" << std::endl;
