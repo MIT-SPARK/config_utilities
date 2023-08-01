@@ -11,6 +11,7 @@
 #include "config_utilities/internal/string_utils.h"
 #include "config_utilities/internal/visitor.h"
 #include "config_utilities/internal/yaml_utils.h"
+#include "config_utilities/parsing/yaml.h"  // NOTE(lschmid): This pulls in more than needed buyt avoids code duplication.
 
 namespace config {
 
@@ -80,7 +81,7 @@ inline YAML::Node rosToYaml(const ros::NodeHandle& nh) {
 /**
  * @brief Loads a config from a yaml node.
  *
- * @tparam ConfigT The config type.
+ * @tparam ConfigT The config type. This can also be a VirtualConfig<BaseT> or a std::vector<ConfigT>.
  * @param nh The ROS nodehandle to create the config from.
  * @param name_space Optionally specify a name space to create the config from. Separate names with slashes '/'.
  * Example: "my_config/my_sub_config".
@@ -88,10 +89,9 @@ inline YAML::Node rosToYaml(const ros::NodeHandle& nh) {
  */
 template <typename ConfigT>
 ConfigT fromRos(const ros::NodeHandle& nh, const std::string& name_space = "") {
-  ConfigT config;
-  ros::NodeHandle ns_nh = ros::NodeHandle(nh, name_space);
-  internal::Visitor::setValues(config, internal::rosToYaml(ns_nh));
-  return config;
+  const ros::NodeHandle ns_nh = ros::NodeHandle(nh, name_space);
+  const YAML::Node node = internal::rosToYaml(ns_nh);
+  return internal::fromYamlImpl(node, "", static_cast<ConfigT*>(nullptr));
 }
 
 /**
