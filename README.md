@@ -79,7 +79,19 @@ Among many other, the key features of conig_utilities include:
     ents...> struct.
     ```
 
-# Installation
+## Installation
+
+This package is compatible with `catkin`. Just clone it into your workspace and you should be all set!
+
+If you want to build and install without catkin, that should be possible too. Just clone this repository and then
+```bash
+cd path/to/this/repo
+mkdir build
+cd build
+cmake ..
+make -j
+# optionally install this package
+# sudo make install
 
 # How to `config_utilities`
 We provide a set of verbose demos covering some of the essential use cases of `config_utilities`.
