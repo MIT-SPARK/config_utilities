@@ -109,7 +109,7 @@ The ros demo can be run via:
 roslaunch config_utilities demo_ros.launch
 ```
 
-# Structure
+## Structure
 
 `config_utilities` is designed as a support library with minimal dependencies (yaml-cpp and C++ standard library), and additional headers for interfaces with dependencies that are only required by the host project.
 
