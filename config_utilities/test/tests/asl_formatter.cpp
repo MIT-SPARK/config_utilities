@@ -452,7 +452,6 @@ arr[1] [ArrayConfig]:
 arr[2] [ArrayConfig]:
    f:               3
 ================================================================================)""";
-  std::cout << formatted << std::endl;
 }
 
 }  // namespace config::test
