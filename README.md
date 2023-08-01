@@ -10,7 +10,7 @@
 - [Structure](#structure)
 
 
-# Credits
+## Credits
 This library was developed by [Lukas Schmid](https://schmluk.github.io/) and [Nathan Hughes](http://mit.edu/sparklab/people.html) at the [MIT-SPARK Lab](http://mit.edu/sparklab), based on previous functionalities in [ethz-asl/config_utilities](https://github.com/ethz-asl/config_utilities) and [Hydra](https://github.com/MIT-SPARK/Hydra), and is released under a BSD-3-Clause License. Additional contributions welcome!
 
 # Why `config_utilities`
