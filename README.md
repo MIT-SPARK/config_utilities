@@ -141,7 +141,7 @@ Directory of headers to include depending on which functionality you need. All c
     └── enum.h          # Safe and verbose parsing of enum types.
 ```
 
-# Example Projects using `config_utilities` (TODO)
+## Example Projects using `config_utilities` (TODO)
 
 For additional examples check out these projects using `config_utilities`:
 - Hydra
