@@ -185,7 +185,7 @@ void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_
 
   if (visitor.mode == Visitor::Mode::kGet) {
     const std::string name_space = joinNamespace(visitor.name_space, field_name);
-    YAML::Node array_node = YAML::Node(YAML::NodeType::Sequence);
+    YAML::Node array_node(YAML::NodeType::Sequence);
     size_t index = 0;
     for (const auto& sub_config : config) {
       visitor.data.sub_configs.emplace_back(getValues(sub_config, false, name_space, field_name));
