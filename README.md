@@ -11,7 +11,7 @@
 
 
 ## Credits
-This library was developed by [Lukas Schmid](https://schmluk.github.io/) and [Nathan Hughes](http://mit.edu/sparklab/people.html) at the [MIT-SPARK Lab](http://mit.edu/sparklab), based on previous functionalities in [ethz-asl/config_utilities](https://github.com/ethz-asl/config_utilities) and [Hydra](https://github.com/MIT-SPARK/Hydra), and is released under a BSD-3-Clause License. Additional contributions welcome!
+This library was developed by [Lukas Schmid](https://schmluk.github.io/) and [Nathan Hughes](http://mit.edu/sparklab/people.html) at the [MIT-SPARK Lab](http://mit.edu/sparklab), based on previous functionalities in [ethz-asl/config_utilities](https://github.com/ethz-asl/config_utilities) and [Hydra](https://github.com/MIT-SPARK/Hydra), and is released under a [BSD-3-Clause License](LICENSE)! Additional contributions welcome!
 
 ## Why `config_utilities`?
 Among many other, the key features of conig_utilities include:
@@ -81,19 +81,26 @@ Among many other, the key features of conig_utilities include:
 
 ## Installation
 
-This package is compatible with `catkin`. Just clone it into your workspace and you should be all set!
+This package is compatible with `catkin` and `catkin_simple`. Just clone it into your workspace and you should be all set!
+```bash
+cd ~/catkin_ws/src
+git clone TODO
+catkin build config_utilities
+```
 
-If you want to build and install without catkin, that should be possible too. Just clone this repository and then
+If you want to build and install without catkin, that should be possible too. Just clone this repository and run:
 ```bash
 cd path/to/this/repo
 mkdir build
 cd build
 cmake ..
 make -j
-# optionally install this package
-# sudo make install
 
-# How to `config_utilities`
+# optionally install this package
+sudo make install
+```
+
+## How to `config_utilities`
 We provide a set of verbose demos covering some of the essential use cases of `config_utilities`.
 
 The (non-ros) demos can be run via the `run_demo.py` utility in the scripts directory. If you are building this library via catkin, you can run one of the following:
@@ -135,7 +142,7 @@ Directory of headers to include depending on which functionality you need. All c
 ├── parsing             # Specify input parsers to get configs or create objects from source data.
 │   ├── ros.h
 │   └── yaml.h
-└── types               # Support for other types, such as matrices.
+└── types               # Support for various types that need special conversions.
     ├── conversions.h   # Support for custom conversions, such as uchars.
     ├── eigen_matrix.h  # Parsing of any Eigen-matrix types.
     └── enum.h          # Safe and verbose parsing of enum types.
@@ -146,6 +153,8 @@ Directory of headers to include depending on which functionality you need. All c
 For additional examples check out these projects using `config_utilities`:
 - Hydra
 - Khronos
+
+If you are looking for a specific use case that is not in the demos, chances are you can find a good example in the `tests/` directory!
 
 # Old
 
