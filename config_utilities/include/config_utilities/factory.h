@@ -19,6 +19,34 @@ namespace config {
 
 namespace internal {
 
+class ModuleRegistry {
+ public:
+  static void addModule(const std::string& type, const std::string& type_info) {
+    instance().map.emplace(type, type_info);
+  }
+
+  static std::string getAllRegistered() {
+    std::stringstream ss;
+    ss << "Registered Factories: {";
+    const auto& map = instance().map;
+    for (auto&& [type, type_info] : map) {
+      ss << "  " << type << ": " << type_info << ",\n";
+    }
+    ss << "}";
+    return ss.str();
+  }
+
+ private:
+  static ModuleRegistry& instance() {
+    static ModuleRegistry instance_;
+    return instance_;
+  }
+
+  ModuleRegistry() = default;
+
+  std::map<std::string, std::string> map;
+};
+
 // Struct to store the factory methods for the creation of modules.
 template <typename FactoryMethod>
 struct ModuleMapBase {
@@ -33,7 +61,9 @@ struct ModuleMapBase {
       }
       return false;
     }
+
     map.insert(std::make_pair(type, method));
+    ModuleRegistry::addModule(type, type_info);
     return true;
   }
 
@@ -43,6 +73,7 @@ struct ModuleMapBase {
     if (map.empty()) {
       Logger::logError("Cannot create a module of type '" + type + "': No modules registered to the factory for " +
                        type_info + ". Register modules using a static " + registration_info + " struct.");
+      Logger::logError(ModuleRegistry::getAllRegistered());
       return false;
     }
     if (map.find(type) == map.end()) {
