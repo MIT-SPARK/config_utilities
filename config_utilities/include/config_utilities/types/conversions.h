@@ -24,7 +24,13 @@ struct CharConversion {
  */
 struct ThreadNumConversion {
   static int toIntermediate(int value, std::string& error);
-  static void fromIntermediate(int intermediate, int& value, std::string& error);
+
+  template <typename T>
+  static void fromIntermediate(int intermediate, T& value, std::string& error) {
+    value = ThreadNumConversion::getNumThreads(intermediate);
+  }
+
+  static int getNumThreads(int intermediate);
 };
 
 }  // namespace config
