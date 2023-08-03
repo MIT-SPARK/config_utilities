@@ -25,8 +25,8 @@ void CharConversion::fromIntermediate(const std::string& intermediate, char& val
 
 int ThreadNumConversion::toIntermediate(int value, std::string&) { return value; }
 
-void ThreadNumConversion::fromIntermediate(int intermediate, int& value, std::string& error) {
-  value = intermediate <= 0 ? std::thread::hardware_concurrency() : intermediate;
+int ThreadNumConversion::getNumThreads(int intermediate) {
+  return intermediate <= 0 ? std::thread::hardware_concurrency() : intermediate;
 }
 
 }  // namespace config
