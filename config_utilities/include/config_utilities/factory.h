@@ -22,18 +22,19 @@ namespace internal {
 class ModuleRegistry {
  public:
   static void addModule(const std::string& type, const std::string& type_info) {
-    instance().map.emplace(type, type_info);
+    instance().modules.emplace_back(type, type_info);
   }
 
   static std::string getAllRegistered() {
     std::stringstream ss;
     ss << "Registered Factories: {";
-    const auto& map = instance().map;
-    if (!map.empty()) {
+    auto modules = instance().modules;
+    std::sort(modules.begin(), modules.end());
+    if (!modules.empty()) {
       ss << "\n";
     }
 
-    for (auto&& [type, type_info] : map) {
+    for (auto&& [type, type_info] : modules) {
       ss << "  " << type << ": \"" << type_info << "\",\n";
     }
     ss << "}";
@@ -48,7 +49,7 @@ class ModuleRegistry {
 
   ModuleRegistry() = default;
 
-  std::map<std::string, std::string> map;
+  std::vector<std::pair<std::string, std::string>> modules;
 };
 
 // Struct to store the factory methods for the creation of modules.
