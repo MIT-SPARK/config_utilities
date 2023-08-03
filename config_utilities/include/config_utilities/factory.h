@@ -29,8 +29,12 @@ class ModuleRegistry {
     std::stringstream ss;
     ss << "Registered Factories: {";
     const auto& map = instance().map;
+    if (!map.empty()) {
+      ss << "\n";
+    }
+
     for (auto&& [type, type_info] : map) {
-      ss << "  " << type << ": " << type_info << ",\n";
+      ss << "  " << type << ": \"" << type_info << "\",\n";
     }
     ss << "}";
     return ss.str();
