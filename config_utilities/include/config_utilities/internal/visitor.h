@@ -54,7 +54,10 @@ struct Visitor {
   static void visitCheck(const CheckBase& check);
 
   template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
-  static void visitField(ConfigT& config, const std::string& field_name, bool name_is_namespace = true);
+  static void visitField(ConfigT& config,
+                         const std::string& field_name,
+                         bool name_is_namespace = true,
+                         const std::string& field_ns = "");
 
   template <typename ConfigT>
   static void visitBase(ConfigT& config);
@@ -96,7 +99,8 @@ struct Visitor {
   static MetaData subVisit(ConfigT& config,
                            const bool print_warnings,
                            const std::string& field_name,
-                           bool name_is_namespace);
+                           bool name_is_namespace,
+                           const std::string& field_ns);
 
   /* Internal data to handle visits. */
   // The messenger data to read from and return eventually.

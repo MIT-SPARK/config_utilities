@@ -60,10 +60,14 @@ void field(T& field, const std::string& field_name, const std::string& unit = ""
  * @param field The config member that stores data.
  * @param field_name The name of the field.
  * @param name_is_namespace Whether or not to enter a new namepsace
+ * @param field_ns An alternative namespace to enter
  */
 template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
-static void field(ConfigT& field, const std::string& field_name, bool name_is_namespace = true) {
-  internal::Visitor::visitField(field, field_name, name_is_namespace);
+static void field(ConfigT& field,
+                  const std::string& field_name,
+                  bool name_is_namespace = true,
+                  const std::string field_ns = "") {
+  internal::Visitor::visitField(field, field_name, name_is_namespace, field_ns);
 }
 
 /**
