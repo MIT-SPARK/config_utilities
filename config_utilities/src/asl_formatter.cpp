@@ -28,7 +28,11 @@ std::string AslFormatter::formatErrorsRecursive(const MetaData& data, const std:
   const std::string name_prefix_before = name_prefix_;
   if (Settings::instance().inline_subconfig_field_names) {
     if (!data.field_name.empty()) {
-      name_prefix_ += data.field_name + ".";
+      name_prefix_ += data.field_name;
+      if (data.array_config_index >= 0) {
+        name_prefix_ += "[" + std::to_string(data.array_config_index) + "]";
+      }
+      name_prefix_ += ".";
     }
   } else {
     current_check_ = 0;
@@ -112,6 +116,9 @@ std::string AslFormatter::toStringInternal(const MetaData& data, size_t indent) 
 std::string AslFormatter::formatSubconfig(const MetaData& data, size_t indent) const {
   // Header.
   std::string header = std::string(indent, ' ') + data.field_name;
+  if (data.array_config_index >= 0) {
+    header += "[" + std::to_string(data.array_config_index) + "]";
+  }
   if (indicate_subconfig_types_) {
     header += " [" + resolveConfigName(data) + "]";
   }

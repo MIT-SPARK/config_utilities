@@ -45,16 +45,23 @@ struct Visitor {
   // Interfaces for the config declaration interfaces to to expose their info to the visitor.
   static void visitName(const std::string& name);
 
+  // Non-config types.
   template <typename T, typename std::enable_if<!isConfig<T>(), bool>::type = true>
   static void visitField(T& field, const std::string& field_name, const std::string& unit);
 
+  // Non-config types with a conversion.
   template <typename Conversion, typename T, typename std::enable_if<!isConfig<T>(), bool>::type = true>
   static void visitField(T& field, const std::string& field_name, const std::string& unit);
 
-  static void visitCheck(const CheckBase& check);
-
+  // Single config types.
   template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
   static void visitField(ConfigT& config, const std::string& field_name, const std::string& /* unit */);
+
+  // Vector of config types.
+  template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
+  static void visitField(std::vector<ConfigT>& config, const std::string& field_name, const std::string& /* unit */);
+
+  static void visitCheck(const CheckBase& check);
 
   template <typename ConfigT>
   static void visitBase(ConfigT& config);

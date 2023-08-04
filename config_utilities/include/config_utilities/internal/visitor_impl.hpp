@@ -75,6 +75,7 @@ MetaData Visitor::subVisit(ConfigT& config, const bool print_warnings, const std
   }
 }
 
+// Visit a non-config field.
 template <typename T, typename std::enable_if<!isConfig<T>(), bool>::type = true>
 void Visitor::visitField(T& field, const std::string& field_name, const std::string& unit) {
   Visitor& visitor = Visitor::instance();
@@ -101,6 +102,7 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
   }
 }
 
+// Visits a non-config field with conversion.
 template <typename Conversion, typename T, typename std::enable_if<!isConfig<T>(), bool>::type = true>
 void Visitor::visitField(T& field, const std::string& field_name, const std::string& unit) {
   Visitor& visitor = Visitor::instance();
@@ -141,7 +143,7 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
   }
 }
 
-// Visits a subconfig field.
+// Visits a single subconfig field.
 template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
 void Visitor::visitField(ConfigT& config, const std::string& field_name, const std::string& /* unit */) {
   Visitor& visitor = Visitor::instance();
@@ -155,8 +157,52 @@ void Visitor::visitField(ConfigT& config, const std::string& field_name, const s
 
   // Aggregate data.
   if (visitor.mode == Visitor::Mode::kGet) {
-    // When getting data add the new data also to the parent data node. This automatically using the correct namespace.
+    // When getting data add the new data also to the parent data node. This is automatically using the correct
+    // namespace.
     mergeYamlNodes(data.data, new_data.data);
+  }
+}
+
+// Visit a vector of subconfigs.
+template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
+void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_name, const std::string& /* unit */) {
+  Visitor& visitor = Visitor::instance();
+  if (visitor.mode == Visitor::Mode::kGetDefaults) {
+    return;
+  }
+
+  if (visitor.mode == Visitor::Mode::kSet) {
+    // When setting the values first allocate the correct amount of configs.
+    config.clear();
+    const std::vector<YAML::Node> nodes = getNodeArray(lookupNamespace(visitor.data.data, field_name));
+    size_t index = 0;
+    for (const auto& node : nodes) {
+      ConfigT& sub_config = config.emplace_back();
+      visitor.data.sub_configs.emplace_back(setValues(sub_config, node, false, "", field_name));
+      visitor.data.sub_configs.back().array_config_index = index++;
+    }
+  }
+
+  if (visitor.mode == Visitor::Mode::kGet) {
+    const std::string name_space = joinNamespace(visitor.name_space, field_name);
+    YAML::Node array_node(YAML::NodeType::Sequence);
+    size_t index = 0;
+    for (const auto& sub_config : config) {
+      visitor.data.sub_configs.emplace_back(getValues(sub_config, false, name_space, field_name));
+      MetaData& new_data = visitor.data.sub_configs.back();
+      array_node.push_back(YAML::Clone(lookupNamespace(new_data.data, name_space)));
+      new_data.array_config_index = index++;
+    }
+    moveDownNamespace(array_node, name_space);
+    mergeYamlNodes(visitor.data.data, array_node);
+  }
+
+  if (visitor.mode == Visitor::Mode::kCheck) {
+    size_t index = 0;
+    for (const auto& sub_config : config) {
+      visitor.data.sub_configs.emplace_back(getChecks(sub_config, field_name));
+      visitor.data.sub_configs.back().array_config_index = index++;
+    }
   }
 }
 
