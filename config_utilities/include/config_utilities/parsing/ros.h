@@ -29,14 +29,14 @@ inline YAML::Node xmlRpcToYaml(const XmlRpc::XmlRpcValue& xml) {
     case XmlRpc::XmlRpcValue::Type::TypeString:
       return YAML::Node(static_cast<std::string>(xml));
     case XmlRpc::XmlRpcValue::Type::TypeArray: {
-      YAML::Node node;
+      YAML::Node node(YAML::NodeType::Sequence);
       for (int i = 0; i < xml.size(); ++i) {
         node.push_back(xmlRpcToYaml(xml[i]));
       }
       return node;
     }
     case XmlRpc::XmlRpcValue::Type::TypeStruct: {
-      YAML::Node node;
+      YAML::Node node(YAML::NodeType::Map);
       for (auto it = xml.begin(); it != xml.end(); ++it) {
         node[it->first] = xmlRpcToYaml(it->second);
       }
