@@ -50,9 +50,20 @@ inline void name(const std::string& name) { internal::Visitor::visitName(name); 
  * @param field_name The name of the field.
  * @param unit Optionally define the unit of the field during printing.
  */
-template <typename T>
+template <typename T, typename std::enable_if<!isConfig<T>(), bool>::type = true>
 void field(T& field, const std::string& field_name, const std::string& unit = "") {
   internal::Visitor::visitField(field, field_name, unit);
+}
+
+/**
+ * @brief Declare a field that is a subconfig
+ * @param field The config member that stores data.
+ * @param field_name The name of the field.
+ * @param name_is_namespace Whether or not to enter a new namepsace
+ */
+template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
+static void field(ConfigT& field, const std::string& field_name, bool name_is_namespace = true) {
+  internal::Visitor::visitField(field, field_name, name_is_namespace);
 }
 
 /**

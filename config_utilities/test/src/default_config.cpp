@@ -18,7 +18,7 @@ void declare_config(SubConfig& config) {
   name("SubConfig");
   field(config.i, "i");
   enter_namespace("nested_ns");
-  field(config.sub_sub_config, "sub_sub_config");
+  field(config.sub_sub_config, "sub_sub_config", false);
   check(config.i, CheckMode::GT, 0, "i");
 }
 
@@ -41,9 +41,9 @@ void declare_config(DefaultConfig& config) {
               {DefaultConfig::StrangeEnum::kY, "Y"},
               {DefaultConfig::StrangeEnum::kZ, "Z"}});
   enter_namespace("sub_ns");
-  field(config.sub_config, "sub_config", "sub_ns");
+  field(config.sub_config, "sub_config", false);
   switch_namespace("sub_sub_ns");
-  field(config.sub_sub_config, "sub_sub_config", "sub_sub_ns");
+  field(config.sub_sub_config, "sub_sub_config", false);
 
   check(config.i, CheckMode::GT, 0, "i");
   check(config.f, CheckMode::GE, 0.f, "f");

@@ -39,8 +39,11 @@ struct MyConfig {
   SubConfig sub_config;
 };
 
-// Defining 'void declare_config(T& config)' function labels a struct as config. All config properties are specified
-// within it.
+// Defining 'void declare_config(T& config)' function labels a struct as config.
+// It **MUST** be declared beforehand if being used in another declare_config
+void declare_config(SubConfig&);
+
+// All config properties are specified within declare_config.
 void declare_config(MyConfig& config) {
   config::name("MyConfig");
   config::field(config.i, "i");
@@ -56,7 +59,7 @@ void declare_config(MyConfig& config) {
   config::check(config.i, config::CheckMode::GT, 0, "i");
 }
 
-// Declaration of the subconfigs.
+// Declaration of the subconfig.
 void declare_config(SubConfig& config) {
   using namespace config;
   name("SubConfig");
@@ -64,6 +67,7 @@ void declare_config(SubConfig& config) {
   field(config.s, "s");
   check(config.f, CheckMode::GT, 0.f, "f");
 }
+
 
 // Declare objects with configs to create from the factory.
 

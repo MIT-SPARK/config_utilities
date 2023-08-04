@@ -51,8 +51,12 @@ struct MyConfig {
 // Another struct that will not be declared a config.
 struct NotAConfig {};
 
-// Defining 'void declare_config(T& config)' function labels a struct as config. All config properties are specified
-// within it.
+// Defining 'void declare_config(T& config)' function labels a struct as config.
+// It **MUST** be declared beforehand if being used in another declare_config
+void declare_config(SubConfig& config);
+void declare_config(SubSubConfig& config);
+
+//  All config properties are specified within declare_config.
 void declare_config(MyConfig& config) {
   // Specify the name.
   config::name("MyConfig");
