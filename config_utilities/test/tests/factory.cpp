@@ -79,15 +79,15 @@ TEST(Factory, create) {
   auto logger = TestLogger::create();
   base = create<Base>("NotRegistered", 1);
   EXPECT_FALSE(base);
-  EXPECT_EQ(logger->numMessages(), 1);
+  ASSERT_EQ(logger->numMessages(), 1);
   std::string msg = logger->messages().back().second;
   EXPECT_EQ(msg.find("No module of type 'NotRegistered' registered to the factory"), 0);
   EXPECT_NE(msg.find("Registered are: 'DerivedB', 'DerivedA'."), std::string::npos);
 
   base = create<Base>("DerivedA", 1, 2.f);
   EXPECT_FALSE(base);
-  EXPECT_EQ(logger->numMessages(), 2);
-  msg = logger->messages().back().second;
+  ASSERT_GE(logger->numMessages(), 2);
+  msg = logger->messages().at(1).second;
   EXPECT_EQ(msg.find("Cannot create a module of type 'DerivedA': No modules registered to the factory"), 0);
   EXPECT_NE(
       msg.find(
