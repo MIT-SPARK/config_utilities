@@ -41,6 +41,7 @@ add_executable(
   tests/inheritance.cpp
   tests/namespacing.cpp
   tests/string_utils.cpp
+  tests/subconfigs.cpp
   tests/traits.cpp
   tests/validity_checks.cpp
   tests/virtual_config.cpp

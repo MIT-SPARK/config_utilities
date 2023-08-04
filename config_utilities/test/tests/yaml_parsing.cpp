@@ -129,7 +129,7 @@ sub_ns:
     }
   });
   EXPECT_EQ(data.errors.size(), 5ul);
-  EXPECT_EQ(errors.size(), 7ul);
+  ASSERT_EQ(errors.size(), 7ul);
   EXPECT_EQ(errors[0]->name(), "i");
   EXPECT_EQ(errors[1]->name(), "vec");
   EXPECT_EQ(errors[2]->name(), "map");

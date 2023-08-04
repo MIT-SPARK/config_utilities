@@ -53,7 +53,7 @@ void declare_config(ObjectWithBase::Config& config) {
   config::name("ObjectWithBase");
   config::field(config.d, "d", "kg/m^3");
   config::check(config.d, config::CheckMode::GE, 0.0, "d");
-  config::field(config.base_config, "base_config");
+  config::field(config.base_config, "base_config", false);
 }
 
 TEST(VirtualConfig, isSet) {

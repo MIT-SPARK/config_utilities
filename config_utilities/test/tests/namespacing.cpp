@@ -142,9 +142,9 @@ struct NsWrapper {
 };
 
 void declare_config(NsWrapper& ns) {
-  config::field(ns.ns1, "ns1");
+  config::field(ns.ns1, "ns1", false);
   NameSpace open_ns("a/b/");
-  config::field(ns.ns2, "ns2");
+  config::field(ns.ns2, "ns2", false);
 }
 
 void checkNS(const Ns& ns, const std::string& ns_prefix = "") {
