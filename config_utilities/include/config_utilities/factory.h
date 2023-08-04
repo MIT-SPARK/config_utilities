@@ -184,7 +184,7 @@ struct ConfigFactory {
   static void addEntry(const std::string& type) {
     FactoryMethod method = [type]() { return new ConfigWrapperImpl<DerivedConfigT>(type); };
     // If the config is already registered, e.g. from different constructor args no warning needs to be printed.
-    ModuleMap::addEntry(type, method, "");
+    ModuleMap::addEntry(type, method, typeInfo<DerivedConfigT>() + " (config)");
   }
 
   // Create the config.
