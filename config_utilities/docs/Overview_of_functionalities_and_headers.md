@@ -1,6 +1,8 @@
 # Overview of functionalities and headers
-`config_utilities` is designed as a support library with minimal dependencies (`yaml-cpp` and `C++` standard library), and additional headers for interfaces with dependencies that are only required by the host project and are pointed out below.
+`config_utilities` is designed as a support library with minimal dependencies (`yaml-cpp` and `C++` standard library).
 The library is structured into directories by functionalities and dependencies. 
+Certain headers contain functionalities to interface with dependencies that are only required by the host project. 
+These dependencies are pointed out below where present.
 The following directories and files exist:
 
 ```bash
@@ -27,7 +29,7 @@ The following directories and files exist:
 │   └── log_to_stdout.h   # Log to stdout console (Default).
 │
 ├── parsing             # Specify input parsers to get configs or create objects from source data.
-│   ├── ros.h             # Tools to create configs and objects from ROS parameter server. Depends on 'ros/nodehanle'
+│   ├── ros.h             # Tools to create configs and objects from ROS parameter server. Depends on 'ros/nodehandle'
 │   └── yaml.h            # Tools to create/save configs and objects from/to yaml nodes or files. Depends on 'yaml-cpp'.
 │
 └── types               # Support for various types that need special conversions.
