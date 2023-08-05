@@ -25,13 +25,19 @@ void declare_config(external::OtherObject& config) { ... }  // Will not work!
 In the body of `declare_config`, we tell `config_utilities` everything it needs to know about a config. This consists of a `name` used for human readable printing and warnings, `fields` and their names to read and write the config, and `checks` that define whether the value stored in config are valid or not:
 ```c++
 void declare_config(MyConfig& config) {
-    config::name("MyConfig");   // Declares the name to be 'MyConfig'. Does not have to match the truct name but is recmmended.
+    config::name("MyConfig");
+    // Declares the name to be 'MyConfig'. Does not have to match the truct name but is recmmended.
 
-    config::field(config.int_val, "int_val_name");   // Declares that 'MyConfig' has a public member 'int_val' that will be referred to as 'int_val_name' for parsing and printing.
+    config::field(config.int_val, "int_val_name");
+    // Declares that 'MyConfig' has a public member 'int_val' that will be referred to as
+    // 'int_val_name' for parsing and printing.
 
-    config::field(config.x, "x", "m");   // Optionally specify a unit as 3rd argument. This will print that x is in nmeters.
+    config::field(config.x, "x", "m");
+    // Optionally specify a unit as 3rd argument. This will print that x is in nmeters.
 
-    config::check(config.x, config::GT, 0, "x");    // Declares that the config is only valid if config.x > 0. The second "x" defines the name to be printed if the check fails, and is recommended to be the same as the field name.
+    config::check(config.x, config::GT, 0, "x");
+    // Declares that the config is only valid if config.x > 0. The second "x" defines the name to
+    // be printed if the check fails, and is recommended to be the same as the field name.
 }
 ```
 
@@ -59,7 +65,7 @@ Custom checks can be implemented and passed as a templated Check Object. This is
 config::check<MyCustomCheck>(custom_arguments);
 ```
 
-> **ℹ️ Note<br>
+> **ℹ️ Note**<br>
 > The above functions are used within `declare_config()` to declare valid values for each field. They *must not* be used outside of it.
 
 To check that a config struct is valid, include `validation.h` and use `isValid(config, print_warnings)`:
@@ -139,4 +145,4 @@ sub_config [SubConfig]:
 ```
 
 > **⚠️ Important**<br>
-> Printing calls a *formatter* and to forma the config contents. If `config_utilities/config_utilities.h` is included these will automatically default to the *asl* formatter, resulting in the above print. If no formatter is included `toString()` will return a warning.
+> Printing calls a *formatter* and to format the config contents. If `config_utilities/config_utilities.h` is included these will automatically default to the *asl* formatter, resulting in the above print. If no formatter is included `toString()` will return a warning.
