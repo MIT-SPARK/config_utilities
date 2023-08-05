@@ -33,6 +33,7 @@ The following tutorials will guide you through functionalities of `config_utilit
     - [Adding custom formatters](Advanced.md#adding-custom-formatters)
     - [Adding custom parsers](Advanced.md#adding-custom-parsers)
 
+
 ## Demos
 The (non-ros) demos can be run via the `run_demo.py` utility in the scripts directory. If you are building this library via catkin, you can run one of the following to see the results of one of the corresponding demo files:
 ```
@@ -41,8 +42,8 @@ python3 scripts/run_demo.py inheritance
 python3 scripts/run_demo.py factory
 ```
 
-> [!NOTE]
->  If you're building via cmake, you can point `run_demo.py` to the build directory with `-b/--build_path`.
+> **ℹ️ Note**<br>
+> If you're building via cmake, you can point `run_demo.py` to the build directory with `-b/--build_path`.
 
 The ros demo can be run via:
 ```

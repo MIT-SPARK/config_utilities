@@ -110,8 +110,8 @@ python3 scripts/run_demo.py inheritance
 python3 scripts/run_demo.py factory
 ```
 
-> [!NOTE]
->  If you're building via cmake, you can point `run_demo.py` to the build directory with `-b/--build_path`.
+> **ℹ️ Note**<br>
+> If you're building via cmake, you can point `run_demo.py` to the build directory with `-b/--build_path`.
 
 The ros demo can be run via:
 ```
