@@ -240,7 +240,7 @@ void Visitor::flagDefaultValues(const ConfigT& config, MetaData& data) {
     // note that default config may not contain the same fields as the current config
     // if certain fields are conditionally enabled
     for (; default_idx < default_data.field_infos.size(); ++default_idx) {
-      if (default_data.field_infos.at(default_idx).name != info.name) {
+      if (default_data.field_infos.at(default_idx).name == info.name) {
         break;
       }
     }
