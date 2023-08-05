@@ -4,7 +4,7 @@ We provide detailed introductions about everything you need to know about `confi
 ## Tutorials
 The following tutorials will guide you through functionalities of `config_utilities`, from beginner to expert:
  
-1. [**Overview of functionalities and headers**](../Overview_of_functionalities_and_headers)
+1. [**Overview of functionalities and headers**](Overview_of_functionalities_and_headers.md)
 
 2. [**Config essentials**]()
     - [Declaring a struct a config]()
