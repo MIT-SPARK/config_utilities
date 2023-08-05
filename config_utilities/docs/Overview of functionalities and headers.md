@@ -1,7 +1,7 @@
 # Overview of functionalities and headers
 `config_utilities` is designed as a support library with minimal dependencies (`yaml-cpp` and `C++` standard library).
-The library is structured into directories by functionalities and dependencies. 
-Certain headers contain functionalities to interface with dependencies that are only required by the host project. 
+The library is structured into directories by functionalities and dependencies.
+Certain headers contain functionalities to interface with dependencies that are only required by the host project.
 These dependencies are pointed out below where present.
 The following directories and files exist:
 
