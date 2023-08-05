@@ -145,4 +145,4 @@ sub_config [SubConfig]:
 ```
 
 > **⚠️ Important**<br>
-> Printing calls a *formatter* and to format the config contents. If `config_utilities/config_utilities.h` is included these will automatically default to the *asl* formatter, resulting in the above print. If no formatter is included `toString()` will return a warning.
+> Printing calls a *formatter* to format the config contents. If `config_utilities/config_utilities.h` is included this will automatically default to the *asl* formatter, resulting in the above print. If no formatter is included `toString()` will return a warning.
