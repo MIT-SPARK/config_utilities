@@ -234,12 +234,24 @@ void Visitor::flagDefaultValues(const ConfigT& config, MetaData& data) {
 
   // Compare all fields. These should always be in the same order if they are from the same config and exclude
   // subconfigs.
+  size_t default_idx = 0;
   for (size_t i = 0; i < data.field_infos.size(); ++i) {
-    // Corresponding field info should always exist
     FieldInfo& info = data.field_infos.at(i);
-    const FieldInfo& default_info = default_data.field_infos.at(i);
+    // note that default config may not contain the same fields as the current config
+    // if certain fields are conditionally enabled
+    for (; default_idx < default_data.field_infos.size(); ++default_idx) {
+      if (default_data.field_infos.at(default_idx).name != info.name) {
+        break;
+      }
+    }
+
+    if (default_idx >= default_data.field_infos.size()) {
+      break;
+    }
+
     // NOTE(lschmid): Operator YAML::Node== checks for identity, not equality. Since these are all scalars, comparing
     // the formatted strings should be identical.
+    const auto& default_info = default_data.field_infos.at(default_idx);
     if (internal::dataToString(info.value) == internal::dataToString(default_info.value)) {
       info.is_default = true;
     }
