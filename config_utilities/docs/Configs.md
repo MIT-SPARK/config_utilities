@@ -50,7 +50,7 @@ config::check(config.x, config::GT, 0, "x");
 ```
 
 For a double sided value check, use `checkInRange(field,, lower, upper, field_name, lower_inclusive, upper_inclusive)`.
-E.g. the condition `x is within [0, 100)`` becomes:
+E.g. the condition `x is within [0, 100)` becomes:
 ```c++
   config::checkInRange(config.x, 0.0, 100.0, "x", true, false);
 ```
