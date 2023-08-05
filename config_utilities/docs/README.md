@@ -1,15 +1,15 @@
 # `config_utilities` Tutorials
-We provide detailed introductions about everything you need to know about `config_utilities` in the following [tutorials](#tutorials) and some example [demos](demos) that you can run.
+We provide detailed introductions about everything you need to know about `config_utilities` in the following [tutorials](#tutorials) and some verbose example [demos](#demos) that you can run.
 
 ## Tutorials
 The following tutorials will guide you through functionalities of `config_utilities`, from beginner to expert:
  
-1. [**Overview of functionalities and headers**]()
+1. [**Overview of functionalities and headers**](../Overview_of_functionalities_and_headers)
 
 2. [**Config essentials**]()
     - [Declaring a struct a config]()
-    - Checking for valid configurations]()
-    - Printing configs]()
+    - [Checking for valid configurations]()
+    - [Printing configs]()
 
 3. [**Parsing configs from data sources**]()
     - [parse from yaml]()
