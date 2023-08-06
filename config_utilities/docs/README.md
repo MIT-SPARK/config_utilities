@@ -6,10 +6,10 @@ The following tutorials will guide you through functionalities of `config_utilit
 
 1. [**Overview of functionalities and headers**](Headers.md)
 
-2. [**Config essentials**](Config.md)
-    - [Declaring a struct a config](Config.md#declaring-a-struct-a-config)
-    - [Checking for valid configurations](Config.md#checking-for-valid-configurations)
-    - [Printing configs](Config.md#printing-configs)
+2. [**Config essentials**](Configs.md)
+    - [Declaring a struct a config](Configs.md#declaring-a-struct-a-config)
+    - [Checking for valid configurations](Configs.md#checking-for-valid-configurations)
+    - [Printing configs](Configs.md#printing-configs)
 
 3. [**Parsing configs from data sources**](Parsing.md)
     - [Parse from yaml](Parsing.md#parse-from-yaml)
