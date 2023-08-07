@@ -59,12 +59,12 @@ void field(T& field, const std::string& field_name, const std::string& unit = ""
  * @brief Declare a field that is a sub-config.
  * @param field The config member that stores data.
  * @param field_name The name of the field.
- * @param name_is_namespace Whether or not to enter a new namepsace for the sub-config. By default, the field_name is
- * used as sub-namespace for sub-configs. Set to false to use the same namespace as the parent config.
+ * @param use_name_as_sub_namespace Whether or not to enter a new namepsace for the sub-config. By default, the
+ * field_name is used as sub-namespace for sub-configs. Set to false to use the same namespace as the parent config.
  */
 template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
-static void field(ConfigT& field, const std::string& field_name, bool name_is_namespace = true) {
-  internal::Visitor::visitField(field, field_name, name_is_namespace ? field_name : "");
+static void field(ConfigT& field, const std::string& field_name, bool use_name_as_sub_namespace = true) {
+  internal::Visitor::visitField(field, field_name, use_name_as_sub_namespace ? field_name : "");
 }
 
 /**
