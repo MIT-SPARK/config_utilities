@@ -42,7 +42,8 @@ struct Visitor {
   template <typename ConfigT>
   static MetaData getChecks(const ConfigT& config, const std::string& field_name = "");
 
-  // Interfaces for the config declaration interfaces to to expose their info to the visitor.
+  /** Interfaces for the config declaration interfaces to to expose their info to the visitor. **/
+  // Set the name.
   static void visitName(const std::string& name);
 
   // Non-config types.
@@ -55,20 +56,20 @@ struct Visitor {
 
   // Single config types.
   template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
-  static void visitField(ConfigT& config,
-                         const std::string& field_name,
-                         bool name_is_namespace = true,
-                         const std::string& field_ns = "");
+  static void visitField(ConfigT& config, const std::string& field_name, const std::string& name_space);
 
   // Vector of config types.
   template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
   static void visitField(std::vector<ConfigT>& config, const std::string& field_name, const std::string& /* unit */);
 
+  // Execute a check.
   static void visitCheck(const CheckBase& check);
 
+  // Inheritance base definition.
   template <typename ConfigT>
   static void visitBase(ConfigT& config);
 
+  // Virtual config.
   static std::optional<YAML::Node> visitVirtualConfig(bool is_set, bool is_optional, const std::string& type);
 
  private:
@@ -106,8 +107,7 @@ struct Visitor {
   static MetaData subVisit(ConfigT& config,
                            const bool print_warnings,
                            const std::string& field_name,
-                           bool name_is_namespace,
-                           const std::string& field_ns);
+                           const std::string& sub_ns);
 
   /* Internal data to handle visits. */
   // The messenger data to read from and return eventually.

@@ -64,30 +64,22 @@ template <typename ConfigT>
 MetaData Visitor::subVisit(ConfigT& config,
                            const bool print_warnings,
                            const std::string& field_name,
-                           bool name_is_namespace,
-                           const std::string& field_ns) {
-  if (name_is_namespace) {
-    enter_namespace(field_ns.empty() ? field_name : field_ns);
-  }
-
+                           const std::string& sub_ns) {
   MetaData data;
   Visitor& current_visitor = Visitor::instance();
+  const std::string name_space = joinNamespace(current_visitor.name_space, sub_ns);
   switch (current_visitor.mode) {
     case Visitor::Mode::kGet:
-      data = getValues(config, print_warnings, current_visitor.name_space, field_name);
+      data = getValues(config, print_warnings, name_space, field_name);
       break;
     case Visitor::Mode::kSet:
-      data = setValues(config, current_visitor.data.data, print_warnings, current_visitor.name_space, field_name);
+      data = setValues(config, current_visitor.data.data, print_warnings, name_space, field_name);
       break;
     case Visitor::Mode::kCheck:
       data = getChecks(config, field_name);
       break;
     default:
       break;
-  }
-
-  if (name_is_namespace) {
-    exit_namespace();
   }
   return data;
 }
@@ -162,10 +154,7 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
 
 // Visits a single subconfig field.
 template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
-void Visitor::visitField(ConfigT& config,
-                         const std::string& field_name,
-                         bool name_is_namespace,
-                         const std::string& field_ns) {
+void Visitor::visitField(ConfigT& config, const std::string& field_name, const std::string& name_space) {
   Visitor& visitor = Visitor::instance();
   if (visitor.mode == Visitor::Mode::kGetDefaults) {
     return;
@@ -173,8 +162,7 @@ void Visitor::visitField(ConfigT& config,
 
   // Visit subconfig.
   MetaData& data = visitor.data;
-  MetaData& new_data =
-      data.sub_configs.emplace_back(Visitor::subVisit(config, false, field_name, name_is_namespace, field_ns));
+  MetaData& new_data = data.sub_configs.emplace_back(Visitor::subVisit(config, false, field_name, name_space));
 
   // Aggregate data.
   if (visitor.mode == Visitor::Mode::kGet) {
