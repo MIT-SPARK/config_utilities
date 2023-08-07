@@ -26,6 +26,7 @@ struct VectorConfig {
 
 struct FlatVectorConfig : public VectorConfig {};
 struct NamespacedVectorConfig : public VectorConfig {};
+struct DoubleNamespacedVectorConfig : public VectorConfig {};
 
 void declare_config(VectorConfig& config) {
   name("VectorConfig");
@@ -42,7 +43,15 @@ void declare_config(FlatVectorConfig& config) {
 void declare_config(NamespacedVectorConfig& config) {
   name("NamespacedVectorConfig");
   field(config.a, "a");
-  field(config.b, "b", true, "a");
+  NameSpace ns("a");
+  field(config.b, "b", false);
+}
+
+void declare_config(DoubleNamespacedVectorConfig& config) {
+  name("DoubleNamespacedVectorConfig");
+  field(config.a, "a");
+  NameSpace ns("a");
+  field(config.b, "b", true);
 }
 
 bool operator==(const FakeVector& lhs, const FakeVector& rhs) {
@@ -60,22 +69,30 @@ VectorConfig makeExpected(int a_x, int a_y, int a_z, int b_x, int b_y, int b_z) 
 void PrintTo(const VectorConfig& conf, std::ostream* os) { *os << toString(conf); }
 void PrintTo(const FlatVectorConfig& conf, std::ostream* os) { *os << toString(conf); }
 void PrintTo(const NamespacedVectorConfig& conf, std::ostream* os) { *os << toString(conf); }
+void PrintTo(const DoubleNamespacedVectorConfig& conf, std::ostream* os) { *os << toString(conf); }
 
 TEST(Subconfigs, SubconfigNamespacing) {
   const std::string yaml_str = R"(
 x: 1
 y: 2
 z: 3
-a: {x: 4, y: 5, z: 6}
-b: {x: -1, y: -2, z: -3})";
+a:
+  x: 4
+  y: 5
+  z: 6
+  b: {x: 7, y: 8, z: 9}
+b: {x: -1, y: -2, z: -3}
+)";
   const auto node = YAML::Load(yaml_str);
 
   auto nested_config = fromYaml<VectorConfig>(node);
   auto flat_config = fromYaml<FlatVectorConfig>(node);
   auto namespaced_config = fromYaml<NamespacedVectorConfig>(node);
+  auto double_namespaced_config = fromYaml<DoubleNamespacedVectorConfig>(node);
   EXPECT_EQ(makeExpected(4, 5, 6, -1, -2, -3), nested_config);
   EXPECT_EQ(makeExpected(1, 2, 3, 1, 2, 3), flat_config);
   EXPECT_EQ(makeExpected(4, 5, 6, 4, 5, 6), namespaced_config);
+  EXPECT_EQ(makeExpected(4, 5, 6, 7, 8, 9), double_namespaced_config);
 }
 
 }  // namespace config::test
