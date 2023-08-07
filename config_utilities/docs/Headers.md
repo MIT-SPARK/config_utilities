@@ -35,5 +35,6 @@ The following directories and files exist:
 └── types               # Support for various types that need special conversions.
     ├── conversions.h     # Support for custom conversions, such as uchars.
     ├── eigen_matrix.h    # Safe and verbose parsing of any Eigen-matrix types.
-    └── enum.h            # Safe and verbose parsing of custom enum types.
+    ├── enum.h            # Safe and verbose parsing of custom enum types.
+    └── path.h            # Conversion for std::filesystem::path and checks for paths and path-strings.
 ```
