@@ -3,15 +3,13 @@
 
 ## Table of contents
 - [Credits](#credits)
-- [Why config_utilities](#why-config_utilities)
+- [Why `config_utilities`?](#why-config_utilities)
 - [Installation](#installation)
-- [How to config_utilities](#how-to-config_utilities)
-- [Example Projects using config_utilities](#example-projects-using-config_utilities)
-- [Structure](#structure)
-
+- [How to `config_utilities`?](#how-to-config_utilities)
+- [Example Projects using `config_utilities`](#example-projects-using-config_utilities)
 
 ## Credits
-This library was developed by [Lukas Schmid](https://schmluk.github.io/) and [Nathan Hughes](http://mit.edu/sparklab/people.html) at the [MIT-SPARK Lab](http://mit.edu/sparklab), based on previous functionalities in [ethz-asl/config_utilities](https://github.com/ethz-asl/config_utilities) and [Hydra](https://github.com/MIT-SPARK/Hydra), and is released under a [BSD-3-Clause License](LICENSE)! Additional contributions welcome!
+This library was developed by [Lukas Schmid](https://schmluk.github.io/) and [Nathan Hughes](http://mit.edu/sparklab/people.html) at the [MIT-SPARK Lab](http://mit.edu/sparklab), based on functionalities in [ethz-asl/config_utilities](https://github.com/ethz-asl/config_utilities) and [Hydra](https://github.com/MIT-SPARK/Hydra), and is released under a [BSD-3-Clause License](LICENSE)! Additional contributions welcome!
 
 ## Why `config_utilities`?
 Among many other, the key features of conig_utilities include:
@@ -131,13 +129,10 @@ For additional examples check out these projects using `config_utilities`:
 - Some others that I need to double check.
 
 
-
-# Old
-
-# Sort of nice but not high prio feature requests
+# Previous: Sort of nice but not high prio feature requests
 - [ ] Refactor Config checking to get names and types.
 - [ ] Revamp demos.
-- [ ] List-based factory creation for processors
+- [x] List-based factory creation for processors
 - [ ] Make global settings itself a config that can be loaded/saved.
 - [ ] Json support?
 - [ ] Github CI / Release?
