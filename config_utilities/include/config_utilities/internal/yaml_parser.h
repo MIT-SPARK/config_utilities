@@ -79,11 +79,12 @@ class YamlParser {
       error = std::string(e.what());
     }
 
-    if (error.empty()) {
-      moveDownNamespace(node, sub_namespace);
-      return node;
+    if (!error.empty()) {
+      return YAML::Node(YAML::NodeType::Null);
     }
-    return YAML::Node(YAML::NodeType::Null);
+
+    moveDownNamespace(node, sub_namespace);
+    return node;
   }
 
  private:
@@ -116,6 +117,7 @@ class YamlParser {
   template <typename T>
   static YAML::Node toYamlImpl(const std::string& name, const std::vector<T>& value, std::string& error) {
     YAML::Node node;
+    node[name] = YAML::Node(YAML::NodeType::Sequence);
     for (const T& element : value) {
       node[name].push_back(element);
     }
@@ -152,9 +154,11 @@ class YamlParser {
   template <typename T>
   static YAML::Node toYamlImpl(const std::string& name, const std::set<T>& value, std::string& error) {
     YAML::Node node;
+    node[name] = YAML::Node(YAML::NodeType::Sequence);
     for (const T& element : value) {
       node[name].push_back(element);
     }
+
     return node;
   }
 
@@ -171,6 +175,7 @@ class YamlParser {
   template <typename K, typename V>
   static YAML::Node toYamlImpl(const std::string& name, const std::map<K, V>& value, std::string& error) {
     YAML::Node node;
+    node[name] = YAML::Node(YAML::NodeType::Map);
     for (const auto& kv_pair : value) {
       node[name][kv_pair.first] = kv_pair.second;
     }

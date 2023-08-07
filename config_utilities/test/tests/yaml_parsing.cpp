@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "config_utilities/config.h"
 #include "config_utilities/internal/yaml_utils.h"
 #include "config_utilities/parsing/yaml.h"
 #include "config_utilities/test/default_config.h"
@@ -217,6 +218,30 @@ TEST(YamlParsing, configToYAML) {
 
   config = fromYaml<DefaultConfig>(DefaultConfig::modifiedValues());
   expectEqual(toYaml(config), DefaultConfig::modifiedValues());
+}
+
+struct EmptyConfig {
+  std::map<std::string, double> empty_map;
+  std::set<int64_t> empty_set;
+  std::vector<std::string> empty_vector;
+  std::list<float> empty_list;
+};
+
+void declare_config(EmptyConfig& conf) {
+  name("EmptyConfig");
+  field(conf.empty_map, "empty_map");
+  field(conf.empty_set, "empty_set");
+  field(conf.empty_vector, "empty_vector");
+  field(conf.empty_list, "empty_list");
+}
+
+TEST(YamlParsing, emptyCollections) {
+  EmptyConfig empty_config;
+  YAML::Emitter out;
+  out << YAML::Flow << toYaml(empty_config);
+  const std::string result = out.c_str();
+  const std::string expected = "{empty_map: {}, empty_set: [], empty_vector: [], empty_list: []}";
+  EXPECT_EQ(expected, result);
 }
 
 }  // namespace config::test

@@ -26,7 +26,6 @@ template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::
 std::string toString(const ConfigT& config, bool print_warnings = true) {
   // Get the data of the config.
   internal::MetaData data = internal::Visitor::getValues(config);
-
   // Format the output data.
   if (print_warnings && data.hasErrors()) {
     internal::Logger::logWarning(
