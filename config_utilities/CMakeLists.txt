@@ -31,6 +31,7 @@ add_library(
   src/logger.cpp
   src/meta_data.cpp
   src/namespacing.cpp
+  src/path.cpp
   src/settings.cpp
   src/string_utils.cpp
   src/validation.cpp
