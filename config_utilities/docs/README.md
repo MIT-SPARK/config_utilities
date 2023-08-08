@@ -25,6 +25,7 @@ The following tutorials will guide you through functionalities of `config_utilit
 5. [**Automatic object creation via factories**](Factories.md)
     - [Automatic object creation](Factories.md#automatic-object-creation)
     - [Creating objects with individual configs](Factories.md#creating-objects-with-individual-configs)
+    - [Delayed object creation with virtual configs](Factories.md#delayed-object-creation-with-virtual-configs)
 
 6. [**Advanced features**](Advanced.md)
     - [Adding custom type specializations](Advanced.md#adding-custom-type-specializations)
