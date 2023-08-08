@@ -40,6 +40,7 @@ add_executable(
   tests/globals.cpp
   tests/inheritance.cpp
   tests/namespacing.cpp
+  tests/path.cpp
   tests/string_utils.cpp
   tests/subconfigs.cpp
   tests/traits.cpp
