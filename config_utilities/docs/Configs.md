@@ -1,5 +1,12 @@
 # Config essentials
 
+This tutorial explains how to declare a struct to be a config, check for valid configurations, and print configs to string.
+
+**Contents:**
+- [Declaring a struct a config](#declaring-a-struct-a-config)
+- [Checking for valid configurations](#checking-for-valid-configurations)
+- [Printing configs](#printing-configs)
+
 ## Declaring a struct a config
 Any struct or class can be declared to be a `config_utilities`-config. Simply define a function `void declare_config(ConfigT& config)` and the library will work for `ConfigT`:
 
