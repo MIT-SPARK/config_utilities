@@ -114,10 +114,6 @@ This defines `toString()` for objects declared a config:
 MyConfig cfg;
 std::cout << config::toString(cfg) << std::endl;
 ```
-It further defines `operator<<` for all objects declared a config, so this is equivalent:
-```c++
-std::cout << cfg << std::endl;
-```
 
 This will print the names and all fields declared in the config:
 ```
@@ -147,3 +143,11 @@ sub_config [SubConfig]:
 
 > **⚠️ Important**<br>
 > Printing calls a *formatter* to format the config contents. If `config_utilities/config_utilities.h` is included this will automatically default to the *asl* formatter, resulting in the above print. If no formatter is included `toString()` will return a warning.
+
+It further defines `operator<<` for all objects declared a config, so this is equivalent:
+```c++
+std::cout << cfg << std::endl;
+```
+
+> **⚠️ Important**<br>
+> `operator<<` is only defined in namespace `config` or found by argument-dependent lookup (ADL) in the same namespace as the config object is defined. It is thus generally recommended to use `config::toString()` where possible.
