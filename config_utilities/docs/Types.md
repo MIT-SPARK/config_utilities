@@ -130,4 +130,19 @@ if (config) {
 
 ## Type conversions
 
+Certain types may need special conversions or checks. Such `Converter` can be specified as a template argument of the `field` call.
+
+> **ℹ️ Note**<br>
+> For just *parsing* of different types, they only need to be yaml-serializable. More details on custom parsing and custom conversions can be found in the [advanced documentation](Advanced.md).
+
+An example use case is parsing of a thread count, where negative values default to the system hardware concurrency.
+Such a conversion is implemented in `types/conversions.h` and can be called as follows:
+```c++
+// Specifying the converter as tempalte argument.
+field<ThreadNumConversion>(config.num_threads, "num_threads");
+```
+
+Other frequent use cases include
+
+
 ## Namespaces
