@@ -34,6 +34,10 @@ The following tutorials will guide you through functionalities of `config_utilit
     - [Adding custom formatters](Advanced.md#adding-custom-formatters)
     - [Adding custom parsers](Advanced.md#adding-custom-parsers)
 
+7. [**Varia**](Varia.md)
+    - [Settings](Varia.md#settings)
+    - [Globals](Varia.md#globals)
+
 
 ## Demos
 The (non-ros) demos can be run via the `run_demo.py` utility in the scripts directory. If you are building this library via catkin, you can run one of the following to see the results of one of the corresponding demo files:
