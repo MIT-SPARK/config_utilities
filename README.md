@@ -56,6 +56,32 @@ Among many other, the key features of conig_utilities include:
     const std::string module_type = "my_derived";
     std::unique_ptr<Base> module = create(module_type);
     ```
+- **Informative, clear**, and **human readable** printing of potentially complicated config structs:
+    ```
+    =================================== MyConfig ===================================
+    distance [m]:                 -0.9876
+    A ridiculously long field name that will not be wrapped: Short Value (default)
+    A ridiculously long field name that will also not be wrapped:
+                                  A really really really ridiculously long string th
+                                  at will be wrapped. (default)
+    A really really really really really really ridiculously long field name that wi
+    ll be wrapped:                A really really really ridiculously long string th
+                                  at will also be wrapped. (default)
+    vec:                          [5, 4, 3, 2, 1]
+    map:                          {b: 2, c: 3, d: 4, e: 5}
+    mat:                          [[1, 2, 3],
+                                   [4, 5, 6],
+                                   [7, 8, 9]]
+    my_enum:                      B
+    sub_config [SubConfig] (default):
+    f:                         0.123 (default)
+    s:                         test (default)
+    sub_sub_config [SubSubConfig] (default):
+        color:                  [255, 127, 0] (default)
+        size:                   5 (default)
+    ================================================================================
+    ```
+
 - **Verbose warnings and errors** if desired for clear and easy development and use:
     ```
     =================================== MyConfig ===================================
