@@ -13,14 +13,14 @@ This library was developed by [Lukas Schmid](https://schmluk.github.io/) and [Na
 
 ## Why `config_utilities`?
 Among many other, the key features of conig_utilities include:
-- **Minimal dependencies**: Only C++17 stdandard library and [yaml-cpp](https://github.com/jbeder/yaml-cpp).
+- **Minimal dependencies**: Only C++17 standard library and [yaml-cpp](https://github.com/jbeder/yaml-cpp).
 - Declare **any struct a config**, also from external projects:
     ```c++
     namespace external_project {
         void declare_config(ExternalObject& config); // that's all!
     }   // namespace external_project
     ```
-- Minimal and **clear, human readable interfaces** for config definitions:
+- **Minimal** and **clear, human readable interfaces** for config definitions:
     ```c++
     void declare_config(MyConfig& config) {
         using namespace config;
@@ -30,6 +30,9 @@ Among many other, the key features of conig_utilities include:
     }
     ```
 - **Everything** related to a config is defined in a **single place**.
+  ```c++
+  void declare_config(MyConfig& config) { /* ALL the information about a config is here */ }
+  ```
 - Parse any declared config from **various data sources**, **without pulling in dependencies** on data sources into core libraries:
     ```c++
     core.cpp {
