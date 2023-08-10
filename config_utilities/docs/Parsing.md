@@ -37,15 +37,15 @@ MyConfig config = fromYamlFile<MyConfig>(file_path);
 MyConfig config = fromYamlFile<MyConfig>(file_path, "a/b/c");
 ```
 
-> **✅ Information**<br>
-> Note that the `config_utilities` creation interface also supports getting vectors of multiple configs or [virtual configs](Factories.md#delayed-object-creation-with-virtual-configs).
-```c++
-// Works! Expects the yaml data to contain a list of configs, e.g. [{config1 params}, {config2 params}, ...].
-std::vector<MyConfig> configs = fromYamlFile<std::vector<MyConfig>>(file_path, ns);
-
-// Works, too!
-VirtualConfig<MyBase> virtual_config = fromYaml<VirtualConfig<MyBase>>(file_path, ns);
-```
+> **✅ Supports**<br>
+> Note that the regular `config_utilities` creation interface also supports getting vectors of multiple configs or [virtual configs](Factories.md#delayed-object-creation-with-virtual-configs):
+> ```c++
+> // Works! Expects the yaml data to contain a list of configs, e.g. [{config1 params}, {config2 params}, ...].
+> std::vector<MyConfig> configs = fromYamlFile<std::vector<MyConfig>>(file_path, ns);
+> 
+> // Works, too!
+> VirtualConfig<MyBase> virtual_config = fromYaml<VirtualConfig<MyBase>>(file_path, ns);
+> ```
 
 For yaml-parsing, `config_utilities` also supports serializing config structs back to yaml data:
 ```c++
