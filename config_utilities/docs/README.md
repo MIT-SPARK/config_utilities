@@ -28,7 +28,7 @@ The following tutorials will guide you through functionalities of `config_utilit
     - [Delayed object creation with virtual configs](Factories.md#delayed-object-creation-with-virtual-configs)
 
 6. [**Advanced features**](Advanced.md)
-    - [Adding custom type specializations](Advanced.md#adding-custom-type-specializations)
+    - [Adding custom types](Advanced.md#adding-custom-types)
     - [Adding custom checks](Advanced.md#adding-custom-checks)
     - [Adding custom loggers](Advanced.md#adding-custom-loggers)
     - [Adding custom formatters](Advanced.md#adding-custom-formatters)
