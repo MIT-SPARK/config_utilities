@@ -1,0 +1,5 @@
+# Varia
+
+## Settings
+
+## Globals
