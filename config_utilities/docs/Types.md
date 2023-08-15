@@ -138,11 +138,75 @@ Certain types may need special conversions or checks. Such `Converter` can be sp
 An example use case is parsing of a thread count, where negative values default to the system hardware concurrency.
 Such a conversion is implemented in `types/conversions.h` and can be called as follows:
 ```c++
-// Specifying the converter as tempalte argument.
+// Specifying the converter as template argument.
 field<ThreadNumConversion>(config.num_threads, "num_threads");
 ```
-
-Other frequent use cases include
-
+  
+Another frequent use case is that of parsing `enum` values. To use this converter, include `types/enum.h`. 
+The enum converter will parse the enum values to/from human readable string representations and check the values are valid. There are several equivalent ways of declaring the conversion:
+```c++
+enum class MyEnum { kA, kB, kC};
+  
+// Declare the enum conversion globally via a static initializer, so it can be converted everywhere:
+auto init = Enum<MyEnum>::Initializer({{MyEnum::kA, "A"}, {MyEnum:kB:, "B"}, {MyEnum::kC, "C"}});
+  
+// Afterward the enum conversion can be used in the code:
+MyEnum enum_field;
+std::string enum_str = Enum<MyEnum>::toString(enum_field);
+enum_field 0 Enum<MyEnum>::fromString(enum_str);
+  
+// Config fields can now be declared using the converter:
+field<Enum<MyEnum>>(config.enum, "enum");
+  
+// Alternatively, the parsing can equivalently be specified directly in the field declaration. 
+// Note: This can also be used to temporarilly override the global definition:
+field<Enum<MyEnum>>(config.enum, "enum",{{MyEnum::kA, "A"}, {MyEnum:kB:, "B"}, {MyEnum::kC, "C"}});
+  
+// For sequential enums, this can also equivalently be declared in short form:
+field<Enum<MyEnum>>(config.enum, "enum",{"A", "B", "C"});
+```
 
 ## Namespaces
+Configs can declare sub-namespaces for their parameters when getting/setting their values. Two equivalent interfaces are provided:
+```c++
+void declare_config(MyConfig& config){
+field(config.a, "a");
+enter_namespace("ns1");  // Enters a new namespace 'ns1'
+field(config.b, "b");
+exit_namespace();  // Exits the last namespace, here 'ns1'
+enter_namespace("ns2");
+field(config.c, "c");
+enter_namespace("ns3");  // Namespaces can also be nested.
+field(config.d, "d");
+}
+```
+This will result in:
+```yaml
+a: value
+ns1:
+  b: value
+ns2:
+  c: value
+  ns3:
+    d: value
+```
+> **✅ Supports**<br>
+> For easier use, `exit_namespace()` followed by `enter_namespace("ns2")` can be replaced by `switch_namespace("n2")`. To exit all open namespaces one can use `clear_namespace()`.
+  
+> **✅ Supports**<br>
+> Recall that [subconfig fields](#sub-configs) by default open a namespace with their field name. Any residual namespace left open in a subconfig will be closed when returning to the original config declaration body.
+
+Equivalently, we provide scoped namespace declarations. The below code will produce the same namespaces:
+```c++
+void declare_config(MyConfig& config){
+field(config.a, "a");
+{ 
+  Namespace ns("ns1");  // Scoped namespace definition.
+  field(config.b, "b");
+}
+Namespace ns("ns2");
+field(config.c, "c");
+Namespace more_ns("ns3");
+field(config.d, "d");
+}
+```
