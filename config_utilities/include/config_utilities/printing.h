@@ -44,14 +44,14 @@ std::string toString(const ConfigT& config, bool print_warnings = true) {
  * @returns The string representation of the config.
  */
 template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
-std::string toString(const std::vector<ConfigT>& config, bool print_warnings = true) {
+std::string toString(const std::vector<ConfigT>& array_config, bool print_warnings = true) {
   // Get the data of the config.
   internal::MetaData data;
-  data.field_name = "config_array";
   data.name = "Config Array";
-  for (size_t i = 0; i < configs.size(); ++i) {
-    auto& d = data.sub_configs.emplace_back(internal::Visitor::getValues(configs[i]));
+  for (size_t i = 0; i < array_config.size(); ++i) {
+    auto& d = data.sub_configs.emplace_back(internal::Visitor::getValues(array_config[i]));
     d.array_config_index = i;
+    d.field_name = "config_array";
   }
   // Format the output data.
   if (print_warnings && data.hasErrors()) {

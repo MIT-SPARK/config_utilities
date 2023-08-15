@@ -2,7 +2,9 @@
 
 #include "config_utilities/config.h"
 #include "config_utilities/factory.h"
+#include "config_utilities/formatting/asl.h"
 #include "config_utilities/parsing/yaml.h"
+#include "config_utilities/printing.h"
 #include "config_utilities/test/utils.h"
 #include "config_utilities/validation.h"
 #include "config_utilities/virtual_config.h"
@@ -296,6 +298,29 @@ processor_configs:
     processor->process(to_process);
   }
   EXPECT_EQ(to_process, "hello world");
+}
+
+TEST(ConfigArrays, PrintArrayConfigs) {
+  std::vector<ArrConfig> configs;
+  configs.emplace_back("a", 1.0f);
+  configs.emplace_back("b", 2.0f);
+  configs.emplace_back("c", 3.0f);
+
+  internal::Formatter::setFormatter(std::make_unique<internal::AslFormatter>());
+
+  const std::string formatted = toString(configs);
+  const std::string expected = R"(================================= Config Array =================================
+config_array[0] [ArrConfig]:
+   s:               a
+   f:               1
+config_array[1] [ArrConfig]:
+   s:               b
+   f:               2
+config_array[2] [ArrConfig]:
+   s:               c
+   f:               3
+================================================================================)";
+  EXPECT_EQ(formatted, expected);
 }
 
 }  // namespace config::test
