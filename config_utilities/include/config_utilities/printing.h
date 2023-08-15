@@ -18,7 +18,7 @@ namespace config {
  * @brief Returns a string representation of the config.
  *
  * @tparam ConfigT The type of the config to print. This can also be a VirtualConfig<BaseT> or a std::vector<ConfigT>.
- * @param config The config to print. T
+ * @param config The config to print.
  * @param print_warnings If true, prints warnings for any failed conversions.
  * @returns The string representation of the config.
  */
@@ -39,7 +39,7 @@ std::string toString(const ConfigT& config, bool print_warnings = true) {
  * @brief Returns a string representation of the config.
  *
  * @tparam ConfigT The type of the config to print. This can also be a VirtualConfig<BaseT> or a std::vector<ConfigT>.
- * @param config The config to print. T
+ * @param config The config to print.
  * @param print_warnings If true, prints warnings for any failed conversions.
  * @returns The string representation of the config.
  */
