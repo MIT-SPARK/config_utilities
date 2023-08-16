@@ -59,8 +59,9 @@ inline YAML::Node rosToYaml(const ros::NodeHandle& nh) {
     }
     name = name.erase(0, nh.getNamespace().length());  // Remove the nodehandle's namespace.
     std::vector<std::string> name_parts = splitNamespace(name);
-    std::string local_name;
+    std::string local_name = "";
     if (!name_parts.empty()) {
+      name = name.substr(1);  // Remove the leading slash.
       local_name = name_parts.back();
       name_parts.pop_back();
     }
