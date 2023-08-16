@@ -141,29 +141,29 @@ Such a conversion is implemented in `types/conversions.h` and can be called as f
 // Specifying the converter as template argument.
 field<ThreadNumConversion>(config.num_threads, "num_threads");
 ```
-  
-Another frequent use case is that of parsing `enum` values. To use this converter, include `types/enum.h`. 
+
+Another frequent use case is that of parsing `enum` values. To use this converter, include `types/enum.h`.
 The enum converter will parse the enum values to/from human readable string representations and check the values are valid. There are several equivalent ways of declaring the conversion:
 ```c++
 enum class MyEnum { kA, kB, kC};
-  
+
 // Declare the enum conversion globally via a static initializer, so it can be converted everywhere:
 auto init = Enum<MyEnum>::Initializer({{MyEnum::kA, "A"}, {MyEnum:kB:, "B"}, {MyEnum::kC, "C"}});
-  
+
 // Afterward the enum conversion can be used in the code:
 MyEnum enum_field;
 std::string enum_str = Enum<MyEnum>::toString(enum_field);
-enum_field 0 Enum<MyEnum>::fromString(enum_str);
-  
+enum_field = Enum<MyEnum>::fromString(enum_str);
+
 // Config fields can now be declared using the converter:
 field<Enum<MyEnum>>(config.enum, "enum");
-  
-// Alternatively, the parsing can equivalently be specified directly in the field declaration. 
+
+// Alternatively, the parsing can equivalently be specified directly in the field declaration.
 // Note: This can also be used to temporarilly override the global definition:
-field<Enum<MyEnum>>(config.enum, "enum",{{MyEnum::kA, "A"}, {MyEnum:kB:, "B"}, {MyEnum::kC, "C"}});
-  
+enum_field<MyEnum>(config.enum, "enum",{{MyEnum::kA, "A"}, {MyEnum:kB:, "B"}, {MyEnum::kC, "C"}});
+
 // For sequential enums, this can also equivalently be declared in short form:
-field<Enum<MyEnum>>(config.enum, "enum",{"A", "B", "C"});
+enum_field<MyEnum>(config.enum, "enum",{"A", "B", "C"});
 ```
 
 ## Namespaces
@@ -192,7 +192,7 @@ ns2:
 ```
 > **✅ Supports**<br>
 > For easier use, `exit_namespace()` followed by `enter_namespace("ns2")` can be replaced by `switch_namespace("n2")`. To exit all open namespaces one can use `clear_namespace()`.
-  
+
 > **✅ Supports**<br>
 > Recall that [subconfig fields](#sub-configs) by default open a namespace with their field name. Any residual namespace left open in a subconfig will be closed when returning to the original config declaration body.
 
@@ -200,7 +200,7 @@ Equivalently, we provide scoped namespace declarations. The below code will prod
 ```c++
 void declare_config(MyConfig& config){
 field(config.a, "a");
-{ 
+{
   Namespace ns("ns1");  // Scoped namespace definition.
   field(config.b, "b");
 }
