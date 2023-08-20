@@ -193,7 +193,7 @@ int main(int argc, char** argv) {
   const std::string config_as_string = config::toString(config);
   std::cout << config_as_string << std::endl;
 
-  // Inclunding "printing.h" also implements th ostream operator for decared config types. The above is thus equivalent
+  // Inclunding "printing.h" also implements the ostream operator for decared config types. The above is thus equivalent
   // to:
   std::cout << config << std::endl;
 
