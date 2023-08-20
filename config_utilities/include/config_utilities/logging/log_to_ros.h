@@ -41,7 +41,7 @@ class RosLogger : public Logger {
   }
 
  private:
-  // Factory registration to allow setting of formatters via Settings::setDefaultLogger().
+  // Factory registration to allow setting of formatters via Settings::setLogger().
   inline static const auto registration_ = Registration<Logger, RosLogger>("ros");
 
   // Initialize the ros logger to be used if included.

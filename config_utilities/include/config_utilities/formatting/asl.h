@@ -25,7 +25,7 @@ class AslFormatter : public Formatter {
   std::string formatConfigsImpl(const std::vector<MetaData>& data) override;
 
  private:
-  // Factory registration to allow setting of formatters via Settings::setDefaultFormatter().
+  // Factory registration to allow setting of formatters via Settings::setFormatter().
   inline static const auto registration_ = Registration<Formatter, AslFormatter>("asl");
 
   // Initialize the asl formatter to be used if included.

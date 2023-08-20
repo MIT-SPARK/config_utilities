@@ -82,7 +82,7 @@ class MyLogger : public Logger {
  // Implement this function to do the logging work.
   void logImpl(const Severity severity, const std::string& message) override;
 
-  // Factory registration to allow setting of formatters via Settings::setDefaultLogger().
+  // Factory registration to allow setting of formatters via Settings::setLogger().
   inline static const auto registration_ = Registration<Logger, MyLogger>("my_logger");
 
   // Optionally use a static registration struct to set your logger automatically if included.
