@@ -29,6 +29,7 @@ The following tutorials will guide you through functionalities of `config_utilit
 
 6. [**Advanced features**](Advanced.md)
     - [Adding custom types](Advanced.md#adding-custom-types)
+    - [Adding custom conversions](Advanced.md#adding-custom-conversions)
     - [Adding custom checks](Advanced.md#adding-custom-checks)
     - [Adding custom loggers](Advanced.md#adding-custom-loggers)
     - [Adding custom formatters](Advanced.md#adding-custom-formatters)
