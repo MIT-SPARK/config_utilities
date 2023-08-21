@@ -36,7 +36,7 @@ std::unique_ptr<Base> object = create<Base>("DerivedA");
 ```
 
 > **✅ Supports**<br>
-> This interface also supports additional constructor arguments. These need to also be delclared in the registration. For example:
+> This interface also supports additional constructor arguments. These need to also be declared in the registration. For example:
 > ```c++
 > struct Base {
 >   Base(int i, float f);
