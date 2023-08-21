@@ -15,7 +15,6 @@ struct Settings {
   static Settings& instance();
 
   /* Printing Settings. TODO(lschmid): These should probabl be moved to a file or so for different formatters. */
-
   // Width of the 'toString()' output of configs.
   unsigned int print_width = 80u;
 
@@ -42,7 +41,6 @@ struct Settings {
   std::string factory_type_param_name = "type";
 
   /* Options to specify the logger and formatter at run time. */
-
   // Specify the default logger to be used for printing. Loggers register themselves if included.
   void setLogger(const std::string& name);
 

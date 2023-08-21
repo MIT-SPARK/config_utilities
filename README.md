@@ -3,26 +3,24 @@
 
 ## Table of contents
 - [Credits](#credits)
-- [Why config_utilities](#why-config_utilities)
+- [Why `config_utilities`?](#why-config_utilities)
 - [Installation](#installation)
-- [How to config_utilities](#how-to-config_utilities)
-- [Example Projects using config_utilities](#example-projects-using-config_utilities)
-- [Structure](#structure)
-
+- [How to `config_utilities`?](#how-to-config_utilities)
+- [Example Projects using `config_utilities`](#example-projects-using-config_utilities)
 
 ## Credits
-This library was developed by [Lukas Schmid](https://schmluk.github.io/) and [Nathan Hughes](http://mit.edu/sparklab/people.html) at the [MIT-SPARK Lab](http://mit.edu/sparklab), based on previous functionalities in [ethz-asl/config_utilities](https://github.com/ethz-asl/config_utilities) and [Hydra](https://github.com/MIT-SPARK/Hydra), and is released under a [BSD-3-Clause License](LICENSE)! Additional contributions welcome!
+This library was developed by [Lukas Schmid](https://schmluk.github.io/) and [Nathan Hughes](http://mit.edu/sparklab/people.html) at the [MIT-SPARK Lab](http://mit.edu/sparklab), based on functionalities in [ethz-asl/config_utilities](https://github.com/ethz-asl/config_utilities) and [Hydra](https://github.com/MIT-SPARK/Hydra), and is released under a [BSD-3-Clause License](LICENSE)! Additional contributions welcome!
 
 ## Why `config_utilities`?
 Among many other, the key features of conig_utilities include:
-- **Minimal dependencies**: Only C++17 stdandard library and [yaml-cpp](https://github.com/jbeder/yaml-cpp).
+- **Minimal dependencies**: Only C++17 standard library and [yaml-cpp](https://github.com/jbeder/yaml-cpp).
 - Declare **any struct a config**, also from external projects:
     ```c++
     namespace external_project {
         void declare_config(ExternalObject& config); // that's all!
     }   // namespace external_project
     ```
-- Minimal and **clear, human readable interfaces** for config definitions:
+- **Minimal** and **clear, human readable interfaces** for config definitions:
     ```c++
     void declare_config(MyConfig& config) {
         using namespace config;
@@ -32,6 +30,9 @@ Among many other, the key features of conig_utilities include:
     }
     ```
 - **Everything** related to a config is defined in a **single place**.
+  ```c++
+  void declare_config(MyConfig& config) { /* ALL the information about a config is here */ }
+  ```
 - Parse any declared config from **various data sources**, **without pulling in dependencies** on data sources into core libraries:
     ```c++
     core.cpp {
@@ -58,6 +59,32 @@ Among many other, the key features of conig_utilities include:
     const std::string module_type = "my_derived";
     std::unique_ptr<Base> module = create(module_type);
     ```
+- **Informative, clear**, and **human readable** printing of potentially complicated config structs:
+    ```
+    =================================== MyConfig ===================================
+    distance [m]:                 -0.9876
+    A ridiculously long field name that will not be wrapped: Short Value (default)
+    A ridiculously long field name that will also not be wrapped:
+                                  A really really really ridiculously long string th
+                                  at will be wrapped. (default)
+    A really really really really really really ridiculously long field name that wi
+    ll be wrapped:                A really really really ridiculously long string th
+                                  at will also be wrapped. (default)
+    vec:                          [5, 4, 3, 2, 1]
+    map:                          {b: 2, c: 3, d: 4, e: 5}
+    mat:                          [[1, 2, 3],
+                                   [4, 5, 6],
+                                   [7, 8, 9]]
+    my_enum:                      B
+    sub_config [SubConfig] (default):
+    f:                         0.123 (default)
+    s:                         test (default)
+    sub_sub_config [SubSubConfig] (default):
+        color:                  [255, 127, 0] (default)
+        size:                   5 (default)
+    ================================================================================
+    ```
+
 - **Verbose warnings and errors** if desired for clear and easy development and use:
     ```
     =================================== MyConfig ===================================
@@ -101,52 +128,24 @@ sudo make install
 ```
 
 ## How to `config_utilities`
-We provide a set of verbose demos covering some of the essential use cases of `config_utilities`.
+We provide detailed introductions about everything you need to know about `config_utilities` in the following [tutorials](config_utilities/docs/README.md#tutorials) and some verbose example [demos](config_utilities/docs/README.md#demos) that you can run.
 
-The (non-ros) demos can be run via the `run_demo.py` utility in the scripts directory. If you are building this library via catkin, you can run one of the following:
+The (non-ros) demos can be run via the `run_demo.py` utility in the scripts directory. If you are building this library via catkin, you can run one of the following to see the results of one of the corresponding demo files:
 ```
 python3 scripts/run_demo.py config
 python3 scripts/run_demo.py inheritance
 python3 scripts/run_demo.py factory
 ```
-to see the results of one of the corresponding demo files. If you're building via cmake, you can point `run_demo.py` to the build directory with `-b/--build_path`.
+
+> **ℹ️ Note**<br>
+> If you're building via cmake, you can point `run_demo.py` to the build directory with `-b/--build_path`.
 
 The ros demo can be run via:
 ```
 roslaunch config_utilities demo_ros.launch
 ```
 
-## Structure
-
-`config_utilities` is designed as a support library with minimal dependencies (yaml-cpp and C++ standard library), and additional headers for interfaces with dependencies that are only required by the host project.
-
-Directory of headers to include depending on which functionality you need. All core functionalities are in the unnamed include and depend only on yaml-cpp and C++ std.
-```bash
-├── config_utilities.h  # Collection of all core headers for easy use.
-├── config.h            # To define configs using 'declare_config()'.
-├── factory.h           # Enables automatic object creation via 'create()'.
-├── globals.h           # Functionality to print all global configs.
-├── printing.h          # Defines 'toString()' and operator<< for configs.
-├── settings.h          # Enables setting global properties via 'Settings()'
-├── traits.h            # Enables 'isConfig()'.
-├── validation.h        # Enables 'isValid()' and 'checkVaid()'.
-├── virtual_config.h    # Defines 'VirtualConfig' for later factory creation.
-├── internal            # All files in 'internal' are used internally and need not be included.
-│   └── ...
-├── formatting          # Specify a formatter to parse configs and warnings to text.
-│   └── asl.h
-├── logging             # Sepcify an output logger to log warnings and errors to.
-│   ├── log_to_glog.h
-│   ├── log_to_ros.h
-│   └── log_to_stdout.h
-├── parsing             # Specify input parsers to get configs or create objects from source data.
-│   ├── ros.h
-│   └── yaml.h
-└── types               # Support for various types that need special conversions.
-    ├── conversions.h   # Support for custom conversions, such as uchars.
-    ├── eigen_matrix.h  # Parsing of any Eigen-matrix types.
-    └── enum.h          # Safe and verbose parsing of enum types.
-```
+If you are looking for a specific use case that is not in the tutorials or demos, chances are you can find a good example in the `tests/` directory!
 
 ## Example Projects using `config_utilities` (TODO)
 
@@ -154,39 +153,15 @@ For additional examples check out these projects using `config_utilities`:
 - Hydra
 - Khronos
 
-If you are looking for a specific use case that is not in the demos, chances are you can find a good example in the `tests/` directory!
+### Previous versions of config_utilities:
+- Panoptic Mapping
+- Some others that I need to double check.
 
-# Old
 
-## Tutorial ideally covered topics:
-- Overview of functionalities and headers
-- Config essentials:
-    - Declaring a struct a config.
-    - Checking for valid configurations.
-    - Printing configs.
-- Parsing configs from data sources:
-    - parse from yaml
-    - parse from ROS
-- Automatic object creation via factories:
-    - automatic object creation
-    - creating objects with individual configs
-- Handling complex configs or types:
-    - Sub-configs
-    - Inheritance
-    - Virtual configs
-    - Type conversions
-    - Namespaces
-- Advanced features:
-    - Adding custom type specializations
-    - Adding custom checks
-    - Adding custom loggers
-    - Adding custom formatters
-    - Adding custom parsers
-
-# Sort of nice but not high prio feature requests
+# Previous: Sort of nice but not high prio feature requests
 - [ ] Refactor Config checking to get names and types.
 - [ ] Revamp demos.
-- [ ] List-based factory creation for processors
+- [x] List-based factory creation for processors
 - [ ] Make global settings itself a config that can be loaded/saved.
 - [ ] Json support?
 - [ ] Github CI / Release?

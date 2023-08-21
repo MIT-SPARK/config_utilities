@@ -42,7 +42,7 @@ class GlogLogger : public Logger {
   }
 
  private:
-  // Factory registration to allow setting of formatters via Settings::setDefaultLogger().
+  // Factory registration to allow setting of formatters via Settings::setLogger().
   inline static const auto registration_ = Registration<Logger, GlogLogger>("glog");
 
   // Initialize the glog logger to be used if included.
