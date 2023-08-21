@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 # ------------------------------------------------------------------------------
 # Copyright (c) 2023, Massachusetts Institute of Technology.
 # All Rights Reserved
