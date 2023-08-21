@@ -52,7 +52,17 @@ std::unique_ptr<Base> object = create<Base>("DerivedA");
 
 > **⚠️ Important**<br>
 > Note that different constructor argument template parameters will result in different factories at lookup time. For objects with optional constructor arguments, a registration for each version of the constructor needs to be declared.
+Note that references are silently dropped when calling `create` and will result in looking for a different factory constructor than registered. Pay careful attention to the different argument types between the constructor and the registration in the following example!
+```c++
+struct Bar {
+  float f;
+};
 
+struct Foo {
+  Foo(int i, const Bar& bar) {}
+  // Foo is already instantiable as a base class, so it is repeated twice as an argument
+  inline static const auto registration_ = config::Registration<Foo, Foo, int, Bar>("Foo");
+}
 ## Creating objects with individual configs
 
 We further provide a version of the factory that allows the declaration of an additional config struct for each derived type. The config is expected to be a `config_utilities` config, the first argument to the constructor, and will be created from the data provided to create the object:
