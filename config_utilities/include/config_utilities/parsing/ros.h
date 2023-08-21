@@ -57,11 +57,15 @@ inline YAML::Node rosToYaml(const ros::NodeHandle& nh) {
     if (name.find(nh.getNamespace()) != 0) {
       continue;
     }
-    name = name.erase(0, nh.getNamespace().length() + 1);  // Remove the nodehandle's namespace.
+    name = name.erase(0, nh.getNamespace().length());  // Remove the nodehandle's namespace.
     std::vector<std::string> name_parts = splitNamespace(name);
-    std::string local_name = name_parts.back();
-    name_parts.pop_back();
-    std::string sub_namespace = joinNamespace(name_parts);
+    std::string local_name = "";
+    if (!name_parts.empty()) {
+      name = name.substr(1);  // Remove the leading slash.
+      local_name = name_parts.back();
+      name_parts.pop_back();
+    }
+    const std::string sub_namespace = joinNamespace(name_parts);
 
     // Get the Xml Value
     XmlRpc::XmlRpcValue value;
@@ -69,7 +73,11 @@ inline YAML::Node rosToYaml(const ros::NodeHandle& nh) {
 
     // Convert data to yaml.
     YAML::Node local_node;
-    local_node[local_name] = xmlRpcToYaml(value);
+    if (local_name.empty()) {
+      local_node = xmlRpcToYaml(value);
+    } else {
+      local_node[local_name] = xmlRpcToYaml(value);
+    }
     moveDownNamespace(local_node, sub_namespace);
     mergeYamlNodes(node, local_node);
   }

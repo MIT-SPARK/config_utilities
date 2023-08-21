@@ -1,11 +1,13 @@
 #pragma once
 
+#include <algorithm>
 #include <functional>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include <yaml-cpp/yaml.h>
 
@@ -27,7 +29,7 @@ class ModuleRegistry {
 
   static std::string getAllRegistered() {
     std::stringstream ss;
-    ss << "Registered Factories: {";
+    ss << "Modules registered to factories: {";
     auto modules = instance().modules;
     std::sort(modules.begin(), modules.end());
     if (!modules.empty()) {
@@ -77,8 +79,8 @@ struct ModuleMapBase {
     FactoryMethodMap& map = instance().map;
     if (map.empty()) {
       Logger::logError("Cannot create a module of type '" + type + "': No modules registered to the factory for " +
-                       type_info + ". Register modules using a static " + registration_info + " struct.");
-      Logger::logError(ModuleRegistry::getAllRegistered());
+                       type_info + ". Register modules using a static " + registration_info + " struct.\n" +
+                       ModuleRegistry::getAllRegistered());
       return false;
     }
     if (map.find(type) == map.end()) {
