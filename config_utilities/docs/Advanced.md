@@ -37,7 +37,7 @@ struct MyConversion {
 The conversion can now be called on any field definitions by specifying the converter template:
 ```c++
 void declare_config(Config& config) {
-   // 'field' will now be read as inter
+   // 'field' will now be read as the intermediate type and will be converted to the underlying config type
   field<MyConversion>(config.field, "field");
 }
 ```
