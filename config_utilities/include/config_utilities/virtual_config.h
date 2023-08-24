@@ -59,11 +59,14 @@ class VirtualConfig {
 
   /**
    * @brief Setup a virtual config from a manually specified config struct
+   * @tparam ConfigT Config type corresponding to the approriate config struct registered under type for BaseT
+   * @param conf Config instance to use
+   * @param type Corresponding registration type for the object factory for BaseT
    */
   template <typename ConfigT>
-  VirtualConfig(const ConfigT& conf, const std::string& type) {
+  VirtualConfig(const ConfigT& config, const std::string& type) {
     auto wrapper = std::make_unique<internal::ConfigWrapperImpl<ConfigT>>(type);
-    wrapper->config = conf;
+    wrapper->config = config;
     config_ = std::move(wrapper);
   }
 
