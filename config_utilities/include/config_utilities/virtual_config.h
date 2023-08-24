@@ -55,18 +55,26 @@ namespace config {
 template <class BaseT>
 class VirtualConfig {
  public:
-  // Copy operators.
   VirtualConfig() = default;
+
+  /**
+   * @brief Setup a virtual config from a manually specified config struct
+   */
+  VirtualConfig(std::unique_ptr<internal::ConfigWrapper>&& config) : config_(std::move(config)) {}
+
+  // Copy operators.
   VirtualConfig(const VirtualConfig& other) {
     if (other.config_) {
       config_ = other.config_->clone();
     }
     optional_ = other.optional_;
   }
+
   VirtualConfig(VirtualConfig&& other) {
     config_ = std::move(other.config_);
     optional_ = other.optional_;
   }
+
   VirtualConfig& operator=(const VirtualConfig& other) {
     if (other.config_) {
       config_ = other.config_->clone();
@@ -74,6 +82,7 @@ class VirtualConfig {
     optional_ = other.optional_;
     return *this;
   }
+
   VirtualConfig& operator=(VirtualConfig&& other) {
     config_ = std::move(other.config_);
     optional_ = other.optional_;
