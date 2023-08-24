@@ -60,7 +60,12 @@ class VirtualConfig {
   /**
    * @brief Setup a virtual config from a manually specified config struct
    */
-  VirtualConfig(std::unique_ptr<internal::ConfigWrapper>&& config) : config_(std::move(config)) {}
+  template <typename ConfigT>
+  VirtualConfig(const ConfigT& conf, const std::string& type) {
+    auto wrapper = std::make_unique<internal::ConfigWrapperImpl<ConfigT>>(type);
+    wrapper->config = conf;
+    config_ = std::move(wrapper);
+  }
 
   // Copy operators.
   VirtualConfig(const VirtualConfig& other) {
