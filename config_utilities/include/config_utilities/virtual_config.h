@@ -55,18 +55,34 @@ namespace config {
 template <class BaseT>
 class VirtualConfig {
  public:
-  // Copy operators.
   VirtualConfig() = default;
+
+  /**
+   * @brief Setup a virtual config from a manually specified config struct
+   * @tparam ConfigT Config type corresponding to the approriate config struct registered under type for BaseT
+   * @param conf Config instance to use
+   * @param type Corresponding registration type for the object factory for BaseT
+   */
+  template <typename ConfigT>
+  VirtualConfig(const ConfigT& config, const std::string& type) {
+    auto wrapper = std::make_unique<internal::ConfigWrapperImpl<ConfigT>>(type);
+    wrapper->config = config;
+    config_ = std::move(wrapper);
+  }
+
+  // Copy operators.
   VirtualConfig(const VirtualConfig& other) {
     if (other.config_) {
       config_ = other.config_->clone();
     }
     optional_ = other.optional_;
   }
+
   VirtualConfig(VirtualConfig&& other) {
     config_ = std::move(other.config_);
     optional_ = other.optional_;
   }
+
   VirtualConfig& operator=(const VirtualConfig& other) {
     if (other.config_) {
       config_ = other.config_->clone();
@@ -74,6 +90,7 @@ class VirtualConfig {
     optional_ = other.optional_;
     return *this;
   }
+
   VirtualConfig& operator=(VirtualConfig&& other) {
     config_ = std::move(other.config_);
     optional_ = other.optional_;
