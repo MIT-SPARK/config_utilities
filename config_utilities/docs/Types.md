@@ -51,7 +51,7 @@ struct ConfigA { float f; };
 void declare_config(ConfigA& config) { ... }
 
 // Other configs can derive from
-struct ConfigB public: ConfigA { int i; };
+struct ConfigB : public ConfigA { int i; };
 
 void declare_config(ConfigB& config) {
 name("ConfigB");
