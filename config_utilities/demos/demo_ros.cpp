@@ -32,8 +32,9 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
+
 /**
- * TODO(lschmid): Shows how to use configs.
+ * This demo shows how to use config_utilities with ROS.
  */
 
 #include <iostream>

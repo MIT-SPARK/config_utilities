@@ -150,7 +150,7 @@ YAML::Node invalidValues() {
 }
 
 // TODO(lschmid): One could also add test for whether identical fields (including namespace) are got/set multiple times.
-// However, this is more a user mistake and could cause a lot of warnings if intended.
+// However, this is more a user mistake and could cause a lot of unnecessary warnings if intended.
 
 TEST(Inheritance, sequentialInheritanceGet) {
   const SequentialDerived config;

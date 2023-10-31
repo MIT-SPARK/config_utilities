@@ -49,7 +49,8 @@ struct Settings {
   // Singleton access to the global settings.
   static Settings& instance();
 
-  /* Printing Settings. TODO(lschmid): These should probabl be moved to a file or so for different formatters. */
+  /* Printing Settings. */
+  // TODO(lschmid): These should probably be moved into a config or so for different formatters.
   // Width of the 'toString()' output of configs.
   unsigned int print_width = 80u;
 

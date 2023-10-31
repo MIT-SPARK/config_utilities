@@ -9,10 +9,10 @@
 - [Example Projects using `config_utilities`](#example-projects-using-config_utilities)
 
 ## Credits
-This library was developed by [Lukas Schmid](https://schmluk.github.io/) and [Nathan Hughes](http://mit.edu/sparklab/people.html) at the [MIT-SPARK Lab](http://mit.edu/sparklab), based on functionalities in [ethz-asl/config_utilities](https://github.com/ethz-asl/config_utilities) and [Hydra](https://github.com/MIT-SPARK/Hydra), and is released under a [BSD-3-Clause License](LICENSE)! Additional contributions welcome!
+This library was developed by [Lukas Schmid](https://schmluk.github.io/) and [Nathan Hughes](http://mit.edu/sparklab/people.html) at the [MIT-SPARK Lab](http://mit.edu/sparklab), based on functionalities in [ethz-asl/config_utilities](https://github.com/ethz-asl/config_utilities) and [Hydra](https://github.com/MIT-SPARK/Hydra), and is released under a [BSD-3-Clause License](LICENSE)! Additional contributions welcome! This work was supported in part by the Swiss National Science Foundation and Amazon.
 
 ## Why `config_utilities`?
-Among many other, the key features of conig_utilities include:
+Among many other, the key features of `config_utilities` include:
 - **Minimal dependencies**: Only C++17 standard library and [yaml-cpp](https://github.com/jbeder/yaml-cpp).
 - Declare **any struct a config**, also from external projects:
     ```c++
@@ -77,11 +77,11 @@ Among many other, the key features of conig_utilities include:
                                    [7, 8, 9]]
     my_enum:                      B
     sub_config [SubConfig] (default):
-    f:                         0.123 (default)
-    s:                         test (default)
-    sub_sub_config [SubSubConfig] (default):
-        color:                  [255, 127, 0] (default)
-        size:                   5 (default)
+       f:                         0.123 (default)
+       s:                         test (default)
+       sub_sub_config [SubSubConfig] (default):
+          color:                  [255, 127, 0] (default)
+          size:                   5 (default)
     ================================================================================
     ```
 
@@ -146,22 +146,3 @@ roslaunch config_utilities demo_ros.launch
 ```
 
 If you are looking for a specific use case that is not in the tutorials or demos, chances are you can find a good example in the `tests/` directory!
-
-## Example Projects using `config_utilities` (TODO)
-
-For additional examples check out these projects using `config_utilities`:
-- Hydra
-- Khronos
-
-### Previous versions of config_utilities:
-- Panoptic Mapping
-- Some others that I need to double check.
-
-
-# Previous: Sort of nice but not high prio feature requests
-- [ ] Refactor Config checking to get names and types.
-- [ ] Revamp demos.
-- [x] List-based factory creation for processors
-- [ ] Make global settings itself a config that can be loaded/saved.
-- [ ] Json support?
-- [ ] Github CI / Release?

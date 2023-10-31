@@ -32,8 +32,11 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
+
 /**
- * TODO: Shows how to use factories.
+ * This demo shows how to register classes to the factory and create objects of
+ * those classes using a string identifier. It also shows how to use virtual
+ * configs to store configs of any derived type and create that object later.
  */
 
 #include <iostream>

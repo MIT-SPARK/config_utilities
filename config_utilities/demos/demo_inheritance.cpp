@@ -32,8 +32,9 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
+
 /**
- * TODO(lschmid): Shows how to use configs.
+ * This demo shows how to use different inheritance patterns with config_utilities.
  */
 
 #include <iostream>
@@ -163,8 +164,6 @@ int main(int argc, char** argv) {
   std::cout << "Config is valid: " << std::boolalpha << is_valid << std::endl;
   std::cout << invalid_config << std::endl;
 
-  // TODO(lschmid): This exiting on the BaseConfig check is not the nicest but sort of hard to guarantee that it will be
-  // checked for derived...
   try {
     demo::DerivedObject invalid_object(invalid_config);
   } catch (const std::exception& e) {

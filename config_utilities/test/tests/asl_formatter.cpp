@@ -164,9 +164,8 @@ TEST(AslFormatter, FormatChecks) {
   config.i = -1;
   config.f = -1.f;
   config.d = 100.0;
-  // TODO(lschmid): u8 formatting is currently not supported in the checks. Maybe using the field declaration and yaml
-  // parser could potentially resolve this.
-  // config.u8 = 26;
+  // TODO(lschmid): u8 as int formatting is currently not supported in the checks. Maybe using the field declaration and
+  // yaml parser could potentially resolve this. config.u8 = 26;
   config.s = "";
   config.vec = {1, 2};
   config.b = false;

@@ -32,8 +32,10 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
+
 /**
- * TODO(lschmid): Shows how to use configs.
+ * This demo shows how to use the config_utilities library to create a config
+ * struct, read it from file, check its validity, and print it to string.
  */
 
 #include <iostream>
@@ -124,7 +126,6 @@ void declare_config(MyConfig& config) {
 
   // Specify all checks to denote a valid configuration. Checks are specified as param, value, and param name to be
   // displayed. Implemented checks are GT (>), GE (>=), LT (<), LE (<=), EQ (==), NE (!=).
-  // TODO(lschmid): Would be nice to not duplicate the name but didn't find a nice way to do this.
   config::check(config.i, config::GT, 0, "i");
   config::check(config.i, config::LT, -2, "i");
 

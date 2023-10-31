@@ -128,7 +128,7 @@ bool toYamlFile(const ConfigT& config, const std::string& file_name) {
   YAML::Emitter out;
   out << data.data;
   // TODO(lschmid): Here should probably be some verification of the output and of the target file to be created, as
-  // well as extension handling.
+  // well as extension handling. For now let ofstream handle it.
   std::ofstream fout(file_name);
   fout << std::string(out.c_str);
   return true;

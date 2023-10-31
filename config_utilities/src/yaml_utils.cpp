@@ -144,7 +144,6 @@ std::vector<YAML::Node> getNodeArray(const YAML::Node& node) {
       result.emplace_back(sub_node);
     }
   }
-  // TODO(lschmid): Should this raise an error or be silent about empty or invalid source data?
   return result;
 }
 
