@@ -1,4 +1,4 @@
-name: 'Ubuntu 20 + ROS Noetic: Build'
+name: 'ROS Noetic: Build'
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {name: 'Ubuntu 20 + ROS Noetic: Build ', rosdistro: 'noetic', container: 'ros:noetic-ros-base-focal'}
+          - {name: 'ROS Noetic: Build ', rosdistro: 'noetic', container: 'ros:noetic-ros-base-focal'}
     container: ${{ matrix.config.container }}
     steps:
     - uses: actions/checkout@v3

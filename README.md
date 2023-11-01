@@ -1,3 +1,6 @@
+![CMake: Build](https://github.com/MIT-SPARK/config_utilities/actions/workflows/cmake_build.yml/badge.svg) ![ROS Noetic: Build](https://github.com/MIT-SPARK/config_utilities/actions/workflows/catkin_build.yml/badge.svg)
+
+
 # config_utilities
 `config_utilities` is a minimal but powerful C++ library, providing tools to parse, verify, and print C++ config structs and configurable objects.
 

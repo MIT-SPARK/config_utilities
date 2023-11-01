@@ -1,8 +1,8 @@
-name: 'Ubuntu 20 + ROS Noetic: Tests'
+name: 'ROS Noetic: Tests'
 
 on:
   workflow_run:
-    workflows: ["Ubuntu 20 + ROS Noetic: Build"]
+    workflows: ["ROS Noetic: Build"]
     types:
       - completed
 
@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {name: 'Ubuntu 20 + ROS Noetic: Tests ', rosdistro: 'noetic', container: 'ros:noetic-ros-base-focal'}
+          - {name: 'ROS Noetic: Tests ', rosdistro: 'noetic', container: 'ros:noetic-ros-base-focal'}
     container: ${{ matrix.config.container }}
     steps:
     - uses: actions/checkout@v3
