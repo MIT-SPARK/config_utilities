@@ -1,0 +1,28 @@
+name: 'Ubuntu 20 + ROS Noetic: Tests'
+
+on:
+  workflow_run:
+    workflows: ["Ubuntu 20 + ROS Noetic: Build"]
+    types:
+      - completed
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - {name: 'Ubuntu 20 + ROS Noetic: Tests ', rosdistro: 'noetic', container: 'ros:noetic-ros-base-focal'}
+    container: ${{ matrix.config.container }}
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Unit Tests
+      shell: bash
+      run: |
+        cd $HOME/catkin_ws/src
+        catkin config --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCATKIN_ENABLE_TESTING=True
+        catkin build config_utilities --no-deps -i --catkin-make-args tests
+        source $HOME/catkin_ws/devel/setup.bash
+        status=0 && for f in $HOME/catkin_ws/devel/lib/config_utilities/test_*; do $f || exit 1; done

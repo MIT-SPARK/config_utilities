@@ -17,7 +17,7 @@ jobs:
     container: ${{ matrix.config.container }}
     steps:
     - uses: actions/checkout@v3
-        
+
     - name: Install System Deps on Noetic
       if: ${{ matrix.config.container == 'ros:noetic-ros-base-focal' }}
       run: |
@@ -35,7 +35,7 @@ jobs:
         catkin init
         catkin config --extend "/opt/ros/${{matrix.config.rosdistro}}"
         catkin config --merge-devel
-        catkin config --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo 
+        catkin config --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
         cd $HOME/catkin_ws/src
         ln -s $GITHUB_WORKSPACE
 
@@ -46,20 +46,11 @@ jobs:
         catkin build catkin_simple glog_catkin eigen_catkin
         git clone https://github.com/jbeder/yaml-cpp.git
         cd yaml-cpp
-        mkdir build 
+        mkdir build
         cd build
         cmake ..
         make
         sudo make install
-        
+
         # Build
         catkin build config_utilities
-
-    - name: Unit Tests
-      shell: bash
-      run: |
-        cd $HOME/catkin_ws/src
-        catkin config --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCATKIN_ENABLE_TESTING=True
-        catkin build config_utilities --no-deps -i --catkin-make-args tests
-        source $HOME/catkin_ws/devel/setup.bash
-        status=0 && for f in $HOME/catkin_ws/devel/lib/config_utilities/test_*; do $f || exit 1; done
