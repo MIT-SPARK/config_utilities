@@ -45,4 +45,4 @@ jobs:
     - name: Build
       # Build your program with the given configuration
       shell: bash
-      run: cmake --build ${{github.workspace}}/build -std=c++17
+      run: cmake --build ${{github.workspace}}/build
