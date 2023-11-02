@@ -9,12 +9,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        config:
-          - {name: 'ROS Noetic: Tests ', rosdistro: 'noetic', container: 'ros:noetic-ros-base-focal'}
-    container: ${{ matrix.config.container }}
+    container: ros:noetic-ros-base-focal
     steps:
     - uses: actions/checkout@v3
 

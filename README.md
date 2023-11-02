@@ -100,9 +100,11 @@ Among many other, the key features of `config_utilities` include:
             h names ['A', 'B', 'C'].
     Warning: Failed to parse param 'uint': Value '-1' underflows storage min of '0'.
     ================================================================================
+
     [ERROR] No module of type 'NotRegistered' registered to the factory for BaseT='d
     emo::Base' and ConstructorArguments={'int'}. Registered are: 'DerivedB', 'Derive
     dA'.
+
     [ERROR] Cannot create a module of type 'DerivedA': No modules registered to the
     factory for BaseT='demo::Base' and ConstructorArguments={'int', 'float'}. Regist
     er modules using a static config::Registration<BaseT, DerivedT, ConstructorArgum
@@ -150,3 +152,7 @@ roslaunch config_utilities demo_ros.launch
 ```
 
 If you are looking for a specific use case that is not in the tutorials or demos, chances are you can find a good example in the `tests/` directory!
+
+
+# Example Projects using `config_utilities`
+Many cool projects are already using this `config_utilities`! (Unfortunately they're mostly currently private, we will list them soon as they become publicly available). Check them out for some more ideas of what `config_utilities` can do!
