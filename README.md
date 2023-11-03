@@ -111,13 +111,14 @@ Among many other, the key features of `config_utilities` include:
 This package is compatible with `catkin` and `catkin_simple`. Just clone it into your workspace and you should be all set!
 ```bash
 cd ~/catkin_ws/src
-git clone TODO
+git clone git@github.com:MIT-SPARK/config_utilities.git
 catkin build config_utilities
 ```
 
-If you want to build and install without catkin, that should be possible too. Just clone this repository and run:
+If you want to build and install without catkin/ROS, that is easy, too! Just clone this repository and build via CMake:
 ```bash
-cd path/to/this/repo
+git clone git@github.com:MIT-SPARK/config_utilities.git
+cd config_utilities/config_utilities
 mkdir build
 cd build
 cmake ..
