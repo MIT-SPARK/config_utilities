@@ -35,6 +35,8 @@
 
 #include "config_utilities/internal/visitor.h"
 
+#include <stdexcept>
+
 #include "config_utilities/internal/yaml_utils.h"
 #include "config_utilities/settings.h"
 

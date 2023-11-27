@@ -39,6 +39,7 @@
  */
 
 #include <iostream>
+#include <stdexcept>
 #include <string>
 
 #include "config_utilities/config.h"                 // Enables declare_config().

@@ -35,6 +35,8 @@
 
 #include "config_utilities/internal/logger.h"
 
+#include <stdexcept>
+
 namespace config::internal {
 
 std::string severityToString(const Severity severity) {
