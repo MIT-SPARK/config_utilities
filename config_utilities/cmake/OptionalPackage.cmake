@@ -8,7 +8,7 @@
 # not the package should be used
 macro(FIND_OPTIONAL package_name package_enabled)
   if(${package_enabled})
-    find_package(${package_name})
+    find_package(${package_name} QUIET)
   endif()
 
   if(${${package_name}_FOUND})
