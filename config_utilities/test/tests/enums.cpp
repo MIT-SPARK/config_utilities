@@ -70,11 +70,15 @@ void declare_config(ConfigWithCustomEnumNames& config) {
              {{OddEnum::X, "X-X"}, {OddEnum::Y, "Y-Y"}, {OddEnum::Z, "Z-Z"}});
 }
 
+struct Enums : testing::Test {
+  void SetUp() override { Enum<MyEnum>::setNames({{MyEnum::A, "A"}, {MyEnum::B, "B"}, {MyEnum::C, "C"}}); }
+
+  void TearDown() override { Enum<MyEnum>::setNames(std::map<MyEnum, std::string>()); }
+};
+
 auto init = Enum<OddEnum>::Initializer({{OddEnum::X, "X"}, {OddEnum::Y, "Y"}, {OddEnum::Z, "Z"}});
 
-TEST(Enums, UserConversion) {
-  Enum<MyEnum>::setNames({{MyEnum::A, "A"}, {MyEnum::B, "B"}, {MyEnum::C, "C"}});
-
+TEST_F(Enums, UserConversion) {
   MyEnum e = MyEnum::A;
   std::string name = Enum<MyEnum>::toString(e);
   EXPECT_EQ(name, "A");
@@ -105,7 +109,7 @@ TEST(Enums, UserConversion) {
   EXPECT_NE(msg.find("with values ['0', '1', '2']"), std::string::npos);
 }
 
-TEST(Enums, OddEnum) {
+TEST_F(Enums, OddEnum) {
   OddEnum e = OddEnum::X;
   std::string name = Enum<OddEnum>::toString(e);
   EXPECT_EQ(name, "X");
@@ -136,7 +140,7 @@ TEST(Enums, OddEnum) {
   EXPECT_NE(msg.find("with values ['-1', '0', '5']"), std::string::npos);
 }
 
-TEST(Enums, FieldConversion) {
+TEST_F(Enums, FieldConversion) {
   YAML::Node data;
   data["my_enum"] = "B";
   data["odd_enum"] = "Z";
@@ -166,7 +170,7 @@ TEST(Enums, FieldConversion) {
   EXPECT_EQ(meta_data.data["odd_enum"].as<std::string>(), "<Invalid Enum Value>");
 }
 
-TEST(Enums, enum_field) {
+TEST_F(Enums, enum_field) {
   YAML::Node data;
   data["reggular_enum"] = "B";
   data["enum_with_custom_name"] = "CCC";

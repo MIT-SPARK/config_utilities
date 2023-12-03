@@ -25,6 +25,7 @@ if(NOT googletest_POPULATED)
       CACHE BOOL "Build SHARED libraries")
 endif()
 
+include(GoogleTest)
 enable_testing()
 
 add_executable(
@@ -46,11 +47,11 @@ add_executable(
   tests/traits.cpp
   tests/validity_checks.cpp
   tests/virtual_config.cpp
-  tests/yaml_parsing.cpp
-)
+  tests/yaml_parsing.cpp)
 target_include_directories(test_${PROJECT_NAME} PRIVATE include)
 target_link_libraries(test_${PROJECT_NAME} PRIVATE ${PROJECT_NAME}
                                                    GTest::gtest_main)
+gtest_discover_tests(test_${PROJECT_NAME} DISCOVERY_MODE PRE_TEST)
 
 if(${CONFIG_UTILS_INSTALL_TESTS})
   # note that ros uses libdir to handle finding executables by package, but this

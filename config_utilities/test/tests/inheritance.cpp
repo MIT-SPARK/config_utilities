@@ -40,6 +40,8 @@
 #include <gtest/gtest.h>
 
 #include "config_utilities/config.h"
+#include "config_utilities/formatting/asl.h"
+#include "config_utilities/printing.h"
 #include "config_utilities/test/utils.h"
 
 namespace config::test {
@@ -121,7 +123,7 @@ YAML::Node defaultValues() {
   data["i"] = 1;
   data["vec"] = std::vector<int>({1, 2, 3});
   data["s"] = "Some text";
-  data["f"] = 1.23;
+  data["f"] = 1.23f;
   data["d"] = 5.67;
   data["map"] = std::map<int, int>({{1, 1}, {2, 2}});
   return data;
@@ -132,7 +134,7 @@ YAML::Node modifiedValues() {
   data["i"] = 2;
   data["vec"] = std::vector<int>({4, 5, 6});
   data["s"] = "Some text different text";
-  data["f"] = 4.56;
+  data["f"] = 4.56f;
   data["d"] = 89.012;
   data["map"] = std::map<int, int>({{2, 2}, {3, 3}, {4, 4}});
   return data;
@@ -143,7 +145,7 @@ YAML::Node invalidValues() {
   data["i"] = -12;
   data["vec"] = std::vector<int>({5, 6, 7, 8});
   data["s"] = "";
-  data["f"] = 0.123;
+  data["f"] = 0.123f;
   data["d"] = -89;
   data["map"] = std::map<int, int>({{5, 5}});
   return data;
@@ -177,7 +179,7 @@ TEST(Inheritance, sequentialInheritanceCheck) {
   const internal::MetaData data = internal::Visitor::getChecks(config);
   EXPECT_EQ(data.checks.size(), 3);
   for (const auto& check : data.checks) {
-    EXPECT_FALSE(check->valid());
+    EXPECT_FALSE(check->valid()) << toString(config);
   }
 }
 
