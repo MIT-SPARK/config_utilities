@@ -95,7 +95,7 @@ std::string joinNamespace(const std::string& namespace_1,
  * @param data The data to be formatted.
  * @returns The formatted string.
  */
-std::string dataToString(const YAML::Node& data);
+std::string dataToString(const YAML::Node& data, bool reformat_float = false);
 
 /**
  * @brief Find all occurences of a substring in a string.

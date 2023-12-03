@@ -36,6 +36,7 @@
 #include "config_utilities/internal/string_utils.h"
 
 #include <algorithm>
+#include <regex>
 #include <sstream>
 
 namespace config::internal {
@@ -88,18 +89,41 @@ std::string joinNamespace(const std::string& namespace_1,
   return joinNamespace(ns_1, delimiter);
 }
 
-std::string dataToString(const YAML::Node& data) {
+std::string scalarToString(const YAML::Node& data, bool reformat_float) {
+  std::stringstream orig;
+  orig << data;
+  if (!reformat_float) {
+    return orig.str();
+  }
+
+  const std::regex float_detector("[+-]?[0-9]*[.][0-9]+");
+  if (!std::regex_search(orig.str(), float_detector)) {
+    return orig.str();  // no reason to reformat if no decimal points
+  }
+
+  double value;
+  try {
+    value = data.as<double>();
+  } catch (const YAML::InvalidNode&) {
+    return orig.str();  // value is some sort of string that can't be parsed as a float
+  }
+
+  // this should have default ostream precision for formatting float
+  std::stringstream ss;
+  ss << value;
+  return ss.str();
+}
+
+std::string dataToString(const YAML::Node& data, bool reformat_float) {
   switch (data.Type()) {
     case YAML::NodeType::Scalar: {
-      // NOTE(lschmid): All YAML scalars should implement the ostream<< operator.
-      std::stringstream ss;
-      ss << data;
-      return ss.str();
+      // scalars require special handling for float precision
+      return scalarToString(data, reformat_float);
     }
     case YAML::NodeType::Sequence: {
       std::string result = "[";
       for (size_t i = 0; i < data.size(); ++i) {
-        result += dataToString(data[i]);
+        result += dataToString(data[i], reformat_float);
         if (i < data.size() - 1) {
           result += ", ";
         }
@@ -112,7 +136,8 @@ std::string dataToString(const YAML::Node& data) {
       bool has_data = false;
       for (const auto& kv_pair : data) {
         has_data = true;
-        result += dataToString(kv_pair.first) + ": " + dataToString(kv_pair.second) + ", ";
+        result +=
+            dataToString(kv_pair.first, reformat_float) + ": " + dataToString(kv_pair.second, reformat_float) + ", ";
       }
       if (has_data) {
         result = result.substr(0, result.length() - 2);

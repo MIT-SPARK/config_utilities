@@ -40,6 +40,7 @@
 #include "config_utilities/formatting/asl.h"
 #include "config_utilities/parsing/yaml.h"
 #include "config_utilities/printing.h"
+#include "config_utilities/settings.h"
 #include "config_utilities/test/utils.h"
 #include "config_utilities/validation.h"
 #include "config_utilities/virtual_config.h"
@@ -340,6 +341,7 @@ TEST(ConfigArrays, PrintArrayConfigs) {
   configs.emplace_back("a", 1.0f);
   configs.emplace_back("b", 2.0f);
   configs.emplace_back("c", 3.0f);
+  Settings().print_indent = 20;
 
   internal::Formatter::setFormatter(std::make_unique<internal::AslFormatter>());
 

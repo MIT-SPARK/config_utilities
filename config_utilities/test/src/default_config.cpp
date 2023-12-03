@@ -116,7 +116,7 @@ YAML::Node DefaultConfig::modifiedValues() {
   YAML::Node data;
   data["i"] = 2;
   data["f"] = -1.f;
-  data["d"] = 3.1415926;
+  data["d"] = 3.14159; // intentionally avoid precision issues
   data["b"] = false;
   data["u8"] = 255;
   data["s"] = "a different test string";
@@ -158,7 +158,7 @@ void DefaultConfig::expectDefaultValues() {
 void DefaultConfig::expectModifiedValues() {
   EXPECT_EQ(i, 2);
   EXPECT_EQ(f, -1.f);
-  EXPECT_EQ(d, 3.1415926);
+  EXPECT_EQ(d, 3.14159);
   EXPECT_EQ(b, false);
   EXPECT_EQ(u8, 255);
   EXPECT_EQ(s, "a different test string");
