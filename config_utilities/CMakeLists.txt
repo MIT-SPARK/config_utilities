@@ -68,6 +68,7 @@ if(CONFIG_UTILS_BUILD_DEMOS)
 endif()
 
 if(CONFIG_UTILS_BUILD_TESTS)
+  enable_testing()
   add_subdirectory(test)
 endif()
 

@@ -48,3 +48,9 @@ jobs:
 
         # Build
         catkin build config_utilities
+
+    - name: Test
+      shell: bash
+      run: |
+          cd $HOME/catkin_ws
+          catkin test config_utilities --test-target test
