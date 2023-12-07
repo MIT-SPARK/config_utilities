@@ -1,4 +1,4 @@
-name: 'ROS Noetic: Build'
+name: 'ROS Noetic: Build and Test'
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
 
 jobs:
   build:
+    name: Build and Test
     runs-on: ubuntu-latest
     container: ros:noetic-ros-base-focal
     steps:
