@@ -55,12 +55,12 @@ std::string toYamlString(const T& conf) {
 }
 
 struct ConversionStruct {
-  int num_threads = 1;
+  int num_threads = -1;
   char some_character = 'a';
 };
 
 struct NoConversionStruct {
-  int num_threads = 1;
+  int num_threads = -1;
   uint8_t some_character = 'a';
 };
 

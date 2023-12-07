@@ -223,7 +223,9 @@ class YamlParser {
     // NOTE(lschmid): We assume we don't get integers larger than 64 bit. Also bool, uchar, and string are checked
     // separately.
     const int64_t min = node.as<int64_t>();
-    const uint64_t max = node.as<uint64_t>();
+    // note: usigned parsing fails when number is explicitly negative. defaulting to 0 in these cases is the correct
+    // behavior: the number is explicilty signed and negative, and can only overflow via min
+    const uint64_t max = node.as<uint64_t>(0);
     if (min > 0 && max > static_cast<uint64_t>(std::numeric_limits<T>::max())) {
       std::stringstream ss;
       ss << "Value '" << max << "' overflows storage max of '" << std::numeric_limits<T>::max() << "'";

@@ -180,9 +180,10 @@ std::string AslFormatter::formatField(const FieldInfo& info, size_t indent) cons
   std::string result;
   const size_t print_width = Settings::instance().print_width;
   const size_t global_indent = Settings::instance().print_indent;
+  const auto reformat_floats = Settings::instance().reformat_floats;
 
   // field is the stringified value, The header is the field name.
-  std::string field = dataToString(info.value);
+  std::string field = dataToString(info.value, reformat_floats);
   if (info.is_default && Settings::instance().indicate_default_values) {
     field += " (default)";
   }

@@ -91,22 +91,24 @@ void declare_config(ConfigUsingArrays& config) {
 
 TEST(AslFormatter, DataToString) {
   YAML::Node data = internal::Visitor::getValues(TestConfig()).data;
-  EXPECT_EQ(internal::dataToString(data["i"]), "1");
-  EXPECT_EQ(internal::dataToString(data["f"]), "2.1");
-  EXPECT_EQ(internal::dataToString(data["d"]), "3.2");
-  EXPECT_EQ(internal::dataToString(data["b"]), "true");
-  EXPECT_EQ(internal::dataToString(data["u8"]), "4");
-  EXPECT_EQ(internal::dataToString(data["s"]), "test string");
-  EXPECT_EQ(internal::dataToString(data["vec"]), "[1, 2, 3]");
-  EXPECT_EQ(internal::dataToString(data["map"]), "{a: 1, b: 2, c: 3}");
-  EXPECT_EQ(internal::dataToString(data["set"]), "[1.1, 2.2, 3.3]");
-  EXPECT_EQ(internal::dataToString(data["mat"]), "[[1, 0, 0], [0, 1, 0], [0, 0, 1]]");
+  // note: float reformatting should have no effect on other fields (and fixes full precision formatting for internal
+  // yaml representation)
+  EXPECT_EQ(internal::dataToString(data["i"], true), "1");
+  EXPECT_EQ(internal::dataToString(data["f"], true), "2.1");
+  EXPECT_EQ(internal::dataToString(data["d"], true), "3.2");
+  EXPECT_EQ(internal::dataToString(data["b"], true), "true");
+  EXPECT_EQ(internal::dataToString(data["u8"], true), "4");
+  EXPECT_EQ(internal::dataToString(data["s"], true), "test string");
+  EXPECT_EQ(internal::dataToString(data["vec"], true), "[1, 2, 3]");
+  EXPECT_EQ(internal::dataToString(data["map"], true), "{a: 1, b: 2, c: 3}");
+  EXPECT_EQ(internal::dataToString(data["set"], true), "[1.1, 2.2, 3.3]");
+  EXPECT_EQ(internal::dataToString(data["mat"], true), "[[1, 0, 0], [0, 1, 0], [0, 0, 1]]");
   YAML::Node nested_set;
   nested_set["a"]["x"] = 1;
   nested_set["a"]["y"] = 2;
   nested_set["b"]["x"] = 3;
   nested_set["b"]["y"] = 4;
-  EXPECT_EQ(internal::dataToString(nested_set), "{a: {x: 1, y: 2}, b: {x: 3, y: 4}}");
+  EXPECT_EQ(internal::dataToString(nested_set, true), "{a: {x: 1, y: 2}, b: {x: 3, y: 4}}");
 }
 
 TEST(AslFormatter, FormatErrors) {
@@ -222,6 +224,7 @@ TEST(AslFormatter, FormatConfig) {
   Settings().indicate_default_values = false;
   Settings().indicate_units = false;
   Settings().inline_subconfig_field_names = true;
+  Settings().reformat_floats = true;
   std::string formatted = internal::Formatter::formatConfig(data);
   std::string expected =
       R"""(================================= Test Config ==================================
@@ -339,6 +342,7 @@ TEST(AslFormatter, FormatUnits) {
   Settings().indicate_units = true;
   Settings().inline_subconfig_field_names = true;
   Settings().print_width = 80;  // force print width to be consistent for tests
+  Settings().print_indent = 20;
 
   internal::MetaData data = internal::Visitor::getValues(TestConfig());
   const std::string formatted = internal::Formatter::formatConfig(data);
@@ -381,6 +385,7 @@ TEST(AslFormatter, FormatDefaultValues) {
   Settings().indicate_default_values = true;
   Settings().indicate_units = false;
   Settings().inline_subconfig_field_names = true;
+  Settings().print_indent = 20;
 
   const internal::MetaData default_data = internal::Visitor::getValues(TestConfig());
   std::string formatted = internal::Formatter::formatConfig(default_data);
@@ -423,7 +428,7 @@ sub_sub_config [SubSubConfig] (default):
   expected = R"""(================================= Test Config ==================================
 i:                  2
 f:                  -1
-d:                  3.1415926
+d:                  3.14159
 b:                  false
 u8:                 255
 s:                  a different test string

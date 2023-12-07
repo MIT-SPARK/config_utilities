@@ -114,7 +114,7 @@ TEST(YamlParsing, parsefromYaml) {
   EXPECT_EQ(config.f, -1.f);
 
   internal::YamlParser::fromYaml(data, "d", config.d, "", error);
-  EXPECT_EQ(config.d, 3.1415926);
+  EXPECT_EQ(config.d, 3.14159);
 
   internal::YamlParser::fromYaml(data, "b", config.b, "", error);
   EXPECT_EQ(config.b, false);

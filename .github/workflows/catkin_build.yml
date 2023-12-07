@@ -1,4 +1,4 @@
-name: 'ROS Noetic: Build'
+name: 'ROS Noetic: Build and Test'
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
 
 jobs:
   build:
+    name: Build and Test
     runs-on: ubuntu-latest
     container: ros:noetic-ros-base-focal
     steps:
@@ -48,3 +49,9 @@ jobs:
 
         # Build
         catkin build config_utilities
+
+    - name: Test
+      shell: bash
+      run: |
+          cd $HOME/catkin_ws
+          catkin test config_utilities --test-target test
