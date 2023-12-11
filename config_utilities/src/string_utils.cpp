@@ -104,7 +104,7 @@ std::string scalarToString(const YAML::Node& data, bool reformat_float) {
   double value;
   try {
     value = data.as<double>();
-  } catch (const YAML::InvalidNode&) {
+  } catch (const std::exception&) {
     return orig.str();  // value is some sort of string that can't be parsed as a float
   }
 
