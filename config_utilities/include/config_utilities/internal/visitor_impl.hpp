@@ -218,7 +218,8 @@ void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_
   if (visitor.mode == Visitor::Mode::kSet) {
     // When setting the values first allocate the correct amount of configs.
     config.clear();
-    const std::vector<YAML::Node> nodes = getNodeArray(lookupNamespace(visitor.data.data, field_name));
+    const auto array_ns = visitor.name_space.empty() ? field_name : visitor.name_space + "/" + field_name;
+    const std::vector<YAML::Node> nodes = getNodeArray(lookupNamespace(visitor.data.data, array_ns));
     size_t index = 0;
     for (const auto& node : nodes) {
       ConfigT& sub_config = config.emplace_back();

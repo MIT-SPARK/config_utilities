@@ -359,7 +359,7 @@ nested:
   const YAML::Node node = YAML::Load(yaml_data);
 
   auto config = fromYaml<ConfigWithNestedArray>(node);
-  EXPECT_EQ(config.nested.processor_configs.size(), 3);
+  ASSERT_EQ(config.nested.processor_configs.size(), 3);
   EXPECT_EQ(config.nested.processor_configs[0].getType(), "AddString");
   EXPECT_EQ(config.nested.processor_configs[1].getType(), "AddString");
   EXPECT_EQ(config.nested.processor_configs[2].getType(), "AddString");
@@ -371,7 +371,7 @@ nested:
   for (const auto& c : config.nested.processor_configs) {
     processors.emplace_back(c.create());
   }
-  EXPECT_EQ(processors.size(), 3);
+  ASSERT_EQ(processors.size(), 3);
 
   std::string to_process;
   for (const auto& processor : processors) {
