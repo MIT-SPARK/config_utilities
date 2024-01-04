@@ -116,6 +116,15 @@ void declare_config(ConfigWithVirtualArrays& config) {
   field(config.processor_configs, "processor_configs");
 }
 
+struct ConfigWithNestedArray {
+  ConfigWithVirtualArrays nested;
+};
+
+void declare_config(ConfigWithNestedArray& config) {
+  name("ConfigWithNextedArrays");
+  field(config.nested, "nested");
+}
+
 TEST(ConfigArrays, FromYamlSeq) {
   const std::string yaml_seq = R"(
 - s: "a"
@@ -325,6 +334,41 @@ processor_configs:
 
   std::vector<std::unique_ptr<ProcessorBase>> processors;
   for (const auto& c : config.processor_configs) {
+    processors.emplace_back(c.create());
+  }
+  EXPECT_EQ(processors.size(), 3);
+
+  std::string to_process;
+  for (const auto& processor : processors) {
+    processor->process(to_process);
+  }
+  EXPECT_EQ(to_process, "hello world");
+}
+
+TEST(ConfigArrays, NestedVirtualSubConfig) {
+  const std::string yaml_data = R"(
+nested:
+  processor_configs:
+    - type: "AddString"
+      s: "hello"
+    - type: "AddString"
+      s: " "
+    - type: "AddString"
+      s: "world"
+)";
+  const YAML::Node node = YAML::Load(yaml_data);
+
+  auto config = fromYaml<ConfigWithNestedArray>(node);
+  EXPECT_EQ(config.nested.processor_configs.size(), 3);
+  EXPECT_EQ(config.nested.processor_configs[0].getType(), "AddString");
+  EXPECT_EQ(config.nested.processor_configs[1].getType(), "AddString");
+  EXPECT_EQ(config.nested.processor_configs[2].getType(), "AddString");
+  EXPECT_TRUE(config.nested.processor_configs[0].isSet());
+  EXPECT_TRUE(config.nested.processor_configs[1].isSet());
+  EXPECT_TRUE(config.nested.processor_configs[2].isSet());
+
+  std::vector<std::unique_ptr<ProcessorBase>> processors;
+  for (const auto& c : config.nested.processor_configs) {
     processors.emplace_back(c.create());
   }
   EXPECT_EQ(processors.size(), 3);
