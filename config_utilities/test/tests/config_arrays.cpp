@@ -85,6 +85,7 @@ void declare_config(ConfigWithArrays& config) {
 class ProcessorBase {
  public:
   virtual void process(std::string& s) const = 0;
+  virtual ~ProcessorBase() = default;
 };
 
 class AddString : public ProcessorBase {
