@@ -49,6 +49,7 @@ namespace config::test {
 class Base2 {
  public:
   virtual std::string name() const = 0;
+  virtual ~Base2() = default;
 };
 
 class Derived2 : public Base2 {

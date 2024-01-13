@@ -108,6 +108,7 @@ void declare_config(SubConfig& config) {
 class Base {
  public:
   virtual void print() const = 0;
+  virtual ~Base() = default;
 };
 
 class DerivedA : public Base {

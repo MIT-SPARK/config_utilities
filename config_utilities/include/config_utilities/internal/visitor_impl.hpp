@@ -120,7 +120,7 @@ MetaData Visitor::subVisit(ConfigT& config,
 }
 
 // Visit a non-config field.
-template <typename T, typename std::enable_if<!isConfig<T>(), bool>::type = true>
+template <typename T, typename std::enable_if<!isConfig<T>(), bool>::type>
 void Visitor::visitField(T& field, const std::string& field_name, const std::string& unit) {
   Visitor& visitor = Visitor::instance();
   if (visitor.mode == Visitor::Mode::kSet) {
@@ -147,7 +147,7 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
 }
 
 // Visits a non-config field with conversion.
-template <typename Conversion, typename T, typename std::enable_if<!isConfig<T>(), bool>::type = true>
+template <typename Conversion, typename T, typename std::enable_if<!isConfig<T>(), bool>::type>
 void Visitor::visitField(T& field, const std::string& field_name, const std::string& unit) {
   Visitor& visitor = Visitor::instance();
   if (visitor.mode == Visitor::Mode::kSet) {
@@ -188,7 +188,7 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
 }
 
 // Visits a single subconfig field.
-template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
+template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type>
 void Visitor::visitField(ConfigT& config, const std::string& field_name, const std::string& name_space) {
   Visitor& visitor = Visitor::instance();
   if (visitor.mode == Visitor::Mode::kGetDefaults) {
@@ -208,7 +208,7 @@ void Visitor::visitField(ConfigT& config, const std::string& field_name, const s
 }
 
 // Visit a vector of subconfigs.
-template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
+template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type>
 void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_name, const std::string& /* unit */) {
   Visitor& visitor = Visitor::instance();
   if (visitor.mode == Visitor::Mode::kGetDefaults) {
@@ -278,7 +278,7 @@ void Visitor::visitBase(ConfigT& config) {
   }
 }
 
-template <typename ConfigT, typename std::enable_if<!is_virtual_config<ConfigT>::value, bool>::type = true>
+template <typename ConfigT, typename std::enable_if<!is_virtual_config<ConfigT>::value, bool>::type>
 MetaData Visitor::getDefaults(const ConfigT& config) {
   Visitor visitor(Mode::kGetDefaults);
   ConfigT default_config;
@@ -286,7 +286,7 @@ MetaData Visitor::getDefaults(const ConfigT& config) {
   return visitor.data;
 }
 
-template <typename ConfigT, typename std::enable_if<is_virtual_config<ConfigT>::value, bool>::type = true>
+template <typename ConfigT, typename std::enable_if<is_virtual_config<ConfigT>::value, bool>::type>
 MetaData Visitor::getDefaults(const ConfigT& config) {
   Visitor visitor(Mode::kGetDefaults);
   if (config.isSet()) {
