@@ -238,30 +238,25 @@ nested:
   EXPECT_EQ(config.nested.string_map, expected_str);
 }
 
-/*
 TEST(ConfigMaps, PrintMapConfigs) {
-  std::vector<ArrConfig> configs;
-  configs.emplace_back("a", 1.0f);
-  configs.emplace_back("b", 2.0f);
-  configs.emplace_back("c", 3.0f);
+  std::map<size_t, MapConfig> configs{{2, {"a", 1}}, {3, {"b", 2}}, {4, {"c", 3}}};
   Settings().print_indent = 20;
 
   internal::Formatter::setFormatter(std::make_unique<internal::AslFormatter>());
 
   const std::string formatted = toString(configs);
-  const std::string expected = R"(================================= Config Array =================================
-config_array[0] [ArrConfig]:
+  const std::string expected = R"(================================== Config Map ==================================
+config_map[2] [MapConfig]:
    s:               a
    f:               1
-config_array[1] [ArrConfig]:
+config_map[3] [MapConfig]:
    s:               b
    f:               2
-config_array[2] [ArrConfig]:
+config_map[4] [MapConfig]:
    s:               c
    f:               3
 ================================================================================)";
   EXPECT_EQ(formatted, expected);
 }
-*/
 
 }  // namespace config::test

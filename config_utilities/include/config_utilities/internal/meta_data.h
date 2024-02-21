@@ -146,6 +146,7 @@ struct MetaData {
     field_name = other.field_name;
     sub_configs = other.sub_configs;
     array_config_index = other.array_config_index;
+    map_config_key = other.map_config_key;
   }
 };
 

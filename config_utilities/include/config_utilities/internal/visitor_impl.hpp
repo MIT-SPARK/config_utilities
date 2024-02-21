@@ -78,12 +78,14 @@ MetaData Visitor::getValues(const ConfigT& config,
   Visitor visitor(Mode::kGet, name_space, field_name);
   // NOTE: We know that in mode kGet, the config is not modified.
   ::config::declare_config(const_cast<ConfigT&>(config));
+
   if (Settings::instance().indicate_default_values) {
     flagDefaultValues(config, visitor.data);
   }
   if (print_warnings && visitor.data.hasErrors()) {
     Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Severity::kWarning));
   }
+
   return visitor.data;
 }
 
