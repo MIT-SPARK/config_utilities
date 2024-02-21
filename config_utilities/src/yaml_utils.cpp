@@ -37,8 +37,6 @@
 
 #include "config_utilities/internal/string_utils.h"
 
-#include <iostream>
-
 namespace config::internal {
 
 void mergeYamlNodes(YAML::Node& a, const YAML::Node& b) {

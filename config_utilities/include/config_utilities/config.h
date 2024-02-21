@@ -255,4 +255,4 @@ inline void check(Ts... args) {
   internal::Visitor::visitCheck(CheckType(std::forward<Ts>(args)...));
 }
 
-}  // namespace internal
+}  // namespace config
