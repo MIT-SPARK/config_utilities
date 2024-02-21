@@ -47,6 +47,10 @@
 
 namespace config::test {
 
+namespace {
+bool use_namespace = false;
+}
+
 struct MapConfig {
   MapConfig() = default;
   MapConfig(const std::string& s, float f) : s(s), f(f) {}
@@ -59,6 +63,9 @@ bool operator==(const MapConfig& lhs, const MapConfig& rhs) { return lhs.s == rh
 
 void declare_config(MapConfig& config) {
   name("MapConfig");
+  if (use_namespace) {
+    enter_namespace("test");
+  }
   field(config.s, "s");
   field(config.f, "f");
   check(config.f, GE, 0, "f");
@@ -75,6 +82,9 @@ struct ConfigWithMaps {
 void declare_config(ConfigWithMaps& config) {
   name("ConfigWithMaps");
   field(config.i, "i");
+  if (use_namespace) {
+    enter_namespace("sub_ns");
+  }
   field(config.string_map, "string_map");
   field(config.int_map, "int_map");
   check(config.i, GE, 0, "i");
@@ -124,104 +134,79 @@ TEST(ConfigMaps, FromYamlSeq) {
   EXPECT_EQ(configs, expected);
 }
 
-/*
 TEST(ConfigMaps, SubConfigSet) {
   const std::string yaml_data = R"(
 i: 1
-arr:
-  - s: "a"
-    f: 1.0
-  - s: "b"
-    f: 2.0
-  - s: "c"
-    f: 3.0
+int_map: [{s: "a", f: 1}, {s: "b", f: 2}, {s: "c", f: 3}]
+string_map: {x: {f: 4}, y: {f: 5}}
 )";
-  YAML::Node node = YAML::Load(yaml_data);
+  const auto node = YAML::Load(yaml_data);
 
-  ConfigWithArrays config;
+  ConfigWithMaps config;
   internal::Visitor::setValues(config, node);
 
+  std::map<size_t, MapConfig> expected_int{{0, {"a", 1}}, {1, {"b", 2}}, {2, {"c", 3}}};
+  std::map<std::string, MapConfig> expected_str{{"x", {"", 4}}, {"y", {"", 5}}};
+
   EXPECT_EQ(config.i, 1);
-  EXPECT_EQ(config.arr.size(), 3);
-  EXPECT_EQ(config.arr[0].s, "a");
-  EXPECT_EQ(config.arr[0].f, 1.0f);
-  EXPECT_EQ(config.arr[1].s, "b");
-  EXPECT_EQ(config.arr[1].f, 2.0f);
-  EXPECT_EQ(config.arr[2].s, "c");
-  EXPECT_EQ(config.arr[2].f, 3.0f);
+  EXPECT_EQ(config.int_map, expected_int);
+  EXPECT_EQ(config.string_map, expected_str);
 }
 
 TEST(ConfigMaps, SubConfigGet) {
-  ConfigWithArrays config;
-  config.arr.emplace_back("a", 1.0f);
-  config.arr.emplace_back("b", 2.0f);
-  config.arr.emplace_back("c", 3.0f);
+  ConfigWithMaps config;
+  config.i = 2;
+  config.int_map = {{0, {"a", 1}}, {1, {"b", 2}}, {2, {"c", 3}}};
+  config.string_map = {{"x", {"", 4}}, {"y", {"", 5}}};
 
-  const internal::MetaData data = internal::Visitor::getValues(config);
-  const YAML::Node node = data.data;
+  const auto data = internal::Visitor::getValues(config);
+  const auto node = data.data;
   const std::string yaml_data = R"(
-i: 0
-arr:
-  - s: "a"
-    f: 1
-  - s: "b"
-    f: 2
-  - s: "c"
-    f: 3
-  )";
-  const YAML::Node expected = YAML::Load(yaml_data);
-
+i: 2
+int_map: {0: {s: "a", f: 1}, 1: {s: "b", f: 2}, 2: {s: "c", f: 3}}
+string_map: {x: {s: "", f: 4}, y: {s: "", f: 5}}
+)";
+  const auto expected = YAML::Load(yaml_data);
   expectEqual(expected, node);
 }
 
 TEST(ConfigMaps, SubConfigGetWithNameSpace) {
-  ConfigWithArrays config;
-  config.arr.emplace_back("a", 1.0f);
-  config.arr.emplace_back("b", 2.0f);
-  config.arr.emplace_back("c", 3.0f);
+  ConfigWithMaps config;
+  config.i = 2;
+  config.int_map = {{0, {"a", 1}}, {1, {"b", 2}}, {2, {"c", 3}}};
+  config.string_map = {{"x", {"", 4}}, {"y", {"", 5}}};
 
   use_namespace = true;
-  const internal::MetaData data = internal::Visitor::getValues(config);
+  const auto data = internal::Visitor::getValues(config);
   use_namespace = false;
 
-  const YAML::Node node = data.data;
+  const auto node = data.data;
   const std::string yaml_data = R"(
-i: 0
+i: 2
 sub_ns:
-  arr:
-    - test:
-        s: "a"
-        f: 1
-    - test:
-        s: "b"
-        f: 2
-    - test:
-        s: "c"
-        f: 3
+  int_map: {0: {test: {s: "a", f: 1}}, 1: {test: {s: "b", f: 2}}, 2: {test: {s: "c", f: 3}}}
+  string_map: {x: {test: {s: "", f: 4}}, y: {test: {s: "", f: 5}}}
   )";
-  const YAML::Node expected = YAML::Load(yaml_data);
-
+  const auto expected = YAML::Load(yaml_data);
   expectEqual(expected, node);
 }
 
 TEST(ConfigMaps, SubConfigCheck) {
-  ConfigWithArrays config;
+  ConfigWithMaps config;
   EXPECT_TRUE(isValid(config));
 
-  config.arr.emplace_back("a", 1.0f);
-  config.arr.emplace_back("b", 2.0f);
-  config.arr.emplace_back("c", 3.0f);
+  config.int_map = {{0, {"a", 1}}, {1, {"b", 2}}, {2, {"c", 3}}};
   EXPECT_TRUE(isValid(config));
 
-  config.arr.emplace_back("a", -1.0f);
-  config.arr.emplace_back("b", -2.0f);
-  config.arr.emplace_back("c", -3.0f);
+  config.int_map.emplace(3, MapConfig{"a", -1});
+  config.int_map.emplace(4, MapConfig{"a", -2});
+  config.int_map.emplace(5, MapConfig{"a", -3});
   EXPECT_FALSE(isValid(config));
 
-  internal::MetaData data = internal::Visitor::getChecks(config);
+  const auto data = internal::Visitor::getChecks(config);
   int num_checks = 0;
   int num_failed_checks = 0;
-  data.performOnAll([&](const internal::MetaData& d) {
+  data.performOnAll([&](const auto& d) {
     for (const auto& check : d.checks) {
       num_checks++;
       if (!check->valid()) {
@@ -236,38 +221,24 @@ TEST(ConfigMaps, SubConfigCheck) {
 TEST(ConfigMaps, NestedSubConfig) {
   const std::string yaml_data = R"(
 nested:
-  processor_configs:
-    - type: "AddString"
-      s: "hello"
-    - type: "AddString"
-      s: " "
-    - type: "AddString"
-      s: "world"
+  i: 1
+  int_map: [{s: "a", f: 1}, {s: "b", f: 2}, {s: "c", f: 3}]
+  string_map: {x: {f: 4}, y: {f: 5}}
 )";
-  const YAML::Node node = YAML::Load(yaml_data);
+  const auto node = YAML::Load(yaml_data);
 
-  auto config = fromYaml<ConfigWithNestedArray>(node);
-  ASSERT_EQ(config.nested.processor_configs.size(), 3);
-  EXPECT_EQ(config.nested.processor_configs[0].getType(), "AddString");
-  EXPECT_EQ(config.nested.processor_configs[1].getType(), "AddString");
-  EXPECT_EQ(config.nested.processor_configs[2].getType(), "AddString");
-  EXPECT_TRUE(config.nested.processor_configs[0].isSet());
-  EXPECT_TRUE(config.nested.processor_configs[1].isSet());
-  EXPECT_TRUE(config.nested.processor_configs[2].isSet());
+  ConfigWithNestedMaps config;
+  internal::Visitor::setValues(config, node);
 
-  std::vector<std::unique_ptr<ProcessorBase>> processors;
-  for (const auto& c : config.nested.processor_configs) {
-    processors.emplace_back(c.create());
-  }
-  ASSERT_EQ(processors.size(), 3);
+  std::map<size_t, MapConfig> expected_int{{0, {"a", 1}}, {1, {"b", 2}}, {2, {"c", 3}}};
+  std::map<std::string, MapConfig> expected_str{{"x", {"", 4}}, {"y", {"", 5}}};
 
-  std::string to_process;
-  for (const auto& processor : processors) {
-    processor->process(to_process);
-  }
-  EXPECT_EQ(to_process, "hello world");
+  EXPECT_EQ(config.nested.i, 1);
+  EXPECT_EQ(config.nested.int_map, expected_int);
+  EXPECT_EQ(config.nested.string_map, expected_str);
 }
 
+/*
 TEST(ConfigMaps, PrintMapConfigs) {
   std::vector<ArrConfig> configs;
   configs.emplace_back("a", 1.0f);

@@ -47,7 +47,9 @@
 
 namespace config::test {
 
+namespace {
 bool use_namespace = false;
+}
 
 struct ArrConfig {
   ArrConfig() = default;
