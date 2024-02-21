@@ -78,7 +78,7 @@ std::vector<YAML::Node> getNodeArray(const YAML::Node& node);
  * @param node The node to convert.
  * @return The list of nodes. Nodes stored in this struct are references to the original data.
  */
-std::map<YAML::Node, YAML::Node> getNodeMap(const YAML::Node& node);
+std::map<std::string, YAML::Node> getNodeMap(const YAML::Node& node);
 
 
 }  // namespace config::internal

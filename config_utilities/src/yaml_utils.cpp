@@ -37,6 +37,8 @@
 
 #include "config_utilities/internal/string_utils.h"
 
+#include <iostream>
+
 namespace config::internal {
 
 void mergeYamlNodes(YAML::Node& a, const YAML::Node& b) {
@@ -147,16 +149,16 @@ std::vector<YAML::Node> getNodeArray(const YAML::Node& node) {
   return result;
 }
 
-std::map<YAML::Node, YAML::Node> getNodeMap(const YAML::Node& node) {
-  std::map<YAML::Node, YAML::Node> result;
+std::map<std::string, YAML::Node> getNodeMap(const YAML::Node& node) {
+  std::map<std::string, YAML::Node> result;
   if (node.IsMap()) {
     for (const auto& kv_pair : node) {
-      result.emplace(kv_pair);
+      result.emplace(kv_pair.first.as<std::string>(), kv_pair.second);
     }
   } else if (node.IsSequence()) {
     size_t index = 0;
     for (const auto& sub_node : node) {
-      result.emplace(index, sub_node);
+      result.emplace(std::to_string(index), sub_node);
       ++index;
     }
   }

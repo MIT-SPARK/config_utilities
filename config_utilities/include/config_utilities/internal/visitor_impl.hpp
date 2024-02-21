@@ -263,13 +263,12 @@ void Visitor::visitField(std::map<K, ConfigT>& config, const std::string& field_
     // When setting the values first allocate the correct amount of configs.
     config.clear();
     const auto map_ns = visitor.name_space.empty() ? field_name : visitor.name_space + "/" + field_name;
-    const std::map<YAML::Node, YAML::Node> nodes = getNodeMap(lookupNamespace(visitor.data.data, map_ns));
+    const auto nodes = getNodeMap(lookupNamespace(visitor.data.data, map_ns));
     for (auto&& [key, node] : nodes) {
-      const K key_value = key.template as<K>();
-      ConfigT sub_config;
+      auto iter = config.emplace(YAML::Node(key).template as<K>(), ConfigT()).first;
+      auto& sub_config = iter->second;
       visitor.data.sub_configs.emplace_back(setValues(sub_config, node, false, "", field_name));
-      // visitor.data.sub_configs.back().map_config_key = key.as<std::string>();
-      config[key_value] = sub_config;
+      visitor.data.sub_configs.back().map_config_key = key;
     }
   }
 

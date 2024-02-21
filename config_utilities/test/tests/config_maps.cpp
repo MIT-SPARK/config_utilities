@@ -93,13 +93,13 @@ TEST(ConfigMaps, FromYamlMap) {
   const std::string yaml_map = R"(
 x:
   s: "a"
-  f: 1.0
+  f: 1
 y:
   s: "b"
-  f: 2.0
+  f: 2
 z:
   s: "c"
-  f: 3.0
+  f: 3
 )";
   const auto node = YAML::Load(yaml_map);
 
