@@ -107,7 +107,7 @@ struct MetaData {
   int array_config_index = -1;
 
   //! Map key if part of map config
-  std::optional<std::string> map_config_key = "";
+  std::optional<std::string> map_config_key;
 
   // Yaml node used to get or set the data of a config.
   YAML::Node data;
