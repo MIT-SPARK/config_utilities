@@ -49,29 +49,6 @@
 
 namespace config {
 
-namespace internal {
-
-// Disambiguation for vector of configs.
-template <typename ConfigT>
-ConfigT fromYamlImpl(const YAML::Node& node, const std::string& name_space, ConfigT*) {
-  ConfigT config;
-  internal::Visitor::setValues(config, internal::lookupNamespace(node, name_space));
-  return config;
-}
-
-template <typename ConfigT>
-std::vector<ConfigT> fromYamlImpl(const YAML::Node& node, const std::string& name_space, std::vector<ConfigT>*) {
-  std::vector<ConfigT> configs;
-  std::vector<YAML::Node> nodes = internal::getNodeArray(internal::lookupNamespace(node, name_space));
-  for (const YAML::Node& n : nodes) {
-    ConfigT& config = configs.emplace_back();
-    internal::Visitor::setValues(config, n);
-  }
-  return configs;
-}
-
-}  // namespace internal
-
 /**
  * @brief Loads a config from a yaml node.
  *
@@ -83,7 +60,9 @@ std::vector<ConfigT> fromYamlImpl(const YAML::Node& node, const std::string& nam
  */
 template <typename ConfigT>
 ConfigT fromYaml(const YAML::Node& node, const std::string& name_space = "") {
-  return internal::fromYamlImpl(node, name_space, static_cast<ConfigT*>(nullptr));
+  ConfigT config;
+  internal::Visitor::setValues(config, internal::lookupNamespace(node, name_space));
+  return config;
 }
 
 /**
@@ -111,7 +90,7 @@ YAML::Node toYaml(const ConfigT& config) {
 template <typename ConfigT>
 ConfigT fromYamlFile(const std::string& file_name, const std::string& name_space = "") {
   const YAML::Node node = internal::lookupNamespace(YAML::LoadFile(file_name), name_space);
-  return internal::fromYamlImpl(node, "", static_cast<ConfigT*>(nullptr));
+  return fromYaml<ConfigT>(node, "");
 }
 
 /**

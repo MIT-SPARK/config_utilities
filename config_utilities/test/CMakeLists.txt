@@ -35,6 +35,7 @@ add_executable(
   src/utils.cpp
   tests/asl_formatter.cpp
   tests/config_arrays.cpp
+  tests/config_maps.cpp
   tests/conversions.cpp
   tests/enums.cpp
   tests/factory.cpp
@@ -51,7 +52,7 @@ add_executable(
 target_include_directories(test_${PROJECT_NAME} PRIVATE include)
 target_link_libraries(test_${PROJECT_NAME} PRIVATE ${PROJECT_NAME}
                                                    GTest::gtest_main)
-gtest_discover_tests(test_${PROJECT_NAME} DISCOVERY_MODE PRE_TEST)
+gtest_add_tests(TARGET test_${PROJECT_NAME})
 
 if(${CONFIG_UTILS_INSTALL_TESTS})
   # note that ros uses libdir to handle finding executables by package, but this

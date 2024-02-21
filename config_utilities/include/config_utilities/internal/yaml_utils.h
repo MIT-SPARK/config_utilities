@@ -73,4 +73,12 @@ bool isEqual(const YAML::Node& a, const YAML::Node& b);
  */
 std::vector<YAML::Node> getNodeArray(const YAML::Node& node);
 
+/**
+ * @brief Convert a yaml node that contains a map or sequence to a list of corresponding nodes.
+ * @param node The node to convert.
+ * @return The list of nodes. Nodes stored in this struct are references to the original data.
+ */
+std::map<std::string, YAML::Node> getNodeMap(const YAML::Node& node);
+
+
 }  // namespace config::internal

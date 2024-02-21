@@ -81,13 +81,41 @@ std::string toString(const ConfigT& config, bool print_warnings = true) {
 template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
 std::string toString(const std::vector<ConfigT>& array_config, bool print_warnings = true) {
   // Get the data of the config.
-  internal::MetaData data;
+  internal::MetaData data = internal::Visitor::getValues(array_config);
+  // force names for config types
   data.name = "Config Array";
-  for (size_t i = 0; i < array_config.size(); ++i) {
-    auto& d = data.sub_configs.emplace_back(internal::Visitor::getValues(array_config[i]));
-    d.array_config_index = i;
-    d.field_name = "config_array";
+  for (auto& sub_config : data.sub_configs) {
+    sub_config.field_name = "config_array";
   }
+
+  // Format the output data.
+  if (print_warnings && data.hasErrors()) {
+    internal::Logger::logWarning(
+        internal::Formatter::formatErrors(data, "Errors parsing config", internal::Severity::kWarning));
+  }
+
+  return internal::Formatter::formatConfig(data);
+}
+
+/**
+ * @brief Returns a string representation of the config.
+ *
+ * @tparam K The key type for the map
+ * @tparam ConfigT The type of the config to print.
+ * @param config The config to print.
+ * @param print_warnings If true, prints warnings for any failed conversions.
+ * @returns The string representation of the config.
+ */
+template <typename K, typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
+std::string toString(const std::map<K, ConfigT>& config, bool print_warnings = true) {
+  // Get the data of the config.
+  internal::MetaData data = internal::Visitor::getValues(config);
+  // force names for config types
+  data.name = "Config Map";
+  for (auto& sub_config : data.sub_configs) {
+    sub_config.field_name = "config_map";
+  }
+
   // Format the output data.
   if (print_warnings && data.hasErrors()) {
     internal::Logger::logWarning(

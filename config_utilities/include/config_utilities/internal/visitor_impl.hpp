@@ -63,7 +63,7 @@ MetaData Visitor::setValues(ConfigT& config,
                             const std::string& field_name) {
   Visitor visitor(Mode::kSet, name_space, field_name);
   visitor.data.data.reset(node);
-  declare_config(config);
+  ::config::declare_config(config);
   if (print_warnings && visitor.data.hasErrors()) {
     Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Severity::kWarning));
   }
@@ -77,13 +77,15 @@ MetaData Visitor::getValues(const ConfigT& config,
                             const std::string& field_name) {
   Visitor visitor(Mode::kGet, name_space, field_name);
   // NOTE: We know that in mode kGet, the config is not modified.
-  declare_config(const_cast<ConfigT&>(config));
+  ::config::declare_config(const_cast<ConfigT&>(config));
+
   if (Settings::instance().indicate_default_values) {
     flagDefaultValues(config, visitor.data);
   }
   if (print_warnings && visitor.data.hasErrors()) {
     Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Severity::kWarning));
   }
+
   return visitor.data;
 }
 
@@ -91,7 +93,7 @@ template <typename ConfigT>
 MetaData Visitor::getChecks(const ConfigT& config, const std::string& field_name) {
   Visitor visitor(Mode::kCheck, "", field_name);
   // NOTE: We know that in mode kCheck, the config is not modified.
-  declare_config(const_cast<ConfigT&>(config));
+  ::config::declare_config(const_cast<ConfigT&>(config));
   return visitor.data;
 }
 
@@ -251,6 +253,49 @@ void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_
   }
 }
 
+// Visit a map of subconfigs.
+template <typename K, typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type>
+void Visitor::visitField(std::map<K, ConfigT>& config, const std::string& field_name, const std::string& /* unit */) {
+  Visitor& visitor = Visitor::instance();
+  if (visitor.mode == Visitor::Mode::kGetDefaults) {
+    return;
+  }
+
+  if (visitor.mode == Visitor::Mode::kSet) {
+    // When setting the values first allocate the correct amount of configs.
+    config.clear();
+    const auto map_ns = visitor.name_space.empty() ? field_name : visitor.name_space + "/" + field_name;
+    const auto nodes = getNodeMap(lookupNamespace(visitor.data.data, map_ns));
+    for (auto&& [key, node] : nodes) {
+      auto iter = config.emplace(YAML::Node(key).template as<K>(), ConfigT()).first;
+      auto& sub_config = iter->second;
+      visitor.data.sub_configs.emplace_back(setValues(sub_config, node, false, "", field_name));
+      visitor.data.sub_configs.back().map_config_key = key;
+    }
+  }
+
+  if (visitor.mode == Visitor::Mode::kGet) {
+    const std::string name_space = joinNamespace(visitor.name_space, field_name);
+    YAML::Node map_node(YAML::NodeType::Map);
+    for (auto&& [key, sub_config] : config) {
+      visitor.data.sub_configs.emplace_back(getValues(sub_config, false, name_space, field_name));
+      MetaData& new_data = visitor.data.sub_configs.back();
+      map_node[key] = YAML::Clone(lookupNamespace(new_data.data, name_space));
+      new_data.map_config_key = YAML::Node(key).as<std::string>();
+    }
+
+    moveDownNamespace(map_node, name_space);
+    mergeYamlNodes(visitor.data.data, map_node);
+  }
+
+  if (visitor.mode == Visitor::Mode::kCheck) {
+    for (auto&& [key, sub_config] : config) {
+      visitor.data.sub_configs.emplace_back(getChecks(sub_config, field_name));
+      visitor.data.sub_configs.back().map_config_key = YAML::Node(key).as<std::string>();
+    }
+  }
+}
+
 template <typename ConfigT>
 void Visitor::visitBase(ConfigT& config) {
   // For now simply pass the call to the base config, treating it as a single config object.
@@ -269,7 +314,8 @@ void Visitor::visitBase(ConfigT& config) {
 
   // Call declare_config of the base while making sure the namespaces are persistent afterwards.
   const bool config_needs_name = visitor.data.name.empty();
-  OpenNameSpace::performOperationWithGuardedNs(visitor.open_namespaces, [&config]() { declare_config(config); });
+  OpenNameSpace::performOperationWithGuardedNs(visitor.open_namespaces,
+                                               [&config]() { ::config::declare_config(config); });
 
   // If the config name has changed reset it to avoid name conflicts. Configs should always be named after the most
   // derived config.
@@ -282,7 +328,7 @@ template <typename ConfigT, typename std::enable_if<!is_virtual_config<ConfigT>:
 MetaData Visitor::getDefaults(const ConfigT& config) {
   Visitor visitor(Mode::kGetDefaults);
   ConfigT default_config;
-  declare_config(default_config);
+  ::config::declare_config(default_config);
   return visitor.data;
 }
 
