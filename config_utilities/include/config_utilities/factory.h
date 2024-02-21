@@ -203,7 +203,7 @@ struct ConfigWrapperImpl : public ConfigWrapper {
   explicit ConfigWrapperImpl(const std::string& _type) : ConfigWrapper(_type) {}
   ConfigT config;
   std::unique_ptr<ConfigWrapper> clone() const override { return std::make_unique<ConfigWrapperImpl<ConfigT>>(*this); };
-  void onDeclareConfig() override { declare_config(config); }
+  void onDeclareConfig() override { ::config::internal::declare_config(config); }
   std::unique_ptr<ConfigWrapper> createDefault() const override {
     return std::make_unique<ConfigWrapperImpl<ConfigT>>(type);
   };

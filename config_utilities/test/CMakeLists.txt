@@ -35,6 +35,7 @@ add_executable(
   src/utils.cpp
   tests/asl_formatter.cpp
   tests/config_arrays.cpp
+  tests/config_maps.cpp
   tests/conversions.cpp
   tests/enums.cpp
   tests/factory.cpp

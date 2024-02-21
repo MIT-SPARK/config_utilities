@@ -51,7 +51,6 @@ namespace config {
 
 namespace internal {
 
-// Disambiguation for vector of configs.
 template <typename ConfigT>
 ConfigT fromYamlImpl(const YAML::Node& node, const std::string& name_space, ConfigT*) {
   ConfigT config;
@@ -59,6 +58,7 @@ ConfigT fromYamlImpl(const YAML::Node& node, const std::string& name_space, Conf
   return config;
 }
 
+// Disambiguation for vector of configs.
 template <typename ConfigT>
 std::vector<ConfigT> fromYamlImpl(const YAML::Node& node, const std::string& name_space, std::vector<ConfigT>*) {
   std::vector<ConfigT> configs;
@@ -67,6 +67,14 @@ std::vector<ConfigT> fromYamlImpl(const YAML::Node& node, const std::string& nam
     ConfigT& config = configs.emplace_back();
     internal::Visitor::setValues(config, n);
   }
+  return configs;
+}
+
+// Disambiguation for map of configs
+template <typename Key, typename ConfigT>
+std::map<Key, ConfigT> fromYamlImpl(const YAML::Node& node, const std::string& name_space, std::map<Key, ConfigT>*) {
+  std::map<Key, ConfigT> configs;
+  internal::Visitor::setValues(config, internal::lookupNamespace(node, name_space));
   return configs;
 }
 

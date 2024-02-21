@@ -147,4 +147,20 @@ std::vector<YAML::Node> getNodeArray(const YAML::Node& node) {
   return result;
 }
 
+std::map<YAML::Node, YAML::Node> getNodeMap(const YAML::Node& node) {
+  std::map<YAML::Node, YAML::Node> result;
+  if (node.IsMap()) {
+    for (const auto& kv_pair : node) {
+      result.emplace(kv_pair);
+    }
+  } else if (node.IsSequence()) {
+    size_t index = 0;
+    for (const auto& sub_node : node) {
+      result.emplace(index, sub_node);
+      ++index;
+    }
+  }
+  return result;
+}
+
 }  // namespace config::internal

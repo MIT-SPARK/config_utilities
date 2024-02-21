@@ -97,6 +97,10 @@ struct Visitor {
   template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
   static void visitField(std::vector<ConfigT>& config, const std::string& field_name, const std::string& /* unit */);
 
+  // Map (ordered) of config types.
+  template <typename Key, typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
+  static void visitField(std::map<Key, ConfigT>& config, const std::string& field_name, const std::string& /* unit */);
+
   // Execute a check.
   static void visitCheck(const CheckBase& check);
 
@@ -162,6 +166,32 @@ struct Visitor {
   // nested calls are possible and will always use the latest visitor.
   static thread_local std::vector<Visitor*> instances;
 };
+
+template <typename K, typename T, typename std::enable_if<isConfig<T>(), bool>::type = true>
+void declare_config(std::map<K, T>& map_config) {
+  Visitor::visitField(map_config, "", "");
+}
+
+// Public interfaces to declare properties in declare_config.
+
+// argument-dependent-lookup (ADL) so definitions of 'declare_config()' can be found anywhere. Note that
+// 'declare_config' needs to be defined in the same namespace as the object it refers to.See the following:
+// - http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4381.html
+// - https:://github.com/nlohmann/json/blob/develop/include/nlohmann/adl_serializer.hpp
+
+// ADL indirection.
+struct declare_config_fn {
+  template <typename ConfigT>
+  constexpr auto operator()(ConfigT& config) const -> decltype(declare_config(config)) {
+    return declare_config(config);
+  }
+};
+
+namespace {
+
+constexpr const auto& declare_config = static_const<internal::declare_config_fn>;
+
+}  // namespace
 
 }  // namespace config::internal
 
