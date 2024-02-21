@@ -63,7 +63,7 @@ MetaData Visitor::setValues(ConfigT& config,
                             const std::string& field_name) {
   Visitor visitor(Mode::kSet, name_space, field_name);
   visitor.data.data.reset(node);
-  ::config::internal::declare_config(config);
+  ::config::declare_config(config);
   if (print_warnings && visitor.data.hasErrors()) {
     Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Severity::kWarning));
   }
@@ -77,7 +77,7 @@ MetaData Visitor::getValues(const ConfigT& config,
                             const std::string& field_name) {
   Visitor visitor(Mode::kGet, name_space, field_name);
   // NOTE: We know that in mode kGet, the config is not modified.
-  ::config::internal::declare_config(const_cast<ConfigT&>(config));
+  ::config::declare_config(const_cast<ConfigT&>(config));
   if (Settings::instance().indicate_default_values) {
     flagDefaultValues(config, visitor.data);
   }
@@ -91,7 +91,7 @@ template <typename ConfigT>
 MetaData Visitor::getChecks(const ConfigT& config, const std::string& field_name) {
   Visitor visitor(Mode::kCheck, "", field_name);
   // NOTE: We know that in mode kCheck, the config is not modified.
-  ::config::internal::declare_config(const_cast<ConfigT&>(config));
+  ::config::declare_config(const_cast<ConfigT&>(config));
   return visitor.data;
 }
 
@@ -314,7 +314,7 @@ void Visitor::visitBase(ConfigT& config) {
   // Call declare_config of the base while making sure the namespaces are persistent afterwards.
   const bool config_needs_name = visitor.data.name.empty();
   OpenNameSpace::performOperationWithGuardedNs(visitor.open_namespaces,
-                                               [&config]() { ::config::internal::declare_config(config); });
+                                               [&config]() { ::config::declare_config(config); });
 
   // If the config name has changed reset it to avoid name conflicts. Configs should always be named after the most
   // derived config.
@@ -327,7 +327,7 @@ template <typename ConfigT, typename std::enable_if<!is_virtual_config<ConfigT>:
 MetaData Visitor::getDefaults(const ConfigT& config) {
   Visitor visitor(Mode::kGetDefaults);
   ConfigT default_config;
-  ::config::internal::declare_config(default_config);
+  ::config::declare_config(default_config);
   return visitor.data;
 }
 

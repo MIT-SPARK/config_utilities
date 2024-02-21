@@ -46,7 +46,8 @@
 #include "config_utilities/internal/namespacing.h"
 #include "config_utilities/internal/yaml_parser.h"
 
-namespace config::internal {
+namespace config {
+namespace internal {
 
 /**
  * @brief The visitor gets and sets information between the meta-data and configs. It is hidden via in-thread singleton
@@ -167,6 +168,11 @@ struct Visitor {
   static thread_local std::vector<Visitor*> instances;
 };
 
+template <typename T, typename std::enable_if<isConfig<T>(), bool>::type = true>
+void declare_config(std::vector<T>& vec_config) {
+  Visitor::visitField(vec_config, "", "");
+}
+
 template <typename K, typename T, typename std::enable_if<isConfig<T>(), bool>::type = true>
 void declare_config(std::map<K, T>& map_config) {
   Visitor::visitField(map_config, "", "");
@@ -187,12 +193,14 @@ struct declare_config_fn {
   }
 };
 
+}  // namespace internal
+
 namespace {
 
-constexpr const auto& declare_config = static_const<internal::declare_config_fn>;
+constexpr const auto& declare_config = internal::static_const<internal::declare_config_fn>;
 
 }  // namespace
 
-}  // namespace config::internal
+}  // namespace config
 
 #include "config_utilities/internal/visitor_impl.hpp"

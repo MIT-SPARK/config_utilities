@@ -134,7 +134,7 @@ template <typename ConfigT>
 ConfigT fromRos(const ros::NodeHandle& nh, const std::string& name_space = "") {
   const ros::NodeHandle ns_nh = ros::NodeHandle(nh, name_space);
   const YAML::Node node = internal::rosToYaml(ns_nh);
-  return internal::fromYamlImpl(node, "", static_cast<ConfigT*>(nullptr));
+  return fromYaml<ConfigT>(node, "");
 }
 
 /**
