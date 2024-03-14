@@ -111,6 +111,8 @@ class VirtualConfig {
    */
   void setOptional(bool optional = true) { optional_ = optional; }
 
+  bool optional() const { return optional_; }
+
   /**
    * @brief Get the string-identifier-type of the config stored in the virtual config.
    */
@@ -166,6 +168,10 @@ void declare_config(VirtualConfig<BaseT>& config) {
                                           : internal::getType(*data, type);
     if (success) {
       config.config_ = internal::ConfigFactory<BaseT>::create(type);
+    } else if (!config.optional_) {
+      std::stringstream ss;
+      ss << "Could not get type for '" << internal::typeInfo<BaseT>() << "'";
+      internal::Logger::logError(ss.str());
     }
   }
 
