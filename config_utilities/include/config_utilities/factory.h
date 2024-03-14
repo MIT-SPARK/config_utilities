@@ -119,13 +119,15 @@ struct ModuleMapBase {
       return false;
     }
     if (map.find(type) == map.end()) {
-      std::string module_list;
-      for (const auto& entry : map) {
-        module_list.append(entry.first + "', '");
+      if (!type.empty()) {
+        std::string module_list;
+        for (const auto& entry : map) {
+          module_list.append(entry.first + "', '");
+        }
+        module_list = module_list.substr(0, module_list.size() - 4);
+        Logger::logError("No module of type '" + type + "' registered to the factory for " + type_info +
+                         ". Registered are: '" + module_list + "'.");
       }
-      module_list = module_list.substr(0, module_list.size() - 4);
-      Logger::logError("No module of type '" + type + "' registered to the factory for " + type_info +
-                       ". Registered are: '" + module_list + "'.");
       return false;
     }
     return true;
