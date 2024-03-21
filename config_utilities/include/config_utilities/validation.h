@@ -95,12 +95,10 @@ const ConfigT& checkValid(const ConfigT& config) {
 
   // Write the config data to global storage for later summarization if requested.
   if (internal::hasNoInvalidChecks(data)) {
-    if (Settings().store_valid_configs) {
-      internal::Globals::instance().valid_configs.emplace_back(internal::Visitor::getValues(config));
-    }
-
+    // TODO(nathan) threadsafe registration of configs or remove config registry printing
     return config;
   }
+
   internal::Logger::logFatal(internal::Formatter::formatErrors(data, "Invalid config", internal::Severity::kFatal));
   return config;
 }
