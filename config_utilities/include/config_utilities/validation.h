@@ -39,7 +39,6 @@
 #include <string>
 #include <vector>
 
-#include "config_utilities/globals.h"
 #include "config_utilities/internal/formatter.h"
 #include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/visitor.h"
@@ -93,9 +92,7 @@ const ConfigT& checkValid(const ConfigT& config) {
       "for your struct.");
   internal::MetaData data = internal::Visitor::getChecks(config);
 
-  // Write the config data to global storage for later summarization if requested.
   if (internal::hasNoInvalidChecks(data)) {
-    // TODO(nathan) threadsafe registration of configs or remove config registry printing
     return config;
   }
 

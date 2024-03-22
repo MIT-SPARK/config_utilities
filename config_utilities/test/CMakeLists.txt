@@ -39,7 +39,6 @@ add_executable(
   tests/conversions.cpp
   tests/enums.cpp
   tests/factory.cpp
-  tests/globals.cpp
   tests/inheritance.cpp
   tests/namespacing.cpp
   tests/path.cpp

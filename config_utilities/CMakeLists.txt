@@ -27,7 +27,6 @@ add_library(
   src/asl_formatter.cpp
   src/conversions.cpp
   src/formatter.cpp
-  src/globals.cpp
   src/logger.cpp
   src/meta_data.cpp
   src/namespacing.cpp
