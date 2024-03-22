@@ -39,7 +39,6 @@
 #include <string>
 #include <vector>
 
-#include "config_utilities/globals.h"
 #include "config_utilities/internal/formatter.h"
 #include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/visitor.h"
@@ -93,14 +92,10 @@ const ConfigT& checkValid(const ConfigT& config) {
       "for your struct.");
   internal::MetaData data = internal::Visitor::getChecks(config);
 
-  // Write the config data to global storage for later summarization if requested.
   if (internal::hasNoInvalidChecks(data)) {
-    if (Settings().store_valid_configs) {
-      internal::Globals::instance().valid_configs.emplace_back(internal::Visitor::getValues(config));
-    }
-
     return config;
   }
+
   internal::Logger::logFatal(internal::Formatter::formatErrors(data, "Invalid config", internal::Severity::kFatal));
   return config;
 }
