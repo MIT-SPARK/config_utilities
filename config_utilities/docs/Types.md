@@ -201,12 +201,12 @@ Equivalently, we provide scoped namespace declarations. The below code will prod
 void declare_config(MyConfig& config){
 field(config.a, "a");
 {
-  Namespace ns("ns1");  // Scoped namespace definition.
+  NameSpace ns("ns1");  // Scoped namespace definition.
   field(config.b, "b");
 }
-Namespace ns("ns2");
+NameSpace ns("ns2");
 field(config.c, "c");
-Namespace more_ns("ns3");
+NameSpace more_ns("ns3");
 field(config.d, "d");
 }
 ```
