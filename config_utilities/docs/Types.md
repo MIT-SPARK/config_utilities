@@ -191,7 +191,7 @@ ns2:
     d: value
 ```
 > **✅ Supports**<br>
-> For easier use, `exit_namespace()` followed by `enter_namespace("ns2")` can be replaced by `switch_namespace("n2")`. To exit all open namespaces one can use `clear_namespace()`.
+> For easier use, `exit_namespace()` followed by `enter_namespace("ns2")` can be replaced by `switch_namespace("n2")`. To exit all open namespaces one can use `clear_namespaces()`.
 
 > **✅ Supports**<br>
 > Recall that [subconfig fields](#sub-configs) by default open a namespace with their field name. Any residual namespace left open in a subconfig will be closed when returning to the original config declaration body.
