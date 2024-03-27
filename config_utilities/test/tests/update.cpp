@@ -161,10 +161,26 @@ TEST(UpdateConfig, UpdateFailure) {
   // EXPECT_FALSE(updateField(config, "f", "a"));
   EXPECT_EQ(config.s, "a");
   EXPECT_EQ(config.f, 1.0f);
+  EXPECT_EQ(config.v, (std::vector<int>{1, 2, 3}));
+  EXPECT_EQ(config.e, TestEnum::kA);
 
   EXPECT_FALSE(updateField(config, "f", -1.0f));
   EXPECT_EQ(config.s, "a");
   EXPECT_EQ(config.f, 1.0f);
+  EXPECT_EQ(config.v, (std::vector<int>{1, 2, 3}));
+  EXPECT_EQ(config.e, TestEnum::kA);
+
+  // EXPECT_FALSE(updateField(config, "v", 1));
+  EXPECT_EQ(config.s, "a");
+  EXPECT_EQ(config.f, 1.0f);
+  EXPECT_EQ(config.v, (std::vector<int>{1, 2, 3}));
+  EXPECT_EQ(config.e, TestEnum::kA);
+
+  // EXPECT_FALSE(updateField(config, "e", -1));
+  EXPECT_EQ(config.s, "a");
+  EXPECT_EQ(config.f, 1.0f);
+  EXPECT_EQ(config.v, (std::vector<int>{1, 2, 3}));
+  EXPECT_EQ(config.e, TestEnum::kA);
 
   EXPECT_TRUE(isValid(config));
 }
