@@ -196,7 +196,7 @@ TEST_F(Enums, enum_field) {
   // Getting fields.
   meta_data = internal::Visitor::getValues(config);
   EXPECT_EQ(meta_data.errors.size(), 0);
-  EXPECT_EQ(meta_data.data["reggular_enum"].as<std::string>(), "B");
+  EXPECT_EQ(meta_data.data["reggular_enum"].as<std::string>(), "BBB");
   EXPECT_EQ(meta_data.data["enum_with_custom_name"].as<std::string>(), "CCC");
   EXPECT_EQ(meta_data.data["odd_enum_with_custom_name"].as<std::string>(), "Z-Z");
 
@@ -213,14 +213,14 @@ TEST_F(Enums, enum_field) {
   // Check the global enum names are unchanged valid.
   MyEnum e = MyEnum::A;
   std::string name = Enum<MyEnum>::toString(e);
-  EXPECT_EQ(name, "A");
-  e = Enum<MyEnum>::fromString("C");
+  EXPECT_EQ(name, "AAA");
+  e = Enum<MyEnum>::fromString("CCC");
   EXPECT_EQ(e, MyEnum::C);
 
   OddEnum odd_e = OddEnum::X;
   name = Enum<OddEnum>::toString(odd_e);
-  EXPECT_EQ(name, "X");
-  odd_e = Enum<OddEnum>::fromString("Z");
+  EXPECT_EQ(name, "X-X");
+  odd_e = Enum<OddEnum>::fromString("Z-Z");
   EXPECT_EQ(odd_e, OddEnum::Z);
 }
 

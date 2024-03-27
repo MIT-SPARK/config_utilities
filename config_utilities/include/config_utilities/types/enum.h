@@ -197,9 +197,7 @@ struct Enum {
 // Simplified interfaces to include in 'declare_config'.
 
 /**
- * @brief Declare a field of a config to be an enum, that will be parsed and checked bystring  value names. Note that
- * this allows specifying other values than defined in the global `Enum<EnumT>` converter definition, and will not
- * modify the global definition.
+ * @brief Declare a field of a config to be an enum, that will be parsed and checked bystring  value names.
  *
  * @tparam EnumT The enum type.
  * @param field The config member that stores data.
@@ -214,19 +212,13 @@ void enum_field(EnumT& field, const std::string& field_name, const std::map<Enum
   }
   auto& converter = Enum<EnumT>::instance();
   converter.mutex_.lock();
-  const auto backup = std::move(converter.enum_names_);
   converter.enum_names_ = enum_names;
   converter.mutex_.unlock();
   internal::Visitor::visitField<Enum<EnumT>>(field, field_name, "");
-  converter.mutex_.lock();
-  converter.enum_names_ = std::move(backup);
-  converter.mutex_.unlock();
 }
 
 /**
- * @brief Declare a field of a config to be an enum, that will be parsed and checked bystring  value names. Note that
- * this allows specifying other values than defined in the global `Enum<EnumT>` converter definition, and will not
- * modify the global definition.
+ * @brief Declare a field of a config to be an enum, that will be parsed and checked bystring  value names.
  *
  * @tparam EnumT The enum type.
  * @param field The config member that stores data.
