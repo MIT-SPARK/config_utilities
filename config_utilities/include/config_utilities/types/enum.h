@@ -166,6 +166,7 @@ struct Enum {
 
   // Parsing implementation.
   static bool parse(const EnumT value, std::string& result) {
+    const auto enum_names_ = instance().enum_names_;
     const auto it = instance().enum_names_.find(value);
     if (it != instance().enum_names_.end()) {
       result = it->second;

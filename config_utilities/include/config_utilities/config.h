@@ -45,6 +45,7 @@
 #include "config_utilities/internal/namespacing.h"
 #include "config_utilities/internal/visitor.h"
 #include "config_utilities/traits.h"
+#include "config_utilities/types/enum.h"
 #include "config_utilities/validation.h"
 
 namespace config {
@@ -285,7 +286,13 @@ bool updateField(ConfigT& config, YAML::Node node, const std::string& field_name
 template <typename T, typename ConfigT>
 bool updateField(ConfigT& config, const std::string& field_name, const T& value, const std::string& name_space = "") {
   YAML::Node node;
-  node[field_name] = value;
+  if constexpr (std::is_enum<T>::value) {
+    const auto enum_value = Enum<T>::toString(value);
+    std::cout << "enum_value: " << enum_value << std::endl;
+    node[field_name] = enum_value;
+  } else {
+    node[field_name] = value;
+  }
   return updateField<ConfigT>(config, node, field_name, name_space);
 }
 

@@ -37,9 +37,12 @@
 
 #include "config_utilities/config.h"
 #include "config_utilities/parsing/yaml.h"
+#include "config_utilities/types/enum.h"
 #include "config_utilities/validation.h"
 
 namespace config::test {
+
+enum class TestEnum { kA, kB, kC };
 
 struct UpdateConfig {
   UpdateConfig() = default;
@@ -47,18 +50,24 @@ struct UpdateConfig {
 
   std::string s;
   float f = 0.f;
+  std::vector<int> v;
+  TestEnum e = TestEnum::kA;
 };
 
 void declare_config(UpdateConfig& config) {
   name("UpdateConfig");
   field(config.s, "s");
   field(config.f, "f");
+  field(config.v, "v");
+  enum_field(config.e, "e", {"A", "B", "C"});
   check(config.f, GE, 0, "f");
 }
 
 const std::string yaml_seq = R"(
   s: "a"
-  f: 1.0)";
+  f: 1.0
+  v: [1, 2, 3]
+  e: "A")";
 
 const std::string yaml_update_s = R"(
   s: "b")";
@@ -66,19 +75,43 @@ const std::string yaml_update_s = R"(
 const std::string yaml_update_f = R"(
   f: 2.0)";
 
+const std::string yaml_update_v = R"(
+  v: [4, 5, 6])";
+
+const std::string yaml_update_e = R"(
+  e: "B")";
+
 TEST(UpdateConfig, UpdateSuccessDirect) {
   const YAML::Node node = YAML::Load(yaml_seq);
   auto config = fromYaml<UpdateConfig>(node);
   EXPECT_EQ(config.s, "a");
   EXPECT_EQ(config.f, 1.0f);
+  EXPECT_EQ(config.v, (std::vector<int>{1, 2, 3}));
+  EXPECT_EQ(config.e, TestEnum::kA);
 
   updateField(config, "s", "b");
   EXPECT_EQ(config.s, "b");
   EXPECT_EQ(config.f, 1.0f);
+  EXPECT_EQ(config.v, (std::vector<int>{1, 2, 3}));
+  EXPECT_EQ(config.e, TestEnum::kA);
 
   updateField(config, "f", 2.0f);
   EXPECT_EQ(config.s, "b");
   EXPECT_EQ(config.f, 2.0f);
+  EXPECT_EQ(config.v, (std::vector<int>{1, 2, 3}));
+  EXPECT_EQ(config.e, TestEnum::kA);
+
+  updateField(config, "v", std::vector<int>{4, 5, 6});
+  EXPECT_EQ(config.s, "b");
+  EXPECT_EQ(config.f, 2.0f);
+  EXPECT_EQ(config.v, (std::vector<int>{4, 5, 6}));
+  EXPECT_EQ(config.e, TestEnum::kA);
+
+  updateField(config, "e", TestEnum::kB);
+  EXPECT_EQ(config.s, "b");
+  EXPECT_EQ(config.f, 2.0f);
+  EXPECT_EQ(config.v, (std::vector<int>{4, 5, 6}));
+  EXPECT_EQ(config.e, TestEnum::kB);
 }
 
 TEST(UpdateConfig, UpdateSuccessYAML) {
@@ -86,16 +119,36 @@ TEST(UpdateConfig, UpdateSuccessYAML) {
   auto config = fromYaml<UpdateConfig>(node);
   EXPECT_EQ(config.s, "a");
   EXPECT_EQ(config.f, 1.0f);
+  EXPECT_EQ(config.v, (std::vector<int>{1, 2, 3}));
+  EXPECT_EQ(config.e, TestEnum::kA);
 
   const YAML::Node update_s = YAML::Load(yaml_update_s);
   updateField(config, update_s, "s");
   EXPECT_EQ(config.s, "b");
   EXPECT_EQ(config.f, 1.0f);
+  EXPECT_EQ(config.v, (std::vector<int>{1, 2, 3}));
+  EXPECT_EQ(config.e, TestEnum::kA);
 
   const YAML::Node update_f = YAML::Load(yaml_update_f);
   updateField(config, update_f, "f");
   EXPECT_EQ(config.s, "b");
   EXPECT_EQ(config.f, 2.0f);
+  EXPECT_EQ(config.v, (std::vector<int>{1, 2, 3}));
+  EXPECT_EQ(config.e, TestEnum::kA);
+
+  const YAML::Node update_v = YAML::Load(yaml_update_v);
+  updateField(config, update_v, "v");
+  EXPECT_EQ(config.s, "b");
+  EXPECT_EQ(config.f, 2.0f);
+  EXPECT_EQ(config.v, (std::vector<int>{4, 5, 6}));
+  EXPECT_EQ(config.e, TestEnum::kA);
+
+  const YAML::Node update_e = YAML::Load(yaml_update_e);
+  updateField(config, update_e, "e");
+  EXPECT_EQ(config.s, "b");
+  EXPECT_EQ(config.f, 2.0f);
+  EXPECT_EQ(config.v, (std::vector<int>{4, 5, 6}));
+  EXPECT_EQ(config.e, TestEnum::kB);
 }
 
 TEST(UpdateConfig, UpdateFailure) {
