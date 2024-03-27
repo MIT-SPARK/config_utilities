@@ -166,7 +166,6 @@ struct Enum {
 
   // Parsing implementation.
   static bool parse(const EnumT value, std::string& result) {
-    const auto enum_names_ = instance().enum_names_;
     const auto it = instance().enum_names_.find(value);
     if (it != instance().enum_names_.end()) {
       result = it->second;
@@ -197,7 +196,7 @@ struct Enum {
 // Simplified interfaces to include in 'declare_config'.
 
 /**
- * @brief Declare a field of a config to be an enum, that will be parsed and checked bystring  value names.
+ * @brief Declare a field of a config to be an enum, that will be parsed and checked bystring value names.
  *
  * @tparam EnumT The enum type.
  * @param field The config member that stores data.
@@ -218,7 +217,7 @@ void enum_field(EnumT& field, const std::string& field_name, const std::map<Enum
 }
 
 /**
- * @brief Declare a field of a config to be an enum, that will be parsed and checked bystring  value names.
+ * @brief Declare a field of a config to be an enum, that will be parsed and checked bystring value names.
  *
  * @tparam EnumT The enum type.
  * @param field The config member that stores data.
