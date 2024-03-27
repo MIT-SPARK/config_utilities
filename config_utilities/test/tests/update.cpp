@@ -60,17 +60,40 @@ const std::string yaml_seq = R"(
   s: "a"
   f: 1.0)";
 
-TEST(UpdateConfig, UpdateSuccess) {
+const std::string yaml_update_s = R"(
+  s: "b")";
+
+const std::string yaml_update_f = R"(
+  f: 2.0)";
+
+TEST(UpdateConfig, UpdateSuccessDirect) {
   const YAML::Node node = YAML::Load(yaml_seq);
   auto config = fromYaml<UpdateConfig>(node);
   EXPECT_EQ(config.s, "a");
   EXPECT_EQ(config.f, 1.0f);
 
-  config::updateField(config, "s", "b");
+  updateField(config, "s", "b");
   EXPECT_EQ(config.s, "b");
   EXPECT_EQ(config.f, 1.0f);
 
-  config::updateField(config, "f", 2.0f);
+  updateField(config, "f", 2.0f);
+  EXPECT_EQ(config.s, "b");
+  EXPECT_EQ(config.f, 2.0f);
+}
+
+TEST(UpdateConfig, UpdateSuccessYAML) {
+  const YAML::Node node = YAML::Load(yaml_seq);
+  auto config = fromYaml<UpdateConfig>(node);
+  EXPECT_EQ(config.s, "a");
+  EXPECT_EQ(config.f, 1.0f);
+
+  const YAML::Node update_s = YAML::Load(yaml_update_s);
+  updateField(config, update_s, "s");
+  EXPECT_EQ(config.s, "b");
+  EXPECT_EQ(config.f, 1.0f);
+
+  const YAML::Node update_f = YAML::Load(yaml_update_f);
+  updateField(config, update_f, "f");
   EXPECT_EQ(config.s, "b");
   EXPECT_EQ(config.f, 2.0f);
 }
@@ -82,11 +105,11 @@ TEST(UpdateConfig, UpdateFailure) {
   EXPECT_EQ(config.f, 1.0f);
 
   EXPECT_TRUE(isValid(config));
-  // EXPECT_FALSE(config::updateField(config, "f", "a"));
+  // EXPECT_FALSE(updateField(config, "f", "a"));
   EXPECT_EQ(config.s, "a");
   EXPECT_EQ(config.f, 1.0f);
 
-  EXPECT_FALSE(config::updateField(config, "f", -1.0f));
+  EXPECT_FALSE(updateField(config, "f", -1.0f));
   EXPECT_EQ(config.s, "a");
   EXPECT_EQ(config.f, 1.0f);
 
