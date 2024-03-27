@@ -45,6 +45,7 @@
 #include "config_utilities/internal/namespacing.h"
 #include "config_utilities/internal/visitor.h"
 #include "config_utilities/traits.h"
+#include "config_utilities/validation.h"
 
 namespace config {
 
@@ -253,6 +254,28 @@ inline void check(Ts... args) {
 template <template <typename...> typename CheckType, typename... Ts>
 inline void check(Ts... args) {
   internal::Visitor::visitCheck(CheckType(std::forward<Ts>(args)...));
+}
+
+/**
+ * @brief Update a field in a config.
+ * @note This function will update the field and check the validity of the config afterwards. If the config is invalid,
+ * the field will be reset to its original value.
+ * @param field_name The name of the field to update.
+ * @param value The new value of the field.
+ */
+template <typename T, typename ConfigT>
+bool updateField(ConfigT& config, const std::string& field_name, const T& value, const std::string& name_space = "") {
+  const auto old_value = internal::Visitor::getValues(config, true, name_space, field_name);
+  YAML::Node node;
+  node[field_name] = value;
+  internal::Visitor::setValues(config, internal::lookupNamespace(node, name_space));
+  bool success = isValid(config);
+
+  if (!success) {
+    internal::Visitor::setValues(config, internal::lookupNamespace(old_value.data, name_space));
+  }
+
+  return success;
 }
 
 }  // namespace config

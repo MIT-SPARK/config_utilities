@@ -45,6 +45,7 @@ add_executable(
   tests/string_utils.cpp
   tests/subconfigs.cpp
   tests/traits.cpp
+  tests/update.cpp
   tests/validity_checks.cpp
   tests/virtual_config.cpp
   tests/yaml_parsing.cpp)
