@@ -48,6 +48,24 @@
 namespace config {
 
 /**
+ * @brief Create a map of enum values to their string names. This is useful for defining the enum names in a single
+ * location, and then using them for the enum definition and parsing.
+ * @tparam EnumT The enum type.
+ * @param enum_names List of all possible enum names in identical order to the enum definition. Use only with sequential
+ * (=default valued uint type) enums.
+ * @return Map of enum values to their string names.
+ */
+template <typename EnumT>
+std::map<EnumT, std::string> createEnumMap(const std::vector<std::string>& enum_names) {
+  std::map<EnumT, std::string> enum_map;
+  for (size_t i = 0; i < enum_names.size(); ++i) {
+    enum_map[static_cast<EnumT>(i)] = enum_names[i];
+  }
+  return enum_map;
+}
+
+
+/**
  * @brief A struct that provides conversion between an ennum type and its string representation. The enum definition can
  * provides interfaces for user-side conversion, and is an automatic type converter for config field parsing.
  * @tparam EnumT The enum type to be registered for conversion.
@@ -196,7 +214,9 @@ struct Enum {
 // Simplified interfaces to include in 'declare_config'.
 
 /**
- * @brief Declare a field of a config to be an enum, that will be parsed and checked bystring value names.
+ * @brief Declare a field of a config to be an enum, that will be parsed and checked bystring  value names. Note that
+ * this allows specifying other values than defined in the global `Enum<EnumT>` converter definition, and will not
+ * modify the global definition.
  *
  * @tparam EnumT The enum type.
  * @param field The config member that stores data.
@@ -211,13 +231,19 @@ void enum_field(EnumT& field, const std::string& field_name, const std::map<Enum
   }
   auto& converter = Enum<EnumT>::instance();
   converter.mutex_.lock();
+  const auto backup = std::move(converter.enum_names_);
   converter.enum_names_ = enum_names;
   converter.mutex_.unlock();
   internal::Visitor::visitField<Enum<EnumT>>(field, field_name, "");
+  converter.mutex_.lock();
+  converter.enum_names_ = std::move(backup);
+  converter.mutex_.unlock();
 }
 
 /**
- * @brief Declare a field of a config to be an enum, that will be parsed and checked bystring value names.
+ * @brief Declare a field of a config to be an enum, that will be parsed and checked bystring  value names. Note that
+ * this allows specifying other values than defined in the global `Enum<EnumT>` converter definition, and will not
+ * modify the global definition.
  *
  * @tparam EnumT The enum type.
  * @param field The config member that stores data.
@@ -227,10 +253,7 @@ void enum_field(EnumT& field, const std::string& field_name, const std::map<Enum
  */
 template <typename EnumT>
 void enum_field(EnumT& field, const std::string& field_name, const std::vector<std::string>& enum_names) {
-  std::map<EnumT, std::string> enum_map;
-  for (size_t i = 0; i < enum_names.size(); ++i) {
-    enum_map[static_cast<EnumT>(i)] = enum_names[i];
-  }
+  const auto enum_map = createEnumMap<EnumT>(enum_names);
   enum_field(field, field_name, enum_map);
 }
 

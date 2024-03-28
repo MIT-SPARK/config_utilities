@@ -33,10 +33,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
+#include "config_utilities/update.h"
+
 #include <gtest/gtest.h>
 
 #include "config_utilities/config.h"
 #include "config_utilities/parsing/yaml.h"
+#include "config_utilities/test/default_config.h"
 #include "config_utilities/types/enum.h"
 #include "config_utilities/validation.h"
 
@@ -89,29 +92,35 @@ TEST(UpdateConfig, UpdateSuccessDirect) {
   EXPECT_EQ(config.v, (std::vector<int>{1, 2, 3}));
   EXPECT_EQ(config.e, TestEnum::kA);
 
-  updateField(config, "s", "b");
+  EXPECT_TRUE(updateField(config, "s", "b"));
   EXPECT_EQ(config.s, "b");
   EXPECT_EQ(config.f, 1.0f);
   EXPECT_EQ(config.v, (std::vector<int>{1, 2, 3}));
   EXPECT_EQ(config.e, TestEnum::kA);
 
-  updateField(config, "f", 2.0f);
+  EXPECT_TRUE(updateField(config, "f", 2.0f));
   EXPECT_EQ(config.s, "b");
   EXPECT_EQ(config.f, 2.0f);
   EXPECT_EQ(config.v, (std::vector<int>{1, 2, 3}));
   EXPECT_EQ(config.e, TestEnum::kA);
 
-  updateField(config, "v", std::vector<int>{4, 5, 6});
+  EXPECT_TRUE(updateField(config, "v", std::vector<int>{4, 5, 6}));
   EXPECT_EQ(config.s, "b");
   EXPECT_EQ(config.f, 2.0f);
   EXPECT_EQ(config.v, (std::vector<int>{4, 5, 6}));
   EXPECT_EQ(config.e, TestEnum::kA);
 
-  updateField(config, "e", TestEnum::kB);
+  EXPECT_TRUE(updateField(config, "e", "B"));
   EXPECT_EQ(config.s, "b");
   EXPECT_EQ(config.f, 2.0f);
   EXPECT_EQ(config.v, (std::vector<int>{4, 5, 6}));
   EXPECT_EQ(config.e, TestEnum::kB);
+
+  EXPECT_TRUE(updateFieldEnum(config, "e", TestEnum::kC, {"A", "B", "C"}));
+  EXPECT_EQ(config.s, "b");
+  EXPECT_EQ(config.f, 2.0f);
+  EXPECT_EQ(config.v, (std::vector<int>{4, 5, 6}));
+  EXPECT_EQ(config.e, TestEnum::kC);
 }
 
 TEST(UpdateConfig, UpdateSuccessYAML) {
@@ -158,7 +167,7 @@ TEST(UpdateConfig, UpdateFailure) {
   EXPECT_EQ(config.f, 1.0f);
 
   EXPECT_TRUE(isValid(config));
-  // EXPECT_FALSE(updateField(config, "f", "a"));
+  EXPECT_FALSE(updateField(config, "f", "a"));
   EXPECT_EQ(config.s, "a");
   EXPECT_EQ(config.f, 1.0f);
   EXPECT_EQ(config.v, (std::vector<int>{1, 2, 3}));
@@ -170,13 +179,25 @@ TEST(UpdateConfig, UpdateFailure) {
   EXPECT_EQ(config.v, (std::vector<int>{1, 2, 3}));
   EXPECT_EQ(config.e, TestEnum::kA);
 
-  // EXPECT_FALSE(updateField(config, "v", 1));
+  EXPECT_FALSE(updateField(config, "v", 1));
   EXPECT_EQ(config.s, "a");
   EXPECT_EQ(config.f, 1.0f);
   EXPECT_EQ(config.v, (std::vector<int>{1, 2, 3}));
   EXPECT_EQ(config.e, TestEnum::kA);
 
-  // EXPECT_FALSE(updateField(config, "e", -1));
+  EXPECT_FALSE(updateField(config, "e", -1));
+  EXPECT_EQ(config.s, "a");
+  EXPECT_EQ(config.f, 1.0f);
+  EXPECT_EQ(config.v, (std::vector<int>{1, 2, 3}));
+  EXPECT_EQ(config.e, TestEnum::kA);
+
+  EXPECT_FALSE(updateField(config, "e", TestEnum::kA));
+  EXPECT_EQ(config.s, "a");
+  EXPECT_EQ(config.f, 1.0f);
+  EXPECT_EQ(config.v, (std::vector<int>{1, 2, 3}));
+  EXPECT_EQ(config.e, TestEnum::kA);
+
+  EXPECT_FALSE(updateFieldEnum(config, "e", TestEnum::kA));
   EXPECT_EQ(config.s, "a");
   EXPECT_EQ(config.f, 1.0f);
   EXPECT_EQ(config.v, (std::vector<int>{1, 2, 3}));
