@@ -40,6 +40,7 @@
 #include <string>
 #include <vector>
 
+#include <yaml-cpp/node/node.h>
 #include <yaml-cpp/yaml.h>
 
 #include "config_utilities/factory.h"
@@ -193,6 +194,19 @@ std::unique_ptr<BaseT> createFromYamlFileWithNamespace(const std::string& file_n
                                                        ConstructorArguments... args) {
   const YAML::Node node = internal::lookupNamespace(YAML::LoadFile(file_name), name_space);
   return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(node, args...);
+}
+
+/**
+ * @brief Update the config with the values in a YAML node.
+ * @note This function will update the field and check the validity of the config afterwards. If the config is invalid,
+ * the field will be reset to its original value.
+  * @param config The config to update.
+  * @param node The node containing the field(s) to update.
+  * @param name_space Optionally specify a name space to create the config from. Separate names with slashes '/'.
+ */
+template <typename ConfigT>
+bool updateFromYaml(ConfigT& config, const YAML::Node& node, const std::string& name_space = "") {
+  return updateField(config, node, true, name_space);
 }
 
 }  // namespace config
