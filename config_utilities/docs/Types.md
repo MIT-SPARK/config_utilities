@@ -191,7 +191,7 @@ ns2:
     d: value
 ```
 > **✅ Supports**<br>
-> For easier use, `exit_namespace()` followed by `enter_namespace("ns2")` can be replaced by `switch_namespace("n2")`. To exit all open namespaces one can use `clear_namespace()`.
+> For easier use, `exit_namespace()` followed by `enter_namespace("ns2")` can be replaced by `switch_namespace("n2")`. To exit all open namespaces one can use `clear_namespaces()`.
 
 > **✅ Supports**<br>
 > Recall that [subconfig fields](#sub-configs) by default open a namespace with their field name. Any residual namespace left open in a subconfig will be closed when returning to the original config declaration body.
@@ -201,12 +201,12 @@ Equivalently, we provide scoped namespace declarations. The below code will prod
 void declare_config(MyConfig& config){
 field(config.a, "a");
 {
-  Namespace ns("ns1");  // Scoped namespace definition.
+  NameSpace ns("ns1");  // Scoped namespace definition.
   field(config.b, "b");
 }
-Namespace ns("ns2");
+NameSpace ns("ns2");
 field(config.c, "c");
-Namespace more_ns("ns3");
+NameSpace more_ns("ns3");
 field(config.d, "d");
 }
 ```
