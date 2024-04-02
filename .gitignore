@@ -52,6 +52,7 @@ qtcreator-*
 *.ccls*
 *.vscode/
 *.ipynb_checkpoints/
+.cache/
 *~
 
 # Emacs

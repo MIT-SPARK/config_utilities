@@ -47,6 +47,7 @@
 #include "config_utilities/internal/visitor.h"
 #include "config_utilities/internal/yaml_utils.h"
 #include "config_utilities/parsing/yaml.h"  // NOTE(lschmid): This pulls in more than needed buyt avoids code duplication.
+#include "config_utilities/update.h"
 
 namespace config {
 
@@ -176,6 +177,21 @@ std::unique_ptr<BaseT> createFromROSWithNamespace(const ros::NodeHandle& nh,
                                                   ConstructorArguments... args) {
   ros::NodeHandle ns_nh = ros::NodeHandle(nh, name_space);
   return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(internal::rosToYaml(ns_nh), args...);
+}
+
+/**
+ * @brief Update the config with the current parameters in ROS.
+ * @note This function will update the field and check the validity of the config afterwards. If the config is invalid,
+ * the field will be reset to its original value.
+  * @param config The config to update.
+  * @param nh The ROS nodehandle to update the config from.
+  * @param name_space Optionally specify a name space to create the config from. Separate names with slashes '/'.
+ */
+template <typename ConfigT>
+bool updateFromRos(ConfigT& config, const ros::NodeHandle& nh, const std::string& name_space = "") {
+  const ros::NodeHandle ns_nh = ros::NodeHandle(nh, name_space);
+  const YAML::Node node = internal::rosToYaml(ns_nh);
+  return updateField(config, node, true, name_space);
 }
 
 }  // namespace config
