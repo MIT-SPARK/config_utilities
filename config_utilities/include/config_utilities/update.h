@@ -45,13 +45,13 @@
 namespace config {
 
 /**
- * @brief Update a field in a config.
+ * @brief Update fields in a config.
  * @note This function will update the field and check the validity of the config afterwards. If the config is invalid,
  * the field will be reset to its original value.
- * @param node The node containing the field to update.
+ * @param node The node containing the fields to update.
  */
 template <typename ConfigT>
-bool updateField(ConfigT& config, YAML::Node node, bool print_warnings = true, const std::string& name_space = "") {
+bool updateFields(ConfigT& config, YAML::Node node, bool print_warnings = true, const std::string& name_space = "") {
   const auto backup = internal::Visitor::getValues(config);
   const internal::MetaData data =
       internal::Visitor::setValues(config, internal::lookupNamespace(node, name_space), print_warnings);
@@ -82,7 +82,7 @@ bool updateField(ConfigT& config,
     return false;
   } else {
     node[field_name] = value;
-    return updateField<ConfigT>(config, node, print_warnings, name_space);
+    return updateFields<ConfigT>(config, node, print_warnings, name_space);
   }
 }
 

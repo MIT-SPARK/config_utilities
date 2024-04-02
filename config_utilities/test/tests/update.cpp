@@ -132,28 +132,28 @@ TEST(UpdateConfig, UpdateSuccessYAML) {
   EXPECT_EQ(config.e, TestEnum::kA);
 
   const YAML::Node update_s = YAML::Load(yaml_update_s);
-  EXPECT_TRUE(updateField(config, update_s, "s"));
+  EXPECT_TRUE(updateFields(config, update_s, "s"));
   EXPECT_EQ(config.s, "b");
   EXPECT_EQ(config.f, 1.0f);
   EXPECT_EQ(config.v, (std::vector<int>{1, 2, 3}));
   EXPECT_EQ(config.e, TestEnum::kA);
 
   const YAML::Node update_f = YAML::Load(yaml_update_f);
-  EXPECT_TRUE(updateField(config, update_f, "f"));
+  EXPECT_TRUE(updateFields(config, update_f, "f"));
   EXPECT_EQ(config.s, "b");
   EXPECT_EQ(config.f, 2.0f);
   EXPECT_EQ(config.v, (std::vector<int>{1, 2, 3}));
   EXPECT_EQ(config.e, TestEnum::kA);
 
   const YAML::Node update_v = YAML::Load(yaml_update_v);
-  EXPECT_TRUE(updateField(config, update_v, "v"));
+  EXPECT_TRUE(updateFields(config, update_v, "v"));
   EXPECT_EQ(config.s, "b");
   EXPECT_EQ(config.f, 2.0f);
   EXPECT_EQ(config.v, (std::vector<int>{4, 5, 6}));
   EXPECT_EQ(config.e, TestEnum::kA);
 
   const YAML::Node update_e = YAML::Load(yaml_update_e);
-  EXPECT_TRUE(updateField(config, update_e, "e"));
+  EXPECT_TRUE(updateFields(config, update_e, "e"));
   EXPECT_EQ(config.s, "b");
   EXPECT_EQ(config.f, 2.0f);
   EXPECT_EQ(config.v, (std::vector<int>{4, 5, 6}));
