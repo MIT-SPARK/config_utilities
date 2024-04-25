@@ -60,6 +60,8 @@ class TestLogger : public internal::Logger {
   int numMessages() const { return messages_.size(); }
   void clear() { messages_.clear(); }
   void print() const;
+  bool hasMessages() const { return !messages_.empty(); }
+  const std::string& lastMessage() const { return messages_.back().second; }
 
   static std::shared_ptr<TestLogger> create();
 

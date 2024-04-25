@@ -102,6 +102,14 @@ void declare_config(DerivedD::Config& config) {
   config::field(config.i, "i");
 }
 
+template <typename T>
+struct TemplatedBase {
+  virtual ~TemplatedBase() = default;
+};
+
+template <typename DerivedT, typename BaseT>
+struct TemplatedDerived : public TemplatedBase<BaseT> {};
+
 TEST(Factory, create) {
   std::unique_ptr<Base> base = create<Base>("DerivedA", 1);
   EXPECT_TRUE(base);
@@ -162,6 +170,62 @@ TEST(Factory, createWithConfig) {
   EXPECT_TRUE(base);
   EXPECT_EQ(base->name(), "DerivedD");
   EXPECT_EQ(dynamic_cast<DerivedD*>(base.get())->config_.i, 3);
+}
+
+TEST(Factory, moduleNameConflicts) {
+  auto logger = TestLogger::create();
+
+  // Allow shadowing of same name for different module types.
+  const auto registration1 = config::Registration<TemplatedBase<int>, TemplatedDerived<int, int>>("name");
+  const auto registration2 = config::Registration<TemplatedBase<float>, TemplatedDerived<float, float>>("name");
+  EXPECT_EQ(logger->numMessages(), 0);
+
+  // Same derived different name. NOTE(lschmid): This is allowed, not sure if we would want to warn users though.
+  const auto registration3 = config::Registration<TemplatedBase<int>, TemplatedDerived<int, int>>("other_name");
+  EXPECT_FALSE(logger->hasMessages());
+
+  // Same derived same name. Not allowed. NOTE(lschmid): Could also be an option to make this allowed (skip silently).
+  const auto registration4 = config::Registration<TemplatedBase<int>, TemplatedDerived<int, int>>("name");
+  EXPECT_EQ(logger->numMessages(), 1);
+  EXPECT_EQ(logger->lastMessage(),
+            "Cannot register already existent type 'name' for BaseT='config::test::TemplatedBase<int>' and "
+            "ConstructorArguments={}.");
+
+  // Different derived same base and same name. Not allowed.
+  const auto registration5 = config::Registration<TemplatedBase<int>, TemplatedDerived<float, int>>("name");
+  EXPECT_EQ(logger->numMessages(), 2);
+  EXPECT_EQ(logger->lastMessage(),
+            "Cannot register already existent type 'name' for BaseT='config::test::TemplatedBase<int>' and "
+            "ConstructorArguments={}.");
+}
+
+TEST(Factory, printRegistryInfo) {
+  const std::string expected = R"""(Modules registered to factories: {
+  config::internal::Formatter(): {
+    'asl', 
+  },
+  config::test::Base(int): {
+    'DerivedA', 
+    'DerivedB', 
+    'DerivedC', 
+    'DerivedD', 
+  },
+  config::test::Base2(): {
+    'Derived2', 
+  },
+  config::test::ProcessorBase(): {
+    'AddString', 
+  },
+  config::test::TemplatedBase<float>(): {
+    'name', 
+  },
+  config::test::TemplatedBase<int>(): {
+    'name', 
+    'other_name', 
+  },
+})""";
+  const std::string modules = internal::ModuleRegistry::getAllRegistered();
+  EXPECT_EQ(modules, expected);
 }
 
 }  // namespace config::test
