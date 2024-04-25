@@ -200,6 +200,9 @@ TEST(Factory, moduleNameConflicts) {
 }
 
 TEST(Factory, printRegistryInfo) {
+  const auto registration1 = config::Registration<TemplatedBase<int>, TemplatedDerived<int, int>>("int_derived");
+  const auto registration2 =
+      config::Registration<TemplatedBase<float>, TemplatedDerived<float, float>>("float_derived");
   const std::string expected = R"""(Modules registered to factories: {
   config::internal::Formatter(): {
     'asl', 
@@ -217,14 +220,14 @@ TEST(Factory, printRegistryInfo) {
     'AddString', 
   },
   config::test::TemplatedBase<float>(): {
-    'name', 
+    'float_derived', 
   },
   config::test::TemplatedBase<int>(): {
-    'name', 
-    'other_name', 
+    'int_derived', 
   },
 })""";
   const std::string modules = internal::ModuleRegistry::getAllRegistered();
+  std::cout << modules << std::endl;
   EXPECT_EQ(modules, expected);
 }
 
