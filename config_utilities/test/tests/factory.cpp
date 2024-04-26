@@ -108,7 +108,10 @@ struct TemplatedBase {
 };
 
 template <typename DerivedT, typename BaseT>
-struct TemplatedDerived : public TemplatedBase<BaseT> {};
+struct TemplatedDerived : public TemplatedBase<BaseT> {
+  explicit TemplatedDerived(bool b = true) : b_(b) {}
+  const bool b_;
+};
 
 TEST(Factory, create) {
   std::unique_ptr<Base> base = create<Base>("DerivedA", 1);
@@ -197,6 +200,17 @@ TEST(Factory, moduleNameConflicts) {
   EXPECT_EQ(logger->lastMessage(),
             "Cannot register already existent type 'name' for BaseT='config::test::TemplatedBase<int>' and "
             "ConstructorArguments={}.");
+
+  // Same name, same base but different constructor arguments. Allowed.
+  const auto registration6 = config::Registration<TemplatedBase<int>, TemplatedDerived<int, int>, bool>("name");
+  EXPECT_EQ(logger->numMessages(), 2);
+
+  // Different constructor args with different name. Allowed but not encouraged.
+  const auto registration7 =
+      config::Registration<TemplatedBase<float>, TemplatedDerived<float, float>, bool>("different_name");
+  EXPECT_EQ(logger->numMessages(), 2);
+
+  std::cout << internal::ModuleRegistry::getAllRegistered() << std::endl;
 }
 
 TEST(Factory, printRegistryInfo) {
