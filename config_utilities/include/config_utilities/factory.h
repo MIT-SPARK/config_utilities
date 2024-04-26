@@ -59,9 +59,10 @@ namespace internal {
 
 class ModuleRegistry {
  public:
-  template <typename BaseT, typename... Args>
+  template <typename BaseT, typename DerivedT, typename... Args>
   static void addModule(const std::string& type) {
     const std::string base_type = typeName<BaseT>();
+    const std::string derived_type = typeName<DerivedT>();
     std::stringstream ss;
     ((ss << typeName<Args>() << ", "), ...);
     std::string arguments = ss.str();
@@ -70,7 +71,7 @@ class ModuleRegistry {
     }
 
     auto& types = instance().modules[base_type][arguments];
-    types.push_back(type);
+    types.emplace_back(type, derived_type);
     std::sort(types.begin(), types.end());
   }
 
@@ -80,8 +81,8 @@ class ModuleRegistry {
     for (auto&& [base_type, args] : instance().modules) {
       for (auto&& [arguments, types] : args) {
         ss << "\n  " << base_type << "(" << arguments << "): {";
-        for (auto&& type : types) {
-          ss << "\n    '" << type << "', ";
+        for (auto&& [type_name, derived_type] : types) {
+          ss << "\n    '" << type_name << "' (" << derived_type << "),";
         }
         ss << "\n  },";
       }
@@ -98,8 +99,8 @@ class ModuleRegistry {
 
   ModuleRegistry() = default;
 
-  // Nested modules: base_type -> args -> registered types.
-  std::map<std::string, std::map<std::string, std::vector<std::string>>> modules;
+  // Nested modules: base_type -> args -> registered <type_name, tpye>.
+  std::map<std::string, std::map<std::string, std::vector<std::pair<std::string, std::string>>>> modules;
 };
 
 // Struct to store the factory methods for the creation of modules.
@@ -262,7 +263,7 @@ struct ObjectFactory {
   static void addEntry(const std::string& type) {
     FactoryMethod method = [](Args... args) { return new DerivedT(args...); };
     if (ModuleMap::addEntry(type, method, typeInfo<BaseT, Args...>())) {
-      ModuleRegistry::addModule<BaseT, Args...>(type);
+      ModuleRegistry::addModule<BaseT, DerivedT, Args...>(type);
     }
   }
 
@@ -291,7 +292,7 @@ struct ObjectWithConfigFactory {
       return new DerivedT(config, args...);
     };
     if (ModuleMap::addEntry(type, method, typeInfo<BaseT, Args...>())) {
-      ModuleRegistry::addModule<BaseT, Args...>(type);
+      ModuleRegistry::addModule<BaseT, DerivedT, Args...>(type);
     }
   }
 

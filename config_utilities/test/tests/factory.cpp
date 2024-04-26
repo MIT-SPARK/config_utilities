@@ -219,25 +219,25 @@ TEST(Factory, printRegistryInfo) {
       config::Registration<TemplatedBase<float>, TemplatedDerived<float, float>>("float_derived");
   const std::string expected = R"""(Modules registered to factories: {
   config::internal::Formatter(): {
-    'asl', 
+    'asl' (config::internal::AslFormatter),
   },
   config::test::Base(int): {
-    'DerivedA', 
-    'DerivedB', 
-    'DerivedC', 
-    'DerivedD', 
+    'DerivedA' (config::test::DerivedA),
+    'DerivedB' (config::test::DerivedB),
+    'DerivedC' (config::test::DerivedC),
+    'DerivedD' (config::test::DerivedD),
   },
   config::test::Base2(): {
-    'Derived2', 
+    'Derived2' (config::test::Derived2),
   },
   config::test::ProcessorBase(): {
-    'AddString', 
+    'AddString' (config::test::AddString),
   },
   config::test::TemplatedBase<float>(): {
-    'float_derived', 
+    'float_derived' (config::test::TemplatedDerived<float, float>),
   },
   config::test::TemplatedBase<int>(): {
-    'int_derived', 
+    'int_derived' (config::test::TemplatedDerived<int, int>),
   },
 })""";
   const std::string modules = internal::ModuleRegistry::getAllRegistered();
