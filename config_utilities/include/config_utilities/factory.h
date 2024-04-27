@@ -224,6 +224,33 @@ struct ConfigWrapperImpl : public ConfigWrapper {
   };
 };
 
+// Registry for config names based on derived types in the factory.
+template <typename BaseT, typename ConfigT>
+class ConfigTypeRegistry {
+ public:
+  static void setTypeName(const std::string& type) {
+    // NOTE(lschmid): This is not forbidden behavior, but is not recommended so for now simply warn the user.
+    std::string& type_ = instance().type_;
+    if (!type_.empty() && type_ != type) {
+      Logger::logInfo("Overwriting type name for config '" + typeName<ConfigT>() + "' for base module '" +
+                      typeName<BaseT>() + "' from '" + instance().type_ + "' to '" + type +
+                      "'. Defining different type identifiers for the same derived module is not recommended.");
+    }
+    type_ = type;
+  }
+  static std::string getType() { return instance().type_; }
+
+ private:
+  static ConfigTypeRegistry& instance() {
+    static ConfigTypeRegistry instance_;
+    return instance_;
+  }
+
+  ConfigTypeRegistry() = default;
+
+  std::string type_;
+};
+
 // Definitions of the Factories.
 // Factory to create configs.
 template <class BaseT>
@@ -237,6 +264,9 @@ struct ConfigFactory {
     FactoryMethod method = [type]() { return new ConfigWrapperImpl<DerivedConfigT>(type); };
     // If the config is already registered, e.g. from different constructor args no warning needs to be printed.
     ModuleMap::addEntry(type, method, "");
+
+    // Register the type name for the config.
+    ConfigTypeRegistry<BaseT, DerivedConfigT>::setTypeName(type);
   }
 
   // Create the config.
