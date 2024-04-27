@@ -56,21 +56,9 @@ template <class BaseT>
 class VirtualConfig {
  public:
   VirtualConfig() = default;
+  ~VirtualConfig() = default;
 
-  /**
-   * @brief Setup a virtual config from a manually specified config struct
-   * @tparam ConfigT Config type corresponding to the approriate config struct registered under type for BaseT
-   * @param conf Config instance to use
-   * @param type Corresponding registration type for the object factory for BaseT
-   */
-  template <typename ConfigT>
-  VirtualConfig(const ConfigT& config, const std::string& type) {
-    auto wrapper = std::make_unique<internal::ConfigWrapperImpl<ConfigT>>(type);
-    wrapper->config = config;
-    config_ = std::move(wrapper);
-  }
-
-  // Copy operators.
+  // Copy and assignment operators.
   VirtualConfig(const VirtualConfig& other) {
     if (other.config_) {
       config_ = other.config_->clone();
@@ -98,6 +86,44 @@ class VirtualConfig {
   }
 
   /**
+   * @brief Assign a config to this virtual config. This will check that the config being assigned is registered for a
+   * module inheritin from the base class of this virtual config, and will use the registered type-string as type.
+   * NOTE: If the same config is registered with different names for different constructor arguments, config assignments
+   * may fail to retrieve the correct name.
+   * @tparam ConfigT The type of the config to assign.
+   * @param config The config to assign.
+   * @returns True if the config was set successfully, false otherwise.
+   */
+  template <typename ConfigT>
+  bool set(const ConfigT& config) {
+    const std::string type = internal::ConfigTypeRegistry<BaseT, ConfigT>::getType();
+    if (type.empty()) {
+      // No type defined for the config.
+      Logger::logError("No module for config '" + internal::typeInfo<ConfigT>() +
+                       "' is registered to the factory for '" + internal::typeInfo<BaseT>() +
+                       "' to set virtual config.");
+      return false;
+    }
+
+    // Assign the config.
+    auto wrapper = std::make_unique<internal::ConfigWrapperImpl<ConfigT>>(type);
+    wrapper->config = config;
+    config_ = std::move(wrapper);
+    return true;
+  }
+
+  template <typename ConfigT>
+  explicit VirtualConfig(const ConfigT& config) {
+    set(config);
+  }
+
+  template <typename ConfigT>
+  VirtualConfig& operator=(const ConfigT& config) {
+    set(config);
+    return *this;
+  }
+
+  /**
    * @brief Check whether the config is populated with a config.
    *
    * @returns True if the config is populated, false otherwise.
@@ -108,6 +134,7 @@ class VirtualConfig {
   /**
    * @brief Specify whether this config is optional. If it is optional, the config not being set is not an error.
    * Otherwise the config must be set to be considered valid. By default virtual configs are not optional.
+   * @param optional Turn optional on (true) or off (false).
    */
   void setOptional(bool optional = true) { optional_ = optional; }
 
