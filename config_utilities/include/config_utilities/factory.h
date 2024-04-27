@@ -37,6 +37,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <map>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -58,23 +59,35 @@ namespace internal {
 
 class ModuleRegistry {
  public:
-  static void addModule(const std::string& type, const std::string& type_info) {
-    instance().modules.emplace_back(type, type_info);
+  template <typename BaseT, typename DerivedT, typename... Args>
+  static void addModule(const std::string& type) {
+    const std::string base_type = typeName<BaseT>();
+    const std::string derived_type = typeName<DerivedT>();
+    std::stringstream ss;
+    ((ss << typeName<Args>() << ", "), ...);
+    std::string arguments = ss.str();
+    if (!arguments.empty()) {
+      arguments = arguments.substr(0, arguments.size() - 2);
+    }
+
+    auto& types = instance().modules[base_type][arguments];
+    types.emplace_back(type, derived_type);
+    std::sort(types.begin(), types.end());
   }
 
   static std::string getAllRegistered() {
     std::stringstream ss;
     ss << "Modules registered to factories: {";
-    auto modules = instance().modules;
-    std::sort(modules.begin(), modules.end());
-    if (!modules.empty()) {
-      ss << "\n";
+    for (auto&& [base_type, args] : instance().modules) {
+      for (auto&& [arguments, types] : args) {
+        ss << "\n  " << base_type << "(" << arguments << "): {";
+        for (auto&& [type_name, derived_type] : types) {
+          ss << "\n    '" << type_name << "' (" << derived_type << "),";
+        }
+        ss << "\n  },";
+      }
     }
-
-    for (auto&& [type, type_info] : modules) {
-      ss << "  " << type << ": \"" << type_info << "\",\n";
-    }
-    ss << "}";
+    ss << "\n}";
     return ss.str();
   }
 
@@ -86,7 +99,8 @@ class ModuleRegistry {
 
   ModuleRegistry() = default;
 
-  std::vector<std::pair<std::string, std::string>> modules;
+  // Nested modules: base_type -> args -> registered <type_name, tpye>.
+  std::map<std::string, std::map<std::string, std::vector<std::pair<std::string, std::string>>>> modules;
 };
 
 // Struct to store the factory methods for the creation of modules.
@@ -105,7 +119,6 @@ struct ModuleMapBase {
     }
 
     map.insert(std::make_pair(type, method));
-    ModuleRegistry::addModule(type, type_info);
     return true;
   }
 
@@ -249,7 +262,9 @@ struct ObjectFactory {
   template <typename DerivedT>
   static void addEntry(const std::string& type) {
     FactoryMethod method = [](Args... args) { return new DerivedT(args...); };
-    ModuleMap::addEntry(type, method, typeInfo<BaseT, Args...>());
+    if (ModuleMap::addEntry(type, method, typeInfo<BaseT, Args...>())) {
+      ModuleRegistry::addModule<BaseT, DerivedT, Args...>(type);
+    }
   }
 
   static std::unique_ptr<BaseT> create(const std::string& type, Args... args) {
@@ -276,7 +291,9 @@ struct ObjectWithConfigFactory {
       Visitor::setValues(config, data);
       return new DerivedT(config, args...);
     };
-    ModuleMap::addEntry(type, method, typeInfo<BaseT, Args...>());
+    if (ModuleMap::addEntry(type, method, typeInfo<BaseT, Args...>())) {
+      ModuleRegistry::addModule<BaseT, DerivedT, Args...>(type);
+    }
   }
 
   static std::unique_ptr<BaseT> create(const YAML::Node& data, Args... args) {
