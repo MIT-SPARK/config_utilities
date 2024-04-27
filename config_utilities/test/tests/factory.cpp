@@ -229,6 +229,7 @@ TEST(Factory, printRegistryInfo) {
   },
   config::test::Base2(): {
     'Derived2' (config::test::Derived2),
+    'Derived2A' (config::test::Derived2A),
   },
   config::test::ProcessorBase(): {
     'AddString' (config::test::AddString),
