@@ -230,17 +230,25 @@ class ConfigTypeRegistry {
  public:
   static void setTypeName(const std::string& type) {
     // NOTE(lschmid): This is not forbidden behavior, but is not recommended so for now simply warn the user.
+    std::string& type_ = instance().type_;
     if (!type_.empty() && type_ != type) {
       Logger::logInfo("Overwriting type name for config '" + typeName<ConfigT>() + "' for base module '" +
-                      typeName<BaseT>() + "' from '" + type_ + "' to '" + type +
+                      typeName<BaseT>() + "' from '" + instance().type_ + "' to '" + type +
                       "'. Defining different type identifiers for the same derived module is not recommended.");
     }
     type_ = type;
   }
-  static std::string getType() { return type_; }
+  static std::string getType() { return instance().type_; }
 
  private:
-  inline static std::string type_;
+  static ConfigTypeRegistry& instance() {
+    static ConfigTypeRegistry instance_;
+    return instance_;
+  }
+
+  ConfigTypeRegistry() = default;
+
+  std::string type_;
 };
 
 // Definitions of the Factories.

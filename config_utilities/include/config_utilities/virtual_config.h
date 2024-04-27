@@ -99,9 +99,9 @@ class VirtualConfig {
     const std::string type = internal::ConfigTypeRegistry<BaseT, ConfigT>::getType();
     if (type.empty()) {
       // No type defined for the config.
-      Logger::logError("No module for config '" + internal::typeInfo<ConfigT>() +
-                       "' is registered to the factory for '" + internal::typeInfo<BaseT>() +
-                       "' to set virtual config.");
+      internal::Logger::logError("No module for config '" + internal::typeName<ConfigT>() +
+                                 "' is registered to the factory for '" + internal::typeName<BaseT>() +
+                                 "' to set virtual config.");
       return false;
     }
 

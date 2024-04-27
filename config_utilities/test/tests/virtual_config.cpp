@@ -46,14 +46,12 @@
 
 namespace config::test {
 
-class Base2 {
- public:
+struct Base2 {
   virtual std::string name() const = 0;
   virtual ~Base2() = default;
 };
 
-class Derived2 : public Base2 {
- public:
+struct Derived2 : public Base2 {
   struct Config {
     float f = 0.f;
     std::string s = "test string";
@@ -66,15 +64,42 @@ class Derived2 : public Base2 {
 };
 
 void declare_config(Derived2::Config& config) {
-  // Declare the config using the config utilities.
   config::name("Derived2");
   config::field(config.f, "f", "m/s");
   config::field(config.s, "s");
   config::check(config.f, config::CheckMode::GE, 0.f, "f");
 }
 
-class ObjectWithBase {
- public:
+struct Derived2A : public Base2 {
+  struct Config {
+    int i = 0;
+  };
+  explicit Derived2A(const Config& config) : config_(config) {}
+  std::string name() const override { return "Derived2A"; }
+  const Config config_;
+  inline static const auto registration_ =
+      config::RegistrationWithConfig<Base2, Derived2A, Derived2A::Config>("Derived2A");
+};
+
+void declare_config(Derived2A::Config& config) {
+  config::name("Derived2A");
+  config::field(config.i, "i");
+}
+
+struct NotDerivedFromBase2 {
+  struct Config {
+    bool b = false;
+    VirtualConfig<Base2> base_config{Derived2::Config()};
+  };
+};
+
+void declare_config(NotDerivedFromBase2::Config& config) {
+  config::name("NotDerivedFromBase2");
+  config::field(config.b, "b");
+  config::field(config.base_config, "base_config");
+}
+
+struct ObjectWithBase {
   struct Config {
     double d = 0.0;
     VirtualConfig<Base2> base_config;
@@ -146,6 +171,57 @@ TEST(VirtualConfig, copyMove) {
   VirtualConfig<Base2> config5(std::move(config));
   EXPECT_TRUE(config5.isSet());
   EXPECT_EQ(config5.getType(), "Derived2");
+}
+
+TEST(VirtualConfig, assignConfig) {
+  Derived2::Config derived_config;
+  derived_config.f = -1.f;
+  derived_config.s = "abcdef";
+
+  // Set a virtual config to a specified config.
+  VirtualConfig<Base2> config;
+  EXPECT_FALSE(config.isSet());
+  config.set(derived_config);
+  EXPECT_TRUE(config.isSet());
+  EXPECT_EQ(config.getType(), "Derived2");
+  auto derived = config.create();
+  EXPECT_TRUE(derived);
+  EXPECT_EQ(derived->name(), "Derived2");
+  const auto& realized_config = dynamic_cast<Derived2*>(derived.get())->config_;
+  EXPECT_EQ(realized_config.f, -1.f);
+  EXPECT_EQ(realized_config.s, "abcdef");
+
+  // Operator= should overwrite the config.
+  Derived2A::Config derived_config_a;
+  derived_config_a.i = 1;
+  config = derived_config_a;
+  EXPECT_TRUE(config.isSet());
+  EXPECT_EQ(config.getType(), "Derived2A");
+  derived = config.create();
+  EXPECT_TRUE(derived);
+  EXPECT_EQ(derived->name(), "Derived2A");
+  const auto& realized_config_a = dynamic_cast<Derived2A*>(derived.get())->config_;
+  EXPECT_EQ(realized_config_a.i, 1);
+
+  // Constructor and list initialization.
+  VirtualConfig<Base2> config2(derived_config);
+  EXPECT_TRUE(config2.isSet());
+  EXPECT_EQ(config2.getType(), "Derived2");
+
+  NotDerivedFromBase2::Config not_derived_config;
+  EXPECT_TRUE(not_derived_config.base_config.isSet());
+  EXPECT_EQ(not_derived_config.base_config.getType(), "Derived2");
+
+  // Fail to set a config that is not registered.
+  auto logger = TestLogger::create();
+  VirtualConfig<Base2> config3;
+  const bool success = config3.set(not_derived_config);
+  EXPECT_FALSE(success);
+  EXPECT_FALSE(config3.isSet());
+  EXPECT_EQ(logger->numMessages(), 1);
+  EXPECT_EQ(logger->messages()[0].second,
+            "No module for config 'config::test::NotDerivedFromBase2::Config' is registered to the factory for "
+            "'config::test::Base2' to set virtual config.");
 }
 
 TEST(VirtualConfig, create) {
