@@ -103,7 +103,7 @@ To ensure that a config is valid use `checkValid()`. This will throw and excepti
 ```c++
 class MyObject {
  public:
-  explicit MyObject(const MyConfig& cfg) : config_(config::checkValid(cfg), object_(config_)) {}
+  explicit MyObject(const MyConfig& cfg) : config_(config::checkValid(cfg)), object_(config_) {}
 
 private:
   const MyConfig config_;
