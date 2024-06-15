@@ -134,7 +134,7 @@ sudo make install
 ```
 
 ## How to `config_utilities`
-We provide detailed introductions about everything you need to know about `config_utilities` in the following [tutorials](config_utilities/docs/README.md#tutorials) and some verbose example [demos](config_utilities/docs/README.md#demos) that you can run.
+We provide detailed introductions about everything you need to know about `config_utilities` in the following [tutorials](docs/README.md#tutorials) and some verbose example [demos](docs/README.md#demos) that you can run.
 
 The (non-ros) demos can be run via the `run_demo.py` utility in the scripts directory. If you are building this library via catkin, you can run one of the following to see the results of one of the corresponding demo files:
 ```
