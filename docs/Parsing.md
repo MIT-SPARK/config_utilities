@@ -42,7 +42,7 @@ MyConfig config = fromYamlFile<MyConfig>(file_path, "a/b/c");
 > ```c++
 > // Works! Expects the yaml data to contain a list of configs, e.g. [{config1 params}, {config2 params}, ...].
 > std::vector<MyConfig> configs = fromYamlFile<std::vector<MyConfig>>(file_path, ns);
-> 
+>
 > // Works, too!
 > VirtualConfig<MyBase> virtual_config = fromYaml<VirtualConfig<MyBase>>(file_path, ns);
 > ```
