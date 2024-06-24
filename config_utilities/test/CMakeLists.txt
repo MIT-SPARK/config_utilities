@@ -1,30 +1,4 @@
-include(FetchContent)
-FetchContent_Declare(
-  googletest
-  GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG b796f7d44681514f58a683a3a71ff17c94edb0c1 # v1.13.0
-  INSTALL_COMMAND "")
-
-# note that FetchContent_MakeAvailable automatically installs any added
-# fetch-content project, see:
-# https://stackoverflow.com/questions/65527126/disable-install-for-fetchcontent
-FetchContent_GetProperties(googletest)
-if(NOT googletest_POPULATED)
-  FetchContent_Populate(googletest)
-  # We want to build static gtest libraries to avoid issues, so we have to cache
-  # and reset the relevant variables, see:
-  # https://stackoverflow.com/questions/62101576/using-fetchcontent-declare-together-with-cmake-args
-  set(BUILD_SHARED_LIBS_THIS ${BUILD_SHARED_LIBS})
-  set(BUILD_SHARED_LIBS
-      OFF
-      CACHE INTERNAL "Build static libraries")
-  add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR}
-                   EXCLUDE_FROM_ALL)
-  set(BUILD_SHARED_LIBS
-      ${BUILD_SHARED_LIBS_THIS}
-      CACHE BOOL "Build SHARED libraries")
-endif()
-
+find_package(GTest REQUIRED)
 include(GoogleTest)
 enable_testing()
 
