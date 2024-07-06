@@ -162,8 +162,8 @@ struct Path {
    * @brief Check if a path has a specific extension. Supports extensions with and without leading dots. E.g. ".txt" and
    * "txt" are both valid.
    * @param param The path to check.
-   * @param name The name of the parameter to print in warnings.
    * @param extension The extension to check for.
+   * @param name The name of the parameter to print in warnings.
    */
   class HasExtension : public Check {
    public:
