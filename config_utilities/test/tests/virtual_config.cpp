@@ -330,4 +330,22 @@ Warning: Check [3/3] failed for 'base_config.f': param >= 0 (is: '-1').
   EXPECT_EQ(msg, expected);
 }
 
+TEST(VirtualConfig, getUnderlying) {
+  Settings().restoreDefaults();
+
+  VirtualConfig<Base2> config;
+  EXPECT_FALSE(config.isSet());
+  EXPECT_FALSE(config.getUnderlying<Derived2>());
+
+  config = Derived2::Config();
+  EXPECT_TRUE(config.isSet());
+  EXPECT_FALSE(config.getUnderlying<Derived2A::Config>());
+  EXPECT_TRUE(config.getUnderlying<Derived2::Config>());
+
+  config = Derived2A::Config();
+  EXPECT_TRUE(config.isSet());
+  EXPECT_FALSE(config.getUnderlying<Derived2::Config>());
+  EXPECT_TRUE(config.getUnderlying<Derived2A::Config>());
+}
+
 }  // namespace config::test

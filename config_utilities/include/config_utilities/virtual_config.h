@@ -146,6 +146,25 @@ class VirtualConfig {
   std::string getType() const { return config_ ? config_->type : "Uninitialized"; }
 
   /**
+   * @brief Get the underlying config that this holds, if set
+   * @tparam ConfigT Derived type of underlying config
+   * @returns Pointer to the underlying config if valid and the same type, nullptr otherwise
+   */
+  template <typename ConfigT>
+  const ConfigT* getUnderlying() const {
+    if (!config_) {
+      return nullptr;
+    }
+
+    auto derived_wrapper = dynamic_cast<const internal::ConfigWrapperImpl<ConfigT>*>(config_.get());
+    if (!derived_wrapper) {
+      return nullptr;
+    }
+
+    return &derived_wrapper->config;
+  }
+
+  /**
    * @brief Create the DerivedT object specified in the config.
    *
    * @tparam ConstructorArguments Type of ptional additional arguments to pass to the constructor of DerivedT.
