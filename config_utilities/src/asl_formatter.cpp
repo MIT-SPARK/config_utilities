@@ -145,6 +145,7 @@ std::string AslFormatter::formatMissingRecursive(const MetaData& data, const std
   }
 
   for (const auto& sub_data : data.sub_configs) {
+    // TODO(nathan) think about indenting and actually showing subconfig structure
     result += formatMissingRecursive(sub_data, sev, length);
   }
 
