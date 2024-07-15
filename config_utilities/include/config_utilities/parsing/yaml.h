@@ -62,8 +62,7 @@ namespace config {
 template <typename ConfigT>
 ConfigT fromYaml(const YAML::Node& node, const std::string& name_space = "") {
   ConfigT config;
-  const auto& settings = internal::Settings::instance();
-  internal::Visitor::setValues(config, internal::lookupNamespace(node, name_space), true, settings.print_missing);
+  internal::Visitor::setValues(config, internal::lookupNamespace(node, name_space), true);
   return config;
 }
 

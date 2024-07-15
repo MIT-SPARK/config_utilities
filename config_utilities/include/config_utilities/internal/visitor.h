@@ -64,7 +64,6 @@ struct Visitor {
   static MetaData setValues(ConfigT& config,
                             const YAML::Node& node,
                             const bool print_warnings = true,
-                            const bool print_missing = false,
                             const std::string& name_space = "",
                             const std::string& field_name = "");
 

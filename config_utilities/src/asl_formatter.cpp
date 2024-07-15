@@ -105,7 +105,7 @@ std::string AslFormatter::formatMissingImpl(const MetaData& data, const std::str
                        internal::printCenter(resolveConfigName(data), print_width, '=') + "\n";
 
   // Format all checks and errors.
-  result += formatErrorsRecursive(data, sev, print_width);
+  result += formatMissingRecursive(data, sev, print_width);
   return result + std::string(print_width, '=');
 }
 
@@ -131,7 +131,7 @@ std::string AslFormatter::formatMissingRecursive(const MetaData& data, const std
     }
 
     const std::string rendered_name = "'" + name_prefix_ + field_info.name + "'";
-    const auto msg = sev + "Missing field" + rendered_name + "!";
+    const auto msg = sev + "Missing field " + rendered_name + "!";
     result.append(wrapString(msg, length, sev.length(), false) + "\n");
   }
 
