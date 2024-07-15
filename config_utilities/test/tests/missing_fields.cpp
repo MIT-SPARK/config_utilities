@@ -36,16 +36,11 @@
 #include <gtest/gtest.h>
 
 #include "config_utilities/config.h"
-#include "config_utilities/config_utilities.h"
-#include "config_utilities/parsing/yaml.h"
+#include "config_utilities/formatting/asl.h"
+#include "config_utilities/internal/visitor.h"
+#include "config_utilities/printing.h"
 
 namespace config::test {
-
-struct MissingSettingsGuard {
-  MissingSettingsGuard() { Settings().print_missing = true; }
-
-  ~MissingSettingsGuard() { Settings().restoreDefaults(); }
-};
 
 struct SimpleConfig {
   double a = 1.0;
@@ -67,12 +62,32 @@ bool operator==(const SimpleConfig& lhs, const SimpleConfig& rhs) {
 void PrintTo(const SimpleConfig& config, std::ostream* os) { *os << toString(config); }
 
 TEST(MissingFields, ParseMissing) {
-  MissingSettingsGuard guard;
   const std::string contents = "{a: 2.0, b: 3}";
   const auto node = YAML::Load(contents);
-  const auto result = config::fromYaml<SimpleConfig>(node);
+  SimpleConfig result;
+  const auto data = config::internal::Visitor::setValues(result, node);
+
   SimpleConfig expected{2.0, 3, "3"};
   EXPECT_EQ(expected, result);
+
+  EXPECT_TRUE(data.hasMissing());
+  const auto message = internal::Formatter::formatMissing(data);
+  const std::string expected_message = R"msg( 'SimpleConfig':
+================================= SimpleConfig =================================
+Warning: Missing field 'c'!
+================================================================================)msg";
+  EXPECT_EQ(message, expected_message);
+}
+
+TEST(MissingFields, ParseNoMissing) {
+  const std::string contents = "{a: 2.0, b: 3, c: '4'}";
+  const auto node = YAML::Load(contents);
+  SimpleConfig result;
+  const auto data = config::internal::Visitor::setValues(result, node);
+
+  SimpleConfig expected{2.0, 3, "4"};
+  EXPECT_EQ(expected, result);
+  EXPECT_FALSE(data.hasMissing());
 }
 
 }  // namespace config::test
