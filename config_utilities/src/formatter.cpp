@@ -41,6 +41,10 @@ std::string Formatter::formatErrors(const MetaData& data, const std::string& wha
   return formatter_->formatErrorsImpl(data, what, severity);
 }
 
+std::string Formatter::formatMissing(const MetaData& data, const std::string& what, const Severity severity) {
+  return formatter_->formatMissingImpl(data, what, severity);
+}
+
 std::string Formatter::formatConfig(const MetaData& data) { return formatter_->formatConfigImpl(data); }
 
 std::string Formatter::formatConfigs(const std::vector<MetaData>& data) { return formatter_->formatConfigsImpl(data); }
@@ -52,14 +56,18 @@ void Formatter::setFormatter(Formatter::Ptr formatter) {
 }
 
 std::string Formatter::formatErrorsImpl(const MetaData& data, const std::string& what, const Severity severity) {
-  return "No format specified. Specify a format by including one of 'config_utilities/formatters/<preferred_style>.h'.";
+  return getUnspecifiedString();
 }
 
-std::string Formatter::formatConfigImpl(const MetaData& data) {
-  return "No format specified. Specify a format by including one of 'config_utilities/formatters/<preferred_style>.h'.";
+std::string Formatter::formatMissingImpl(const MetaData& data, const std::string& what, const Severity severity) {
+  return getUnspecifiedString();
 }
 
-std::string Formatter::formatConfigsImpl(const std::vector<MetaData>& data) {
+std::string Formatter::formatConfigImpl(const MetaData& data) { return getUnspecifiedString(); }
+
+std::string Formatter::formatConfigsImpl(const std::vector<MetaData>& data) { return getUnspecifiedString(); }
+
+std::string Formatter::getUnspecifiedString() const {
   return "No format specified. Specify a format by including one of 'config_utilities/formatters/<preferred_style>.h'.";
 }
 

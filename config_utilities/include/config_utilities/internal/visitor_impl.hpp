@@ -59,6 +59,7 @@ template <typename ConfigT>
 MetaData Visitor::setValues(ConfigT& config,
                             const YAML::Node& node,
                             const bool print_warnings,
+                            const bool print_missing,
                             const std::string& name_space,
                             const std::string& field_name) {
   Visitor visitor(Mode::kSet, name_space, field_name);
@@ -67,6 +68,11 @@ MetaData Visitor::setValues(ConfigT& config,
   if (print_warnings && visitor.data.hasErrors()) {
     Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Severity::kWarning));
   }
+
+  if (print_missing) {
+    Logger::logWarning(Formatter::formatMissing(visitor.data, "Missing Fields", Severity::kWarning));
+  }
+
   return visitor.data;
 }
 
@@ -110,7 +116,7 @@ MetaData Visitor::subVisit(ConfigT& config,
       data = getValues(config, print_warnings, name_space, field_name);
       break;
     case Visitor::Mode::kSet:
-      data = setValues(config, current_visitor.data.data, print_warnings, name_space, field_name);
+      data = setValues(config, current_visitor.data.data, print_warnings, false, name_space, field_name);
       break;
     case Visitor::Mode::kCheck:
       data = getChecks(config, field_name);
@@ -124,24 +130,28 @@ MetaData Visitor::subVisit(ConfigT& config,
 // Visit a non-config field.
 template <typename T, typename std::enable_if<!isConfig<T>(), bool>::type>
 void Visitor::visitField(T& field, const std::string& field_name, const std::string& unit) {
-  Visitor& visitor = Visitor::instance();
+  auto& visitor = Visitor::instance();
+
+  // record the field that we visited without storing the value
+  // kGet and kGetDefaults will populate the value field
+  auto& info = visitor.data.field_infos.emplace_back();
+  info.name = field_name;
+  info.unit = unit;
+
   if (visitor.mode == Visitor::Mode::kSet) {
     std::string error;
-    YamlParser::fromYaml(visitor.data.data, field_name, field, visitor.name_space, error);
+    info.was_parsed = YamlParser::fromYaml(visitor.data.data, field_name, field, visitor.name_space, error);
     if (!error.empty()) {
       visitor.data.errors.emplace_back(new Warning(field_name, error));
     }
   }
 
   if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetDefaults) {
-    FieldInfo& info = visitor.data.field_infos.emplace_back();
     std::string error;
     YAML::Node node = YamlParser::toYaml(field_name, field, visitor.name_space, error);
     mergeYamlNodes(visitor.data.data, node);
     // This stores a reference to the node in the data.
     info.value = lookupNamespace(node, joinNamespace(visitor.name_space, field_name));
-    info.name = field_name;
-    info.unit = unit;
     if (!error.empty()) {
       visitor.data.errors.emplace_back(new Warning(field_name, error));
     }
@@ -151,13 +161,20 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
 // Visits a non-config field with conversion.
 template <typename Conversion, typename T, typename std::enable_if<!isConfig<T>(), bool>::type>
 void Visitor::visitField(T& field, const std::string& field_name, const std::string& unit) {
-  Visitor& visitor = Visitor::instance();
+  auto& visitor = Visitor::instance();
+
+  // record the field that we visited without storing the value
+  // kGet and kGetDefaults will populate the value field
+  auto& info = visitor.data.field_infos.emplace_back();
+  info.name = field_name;
+  info.unit = unit;
+
   if (visitor.mode == Visitor::Mode::kSet) {
     std::string error;
     auto intermediate = Conversion::toIntermediate(field, error);
     error.clear();  // We don't care about setting up the intermediate just to get data.
 
-    YamlParser::fromYaml(visitor.data.data, field_name, intermediate, visitor.name_space, error);
+    info.was_parsed = YamlParser::fromYaml(visitor.data.data, field_name, intermediate, visitor.name_space, error);
     if (!error.empty()) {
       visitor.data.errors.emplace_back(new Warning(field_name, error));
       error.clear();
@@ -170,7 +187,6 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
   }
 
   if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetDefaults) {
-    FieldInfo& info = visitor.data.field_infos.emplace_back();
     std::string error;
     const auto intermediate = Conversion::toIntermediate(field, error);
     if (!error.empty()) {
@@ -181,8 +197,6 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
     mergeYamlNodes(visitor.data.data, node);
     // This stores a reference to the node in the data.
     info.value = lookupNamespace(node, joinNamespace(visitor.name_space, field_name));
-    info.name = field_name;
-    info.unit = unit;
     if (!error.empty()) {
       visitor.data.errors.emplace_back(new Warning(field_name, error));
     }
@@ -225,7 +239,7 @@ void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_
     size_t index = 0;
     for (const auto& node : nodes) {
       ConfigT& sub_config = config.emplace_back();
-      visitor.data.sub_configs.emplace_back(setValues(sub_config, node, false, "", field_name));
+      visitor.data.sub_configs.emplace_back(setValues(sub_config, node, false, false, "", field_name));
       visitor.data.sub_configs.back().array_config_index = index++;
     }
   }
@@ -269,7 +283,7 @@ void Visitor::visitField(std::map<K, ConfigT>& config, const std::string& field_
     for (auto&& [key, node] : nodes) {
       auto iter = config.emplace(YAML::Node(key).template as<K>(), ConfigT()).first;
       auto& sub_config = iter->second;
-      visitor.data.sub_configs.emplace_back(setValues(sub_config, node, false, "", field_name));
+      visitor.data.sub_configs.emplace_back(setValues(sub_config, node, false, false, "", field_name));
       visitor.data.sub_configs.back().map_config_key = key;
     }
   }

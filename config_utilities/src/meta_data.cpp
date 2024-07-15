@@ -41,11 +41,29 @@ bool MetaData::hasErrors() const {
   if (!errors.empty()) {
     return true;
   }
-  for (const MetaData& sub_config : sub_configs) {
+  for (const auto& sub_config : sub_configs) {
     if (sub_config.hasErrors()) {
       return true;
     }
   }
+  return false;
+}
+
+bool MetaData::hasMissing() const {
+  // first check all current fields
+  for (const auto& field_info : field_infos) {
+    if (!field_info.was_parsed) {
+      return true;
+    }
+  }
+
+  // next check all subconfigs recursively
+  for (const auto& sub_config : sub_configs) {
+    if (sub_config.hasMissing()) {
+      return true;
+    }
+  }
+
   return false;
 }
 

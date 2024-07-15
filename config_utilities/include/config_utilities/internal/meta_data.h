@@ -63,6 +63,9 @@ struct FieldInfo {
 
   // Whether the field corresponds to its default value. Only queried if Settings().indicate_default_values is true.
   bool is_default = false;
+
+  // Whether or not the field was parsed
+  bool was_parsed = false;
 };
 
 // Struct to issue warnings. Currently used for parsing errors but can be extended to other warnings in the future.
@@ -126,6 +129,9 @@ struct MetaData {
 
   // Utility to look up if there's any error messages in the data or its sub-configs.
   bool hasErrors() const;
+
+  // Utility to look up if any fields were not parsed
+  bool hasMissing() const;
 
   // Utility function so not every class needs to write their own recursion.
   void performOnAll(const std::function<void(MetaData&)>& func);
