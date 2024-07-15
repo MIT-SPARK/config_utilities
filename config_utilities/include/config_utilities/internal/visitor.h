@@ -65,7 +65,8 @@ struct Visitor {
                             const YAML::Node& node,
                             const bool print_warnings = true,
                             const std::string& name_space = "",
-                            const std::string& field_name = "");
+                            const std::string& field_name = "",
+                            const bool print_missing = true);
 
   // Get the data stored in the config.
   template <typename ConfigT>
