@@ -310,7 +310,7 @@ void Visitor::visitField(OrderedMap<K, ConfigT>& config, const std::string& fiel
       auto& entry = config.emplace_back();
       entry.first = key.template as<K>();
       visitor.data.sub_configs.emplace_back(setValues(entry.second, node, false, "", field_name, false));
-      visitor.data.sub_configs.back().map_config_key = key.as<std::string>();
+      visitor.data.sub_configs.back().map_config_key = key.template as<std::string>();
     }
   }
 
