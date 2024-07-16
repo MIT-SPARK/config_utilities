@@ -71,7 +71,7 @@ void declare_config(MapConfig& config) {
   check(config.f, GE, 0, "f");
 }
 
-void PrintTo(const MapConfig& conf, std::ostream* os) { *os << toString(conf); }
+void PrintTo(const MapConfig& conf, std::ostream* os) { *os << "\n" << toString(conf); }
 
 struct ConfigWithMaps {
   int i = 0;
@@ -115,6 +115,25 @@ z:
 
   const auto configs = fromYaml<std::map<std::string, MapConfig>>(node);
   std::map<std::string, MapConfig> expected{{"x", {"a", 1}}, {"y", {"b", 2}}, {"z", {"c", 3}}};
+  EXPECT_EQ(configs, expected);
+}
+
+TEST(ConfigMaps, FromYamlMapOrdered) {
+  const std::string yaml_map = R"(
+z:
+  s: "a"
+  f: 1
+x:
+  s: "b"
+  f: 2
+y:
+  s: "c"
+  f: 3
+)";
+  const auto node = YAML::Load(yaml_map);
+
+  const auto configs = fromYaml<OrderedMap<std::string, MapConfig>>(node);
+  OrderedMap<std::string, MapConfig> expected{{"z", {"a", 1}}, {"x", {"b", 2}}, {"y", {"c", 3}}};
   EXPECT_EQ(configs, expected);
 }
 

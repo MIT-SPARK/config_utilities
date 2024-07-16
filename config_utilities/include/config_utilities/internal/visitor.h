@@ -47,6 +47,11 @@
 #include "config_utilities/internal/yaml_parser.h"
 
 namespace config {
+
+//! Aliased vector type to represent "insertion" ordered map (instead of key ordered)
+template <typename Key, typename ConfigT>
+using OrderedMap = std::vector<std::pair<Key, ConfigT>>;
+
 namespace internal {
 
 /**
@@ -99,9 +104,15 @@ struct Visitor {
   template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
   static void visitField(std::vector<ConfigT>& config, const std::string& field_name, const std::string& /* unit */);
 
-  // Map (ordered) of config types.
+  // Map (ordered by key) of config types.
   template <typename Key, typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
   static void visitField(std::map<Key, ConfigT>& config, const std::string& field_name, const std::string& /* unit */);
+
+  // Map (ordered by yaml order) of config types.
+  template <typename Key, typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type = true>
+  static void visitField(OrderedMap<Key, ConfigT>& config,
+                         const std::string& field_name,
+                         const std::string& /* unit */);
 
   // Execute a check.
   static void visitCheck(const CheckBase& check);
@@ -176,6 +187,11 @@ void declare_config(std::vector<T>& vec_config) {
 
 template <typename K, typename T, typename std::enable_if<isConfig<T>(), bool>::type = true>
 void declare_config(std::map<K, T>& map_config) {
+  Visitor::visitField(map_config, "", "");
+}
+
+template <typename K, typename T, typename std::enable_if<isConfig<T>(), bool>::type = true>
+void declare_config(OrderedMap<K, T>& map_config) {
   Visitor::visitField(map_config, "", "");
 }
 
