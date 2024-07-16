@@ -50,13 +50,6 @@ struct SimpleConfig {
   std::string c = "3";
 };
 
-struct SimpleStruct {
-  explicit SimpleStruct(const SimpleConfig& config) : config(config) {}
-
-  const SimpleConfig config;
-  inline static const auto reg = RegistrationWithConfig<SimpleStruct, SimpleStruct, SimpleConfig>("SimpleStruct");
-};
-
 void declare_config(SimpleConfig& config) {
   name("SimpleConfig");
   field(config.a, "a");
@@ -69,37 +62,31 @@ bool operator==(const SimpleConfig& lhs, const SimpleConfig& rhs) {
   return lhs.a == rhs.a && lhs.b == rhs.b && lhs.c == rhs.c;
 }
 
-struct ComposedStruct {
-  struct Config {
-    VirtualConfig<SimpleStruct> simple;
-    double other = 0.0;
-  } const config;
-
-  explicit ComposedStruct(const Config& config) : config(config), simple(config.simple.create()) {}
-  std::unique_ptr<SimpleStruct> simple;
-  inline static const auto reg = RegistrationWithConfig<ComposedStruct, ComposedStruct, Config>("ComposedStruct");
+struct ComposedConfig {
+  SimpleConfig simple;
+  double other = 0.0;
 };
 
-void declare_config(ComposedStruct::Config& config) {
-  name("ComposedStruct");
+void declare_config(ComposedConfig& config) {
+  name("ComposedConfig");
   field(config.simple, "simple");
   field(config.other, "other");
   check(config.other, GT, 1.0, "other");
 }
 
 void PrintTo(const SimpleConfig& config, std::ostream* os) { *os << toString(config); }
-void PrintTo(const ComposedStruct::Config& config, std::ostream* os) { *os << toString(config); }
+void PrintTo(const ComposedConfig& config, std::ostream* os) { *os << toString(config); }
 
 TEST(MissingFields, ParseMissing) {
-  const std::string contents = "{type: ComposedStruct, simple: {type: SimpleStruct, a: 2.0, b: 3}}";
+  const std::string contents = "{simple: {a: 2.0, b: 3}}";
   const auto node = YAML::Load(contents);
-  VirtualConfig<ComposedStruct> result;
+  ComposedConfig result;
   const auto data = config::internal::Visitor::setValues(result, node);
 
   EXPECT_TRUE(data.hasMissing());
   const auto message = internal::Formatter::formatMissing(data);
-  const std::string expected_message = R"msg( 'Virtual Config: ComposedStruct':
-======================== Virtual Config: ComposedStruct ========================
+  const std::string expected_message = R"msg( 'ComposedConfig':
+================================ ComposedConfig ================================
 Warning: Missing field 'other'!
 Warning: Missing field 'simple.c'!
 ================================================================================)msg";

@@ -38,6 +38,7 @@
 #include <gtest/gtest.h>
 
 #include "config_utilities/config.h"
+#include "config_utilities/logging/log_to_stdout.h"
 #include "config_utilities/parsing/yaml.h"
 #include "config_utilities/test/utils.h"
 #include "config_utilities/traits.h"
@@ -221,6 +222,9 @@ TEST(Factory, printRegistryInfo) {
   config::internal::Formatter(): {
     'asl' (config::internal::AslFormatter),
   },
+  config::internal::Logger(): {
+    'stdout' (config::internal::StdoutLogger),
+  },
   config::test::Base(int): {
     'DerivedA' (config::test::DerivedA),
     'DerivedB' (config::test::DerivedB),
@@ -236,9 +240,18 @@ TEST(Factory, printRegistryInfo) {
   },
   config::test::TemplatedBase<float>(): {
     'float_derived' (config::test::TemplatedDerived<float, float>),
+    'name' (config::test::TemplatedDerived<float, float>),
+  },
+  config::test::TemplatedBase<float>(bool): {
+    'different_name' (config::test::TemplatedDerived<float, float>),
   },
   config::test::TemplatedBase<int>(): {
     'int_derived' (config::test::TemplatedDerived<int, int>),
+    'name' (config::test::TemplatedDerived<int, int>),
+    'other_name' (config::test::TemplatedDerived<int, int>),
+  },
+  config::test::TemplatedBase<int>(bool): {
+    'name' (config::test::TemplatedDerived<int, int>),
   },
 })""";
   const std::string modules = internal::ModuleRegistry::getAllRegistered();
