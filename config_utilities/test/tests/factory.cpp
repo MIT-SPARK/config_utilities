@@ -211,12 +211,11 @@ TEST(Factory, moduleNameConflicts) {
       config::Registration<TemplatedBase<float>, TemplatedDerived<float, float>, bool>("different_name");
   EXPECT_EQ(logger->numMessages(), 2);
 
-  std::cout << internal::ModuleRegistry::getAllRegistered() << std::endl;
-}
-
-TEST(Factory, printRegistryInfo) {
-  const auto registration1 = config::Registration<TemplatedBase<int>, TemplatedDerived<int, int>>("int_derived");
-  const auto registration2 =
+  // NOTE(nathan): combining printing and name conflicts tests to avoid different behaviors between clang and gcc (and
+  // local usage vs ctest). Otherwise sometimes the modules from moduleNameConflicts would get compiled into the
+  // registry and sometimes they wouldn't which would lead to inconsistent test behavior...
+  const auto registration8 = config::Registration<TemplatedBase<int>, TemplatedDerived<int, int>>("int_derived");
+  const auto registration9 =
       config::Registration<TemplatedBase<float>, TemplatedDerived<float, float>>("float_derived");
   const std::string expected = R"""(Modules registered to factories: {
   config::internal::Formatter(): {
