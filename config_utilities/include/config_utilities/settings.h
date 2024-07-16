@@ -75,6 +75,9 @@ struct Settings {
   // If true, attempts to print floats and float-like fields with default stream precision
   bool reformat_floats = true;
 
+  // If true, prints fields that had no value present when being parsed
+  bool print_missing = false;
+
   /* Factory settings */
   // The factory will look for this param to deduce the type of the object to be created.
   std::string factory_type_param_name = "type";

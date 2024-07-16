@@ -14,6 +14,7 @@ add_executable(
   tests/enums.cpp
   tests/factory.cpp
   tests/inheritance.cpp
+  tests/missing_fields.cpp
   tests/namespacing.cpp
   tests/path.cpp
   tests/string_utils.cpp

@@ -64,3 +64,5 @@ CATKIN_IGNORE
 # Local utilities
 Notes.txt
 tmp/
+
+compile_commands.json

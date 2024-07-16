@@ -56,6 +56,7 @@ class AslFormatter : public Formatter {
 
  protected:
   std::string formatErrorsImpl(const MetaData& data, const std::string& what, const Severity severity) override;
+  std::string formatMissingImpl(const MetaData& data, const std::string& what, const Severity severity) override;
   std::string formatConfigImpl(const MetaData& data) override;
   std::string formatConfigsImpl(const std::vector<MetaData>& data) override;
 
@@ -70,6 +71,7 @@ class AslFormatter : public Formatter {
 
   // Helper functions.
   std::string formatErrorsRecursive(const MetaData& data, const std::string& sev, const size_t length);
+  std::string formatMissingRecursive(const MetaData& data, const std::string& sev, const size_t length);
   std::string formatChecksInternal(const MetaData& data, const std::string& sev, const size_t length);
   std::string formatErrorsInternal(const MetaData& data, const std::string& sev, const size_t length);
   std::string toStringInternal(const MetaData& data, size_t indent) const;

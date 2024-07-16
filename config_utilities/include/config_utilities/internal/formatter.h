@@ -63,6 +63,11 @@ class Formatter {
                                   const std::string& what = "",
                                   const Severity severity = Severity::kWarning);
 
+  // Format all missing fields in the meta data into the display string.
+  static std::string formatMissing(const MetaData& data,
+                                   const std::string& what = "",
+                                   const Severity severity = Severity::kWarning);
+
   // Format the content of a single config the display string.
   static std::string formatConfig(const MetaData& data);
 
@@ -74,10 +79,12 @@ class Formatter {
 
  protected:
   virtual std::string formatErrorsImpl(const MetaData& data, const std::string& what, const Severity severity);
+  virtual std::string formatMissingImpl(const MetaData& data, const std::string& what, const Severity severity);
   virtual std::string formatConfigImpl(const MetaData& data);
   virtual std::string formatConfigsImpl(const std::vector<MetaData>& data);
 
  private:
+  std::string getUnspecifiedString() const;
   inline static Formatter::Ptr formatter_ = std::make_shared<Formatter>();
 };
 

@@ -94,6 +94,65 @@ std::string AslFormatter::formatErrorsRecursive(const MetaData& data, const std:
   return result;
 }
 
+std::string AslFormatter::formatMissingImpl(const MetaData& data, const std::string& what, const Severity severity) {
+  const std::string sev = severityToString(severity) + ": ";
+  const size_t print_width = Settings::instance().print_width;
+  is_first_divider_ = true;
+  name_prefix_ = "";
+
+  // Header line.
+  std::string result = what + " '" + resolveConfigName(data) + "':\n" +
+                       internal::printCenter(resolveConfigName(data), print_width, '=') + "\n";
+
+  // Format all checks and errors.
+  result += formatMissingRecursive(data, sev, print_width);
+  return result + std::string(print_width, '=');
+}
+
+std::string AslFormatter::formatMissingRecursive(const MetaData& data, const std::string& sev, const size_t length) {
+  const std::string name_prefix_before = name_prefix_;
+  if (Settings::instance().inline_subconfig_field_names) {
+    if (!data.field_name.empty()) {
+      // TOOD(nathan) refactor to put in metadata
+      name_prefix_ += data.field_name;
+      if (data.array_config_index >= 0) {
+        name_prefix_ += "[" + std::to_string(data.array_config_index) + "]";
+      } else if (data.map_config_key) {
+        name_prefix_ += "[" + *data.map_config_key + "]";
+      }
+      name_prefix_ += ".";
+    }
+  }
+
+  std::string result;
+  for (const auto& field_info : data.field_infos) {
+    if (field_info.was_parsed) {
+      continue;
+    }
+
+    const std::string rendered_name = "'" + name_prefix_ + field_info.name + "'";
+    const auto msg = sev + "Missing field " + rendered_name + "!";
+    result.append(wrapString(msg, length, sev.length(), false) + "\n");
+  }
+
+  // Add more dividers if necessary.
+  if (!Settings::instance().inline_subconfig_field_names && !result.empty()) {
+    if (is_first_divider_) {
+      is_first_divider_ = false;
+    } else {
+      result = internal::printCenter(resolveConfigName(data), Settings::instance().print_width, '-') + "\n" + result;
+    }
+  }
+
+  for (const auto& sub_data : data.sub_configs) {
+    // TODO(nathan) think about indenting and actually showing subconfig structure
+    result += formatMissingRecursive(sub_data, sev, length);
+  }
+
+  name_prefix_ = name_prefix_before;
+  return result;
+}
+
 std::string AslFormatter::formatChecksInternal(const MetaData& data, const std::string& sev, const size_t length) {
   std::string result;
   for (const auto& check : data.checks) {

@@ -38,6 +38,7 @@
 #include <gtest/gtest.h>
 
 #include "config_utilities/config.h"
+#include "config_utilities/logging/log_to_stdout.h"
 #include "config_utilities/parsing/yaml.h"
 #include "config_utilities/test/utils.h"
 #include "config_utilities/traits.h"
@@ -210,16 +211,18 @@ TEST(Factory, moduleNameConflicts) {
       config::Registration<TemplatedBase<float>, TemplatedDerived<float, float>, bool>("different_name");
   EXPECT_EQ(logger->numMessages(), 2);
 
-  std::cout << internal::ModuleRegistry::getAllRegistered() << std::endl;
-}
-
-TEST(Factory, printRegistryInfo) {
-  const auto registration1 = config::Registration<TemplatedBase<int>, TemplatedDerived<int, int>>("int_derived");
-  const auto registration2 =
+  // NOTE(nathan): combining printing and name conflicts tests to avoid different behaviors between clang and gcc (and
+  // local usage vs ctest). Otherwise sometimes the modules from moduleNameConflicts would get compiled into the
+  // registry and sometimes they wouldn't which would lead to inconsistent test behavior...
+  const auto registration8 = config::Registration<TemplatedBase<int>, TemplatedDerived<int, int>>("int_derived");
+  const auto registration9 =
       config::Registration<TemplatedBase<float>, TemplatedDerived<float, float>>("float_derived");
   const std::string expected = R"""(Modules registered to factories: {
   config::internal::Formatter(): {
     'asl' (config::internal::AslFormatter),
+  },
+  config::internal::Logger(): {
+    'stdout' (config::internal::StdoutLogger),
   },
   config::test::Base(int): {
     'DerivedA' (config::test::DerivedA),
@@ -236,9 +239,18 @@ TEST(Factory, printRegistryInfo) {
   },
   config::test::TemplatedBase<float>(): {
     'float_derived' (config::test::TemplatedDerived<float, float>),
+    'name' (config::test::TemplatedDerived<float, float>),
+  },
+  config::test::TemplatedBase<float>(bool): {
+    'different_name' (config::test::TemplatedDerived<float, float>),
   },
   config::test::TemplatedBase<int>(): {
     'int_derived' (config::test::TemplatedDerived<int, int>),
+    'name' (config::test::TemplatedDerived<int, int>),
+    'other_name' (config::test::TemplatedDerived<int, int>),
+  },
+  config::test::TemplatedBase<int>(bool): {
+    'name' (config::test::TemplatedDerived<int, int>),
   },
 })""";
   const std::string modules = internal::ModuleRegistry::getAllRegistered();

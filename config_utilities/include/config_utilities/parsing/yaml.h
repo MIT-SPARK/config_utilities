@@ -62,7 +62,7 @@ namespace config {
 template <typename ConfigT>
 ConfigT fromYaml(const YAML::Node& node, const std::string& name_space = "") {
   ConfigT config;
-  internal::Visitor::setValues(config, internal::lookupNamespace(node, name_space));
+  internal::Visitor::setValues(config, internal::lookupNamespace(node, name_space), true);
   return config;
 }
 
@@ -200,9 +200,9 @@ std::unique_ptr<BaseT> createFromYamlFileWithNamespace(const std::string& file_n
  * @brief Update the config with the values in a YAML node.
  * @note This function will update the field and check the validity of the config afterwards. If the config is invalid,
  * the field will be reset to its original value.
-  * @param config The config to update.
-  * @param node The node containing the field(s) to update.
-  * @param name_space Optionally specify a name space to create the config from. Separate names with slashes '/'.
+ * @param config The config to update.
+ * @param node The node containing the field(s) to update.
+ * @param name_space Optionally specify a name space to create the config from. Separate names with slashes '/'.
  */
 template <typename ConfigT>
 bool updateFromYaml(ConfigT& config, const YAML::Node& node, const std::string& name_space = "") {
