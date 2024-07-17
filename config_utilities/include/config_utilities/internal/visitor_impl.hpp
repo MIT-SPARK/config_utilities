@@ -269,7 +269,33 @@ void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_
 
 // Visit a map of subconfigs.
 template <typename K, typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type>
-void Visitor::visitField(std::map<K, ConfigT>& config, const std::string& field_name, const std::string& /* unit */) {
+void Visitor::visitField(std::map<K, ConfigT>& config, const std::string& field_name, const std::string& unit) {
+  Visitor& visitor = Visitor::instance();
+  if (visitor.mode == Visitor::Mode::kGetDefaults) {
+    return;
+  }
+
+  OrderedMap<K, ConfigT> intermediate;
+  // copy current config state if doing something else other than settings the config
+  if (visitor.mode != Visitor::Mode::kSet) {
+    intermediate.insert(intermediate.begin(), config.begin(), config.end());
+  }
+
+  // make use of more general named parsing
+  visitField<K, ConfigT>(intermediate, field_name, unit);
+
+  // assign parsed configs to actual map if we're setting the config
+  if (visitor.mode == Visitor::Mode::kSet) {
+    config.clear();
+    // note that we don't use insert here to guarantee that duplicates behave as expected (overriding with the last)
+    for (const auto& [key, value] : intermediate) {
+      config[key] = value;
+    }
+  }
+}
+
+template <typename K, typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type>
+void Visitor::visitField(OrderedMap<K, ConfigT>& config, const std::string& field_name, const std::string& /* unit */) {
   Visitor& visitor = Visitor::instance();
   if (visitor.mode == Visitor::Mode::kGetDefaults) {
     return;
@@ -281,10 +307,10 @@ void Visitor::visitField(std::map<K, ConfigT>& config, const std::string& field_
     const auto map_ns = visitor.name_space.empty() ? field_name : visitor.name_space + "/" + field_name;
     const auto nodes = getNodeMap(lookupNamespace(visitor.data.data, map_ns));
     for (auto&& [key, node] : nodes) {
-      auto iter = config.emplace(YAML::Node(key).template as<K>(), ConfigT()).first;
-      auto& sub_config = iter->second;
-      visitor.data.sub_configs.emplace_back(setValues(sub_config, node, false, "", field_name, false));
-      visitor.data.sub_configs.back().map_config_key = key;
+      auto& entry = config.emplace_back();
+      entry.first = key.template as<K>();
+      visitor.data.sub_configs.emplace_back(setValues(entry.second, node, false, "", field_name, false));
+      visitor.data.sub_configs.back().map_config_key = key.template as<std::string>();
     }
   }
 

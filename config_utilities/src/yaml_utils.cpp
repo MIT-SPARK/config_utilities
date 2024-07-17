@@ -147,19 +147,22 @@ std::vector<YAML::Node> getNodeArray(const YAML::Node& node) {
   return result;
 }
 
-std::map<std::string, YAML::Node> getNodeMap(const YAML::Node& node) {
-  std::map<std::string, YAML::Node> result;
+std::vector<std::pair<YAML::Node, YAML::Node>> getNodeMap(const YAML::Node& node) {
+  std::vector<std::pair<YAML::Node, YAML::Node>> result;
   if (node.IsMap()) {
     for (const auto& kv_pair : node) {
-      result.emplace(kv_pair.first.as<std::string>(), kv_pair.second);
+      result.emplace_back(kv_pair);
     }
   } else if (node.IsSequence()) {
     size_t index = 0;
     for (const auto& sub_node : node) {
-      result.emplace(std::to_string(index), sub_node);
+      auto& new_pair = result.emplace_back();
+      new_pair.first = index;
+      new_pair.second = YAML::Clone(sub_node);
       ++index;
     }
   }
+
   return result;
 }
 
