@@ -33,50 +33,32 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
-#pragma once
+#include "config_utilities/logging/log_to_stdout.h"
 
 #include <exception>
-#include <memory>
-#include <string>
-#include <utility>
+#include <iostream>
 
 namespace config::internal {
 
-// Enum for different severity levels of logging.
-enum class Severity { kInfo, kWarning, kError, kFatal };
+void StdoutLogger::logImpl(const Severity severity, const std::string& message) {
+  switch (severity) {
+    case Severity::kInfo:
+      std::cout << "[INFO] " << message << std::endl;
+      break;
 
-std::string severityToString(const Severity severity);
+    case Severity::kWarning:
+      std::cout << "\033[33m[WARNING] " << message << "\033[0m" << std::endl;
+      break;
 
-/**
- * @brief Abstract interface class for all logging classes. Calls to logging will happen through a global instance of
- * the logger that can be set by the implementation.
- */
-class Logger {
- public:
-  using Ptr = std::shared_ptr<Logger>;
+    case Severity::kError:
+      std::cout << "\033[31m[ERROR] " << message << "\033[0m" << std::endl;
+      break;
 
-  // Constructor and destructor.
-  Logger() = default;
-  virtual ~Logger() = default;
+    case Severity::kFatal:
+      throw std::runtime_error(message);
+  }
+}
 
-  // Severity levels for logging. Important: Implementations of logFatal are expected to stop execution of the program.
-  static void log(const Severity severity, const std::string& message);
-
-  // Convenience interfaces to log to a specific severity.
-  static void logInfo(const std::string& message);
-  static void logWarning(const std::string& message);
-  static void logError(const std::string& message);
-  static void logFatal(const std::string& message);
-
-  // Set the global logger.
-  static void setLogger(Logger::Ptr logger);
-
- protected:
-  // Interface to be implemented by loggers.
-  virtual void logImpl(const Severity severity, const std::string& message);
-
- private:
-  static Logger::Ptr logger_;
-};
+StdoutLogger::Initializer::Initializer() { Logger::setLogger(std::make_shared<StdoutLogger>()); }
 
 }  // namespace config::internal

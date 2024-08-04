@@ -39,6 +39,8 @@
 
 namespace config::internal {
 
+Logger::Ptr Logger::logger_ = std::make_shared<Logger>();
+
 std::string severityToString(const Severity severity) {
   switch (severity) {
     case Severity::kInfo:

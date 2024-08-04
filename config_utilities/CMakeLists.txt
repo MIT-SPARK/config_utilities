@@ -28,6 +28,7 @@ add_library(
   src/conversions.cpp
   src/formatter.cpp
   src/logger.cpp
+  src/log_to_stdout.cpp
   src/meta_data.cpp
   src/namespacing.cpp
   src/path.cpp

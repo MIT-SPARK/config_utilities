@@ -35,10 +35,6 @@
 
 #pragma once
 
-#include <memory>
-#include <string>
-#include <utility>
-
 #include <ros/console.h>
 
 #include "config_utilities/factory.h"
@@ -78,11 +74,6 @@ class RosLogger : public Logger {
  private:
   // Factory registration to allow setting of formatters via Settings::setLogger().
   inline static const auto registration_ = Registration<Logger, RosLogger>("ros");
-
-  // Initialize the ros logger to be used if included.
-  inline static const struct Initializer {
-    Initializer() { Logger::setLogger(std::make_shared<RosLogger>()); }
-  } initializer_;
 };
 
 }  // namespace config::internal
