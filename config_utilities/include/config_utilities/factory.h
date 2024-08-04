@@ -75,29 +75,17 @@ class ModuleRegistry {
     std::sort(types.begin(), types.end());
   }
 
-  static std::string getAllRegistered() {
-    std::stringstream ss;
-    ss << "Modules registered to factories: {";
-    for (auto&& [base_type, args] : instance().modules) {
-      for (auto&& [arguments, types] : args) {
-        ss << "\n  " << base_type << "(" << arguments << "): {";
-        for (auto&& [type_name, derived_type] : types) {
-          ss << "\n    '" << type_name << "' (" << derived_type << "),";
-        }
-        ss << "\n  },";
-      }
-    }
-    ss << "\n}";
-    return ss.str();
-  }
+  static std::string getAllRegistered();
+  static void lock();
+  static void unlock();
+  static bool locked();
 
  private:
-  static ModuleRegistry& instance() {
-    static ModuleRegistry instance_;
-    return instance_;
-  }
-
+  static std::unique_ptr<ModuleRegistry> s_instance_;
+  static ModuleRegistry& instance();
   ModuleRegistry() = default;
+
+  bool locked_;
 
   // Nested modules: base_type -> args -> registered <type_name, tpye>.
   std::map<std::string, std::map<std::string, std::vector<std::pair<std::string, std::string>>>> modules;
@@ -110,6 +98,10 @@ struct ModuleMapBase {
 
   // Add entries to the map with verbose warnings.
   static bool addEntry(const std::string& type, const FactoryMethod& method, const std::string& type_info) {
+    if (ModuleRegistry::locked()) {
+      return false;
+    }
+
     FactoryMethodMap& map = instance().map;
     if (map.find(type) != map.end()) {
       if (!type_info.empty()) {
@@ -178,30 +170,9 @@ inline std::string typeInfo() {
 }
 
 // Helper function to read the type param from a node.
-inline bool getTypeImpl(const YAML::Node& data, std::string& type, const std::string& param_name) {
-  if (!data.IsMap()) {
-    return false;
-  }
-  if (!data[param_name]) {
-    return false;
-  }
-  try {
-    type = data[param_name].as<std::string>();
-  } catch (const YAML::Exception& e) {
-    return false;
-  }
-  return true;
-}
+bool getTypeImpl(const YAML::Node& data, std::string& type, const std::string& param_name);
 
-inline bool getType(const YAML::Node& data, std::string& type) {
-  // Get the type or print an error.
-  const std::string param_name = Settings::instance().factory_type_param_name;
-  if (!getTypeImpl(data, type, param_name)) {
-    Logger::logError("Could not read the param '" + param_name + "' to deduce the type of the module to create.");
-    return false;
-  }
-  return true;
-}
+bool getType(const YAML::Node& data, std::string& type);
 
 // Wrapper struct for any config type.
 struct ConfigWrapper {
