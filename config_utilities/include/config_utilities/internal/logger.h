@@ -76,6 +76,8 @@ class Logger {
   virtual void logImpl(const Severity severity, const std::string& message);
 
  private:
+  static void dispatch(const Severity severity, const std::string& message);
+
   static Logger::Ptr logger_;
 };
 

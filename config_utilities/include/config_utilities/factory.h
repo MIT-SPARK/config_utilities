@@ -99,6 +99,7 @@ struct ModuleMapBase {
   // Add entries to the map with verbose warnings.
   static bool addEntry(const std::string& type, const FactoryMethod& method, const std::string& type_info) {
     if (ModuleRegistry::locked()) {
+      Logger::logError("Adding type '" + type + "' for " + type_info + " when locked.");
       return false;
     }
 

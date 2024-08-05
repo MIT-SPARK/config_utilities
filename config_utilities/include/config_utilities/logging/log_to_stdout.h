@@ -56,7 +56,7 @@ class StdoutLogger : public Logger {
   inline static const auto registration_ = Registration<Logger, StdoutLogger>("stdout");
 
   // Initialize the stdout logger to be used if included.
-  static const struct Initializer { Initializer(); } initializer_;
+  inline static const struct Initializer { Initializer(); } initializer_ = Initializer();
 };
 
 }  // namespace config::internal

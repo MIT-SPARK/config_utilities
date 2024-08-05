@@ -39,7 +39,7 @@
 
 namespace config::internal {
 
-Logger::Ptr Logger::logger_ = std::make_shared<Logger>();
+Logger::Ptr Logger::logger_;
 
 std::string severityToString(const Severity severity) {
   switch (severity) {
@@ -55,20 +55,28 @@ std::string severityToString(const Severity severity) {
   return "UNKNOWN";
 }
 
-void Logger::log(const Severity severity, const std::string& message) { logger_->logImpl(severity, message); }
+void Logger::log(const Severity severity, const std::string& message) { dispatch(severity, message); }
 
-void Logger::logInfo(const std::string& message) { logger_->logImpl(Severity::kInfo, message); }
+void Logger::logInfo(const std::string& message) { dispatch(Severity::kInfo, message); }
 
-void Logger::logWarning(const std::string& message) { logger_->logImpl(Severity::kWarning, message); }
+void Logger::logWarning(const std::string& message) { dispatch(Severity::kWarning, message); }
 
-void Logger::logError(const std::string& message) { logger_->logImpl(Severity::kError, message); }
+void Logger::logError(const std::string& message) { dispatch(Severity::kError, message); }
 
-void Logger::logFatal(const std::string& message) { logger_->logImpl(Severity::kFatal, message); }
+void Logger::logFatal(const std::string& message) { dispatch(Severity::kFatal, message); }
 
 void Logger::setLogger(Logger::Ptr logger) {
   if (logger) {
     logger_ = std::move(logger);
   }
+}
+
+void Logger::dispatch(const Severity severity, const std::string& message) {
+  if (!logger_) {
+    logger_ = std::make_shared<Logger>();
+  }
+
+  logger_->logImpl(severity, message);
 }
 
 void Logger::logImpl(const Severity severity, const std::string& message) {

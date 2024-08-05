@@ -33,34 +33,23 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
-#include "config_utilities/logging/log_to_stdout.h"
+#include "config_utilities/external_registry.h"
 
-#include <exception>
-#include <iostream>
+#include <boost/dll.hpp>
+#include <config_utilities/factory.h>
 
-namespace config::internal {
+namespace config {
 
-void StdoutLogger::logImpl(const Severity severity, const std::string& message) {
-  switch (severity) {
-    case Severity::kInfo:
-      std::cout << "[INFO] " << message << std::endl;
-      break;
+void loadExternalFactories(const std::filesystem::path& library_path, const std::string& registry_name) {
+  internal::ModuleRegistry::lock();
+  const auto mode = boost::dll::load_mode::append_decorations | boost::dll::load_mode::search_system_folders;
+  boost::dll::shared_library lib(library_path.string(), mode);
 
-    case Severity::kWarning:
-      std::cout << "\033[33m[WARNING] " << message << "\033[0m" << std::endl;
-      break;
+  const auto default_registry_name = library_path.stem().string() + "_registry";
+  const auto func = lib.get<void()>(registry_name.empty() ? default_registry_name : registry_name);
+  func();
 
-    case Severity::kError:
-      std::cout << "\033[31m[ERROR] " << message << "\033[0m" << std::endl;
-      break;
-
-    case Severity::kFatal:
-      throw std::runtime_error(message);
-  }
+  internal::ModuleRegistry::unlock();
 }
 
-StdoutLogger::Initializer::Initializer() {
-  Logger::setLogger(std::make_shared<StdoutLogger>());
-}
-
-}  // namespace config::internal
+}  // namespace config

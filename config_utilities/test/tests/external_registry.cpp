@@ -33,34 +33,17 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
+#include "config_utilities/external_registry.h"
+
+#include <gtest/gtest.h>
+
 #include "config_utilities/logging/log_to_stdout.h"
 
-#include <exception>
-#include <iostream>
+namespace config::test {
 
-namespace config::internal {
-
-void StdoutLogger::logImpl(const Severity severity, const std::string& message) {
-  switch (severity) {
-    case Severity::kInfo:
-      std::cout << "[INFO] " << message << std::endl;
-      break;
-
-    case Severity::kWarning:
-      std::cout << "\033[33m[WARNING] " << message << "\033[0m" << std::endl;
-      break;
-
-    case Severity::kError:
-      std::cout << "\033[31m[ERROR] " << message << "\033[0m" << std::endl;
-      break;
-
-    case Severity::kFatal:
-      throw std::runtime_error(message);
-  }
+TEST(ExternalRegistry, ValidPath) {
+  //internal::Logger::setLogger(std::make_shared<internal::StdoutLogger>());
+  loadExternalFactories("./test_config_utilities_plugins");
 }
 
-StdoutLogger::Initializer::Initializer() {
-  Logger::setLogger(std::make_shared<StdoutLogger>());
-}
-
-}  // namespace config::internal
+}  // namespace config::test

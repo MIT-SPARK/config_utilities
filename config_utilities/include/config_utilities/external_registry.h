@@ -33,34 +33,15 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
-#include "config_utilities/logging/log_to_stdout.h"
+#pragma once
 
-#include <exception>
-#include <iostream>
+#include <filesystem>
 
-namespace config::internal {
+namespace config {
 
-void StdoutLogger::logImpl(const Severity severity, const std::string& message) {
-  switch (severity) {
-    case Severity::kInfo:
-      std::cout << "[INFO] " << message << std::endl;
-      break;
+void loadExternalFactories(const std::filesystem::path& library_path, const std::string& registry_name = "");
 
-    case Severity::kWarning:
-      std::cout << "\033[33m[WARNING] " << message << "\033[0m" << std::endl;
-      break;
+}  // namespace config
 
-    case Severity::kError:
-      std::cout << "\033[31m[ERROR] " << message << "\033[0m" << std::endl;
-      break;
-
-    case Severity::kFatal:
-      throw std::runtime_error(message);
-  }
-}
-
-StdoutLogger::Initializer::Initializer() {
-  Logger::setLogger(std::make_shared<StdoutLogger>());
-}
-
-}  // namespace config::internal
+// TODO(nathan) proper symbol visibility
+#define EXPORT_CONFIG_REGISTRY extern "C" __attribute__((visibility("default")))
