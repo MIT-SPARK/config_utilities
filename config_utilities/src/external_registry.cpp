@@ -40,7 +40,30 @@
 
 namespace config {
 
+template <typename T>
+struct ManagedInstance {
+  void execute(const std::function<void(const T&)>& func) {
+    if (!underlying_) {
+      return;
+    }
+
+    // lock
+    func(*underlying_);
+    // unlock
+  }
+
+  T* underlying_;
+};
+
 void loadExternalFactories(const std::filesystem::path& library_path, const std::string& registry_name) {
+  // execution:
+  // - ModuleRegistry is informed that an external library is about to be loaded
+  // - We load the shared library and the static library initializers trigger
+  //   - Every registration in the external library will trigger
+  //   - Registrations will go through one of three factories
+  //   - Each factory will create a NEW instance of the FactoryMethodMap class (we could side-step this with unique keys and an alloctor, but...) in the external library
+  //   - 
+
   internal::ModuleRegistry::lock();
   const auto mode = boost::dll::load_mode::append_decorations | boost::dll::load_mode::search_system_folders;
   boost::dll::shared_library lib(library_path.string(), mode);
@@ -49,7 +72,12 @@ void loadExternalFactories(const std::filesystem::path& library_path, const std:
   const auto func = lib.get<void()>(registry_name.empty() ? default_registry_name : registry_name);
   func();
 
+  auto stdout_logge = internal::ObjectFactory<internal::Logger>::create("stdout");
+
   internal::ModuleRegistry::unlock();
+  internal::Logger::logError(internal::ModuleRegistry::getAllRegistered());
+
+  auto test_logger = internal::ObjectFactory<internal::Logger>::create("test_logger");
 }
 
 }  // namespace config

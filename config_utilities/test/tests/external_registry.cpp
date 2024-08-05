@@ -42,7 +42,6 @@
 namespace config::test {
 
 TEST(ExternalRegistry, ValidPath) {
-  //internal::Logger::setLogger(std::make_shared<internal::StdoutLogger>());
   loadExternalFactories("./test_config_utilities_plugins");
 }
 
