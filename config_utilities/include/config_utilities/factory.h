@@ -248,6 +248,7 @@ class ConfigTypeRegistry {
 // Factory to create configs.
 template <class BaseT>
 struct ConfigFactory {
+  using Factory = FactoryMethod<ConfigWrapper>;
   inline static constexpr auto registration_info =
       "config::RegistrationWithConfig<BaseT, DerivedT, DerivedConfigT, ConstructorArguments...>";
 
@@ -255,7 +256,7 @@ struct ConfigFactory {
   template <class DerivedConfigT>
   static void addEntry(const std::string& type) {
     const auto locked = ModuleRegistry::locked();
-    auto method = [type, locked]() -> BaseT* {
+    const Factory method = [type, locked]() -> ConfigWrapper* {
       if (locked) {
         Logger::logWarning("external method!");
       }
@@ -265,7 +266,7 @@ struct ConfigFactory {
     // TODO(nathan be careful with extra type info conflicts, see below
     // If the config is already registered, e.g. from different constructor args no warning needs to be printed.
     // ModuleMap::addEntry(type, method, "");
-    ModuleRegistry::addModule<BaseT, DerivedConfigT>(type, method);
+    // ModuleRegistry::addModule<BaseT, DerivedConfigT>(type, method);
 
     // Register the type name for the config.
     ConfigTypeRegistry<BaseT, DerivedConfigT>::setTypeName(type);
@@ -278,20 +279,22 @@ struct ConfigFactory {
       return nullptr;
     }
 
-    return std::unique_ptr<ConfigWrapper>(factory());
+    // return std::unique_ptr<ConfigWrapper>(factory());
+    return nullptr;
   }
 };
 
 // Factory to create DerivedT objects without configs.
 template <class BaseT, typename... Args>
 struct ObjectFactory {
+  using Factory = FactoryMethod<BaseT, Args...>;
   inline static constexpr auto registration_info = "config::Registration<BaseT, DerivedT, ConstructorArguments...>";
 
   // Add entries.
   template <typename DerivedT>
   static void addEntry(const std::string& type) {
     const auto locked = ModuleRegistry::locked();
-    auto method = [locked](Args... args) -> BaseT* {
+    const Factory method = [locked](Args... args) -> BaseT* {
       if (locked) {
         Logger::logWarning("external method!");
       }
@@ -314,9 +317,9 @@ struct ObjectFactory {
 // Factory to create DerivedT objects that use configs.
 template <class BaseT, typename... Args>
 struct ObjectWithConfigFactory {
+  using Factory = FactoryMethod<BaseT, const YAML::Node&, Args...>;
   inline static constexpr auto registration_info =
       "config::RegistrationWithConfig<BaseT, DerivedT, DerivedConfigT, ConstructorArguments...>";
-  using Factory = FactoryMethod<BaseT, const YAML::Node&, Args...>;
 
   // Add entries.
   template <typename DerivedT, typename DerivedConfigT>

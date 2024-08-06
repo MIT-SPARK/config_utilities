@@ -39,24 +39,32 @@ namespace config::internal {
 
 std::unique_ptr<ModuleRegistry> ModuleRegistry::s_instance_ = nullptr;
 
+bool operator<(const ModuleKey& lhs, const ModuleKey& rhs) {
+  if (lhs.base_type == rhs.base_type) {
+    return lhs.arguments != rhs.arguments;
+  }
+
+  return lhs.base_type < rhs.base_type;
+}
+
 std::string ModuleRegistry::getAllRegistered() {
   std::stringstream ss;
   ss << "Modules registered to factories: {";
-  for (auto&& [base_type, args] : instance().modules) {
-    for (auto&& [arguments, types] : args) {
-      ss << "\n  " << base_type << "(" << arguments << "): {";
-      for (auto&& [type_name, derived_type] : types) {
-        ss << "\n    '" << type_name << "' (" << derived_type << "),";
-      }
-      ss << "\n  },";
+  for (const auto& [key, types] : instance().modules) {
+    ss << "\n  " << key.type_info << ": {";
+    for (const auto& [type_name, derived_type] : types) {
+      ss << "\n    '" << type_name << "' (" << derived_type << "),";
     }
+    ss << "\n  },";
   }
   ss << "\n}";
   return ss.str();
 }
 
 void ModuleRegistry::lock() { instance().locked_ = true; }
+
 void ModuleRegistry::unlock() { instance().locked_ = false; }
+
 bool ModuleRegistry::locked() { return instance().locked_; }
 
 ModuleRegistry& ModuleRegistry::instance() {
