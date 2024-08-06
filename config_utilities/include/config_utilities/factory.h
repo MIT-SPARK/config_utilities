@@ -90,6 +90,16 @@ struct ModuleKey {
 
 bool operator<(const ModuleKey& lhs, const ModuleKey& rhs);
 
+// Wrapper struct for any config type.
+struct ConfigWrapper {
+  explicit ConfigWrapper(const std::string& _type) : type(_type) {}
+  virtual ~ConfigWrapper() = default;
+  virtual std::unique_ptr<ConfigWrapper> clone() const = 0;
+  virtual void onDeclareConfig() = 0;
+  virtual std::unique_ptr<ConfigWrapper> createDefault() const = 0;
+  std::string type;
+};
+
 struct ModuleMapBase {};
 
 // Struct to store the factory methods for the creation of modules.
@@ -159,6 +169,16 @@ class ModuleRegistry {
     std::sort(types.begin(), types.end());
   }
 
+  template <typename BaseT, typename ConfigT>
+  static void addConfig(const std::string& type, FactoryMethod<ConfigWrapper> method) {
+    const auto key = ModuleKey::fromTypes<BaseT>();
+    auto& types = instance().modules[key];
+
+    if (locked()) {
+      Logger::logError("Adding config type '" + type + "' for " + key.type_info + " when locked.");
+    }
+  }
+
   template <typename BaseT, typename... Args>
   static FactoryMethod<BaseT, Args...> getModule(const std::string& type, const std::string& registration_info) {
     const auto key = ModuleKey::fromTypes<BaseT, Args...>();
@@ -195,16 +215,6 @@ class ModuleRegistry {
 bool getTypeImpl(const YAML::Node& data, std::string& type, const std::string& param_name);
 
 bool getType(const YAML::Node& data, std::string& type);
-
-// Wrapper struct for any config type.
-struct ConfigWrapper {
-  explicit ConfigWrapper(const std::string& _type) : type(_type) {}
-  virtual ~ConfigWrapper() = default;
-  virtual std::unique_ptr<ConfigWrapper> clone() const = 0;
-  virtual void onDeclareConfig() = 0;
-  virtual std::unique_ptr<ConfigWrapper> createDefault() const = 0;
-  std::string type;
-};
 
 template <typename ConfigT>
 struct ConfigWrapperImpl : public ConfigWrapper {
@@ -266,7 +276,7 @@ struct ConfigFactory {
     // TODO(nathan be careful with extra type info conflicts, see below
     // If the config is already registered, e.g. from different constructor args no warning needs to be printed.
     // ModuleMap::addEntry(type, method, "");
-    // ModuleRegistry::addModule<BaseT, DerivedConfigT>(type, method);
+    ModuleRegistry::addConfig<BaseT, DerivedConfigT>(type, method);
 
     // Register the type name for the config.
     ConfigTypeRegistry<BaseT, DerivedConfigT>::setTypeName(type);
