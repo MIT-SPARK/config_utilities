@@ -61,24 +61,31 @@ template <typename BaseT, typename... Args>
 using FactoryMethod = std::function<BaseT*(Args...)>;
 
 template <typename... Args>
-std::string joinArguments() {
+std::string joinArguments(const std::string& separator = ", ") {
   std::stringstream ss;
-  ((ss << typeName<Args>() << ", "), ...);
+  ((ss << typeName<Args>() << separator), ...);
   if (ss.str().empty()) {
     return "";
   }
 
-  return ss.str().substr(0, ss.str().size() - 2);
+  return ss.str().substr(0, ss.str().size() - separator.size());
+}
+
+// Helper function to get human readable type infos.
+template <class BaseT, typename... Args>
+std::string typeInfo() {
+  return "BaseT='" + typeName<BaseT>() + "' and ConstructorArguments={'" + joinArguments<Args...>("', ") + "'}";
 }
 
 struct ModuleKey {
   template <typename BaseT, typename... Args>
   static ModuleKey fromTypes() {
-    return {typeName<BaseT>(), joinArguments<Args...>()};
+    return {typeName<BaseT>(), joinArguments<Args...>(), typeInfo<BaseT, Args...>()};
   }
 
   const std::string base_type;
   const std::string arguments;
+  const std::string type_info;
 };
 
 bool operator<(const ModuleKey& lhs, const ModuleKey& rhs);
@@ -113,12 +120,6 @@ struct ModuleMap : ModuleMapBase {
   bool hasEntry(const std::string& type, const std::string& type_info, const std::string& registration_info) {
     std::cout << "Creating type '" << type << "' & info '" << type_info << "' from " << &map << std::endl;
 
-    if (map.empty()) {
-      Logger::logError("Cannot create a module of type '" + type + "': No modules registered to the factory for " +
-                       type_info + ". Register modules using a static " + registration_info + " struct.\n" +
-                       ModuleRegistry::getAllRegistered());
-      return false;
-    }
     if (map.find(type) == map.end()) {
       if (!type.empty()) {
         std::string module_list;
@@ -146,31 +147,32 @@ class ModuleRegistry {
  public:
   template <typename BaseT, typename DerivedT, typename... Args>
   static void addModule(const std::string& type, FactoryMethod<BaseT, Args...> method) {
-    const auto key = ModuleKey::fromTypes<BaseT, DerivedT>();
-    const std::string derived_type = typeName<DerivedT>();
-
+    const auto key = ModuleKey::fromTypes<BaseT, Args...>();
     auto& types = instance().modules[key];
 
     if (locked()) {
-      if (!has_type) {
-        Logger::logError("Adding type '" + type + "' for " + type_info + " when locked.");
-      } else {
-        Logger::logWarning("Found duplicate type '" + type + "' for " + type_info + " when locked.");
-      }
+      Logger::logError("Adding type '" + type + "' for " + key.type_info + " when locked.");
     }
 
+    const std::string derived_type = typeName<DerivedT>();
     types.emplace_back(type, derived_type);
     std::sort(types.begin(), types.end());
   }
 
-  template <typename BaseT, typename DerivedT, typename... Args>
-  static bool hasModule(const std::string& type) {
-    const auto key = ModuleKey::fromTypes<BaseT, DerivedT>();
-    const std::string derived_type = typeName<DerivedT>();
+  template <typename BaseT, typename... Args>
+  static FactoryMethod<BaseT, Args...> getModule(const std::string& type, const std::string& registration_info) {
+    const auto key = ModuleKey::fromTypes<BaseT, Args...>();
+    const auto& modules = instance().modules;
+    const auto iter = modules.find(key);
 
-    auto& types = instance().modules[key];
-    const std::pair<std::string, std::string> to_find{type, derived_type};
-    return std::find(types.begin(), types.end(), to_find) != types.end();
+    if (iter == modules.end()) {
+      Logger::logError("Cannot create a module of type '" + type + "': No modules registered to the factory for " +
+                       key.type_info + ". Register modules using a static " + registration_info + " struct.\n" +
+                       getAllRegistered());
+      return {};
+    }
+
+    return {};
   }
 
   static std::string getAllRegistered();
@@ -188,20 +190,6 @@ class ModuleRegistry {
   // Nested modules: base_type + args -> registered <type_name, type>.
   std::map<ModuleKey, std::vector<std::pair<std::string, std::string>>> modules;
 };
-
-// Helper function to get human readable type infos.
-template <class BaseT, typename... Args>
-inline std::string typeInfo() {
-  std::string type_info = "BaseT='" + typeName<BaseT>() + "' and ConstructorArguments={";
-  std::stringstream ss;
-  ((ss << typeName<Args>() << "', '"), ...);
-  const std::string arguments = ss.str();
-  if (!arguments.empty()) {
-    type_info += "'" + arguments.substr(0, arguments.size() - 3);
-  }
-  type_info += "}";
-  return type_info;
-}
 
 // Helper function to read the type param from a node.
 bool getTypeImpl(const YAML::Node& data, std::string& type, const std::string& param_name);
@@ -260,6 +248,9 @@ class ConfigTypeRegistry {
 // Factory to create configs.
 template <class BaseT>
 struct ConfigFactory {
+  inline static constexpr auto registration_info =
+      "config::RegistrationWithConfig<BaseT, DerivedT, DerivedConfigT, ConstructorArguments...>";
+
   // Add entries.
   template <class DerivedConfigT>
   static void addEntry(const std::string& type) {
@@ -282,20 +273,20 @@ struct ConfigFactory {
 
   // Create the config.
   static std::unique_ptr<ConfigWrapper> create(const std::string& type) {
-    if (ModuleMap::hasEntry(
-            type,
-            "BaseT='" + typeName<BaseT>() + "'",
-            "config::RegistrationWithConfig<BaseT, DerivedT, DerivedConfigT, ConstructorArguments...>")) {
-      const FactoryMethod creation_method = ModuleMap::getEntry(type);
-      return std::unique_ptr<ConfigWrapper>(creation_method());
+    const auto factory = ModuleRegistry::getModule<BaseT>(type, registration_info);
+    if (!factory) {
+      return nullptr;
     }
-    return nullptr;
+
+    return std::unique_ptr<ConfigWrapper>(factory());
   }
 };
 
 // Factory to create DerivedT objects without configs.
 template <class BaseT, typename... Args>
 struct ObjectFactory {
+  inline static constexpr auto registration_info = "config::Registration<BaseT, DerivedT, ConstructorArguments...>";
+
   // Add entries.
   template <typename DerivedT>
   static void addEntry(const std::string& type) {
@@ -311,23 +302,27 @@ struct ObjectFactory {
   }
 
   static std::unique_ptr<BaseT> create(const std::string& type, Args... args) {
-    if (ModuleMap::hasEntry(
-            type, typeInfo<BaseT, Args...>(), "config::Registration<BaseT, DerivedT, ConstructorArguments...>")) {
-      const FactoryMethod creation_method = ModuleMap::getEntry(type);
-      return std::unique_ptr<BaseT>(creation_method(args...));
+    const auto factory = ModuleRegistry::getModule<BaseT, Args...>(type, registration_info);
+    if (!factory) {
+      return nullptr;
     }
-    return nullptr;
+
+    return std::unique_ptr<BaseT>(factory(args...));
   }
 };
 
 // Factory to create DerivedT objects that use configs.
 template <class BaseT, typename... Args>
 struct ObjectWithConfigFactory {
+  inline static constexpr auto registration_info =
+      "config::RegistrationWithConfig<BaseT, DerivedT, DerivedConfigT, ConstructorArguments...>";
+  using Factory = FactoryMethod<BaseT, const YAML::Node&, Args...>;
+
   // Add entries.
   template <typename DerivedT, typename DerivedConfigT>
   static void addEntry(const std::string& type) {
     const auto locked = ModuleRegistry::locked();
-    const auto method = [locked](const YAML::Node& data, Args... args) -> BaseT* {
+    const Factory method = [locked](const YAML::Node& data, Args... args) -> BaseT* {
       if (locked) {
         Logger::logWarning("external method!");
       }
@@ -337,7 +332,7 @@ struct ObjectWithConfigFactory {
       return new DerivedT(config, args...);
     };
 
-    ModuleRegistry::addModule<BaseT, DerivedT, Args...>(type, method);
+    ModuleRegistry::addModule<BaseT, DerivedT, const YAML::Node&, Args...>(type, method);
   }
 
   static std::unique_ptr<BaseT> create(const YAML::Node& data, Args... args) {
@@ -346,16 +341,12 @@ struct ObjectWithConfigFactory {
       return nullptr;
     }
 
-    if (ModuleMap::hasEntry(
-            type,
-            typeInfo<BaseT, Args...>(),
-            "config::RegistrationWithConfig<BaseT, DerivedT, DerivedConfigT, ConstructorArguments...>")) {
-      const FactoryMethod creation_method = ModuleMap::getEntry(type);
-
-      return std::unique_ptr<BaseT>(creation_method(data, args...));
+    const auto factory = ModuleRegistry::getModule<BaseT, YAML::Node, Args...>(type, registration_info);
+    if (!factory) {
+      return nullptr;
     }
 
-    return nullptr;
+    return std::unique_ptr<BaseT>(factory(data, args...));
   }
 };
 
