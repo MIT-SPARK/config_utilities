@@ -57,74 +57,46 @@ namespace config {
 
 namespace internal {
 
-class ModuleRegistry {
- public:
-  template <typename BaseT, typename DerivedT, typename... Args>
-  static void addModule(const std::string& type) {
-    const std::string base_type = typeName<BaseT>();
-    const std::string derived_type = typeName<DerivedT>();
-    std::stringstream ss;
-    ((ss << typeName<Args>() << ", "), ...);
-    std::string arguments = ss.str();
-    if (!arguments.empty()) {
-      arguments = arguments.substr(0, arguments.size() - 2);
-    }
+template <typename BaseT, typename... Args>
+using FactoryMethod = std::function<BaseT*(Args...)>;
 
-    auto& types = instance().modules[base_type][arguments];
-    types.emplace_back(type, derived_type);
-    std::sort(types.begin(), types.end());
+template <typename... Args>
+std::string joinArguments() {
+  std::stringstream ss;
+  ((ss << typeName<Args>() << ", "), ...);
+  if (ss.str().empty()) {
+    return "";
   }
 
-  template <typename BaseT, typename DerivedT, typename... Args>
-  static bool hasModule(const std::string& type) {
-    const std::string base_type = typeName<BaseT>();
-    const std::string derived_type = typeName<DerivedT>();
-    std::stringstream ss;
-    ((ss << typeName<Args>() << ", "), ...);
-    std::string arguments = ss.str();
-    if (!arguments.empty()) {
-      arguments = arguments.substr(0, arguments.size() - 2);
-    }
+  return ss.str().substr(0, ss.str().size() - 2);
+}
 
-    auto& types = instance().modules[base_type][arguments];
-    const std::pair<std::string, std::string> to_find{type, derived_type};
-    return std::find(types.begin(), types.end(), to_find) != types.end();
+struct ModuleKey {
+  template <typename BaseT, typename... Args>
+  static ModuleKey fromTypes() {
+    return {typeName<BaseT>(), joinArguments<Args...>()};
   }
 
-  static std::string getAllRegistered();
-  static void lock();
-  static void unlock();
-  static bool locked();
-
- private:
-  static std::unique_ptr<ModuleRegistry> s_instance_;
-  static ModuleRegistry& instance();
-  ModuleRegistry() = default;
-
-  bool locked_;
-
-  // Nested modules: base_type -> args -> registered <type_name, tpye>.
-  std::map<std::string, std::map<std::string, std::vector<std::pair<std::string, std::string>>>> modules;
+  const std::string base_type;
+  const std::string arguments;
 };
 
+bool operator<(const ModuleKey& lhs, const ModuleKey& rhs);
+
+struct ModuleMapBase {};
+
 // Struct to store the factory methods for the creation of modules.
-template <typename FactoryMethod>
-struct ModuleMapBase {
+template <typename BaseT, typename... Args>
+struct ModuleMap : ModuleMapBase {
+  using FactoryMethod = std::function<BaseT*(Args...)>;
   using FactoryMethodMap = std::unordered_map<std::string, FactoryMethod>;
 
+  ModuleMap() = default;
+
   // Add entries to the map with verbose warnings.
-  static bool addEntry(const std::string& type, const FactoryMethod& method, const std::string& type_info) {
-    FactoryMethodMap& map = instance().map;
+  bool addEntry(const std::string& type, const FactoryMethod& method, const std::string& type_info) {
     std::cout << "Adding type '" << type << "' & info '" << type_info << "' @ " << &map << std::endl;
     const auto has_type = map.find(type) != map.end();
-
-    if (ModuleRegistry::locked()) {
-      if (!has_type) {
-        Logger::logError("Adding type '" + type + "' for " + type_info + " when locked.");
-      } else {
-        Logger::logWarning("Found duplicate type '" + type + "' for " + type_info + " when locked.");
-      }
-    }
 
     if (has_type) {
       if (!type_info.empty()) {
@@ -138,8 +110,7 @@ struct ModuleMapBase {
   }
 
   // Check if a requested type is valid with verbose warnings.
-  static bool hasEntry(const std::string& type, const std::string& type_info, const std::string& registration_info) {
-    FactoryMethodMap& map = instance().map;
+  bool hasEntry(const std::string& type, const std::string& type_info, const std::string& registration_info) {
     std::cout << "Creating type '" << type << "' & info '" << type_info << "' from " << &map << std::endl;
 
     if (map.empty()) {
@@ -164,20 +135,58 @@ struct ModuleMapBase {
   }
 
   // Get the factory method for a type. This assumes that the type is valid.
-  static FactoryMethod getEntry(const std::string& type) { return instance().map[type]; }
+  FactoryMethod getEntry(const std::string& type) { return map.at(type); }
 
  private:
-  // Constructor.
-  ModuleMapBase() = default;
-
-  // Singleton access.
-  static ModuleMapBase& instance() {
-    static ModuleMapBase instance_;
-    return instance_;
-  }
-
   // The map.
   FactoryMethodMap map;
+};
+
+class ModuleRegistry {
+ public:
+  template <typename BaseT, typename DerivedT, typename... Args>
+  static void addModule(const std::string& type, FactoryMethod<BaseT, Args...> method) {
+    const auto key = ModuleKey::fromTypes<BaseT, DerivedT>();
+    const std::string derived_type = typeName<DerivedT>();
+
+    auto& types = instance().modules[key];
+
+    if (locked()) {
+      if (!has_type) {
+        Logger::logError("Adding type '" + type + "' for " + type_info + " when locked.");
+      } else {
+        Logger::logWarning("Found duplicate type '" + type + "' for " + type_info + " when locked.");
+      }
+    }
+
+    types.emplace_back(type, derived_type);
+    std::sort(types.begin(), types.end());
+  }
+
+  template <typename BaseT, typename DerivedT, typename... Args>
+  static bool hasModule(const std::string& type) {
+    const auto key = ModuleKey::fromTypes<BaseT, DerivedT>();
+    const std::string derived_type = typeName<DerivedT>();
+
+    auto& types = instance().modules[key];
+    const std::pair<std::string, std::string> to_find{type, derived_type};
+    return std::find(types.begin(), types.end(), to_find) != types.end();
+  }
+
+  static std::string getAllRegistered();
+  static void lock();
+  static void unlock();
+  static bool locked();
+
+ private:
+  static std::unique_ptr<ModuleRegistry> s_instance_;
+  static ModuleRegistry& instance();
+  ModuleRegistry() = default;
+
+  bool locked_;
+
+  // Nested modules: base_type + args -> registered <type_name, type>.
+  std::map<ModuleKey, std::vector<std::pair<std::string, std::string>>> modules;
 };
 
 // Helper function to get human readable type infos.
@@ -251,21 +260,21 @@ class ConfigTypeRegistry {
 // Factory to create configs.
 template <class BaseT>
 struct ConfigFactory {
-  using FactoryMethod = std::function<ConfigWrapper*()>;
-  using ModuleMap = ModuleMapBase<FactoryMethod>;
-
   // Add entries.
   template <class DerivedConfigT>
   static void addEntry(const std::string& type) {
     const auto locked = ModuleRegistry::locked();
-    FactoryMethod method = [type, locked]() {
+    auto method = [type, locked]() -> BaseT* {
       if (locked) {
         Logger::logWarning("external method!");
       }
       return new ConfigWrapperImpl<DerivedConfigT>(type);
     };
+
+    // TODO(nathan be careful with extra type info conflicts, see below
     // If the config is already registered, e.g. from different constructor args no warning needs to be printed.
-    ModuleMap::addEntry(type, method, "");
+    // ModuleMap::addEntry(type, method, "");
+    ModuleRegistry::addModule<BaseT, DerivedConfigT>(type, method);
 
     // Register the type name for the config.
     ConfigTypeRegistry<BaseT, DerivedConfigT>::setTypeName(type);
@@ -287,26 +296,18 @@ struct ConfigFactory {
 // Factory to create DerivedT objects without configs.
 template <class BaseT, typename... Args>
 struct ObjectFactory {
-  using FactoryMethod = std::function<BaseT*(Args...)>;
-  using ModuleMap = ModuleMapBase<FactoryMethod>;
-
   // Add entries.
   template <typename DerivedT>
   static void addEntry(const std::string& type) {
     const auto locked = ModuleRegistry::locked();
-    FactoryMethod method = [locked](Args... args) {
+    auto method = [locked](Args... args) -> BaseT* {
       if (locked) {
         Logger::logWarning("external method!");
       }
       return new DerivedT(args...);
     };
-    std::stringstream ss;
-    ss << "Adding type '" << type << "' that exists globally " << std::boolalpha
-       << ModuleRegistry::hasModule<BaseT, DerivedT, Args...>(type);
-    Logger::logWarning(ss.str());
-    if (ModuleMap::addEntry(type, method, typeInfo<BaseT, Args...>())) {
-      ModuleRegistry::addModule<BaseT, DerivedT, Args...>(type);
-    }
+
+    ModuleRegistry::addModule<BaseT, DerivedT, Args...>(type, method);
   }
 
   static std::unique_ptr<BaseT> create(const std::string& type, Args... args) {
@@ -322,24 +323,21 @@ struct ObjectFactory {
 // Factory to create DerivedT objects that use configs.
 template <class BaseT, typename... Args>
 struct ObjectWithConfigFactory {
-  using FactoryMethod = std::function<BaseT*(const YAML::Node&, Args...)>;
-  using ModuleMap = ModuleMapBase<FactoryMethod>;
-
   // Add entries.
   template <typename DerivedT, typename DerivedConfigT>
   static void addEntry(const std::string& type) {
     const auto locked = ModuleRegistry::locked();
-    FactoryMethod method = [locked](const YAML::Node& data, Args... args) {
+    const auto method = [locked](const YAML::Node& data, Args... args) -> BaseT* {
       if (locked) {
         Logger::logWarning("external method!");
       }
+
       DerivedConfigT config;
       Visitor::setValues(config, data);
       return new DerivedT(config, args...);
     };
-    if (ModuleMap::addEntry(type, method, typeInfo<BaseT, Args...>())) {
-      ModuleRegistry::addModule<BaseT, DerivedT, Args...>(type);
-    }
+
+    ModuleRegistry::addModule<BaseT, DerivedT, Args...>(type, method);
   }
 
   static std::unique_ptr<BaseT> create(const YAML::Node& data, Args... args) {
@@ -347,6 +345,7 @@ struct ObjectWithConfigFactory {
     if (!getType(data, type)) {
       return nullptr;
     }
+
     if (ModuleMap::hasEntry(
             type,
             typeInfo<BaseT, Args...>(),
@@ -355,6 +354,7 @@ struct ObjectWithConfigFactory {
 
       return std::unique_ptr<BaseT>(creation_method(data, args...));
     }
+
     return nullptr;
   }
 };
