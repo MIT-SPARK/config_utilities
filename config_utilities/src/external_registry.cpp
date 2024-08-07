@@ -35,6 +35,8 @@
 
 #include "config_utilities/external_registry.h"
 
+#include <iostream>
+
 #include <boost/dll.hpp>
 #include <config_utilities/factory.h>
 

@@ -114,6 +114,7 @@ struct FactoryMapBase {
   virtual ~FactoryMapBase() = default;
   virtual bool hasEntry(const std::string& type) = 0;
   virtual void removeEntry(const std::string& type) = 0;
+  virtual bool empty() = 0;
 };
 
 //! @brief Struct to store the factory methods for the creation of modules.
@@ -138,6 +139,7 @@ struct FactoryMap : FactoryMapBase {
 
   bool hasEntry(const std::string& type) override { return map.find(type) != map.end(); }
   void removeEntry(const std::string& type) override { map.erase(type); }
+  bool empty() override { return map.empty(); }
 
  private:
   std::map<std::string, Factory> map;
@@ -175,7 +177,6 @@ class ModuleRegistry {
       return false;
     }
 
-    std::cout << "Adding type '" << type << "' & info " << key.typeInfo() << " @ " << derived << std::endl;
     if (!derived->addEntry(type, method)) {
       Logger::logError("Cannot register already existent type '" + type + "' for " + key.typeInfo() + ".");
       return false;

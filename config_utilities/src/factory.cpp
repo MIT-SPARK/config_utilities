@@ -117,6 +117,9 @@ void ModuleRegistry::removeModule(const ModuleInfo& key, const std::string& type
     const auto iter = modules.find(key);
     if (iter != modules.end()) {
       iter->second->removeEntry(type);
+      if (iter->second->empty()) {
+        modules.erase(iter);
+      }
     }
   }
 
@@ -125,6 +128,9 @@ void ModuleRegistry::removeModule(const ModuleInfo& key, const std::string& type
     const auto iter = registry.find(key);
     if (iter != registry.end()) {
       iter->second.erase(type);
+      if (iter->second.empty()) {
+        registry.erase(iter);
+      }
     }
   }
 }

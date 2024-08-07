@@ -231,7 +231,7 @@ TEST(Factory, moduleNameConflicts) {
   config::internal::Logger(): {
     'stdout' (config::internal::StdoutLogger),
   },
-  config::test::Base(*, int): {
+  config::test::Base(_, int): {
     'DerivedC' (config::test::DerivedC),
     'DerivedD' (config::test::DerivedD),
   },
@@ -239,11 +239,11 @@ TEST(Factory, moduleNameConflicts) {
     'DerivedA' (config::test::DerivedA),
     'DerivedB' (config::test::DerivedB),
   },
-  config::test::Base2(*): {
+  config::test::Base2(_): {
     'Derived2' (config::test::Derived2),
     'Derived2A' (config::test::Derived2A),
   },
-  config::test::ProcessorBase(*): {
+  config::test::ProcessorBase(_): {
     'AddString' (config::test::AddString),
   },
   config::test::TemplatedBase<float>(): {
