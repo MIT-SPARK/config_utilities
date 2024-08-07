@@ -117,11 +117,3 @@ void declare_config(DerivedWithConfig::Config& config) {
 }
 
 }  // namespace external
-
-EXPORT_CONFIG_REGISTRY void test_config_utilities_plugins_registry() {
-  std::cout << "Plugin loaded!" << std::endl;
-  config::internal::Logger::logError(config::internal::ModuleRegistry::getAllRegistered());
-  auto stdout_logger = config::internal::ObjectFactory<config::internal::Logger>::create("stdout");
-
-  std::cout << "Plugin finished!" << std::endl;
-}

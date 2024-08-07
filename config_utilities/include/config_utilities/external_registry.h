@@ -42,6 +42,3 @@ namespace config {
 void loadExternalFactories(const std::filesystem::path& library_path, const std::string& registry_name = "");
 
 }  // namespace config
-
-// TODO(nathan) proper symbol visibility
-#define EXPORT_CONFIG_REGISTRY extern "C" __attribute__((visibility("default")))

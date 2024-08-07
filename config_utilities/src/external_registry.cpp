@@ -35,8 +35,6 @@
 
 #include "config_utilities/external_registry.h"
 
-#include <iostream>
-
 #include <boost/dll.hpp>
 #include <config_utilities/factory.h>
 
@@ -108,11 +106,10 @@ ExternalRegistry::~ExternalRegistry() {
 }
 
 void ExternalRegistry::unload(const std::filesystem::path& library_path) {
-  std::cout << "Unloading " << library_path << std::endl;
+  Logger::logInfo("Unloading " + library_path.string());
   auto iter = entries_.find(library_path);
   if (iter != entries_.end()) {
     for (const auto& entry : iter->second) {
-      std::cout << "Unloading " << entry.type << " for " << entry.key.signature() << std::endl;
       internal::ModuleRegistry::removeModule(entry.key, entry.type);
     }
   }
@@ -134,8 +131,6 @@ void ExternalRegistry::registerType(const std::string& current_library,
                                     const ModuleInfo& info,
                                     const std::string& type,
                                     const std::string& derived) {
-  internal::Logger::logInfo("type: '" + type + "', info: " + info.signature() + ", derived: '" + derived + "'");
-
   auto& entries = instance().entries_;
   auto iter = entries.find(current_library);
   if (iter == entries.end()) {

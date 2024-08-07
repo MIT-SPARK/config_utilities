@@ -155,7 +155,6 @@ class ModuleRegistry {
     using Factory = FactoryMethod<BaseT, Args...>;
     if (locked()) {
       if (hasModule(key, type)) {
-        Logger::logWarning("Skipping duplicate type '" + type + "' @ '" + key.typeInfo());
         return false;
       }
 
@@ -287,14 +286,7 @@ struct ConfigFactory {
   // Add entries.
   template <class DerivedConfigT>
   static void addEntry(const std::string& type) {
-    const auto locked = ModuleRegistry::locked();
-    const Factory method = [type, locked]() -> ConfigWrapper* {
-      if (locked) {
-        Logger::logWarning("external method!");
-      }
-      return new ConfigWrapperImpl<DerivedConfigT>(type);
-    };
-
+    const Factory method = [type]() -> ConfigWrapper* { return new ConfigWrapperImpl<DerivedConfigT>(type); };
     if (ModuleRegistry::addModule<ConfigWrapper, DerivedConfigT>(type, method)) {
       ModuleRegistry::registerConfig<BaseT, DerivedConfigT>(type);
     }
@@ -320,14 +312,7 @@ struct ObjectFactory {
   // Add entries.
   template <typename DerivedT>
   static void addEntry(const std::string& type) {
-    const auto locked = ModuleRegistry::locked();
-    const Factory method = [locked](Args... args) -> BaseT* {
-      if (locked) {
-        Logger::logWarning("external method!");
-      }
-      return new DerivedT(args...);
-    };
-
+    const Factory method = [](Args... args) -> BaseT* { return new DerivedT(args...); };
     ModuleRegistry::addModule<BaseT, DerivedT, Args...>(type, method);
   }
 
@@ -351,12 +336,7 @@ struct ObjectWithConfigFactory {
   // Add entries.
   template <typename DerivedT, typename DerivedConfigT>
   static void addEntry(const std::string& type) {
-    const auto locked = ModuleRegistry::locked();
-    const Factory method = [locked](const YAML::Node& data, Args... args) -> BaseT* {
-      if (locked) {
-        Logger::logWarning("external method!");
-      }
-
+    const Factory method = [](const YAML::Node& data, Args... args) -> BaseT* {
       DerivedConfigT config;
       Visitor::setValues(config, data);
       return new DerivedT(config, args...);
