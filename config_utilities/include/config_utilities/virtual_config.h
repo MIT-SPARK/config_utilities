@@ -90,7 +90,7 @@ class VirtualConfig {
    */
   template <typename ConfigT>
   bool set(const ConfigT& config) {
-    const std::string type = internal::ConfigTypeRegistry<BaseT, ConfigT>::getType();
+    const std::string type = internal::ModuleRegistry::getType<BaseT, ConfigT>();
     if (type.empty()) {
       // No type defined for the config.
       internal::Logger::logError("No module for config '" + internal::typeName<ConfigT>() +

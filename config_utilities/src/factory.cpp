@@ -79,6 +79,14 @@ bool operator<(const ModuleInfo& lhs, const ModuleInfo& rhs) {
   return lhs.base_type < rhs.base_type;
 }
 
+bool operator<(const ConfigPair& lhs, const ConfigPair& rhs) {
+  if (lhs.base_type == rhs.base_type) {
+    return lhs.config_type < rhs.config_type;
+  }
+
+  return lhs.base_type < rhs.base_type;
+}
+
 std::string ModuleRegistry::getAllRegistered() {
   std::stringstream ss;
   ss << "Modules registered to factories: {";

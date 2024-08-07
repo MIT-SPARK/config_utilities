@@ -88,6 +88,18 @@ struct ModuleInfo {
 
 bool operator<(const ModuleInfo& lhs, const ModuleInfo& rhs);
 
+struct ConfigPair {
+  template <typename BaseT, typename ConfigT>
+  static ConfigPair fromTypes() {
+    return {typeName<BaseT>(), typeName<ConfigT>()};
+  }
+
+  std::string base_type;
+  std::string config_type;
+};
+
+bool operator<(const ConfigPair& lhs, const ConfigPair& rhs);
+
 // Wrapper struct for any config type.
 struct ConfigWrapper {
   explicit ConfigWrapper(const std::string& _type) : type(_type) {}
@@ -129,17 +141,17 @@ struct FactoryMap : FactoryMapBase {
 class ModuleRegistry {
  public:
   template <typename BaseT, typename DerivedT, typename... Args>
-  static void addModule(const std::string& type, FactoryMethod<BaseT, Args...> method, bool skip_first_arg = false) {
+  static bool addModule(const std::string& type, FactoryMethod<BaseT, Args...> method, bool skip_first_arg = false) {
     const auto key = ModuleInfo::fromTypes<BaseT, Args...>(skip_first_arg);
     using Factory = FactoryMethod<BaseT, Args...>;
     if (locked()) {
       if (hasModule<BaseT, Args...>(type)) {
         Logger::logWarning("Skipping duplicate type '" + type + "' @ '" + key.typeInfo());
-        return;
+        return false;
       }
 
       Logger::logError("Adding type '" + type + "' for " + key.typeInfo() + " when locked.");
-      return;
+      return false;
     }
 
     auto& modules = instance().modules;
@@ -151,18 +163,19 @@ class ModuleRegistry {
     auto derived = dynamic_cast<FactoryMap<Factory>*>(iter->second.get());
     if (!derived) {
       Logger::logFatal("Invalid module map for type '" + type + "' and info " + key.typeInfo());
-      return;
+      return false;
     }
 
     std::cout << "Adding type '" << type << "' & info " << key.typeInfo() << " @ " << derived << std::endl;
     if (!derived->addEntry(type, method)) {
       Logger::logError("Cannot register already existent type '" + type + "' for " + key.typeInfo() + ".");
-      return;
+      return false;
     }
 
     auto& types = instance().type_registry[key];
     types.emplace_back(type, typeName<DerivedT>());
     std::sort(types.begin(), types.end());
+    return true;
   }
 
   template <typename BaseT, typename... Args>
@@ -213,6 +226,32 @@ class ModuleRegistry {
     return factory;
   }
 
+  template <typename BaseT, typename ConfigT>
+  static void registerConfig(const std::string& type) {
+    // NOTE(lschmid): This is not forbidden behavior, but is not recommended so for now simply warn the user.
+    const auto key = ConfigPair::fromTypes<BaseT, ConfigT>();
+    auto& registry = instance().config_registry;
+    auto iter = registry.find(key);
+    if (iter == registry.end()) {
+      registry.emplace(key, type);
+      return;
+    }
+
+    if (iter != registry.end() && iter->second != type) {
+      Logger::logInfo("Overwriting type name for config '" + typeName<ConfigT>() + "' for base module '" +
+                      typeName<BaseT>() + "' from '" + iter->second + "' to '" + type +
+                      "'. Defining different type identifiers for the same derived module is not recommended.");
+      iter->second = type;
+    }
+  }
+
+  template <typename BaseT, typename ConfigT>
+  static std::string getType() {
+    auto& registry = instance().config_registry;
+    auto iter = registry.find(ConfigPair::fromTypes<BaseT, ConfigT>());
+    return iter == registry.end() ? "" : iter->second;
+  }
+
   static std::string getAllRegistered();
   static std::string getRegistered(const ModuleInfo& module);
   static void lock();
@@ -229,6 +268,8 @@ class ModuleRegistry {
   std::map<ModuleInfo, std::unique_ptr<FactoryMapBase>> modules;
   // Nested modules: base_type + args -> registered <type_name, type>.
   std::map<ModuleInfo, std::vector<std::pair<std::string, std::string>>> type_registry;
+  // Mapping between BaseT + ConfigT and underlying string type
+  std::map<ConfigPair, std::string> config_registry;
 };
 
 template <typename ConfigT>
@@ -240,33 +281,6 @@ struct ConfigWrapperImpl : public ConfigWrapper {
   std::unique_ptr<ConfigWrapper> createDefault() const override {
     return std::make_unique<ConfigWrapperImpl<ConfigT>>(type);
   };
-};
-
-// Registry for config names based on derived types in the factory.
-template <typename BaseT, typename ConfigT>
-class ConfigTypeRegistry {
- public:
-  static void setTypeName(const std::string& type) {
-    // NOTE(lschmid): This is not forbidden behavior, but is not recommended so for now simply warn the user.
-    std::string& type_ = instance().type_;
-    if (!type_.empty() && type_ != type) {
-      Logger::logInfo("Overwriting type name for config '" + typeName<ConfigT>() + "' for base module '" +
-                      typeName<BaseT>() + "' from '" + instance().type_ + "' to '" + type +
-                      "'. Defining different type identifiers for the same derived module is not recommended.");
-    }
-    type_ = type;
-  }
-  static std::string getType() { return instance().type_; }
-
- private:
-  static ConfigTypeRegistry& instance() {
-    static ConfigTypeRegistry instance_;
-    return instance_;
-  }
-
-  ConfigTypeRegistry() = default;
-
-  std::string type_;
 };
 
 // Definitions of the Factories.
@@ -288,10 +302,9 @@ struct ConfigFactory {
       return new ConfigWrapperImpl<DerivedConfigT>(type);
     };
 
-    ModuleRegistry::addModule<ConfigWrapper, DerivedConfigT>(type, method);
-
-    // Register the type name for the config.
-    ConfigTypeRegistry<BaseT, DerivedConfigT>::setTypeName(type);
+    if (ModuleRegistry::addModule<ConfigWrapper, DerivedConfigT>(type, method)) {
+      ModuleRegistry::registerConfig<BaseT, DerivedConfigT>(type);
+    }
   }
 
   // Create the config.

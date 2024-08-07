@@ -61,8 +61,7 @@ void loadExternalFactories(const std::filesystem::path& library_path, const std:
   // - We load the shared library and the static library initializers trigger
   //   - Every registration in the external library will trigger
   //   - Registrations will go through one of three factories
-  //   - Each factory will create a NEW instance of the FactoryMethodMap class (we could side-step this with unique keys and an alloctor, but...) in the external library
-  //   - 
+  //     - Config factory registers type which has different instances in different shared objects
 
   internal::ModuleRegistry::lock();
   const auto mode = boost::dll::load_mode::append_decorations | boost::dll::load_mode::search_system_folders;
