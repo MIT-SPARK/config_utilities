@@ -35,6 +35,8 @@
 
 #include "config_utilities/external_registry.h"
 
+#include <iostream>
+
 #include <boost/dll.hpp>
 #include <config_utilities/factory.h>
 
@@ -64,6 +66,10 @@ struct ManagedInstance {
 
 struct LibraryHolderImpl : LibraryHolder {
   explicit LibraryHolderImpl(const std::filesystem::path& library_path) {
+    // These modes are chosen to somewhat closely mimic dlopen. It will both append appropriate prefixes and suffixes
+    // (lib and .so for linux) and allows loading from LD_LIBRARY_PATH by just specfiying the library name.
+    // Your mileage may vary on windows, though it looks like boost::dll does a good job picking defaults that
+    // are equivalent between the platforms.
     const auto mode = boost::dll::load_mode::append_decorations | boost::dll::load_mode::search_system_folders;
     library = boost::dll::shared_library(library_path.string(), mode);
   }
@@ -90,6 +96,7 @@ void LibraryGuard::unload() {
   if (!library_.empty()) {
     ExternalRegistry::instance().unload(library_);
   }
+
   library_.clear();
 }
 
@@ -105,9 +112,13 @@ ExternalRegistry::~ExternalRegistry() {
 }
 
 void ExternalRegistry::unload(const std::filesystem::path& library_path) {
-  Logger::logInfo("Unloading " + library_path.string());
+  // TODO(nathan) toggle this via settings
+  std::cerr << "[Warning] Unloading external library: " << library_path << std::endl;
   auto iter = entries_.find(library_path);
   if (iter != entries_.end()) {
+    // Remove any factories that use code from the external library in question. This will also delete any factory
+    // module maps that become empty (as they rely on types only defined in the plugin). While plugin libraries
+    // shouldn't do this, it's easy to happen in practice and will cause segfaults
     for (const auto& entry : iter->second) {
       internal::ModuleRegistry::removeModule(entry.key, entry.type);
     }
@@ -118,13 +129,24 @@ void ExternalRegistry::unload(const std::filesystem::path& library_path) {
 }
 
 LibraryGuard ExternalRegistry::load(const std::filesystem::path& library_path) {
+  Logger::logInfo("Loading external library: " + library_path.string());
+
+  // this sets the global registry to do two things:
+  //   - it disallows registration of previously registered factories (silently) for registrations linked in the plugin
+  //   - it provides a callback with information about everything that can be successfully registered (so that we can
+  //   unload it when the library unloads)
   ModuleRegistry::lock([library_path](const auto& key, const auto& type, const auto& derived) {
     ExternalRegistry::registerType(library_path, {key, type, derived});
   });
 
+  // load the library. This has the effect of calling all static initializers in the library (during the loading
+  // process), which registers all external factories
   instance().libraries_.emplace(library_path, std::make_unique<LibraryHolderImpl>(library_path));
+
+  // return the global registry to the normal state (erroring on duplicate factories)
   ModuleRegistry::unlock();
 
+  // return a scoped guard that controls when the library is unloaded
   return LibraryGuard(library_path);
 }
 
