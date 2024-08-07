@@ -39,9 +39,41 @@ namespace config::internal {
 
 std::unique_ptr<ModuleRegistry> ModuleRegistry::s_instance_ = nullptr;
 
-bool operator<(const ModuleKey& lhs, const ModuleKey& rhs) {
+std::string ModuleInfo::argumentString(const std::string& separator, const std::string& cap) const {
+  if (arguments.empty()) {
+    return "";
+  }
+
+  if (arguments.size() == 1 && skip_first_arg) {
+    return cap + "*" + cap;
+  }
+
+  auto iter = arguments.begin();
+  if (skip_first_arg) {
+    ++iter;
+  }
+
+  std::string arg_list = cap + (skip_first_arg ? "*" + separator : "");
+  while (iter != arguments.end()) {
+    arg_list.append(*iter);
+    ++iter;
+    if (iter != arguments.end()) {
+      arg_list.append(separator);
+    }
+  }
+
+  return arg_list + cap;
+}
+
+std::string ModuleInfo::typeInfo() const {
+  return "BaseT='" + base_type + "' and ConstructorArguments={" + argumentString("', ", "'") + "}";
+}
+
+std::string ModuleInfo::signature() const { return base_type + "(" + argumentString() + ")"; }
+
+bool operator<(const ModuleInfo& lhs, const ModuleInfo& rhs) {
   if (lhs.base_type == rhs.base_type) {
-    return lhs.arguments != rhs.arguments;
+    return lhs.arguments < rhs.arguments;
   }
 
   return lhs.base_type < rhs.base_type;
@@ -51,7 +83,7 @@ std::string ModuleRegistry::getAllRegistered() {
   std::stringstream ss;
   ss << "Modules registered to factories: {";
   for (const auto& [key, types] : instance().type_registry) {
-    ss << "\n  " << key.type_info << ": {";
+    ss << "\n  " << key.signature() << ": {";
     for (const auto& [type_name, derived_type] : types) {
       ss << "\n    '" << type_name << "' (" << derived_type << "),";
     }
@@ -61,7 +93,7 @@ std::string ModuleRegistry::getAllRegistered() {
   return ss.str();
 }
 
-std::string ModuleRegistry::getRegistered(const ModuleKey& key) {
+std::string ModuleRegistry::getRegistered(const ModuleInfo& key) {
   const auto& registry = instance().type_registry;
   auto iter = registry.find(key);
   if (iter == registry.end()) {

@@ -129,7 +129,7 @@ TEST(Factory, create) {
   ASSERT_EQ(logger->numMessages(), 1);
   std::string msg = logger->messages().back().second;
   EXPECT_EQ(msg.find("No module of type 'NotRegistered' registered to the factory"), 0);
-  EXPECT_NE(msg.find("Registered are: 'DerivedB', 'DerivedA'."), std::string::npos);
+  EXPECT_NE(msg.find("Registered are: 'DerivedA', 'DerivedB'."), std::string::npos) << msg;
 
   base = create<Base>("DerivedA", 1, 2.f);
   EXPECT_FALSE(base);
@@ -218,23 +218,32 @@ TEST(Factory, moduleNameConflicts) {
   const auto registration9 =
       config::Registration<TemplatedBase<float>, TemplatedDerived<float, float>>("float_derived");
   const std::string expected = R"""(Modules registered to factories: {
+  config::internal::ConfigWrapper(): {
+    'AddString' (config::test::AddString::Config),
+    'Derived2' (config::test::Derived2::Config),
+    'Derived2A' (config::test::Derived2A::Config),
+    'DerivedC' (config::test::DerivedC::Config),
+    'DerivedD' (config::test::DerivedD::Config),
+  },
   config::internal::Formatter(): {
     'asl' (config::internal::AslFormatter),
   },
   config::internal::Logger(): {
     'stdout' (config::internal::StdoutLogger),
   },
-  config::test::Base(int): {
-    'DerivedA' (config::test::DerivedA),
-    'DerivedB' (config::test::DerivedB),
+  config::test::Base(*, int): {
     'DerivedC' (config::test::DerivedC),
     'DerivedD' (config::test::DerivedD),
   },
-  config::test::Base2(): {
+  config::test::Base(int): {
+    'DerivedA' (config::test::DerivedA),
+    'DerivedB' (config::test::DerivedB),
+  },
+  config::test::Base2(*): {
     'Derived2' (config::test::Derived2),
     'Derived2A' (config::test::Derived2A),
   },
-  config::test::ProcessorBase(): {
+  config::test::ProcessorBase(*): {
     'AddString' (config::test::AddString),
   },
   config::test::TemplatedBase<float>(): {

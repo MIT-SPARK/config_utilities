@@ -35,12 +35,6 @@
 
 #pragma once
 
-#include <functional>
-#include <memory>
-#include <string>
-#include <type_traits>
-#include <utility>
-
 #include "config_utilities/factory.h"
 #include "config_utilities/traits.h"
 
@@ -216,7 +210,7 @@ void declare_config(VirtualConfig<BaseT>& config) {
       config.config_ = internal::ConfigFactory<BaseT>::create(type);
     } else if (!config.optional_) {
       std::stringstream ss;
-      ss << "Could not get type for '" << internal::typeInfo<BaseT>() << "'";
+      ss << "Could not get type for '" << internal::ModuleInfo::fromTypes<BaseT>().typeInfo() << "'";
       internal::Logger::logError(ss.str());
     }
   }
