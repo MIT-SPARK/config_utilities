@@ -49,21 +49,6 @@ struct ExternalRegistry::RegistryEntry {
   std::string derived;
 };
 
-template <typename T>
-struct ManagedInstance {
-  void execute(const std::function<void(const T&)>& func) {
-    if (!underlying_) {
-      return;
-    }
-
-    // lock
-    func(*underlying_);
-    // unlock
-  }
-
-  T* underlying_;
-};
-
 struct LibraryHolderImpl : LibraryHolder {
   explicit LibraryHolderImpl(const std::filesystem::path& library_path) {
     // These modes are chosen to somewhat closely mimic dlopen. It will both append appropriate prefixes and suffixes

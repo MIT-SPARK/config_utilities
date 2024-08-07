@@ -36,10 +36,74 @@
 #pragma once
 
 #include <filesystem>
+#include <functional>
 #include <map>
+#include <mutex>
 #include <vector>
 
 namespace config {
+
+struct InstanceInfoBase {
+  virtual void cleanup() = 0;
+  std::mutex mutex;
+};
+
+template <typename T>
+struct InstanceInfo : InstanceInfoBase {
+  InstanceInfo() : instance(nullptr) {}
+
+  explicit InstanceInfo(T* instance) : instance(instance) {}
+
+  bool valid() const { return instance != nullptr; }
+
+  operator bool() const { return valid(); }
+
+  void cleanup() override {
+    std::lock_guard<std::mutex> lock(mutex);
+    instance.reset();
+  }
+
+  std::unique_ptr<T> instance;
+};
+
+// TODO(nathan) figure out how to give access to instance info to registry
+template <typename T>
+struct ManagedInstance {
+ public:
+  ManagedInstance() : info_(new InstanceInfo<T>()) {}
+  explicit ManagedInstance(T* underlying) : info_(new InstanceInfo<T>(underlying)) {}
+  ~ManagedInstance() = default;
+
+  ManagedInstance(const ManagedInstance& other) = delete;
+  ManagedInstance& operator=(const ManagedInstance& other) = delete;
+
+  ManagedInstance(ManagedInstance&& other) : info_(std::exchange(other.info, nullptr)) {}
+  ManagedInstance& operator=(ManagedInstance&& other) {
+    info_ = std::exchange(other.info, nullptr);
+    return *this;
+  }
+
+  template <typename R = void>
+  R execute(const std::function<R(const T&)>& func) {
+    if (!info_) {
+      return {};
+    }
+
+    const auto& info = *info_;
+    if (!info) {
+      return {};
+    }
+
+    std::lock_guard<std::mutex> lock(info.mutex_);
+    return func(*info.instance);
+  }
+
+  operator bool() const { return info_ != nullptr && info_->valid(); }
+
+ private:
+  std::shared_ptr<InstanceInfo<T>> info_;
+};
+
 namespace internal {
 
 /**
@@ -88,6 +152,7 @@ struct ExternalRegistry {
 
   std::map<std::string, std::unique_ptr<LibraryHolder>> libraries_;
   std::map<std::string, std::vector<RegistryEntry>> entries_;
+  std::map<std::string, std::vector<std::weak_ptr<InstanceInfoBase>>> instances_;
 };
 
 }  // namespace internal
