@@ -40,12 +40,18 @@
 #include <vector>
 
 namespace config {
-
 namespace internal {
+
+/**
+ * @brief Base class required to hide shared library implementation details
+ */
 struct LibraryHolder {
   virtual ~LibraryHolder() = default;
 };
 
+/**
+ * @brief Scope-based guard that unloads an external library once it leaves scope
+ */
 struct LibraryGuard {
   using List = std::vector<LibraryGuard>;
   LibraryGuard();
@@ -63,6 +69,9 @@ struct LibraryGuard {
   std::filesystem::path library_;
 };
 
+/**
+ * @brief Tracker for all externally-registered factories
+ */
 struct ExternalRegistry {
   struct RegistryEntry;
 
@@ -83,8 +92,32 @@ struct ExternalRegistry {
 
 }  // namespace internal
 
+/**
+ * @brief Populate factory methods from a provided shared object library
+ * @param library_path Relative or absolute path to library (without extension or lib prefix)
+ *
+ * Warning: loading modules or code from external libraries that are not linked into the current
+ * executable has some inherent brittleness! If the external library is unlinked from the current
+ * executable before every instance has been destructed, then any use of those instances will segfault,
+ * including on destruction. As long as all allocated (i.e., created) instances are deallocated before
+ * the library guard goes out of scope, everything will work as intended. However, any static instances (e.g.,
+ * singletons) that were created from an external library or use other object instances loaded from a shared library
+ * (including a populated virtual config with a config struct type from the external library) WILL NOT BE destructed
+ * before main exits. Careful attention is required to avoid segfaults in these cases. Consider using a
+ * `ManagedInstance` in these cases.
+ *
+ * @returns Guard that unloads library once out of scope
+ */
 [[nodiscard]] internal::LibraryGuard loadExternalFactories(const std::filesystem::path& library_path);
 
+/**
+ * @brief Populate factory methods from a provided shared object libraries
+ * @param libraries Relative or absolute paths to libraries (without extension or lib prefix)
+ *
+ * See single library method for caveats
+ *
+ * @returns Guard that unloads library once out of scope
+ */
 [[nodiscard]] internal::LibraryGuard::List loadExternalFactories(const std::vector<std::filesystem::path>& libraries);
 
 }  // namespace config
