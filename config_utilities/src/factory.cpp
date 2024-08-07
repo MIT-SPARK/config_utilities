@@ -50,7 +50,7 @@ bool operator<(const ModuleKey& lhs, const ModuleKey& rhs) {
 std::string ModuleRegistry::getAllRegistered() {
   std::stringstream ss;
   ss << "Modules registered to factories: {";
-  for (const auto& [key, types] : instance().modules) {
+  for (const auto& [key, types] : instance().type_registry) {
     ss << "\n  " << key.type_info << ": {";
     for (const auto& [type_name, derived_type] : types) {
       ss << "\n    '" << type_name << "' (" << derived_type << "),";
@@ -59,6 +59,25 @@ std::string ModuleRegistry::getAllRegistered() {
   }
   ss << "\n}";
   return ss.str();
+}
+
+std::string ModuleRegistry::getRegistered(const ModuleKey& key) {
+  const auto& registry = instance().type_registry;
+  auto iter = registry.find(key);
+  if (iter == registry.end()) {
+    return "";
+  }
+
+  std::string module_list;
+  auto miter = iter->second.begin();
+  while (miter != iter->second.end()) {
+    module_list.append(miter->first);
+    ++miter;
+    if (miter != iter->second.end()) {
+      module_list.append("', '");
+    }
+  }
+  return module_list;
 }
 
 void ModuleRegistry::lock() { instance().locked_ = true; }

@@ -100,53 +100,33 @@ struct ConfigWrapper {
   std::string type;
 };
 
-struct ModuleMapBase {};
+struct ModuleMapBase {
+  virtual ~ModuleMapBase() = default;
+};
 
 // Struct to store the factory methods for the creation of modules.
-template <typename BaseT, typename... Args>
+template <typename Factory>
 struct ModuleMap : ModuleMapBase {
-  using FactoryMethod = std::function<BaseT*(Args...)>;
-  using FactoryMethodMap = std::unordered_map<std::string, FactoryMethod>;
+  using FactoryMethodMap = std::unordered_map<std::string, Factory>;
 
   ModuleMap() = default;
 
   // Add entries to the map with verbose warnings.
-  bool addEntry(const std::string& type, const FactoryMethod& method, const std::string& type_info) {
-    std::cout << "Adding type '" << type << "' & info '" << type_info << "' @ " << &map << std::endl;
+  bool addEntry(const std::string& type, const Factory& method) {
     const auto has_type = map.find(type) != map.end();
-
     if (has_type) {
-      if (!type_info.empty()) {
-        Logger::logError("Cannot register already existent type '" + type + "' for " + type_info + ".");
-      }
       return false;
     }
 
-    map.insert(std::make_pair(type, method));
+    map.emplace(type, method);
     return true;
   }
 
   // Check if a requested type is valid with verbose warnings.
-  bool hasEntry(const std::string& type, const std::string& type_info, const std::string& registration_info) {
-    std::cout << "Creating type '" << type << "' & info '" << type_info << "' from " << &map << std::endl;
-
-    if (map.find(type) == map.end()) {
-      if (!type.empty()) {
-        std::string module_list;
-        for (const auto& entry : map) {
-          module_list.append(entry.first + "', '");
-        }
-        module_list = module_list.substr(0, module_list.size() - 4);
-        Logger::logError("No module of type '" + type + "' registered to the factory for " + type_info +
-                         ". Registered are: '" + module_list + "'.");
-      }
-      return false;
-    }
-    return true;
+  Factory getEntry(const std::string& type) {
+    auto iter = map.find(type);
+    return iter == map.end() ? Factory() : iter->second;
   }
-
-  // Get the factory method for a type. This assumes that the type is valid.
-  FactoryMethod getEntry(const std::string& type) { return map.at(type); }
 
  private:
   // The map.
@@ -157,34 +137,45 @@ class ModuleRegistry {
  public:
   template <typename BaseT, typename DerivedT, typename... Args>
   static void addModule(const std::string& type, FactoryMethod<BaseT, Args...> method) {
+    using Factory = FactoryMethod<BaseT, Args...>;
     const auto key = ModuleKey::fromTypes<BaseT, Args...>();
-    auto& types = instance().modules[key];
-
     if (locked()) {
       Logger::logError("Adding type '" + type + "' for " + key.type_info + " when locked.");
     }
 
-    const std::string derived_type = typeName<DerivedT>();
-    types.emplace_back(type, derived_type);
-    std::sort(types.begin(), types.end());
-  }
-
-  template <typename BaseT, typename ConfigT>
-  static void addConfig(const std::string& type, FactoryMethod<ConfigWrapper> method) {
-    const auto key = ModuleKey::fromTypes<BaseT>();
-    auto& types = instance().modules[key];
-
-    if (locked()) {
-      Logger::logError("Adding config type '" + type + "' for " + key.type_info + " when locked.");
+    auto& modules = instance().modules;
+    auto iter = modules.find(key);
+    if (iter == modules.end()) {
+      iter = modules.emplace(key, std::make_unique<ModuleMap<Factory>>()).first;
     }
+
+    auto derived = dynamic_cast<ModuleMap<Factory>*>(iter->second.get());
+    if (!derived) {
+      Logger::logFatal("Invalid module map for type '" + type + "' and info '" + key.type_info + "'");
+      return;
+    }
+
+    std::cout << "Adding type '" << type << "' & info '" << key.type_info << "' @ " << derived << std::endl;
+    if (!derived->addEntry(type, method)) {
+      if (!key.type_info.empty()) {
+        Logger::logError("Cannot register already existent type '" + type + "' for " + key.type_info + ".");
+      }
+
+      return;
+    }
+
+    auto& types = instance().type_registry[key];
+    types.emplace_back(type, typeName<DerivedT>());
+    std::sort(types.begin(), types.end());
   }
 
   template <typename BaseT, typename... Args>
   static FactoryMethod<BaseT, Args...> getModule(const std::string& type, const std::string& registration_info) {
+    using Factory = FactoryMethod<BaseT, Args...>;
     const auto key = ModuleKey::fromTypes<BaseT, Args...>();
     const auto& modules = instance().modules;
-    const auto iter = modules.find(key);
 
+    const auto iter = modules.find(key);
     if (iter == modules.end()) {
       Logger::logError("Cannot create a module of type '" + type + "': No modules registered to the factory for " +
                        key.type_info + ". Register modules using a static " + registration_info + " struct.\n" +
@@ -192,10 +183,23 @@ class ModuleRegistry {
       return {};
     }
 
-    return {};
+    auto derived = dynamic_cast<ModuleMap<Factory>*>(iter->second.get());
+    if (!derived) {
+      Logger::logFatal("Invalid module map for type '" + type + "' and info '" + key.type_info + "'");
+      return {};
+    }
+
+    const auto factory = derived->getEntry(type);
+    if (!factory && !type.empty()) {
+      Logger::logError("No module of type '" + type + "' registered to the factory for " + key.type_info +
+                       ". Registered are: '" + getRegistered(key) + "'.");
+    }
+
+    return factory;
   }
 
   static std::string getAllRegistered();
+  static std::string getRegistered(const ModuleKey& module);
   static void lock();
   static void unlock();
   static bool locked();
@@ -207,8 +211,9 @@ class ModuleRegistry {
 
   bool locked_;
 
+  std::map<ModuleKey, std::unique_ptr<ModuleMapBase>> modules;
   // Nested modules: base_type + args -> registered <type_name, type>.
-  std::map<ModuleKey, std::vector<std::pair<std::string, std::string>>> modules;
+  std::map<ModuleKey, std::vector<std::pair<std::string, std::string>>> type_registry;
 };
 
 // Helper function to read the type param from a node.
@@ -276,7 +281,7 @@ struct ConfigFactory {
     // TODO(nathan be careful with extra type info conflicts, see below
     // If the config is already registered, e.g. from different constructor args no warning needs to be printed.
     // ModuleMap::addEntry(type, method, "");
-    ModuleRegistry::addConfig<BaseT, DerivedConfigT>(type, method);
+    ModuleRegistry::addModule<ConfigWrapper, DerivedConfigT>(type, method);
 
     // Register the type name for the config.
     ConfigTypeRegistry<BaseT, DerivedConfigT>::setTypeName(type);
