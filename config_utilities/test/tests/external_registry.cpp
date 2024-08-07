@@ -42,7 +42,16 @@
 namespace config::test {
 
 TEST(ExternalRegistry, ValidPath) {
-  loadExternalFactories("./test_config_utilities_plugins");
+  auto plugin_lib = loadExternalFactories("./test_config_utilities_plugins");
+
+  auto test_logger = internal::ObjectFactory<internal::Logger>::create("test_logger");
+  EXPECT_TRUE(test_logger);
+  test_logger.reset();
+
+  // after unloading, we shouldn't be able to make a test logger
+  plugin_lib.unload();
+  test_logger = internal::ObjectFactory<internal::Logger>::create("test_logger");
+  EXPECT_FALSE(test_logger);
 }
 
 }  // namespace config::test

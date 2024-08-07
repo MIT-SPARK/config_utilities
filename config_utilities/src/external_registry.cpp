@@ -41,6 +41,12 @@
 namespace config {
 namespace internal {
 
+struct ExternalRegistry::RegistryEntry {
+  ModuleInfo key;
+  std::string type;
+  std::string derived;
+};
+
 template <typename T>
 struct ManagedInstance {
   void execute(const std::function<void(const T&)>& func) {
@@ -56,10 +62,6 @@ struct ManagedInstance {
   T* underlying_;
 };
 
-struct LibraryHolder {
-  virtual ~LibraryHolder() = default;
-};
-
 struct LibraryHolderImpl : LibraryHolder {
   explicit LibraryHolderImpl(const std::filesystem::path& library_path) {
     const auto mode = boost::dll::load_mode::append_decorations | boost::dll::load_mode::search_system_folders;
@@ -69,30 +71,27 @@ struct LibraryHolderImpl : LibraryHolder {
   boost::dll::shared_library library;
 };
 
-struct ExternalRegistry {
-  struct RegistryEntry {
-    ModuleInfo key;
-    std::string type;
-    std::string derived;
-  };
+LibraryGuard::LibraryGuard() {}
 
-  ~ExternalRegistry();
+LibraryGuard::LibraryGuard(const std::filesystem::path library) : library_(library) {}
 
-  void unload(const std::filesystem::path& library_path);
-  static void load(const std::filesystem::path& library_path);
-  static void registerType(const std::string& current_library,
-                           const ModuleInfo& info,
-                           const std::string& type,
-                           const std::string& derived);
+LibraryGuard::~LibraryGuard() { unload(); }
 
-  static ExternalRegistry& instance();
+LibraryGuard::LibraryGuard(LibraryGuard&& other) : library_(std::exchange(other.library_, "")) {}
 
- private:
-  ExternalRegistry() = default;
+LibraryGuard& LibraryGuard::operator=(LibraryGuard&& other) {
+  library_ = std::exchange(other.library_, "");
+  return *this;
+}
 
-  std::map<std::string, std::unique_ptr<LibraryHolder>> libraries_;
-  std::map<std::string, std::vector<RegistryEntry>> entries_;
-};
+LibraryGuard::operator bool() const { return !library_.empty(); }
+
+void LibraryGuard::unload() {
+  if (!library_.empty()) {
+    ExternalRegistry::instance().unload(library_);
+  }
+  library_.clear();
+}
 
 ExternalRegistry::~ExternalRegistry() {
   std::vector<std::string> libraries;
@@ -118,26 +117,25 @@ void ExternalRegistry::unload(const std::filesystem::path& library_path) {
   libraries_.erase(library_path);
 }
 
-void ExternalRegistry::load(const std::filesystem::path& library_path) {
-  ModuleRegistry::lock([library_path](const auto& info, const auto& type, const auto& derived) {
-    ExternalRegistry::registerType(library_path, info, type, derived);
+LibraryGuard ExternalRegistry::load(const std::filesystem::path& library_path) {
+  ModuleRegistry::lock([library_path](const auto& key, const auto& type, const auto& derived) {
+    ExternalRegistry::registerType(library_path, {key, type, derived});
   });
 
   instance().libraries_.emplace(library_path, std::make_unique<LibraryHolderImpl>(library_path));
   ModuleRegistry::unlock();
+
+  return LibraryGuard(library_path);
 }
 
-void ExternalRegistry::registerType(const std::string& current_library,
-                                    const ModuleInfo& info,
-                                    const std::string& type,
-                                    const std::string& derived) {
+void ExternalRegistry::registerType(const std::string& current_library, const RegistryEntry& entry) {
   auto& entries = instance().entries_;
   auto iter = entries.find(current_library);
   if (iter == entries.end()) {
     iter = entries.emplace(current_library, std::vector<RegistryEntry>()).first;
   }
 
-  iter->second.push_back({info, type, derived});
+  iter->second.push_back(entry);
 }
 
 ExternalRegistry& ExternalRegistry::instance() {
@@ -147,20 +145,17 @@ ExternalRegistry& ExternalRegistry::instance() {
 
 }  // namespace internal
 
-void loadExternalFactories(const std::filesystem::path& library_path, const std::string& registry_name) {
-  // execution:
-  // - ModuleRegistry is informed that an external library is about to be loaded
-  // - We load the shared library and the static library initializers trigger
-  //   - Every registration in the external library will trigger
-  //   - Registrations will go through one of three factories
-  //     - Config factory registers type which has different instances in different shared objects
+internal::LibraryGuard loadExternalFactories(const std::filesystem::path& library_path) {
+  return internal::ExternalRegistry::load(library_path);
+}
 
-  internal::ExternalRegistry::load(library_path);
-  internal::Logger::logInfo(internal::ModuleRegistry::getAllRegistered());
-  auto test_logger = internal::ObjectFactory<internal::Logger>::create("test_logger");
-  test_logger.reset();
-  internal::ExternalRegistry::instance().unload(library_path);
-  internal::Logger::logInfo(internal::ModuleRegistry::getAllRegistered());
+internal::LibraryGuard::List loadExternalFactories(const std::vector<std::filesystem::path>& libraries) {
+  internal::LibraryGuard::List guards;
+  for (const auto& library_path : libraries) {
+    guards.push_back(internal::ExternalRegistry::load(library_path));
+  }
+
+  return guards;
 }
 
 }  // namespace config

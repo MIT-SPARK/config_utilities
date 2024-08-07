@@ -36,9 +36,55 @@
 #pragma once
 
 #include <filesystem>
+#include <map>
+#include <vector>
 
 namespace config {
 
-void loadExternalFactories(const std::filesystem::path& library_path, const std::string& registry_name = "");
+namespace internal {
+struct LibraryHolder {
+  virtual ~LibraryHolder() = default;
+};
+
+struct LibraryGuard {
+  using List = std::vector<LibraryGuard>;
+  LibraryGuard();
+  explicit LibraryGuard(const std::filesystem::path library);
+  ~LibraryGuard();
+  LibraryGuard(const LibraryGuard& other) = delete;
+  LibraryGuard& operator=(const LibraryGuard& other) = delete;
+  LibraryGuard(LibraryGuard&& other);
+  LibraryGuard& operator=(LibraryGuard&& other);
+
+  operator bool() const;
+  void unload();
+
+ private:
+  std::filesystem::path library_;
+};
+
+struct ExternalRegistry {
+  struct RegistryEntry;
+
+  ~ExternalRegistry();
+
+  void unload(const std::filesystem::path& library_path);
+  [[nodiscard]] static LibraryGuard load(const std::filesystem::path& library_path);
+  static void registerType(const std::string& current_library, const RegistryEntry& entry);
+
+  static ExternalRegistry& instance();
+
+ private:
+  ExternalRegistry() = default;
+
+  std::map<std::string, std::unique_ptr<LibraryHolder>> libraries_;
+  std::map<std::string, std::vector<RegistryEntry>> entries_;
+};
+
+}  // namespace internal
+
+[[nodiscard]] internal::LibraryGuard loadExternalFactories(const std::filesystem::path& library_path);
+
+[[nodiscard]] internal::LibraryGuard::List loadExternalFactories(const std::vector<std::filesystem::path>& libraries);
 
 }  // namespace config
