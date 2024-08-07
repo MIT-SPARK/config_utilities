@@ -112,6 +112,8 @@ struct ConfigWrapper {
 
 struct FactoryMapBase {
   virtual ~FactoryMapBase() = default;
+  virtual bool hasEntry(const std::string& type) = 0;
+  virtual void removeEntry(const std::string& type) = 0;
 };
 
 //! @brief Struct to store the factory methods for the creation of modules.
@@ -134,24 +136,31 @@ struct FactoryMap : FactoryMapBase {
     return iter == map.end() ? Factory() : iter->second;
   }
 
+  bool hasEntry(const std::string& type) override { return map.find(type) != map.end(); }
+  void removeEntry(const std::string& type) override { map.erase(type); }
+
  private:
   std::map<std::string, Factory> map;
 };
 
 class ModuleRegistry {
  public:
+  using LockCallback = std::function<void(const ModuleInfo&, std::string, std::string)>;
+
   template <typename BaseT, typename DerivedT, typename... Args>
   static bool addModule(const std::string& type, FactoryMethod<BaseT, Args...> method, bool skip_first_arg = false) {
     const auto key = ModuleInfo::fromTypes<BaseT, Args...>(skip_first_arg);
     using Factory = FactoryMethod<BaseT, Args...>;
     if (locked()) {
-      if (hasModule<BaseT, Args...>(type)) {
+      if (hasModule(key, type)) {
         Logger::logWarning("Skipping duplicate type '" + type + "' @ '" + key.typeInfo());
         return false;
       }
 
-      Logger::logError("Adding type '" + type + "' for " + key.typeInfo() + " when locked.");
-      return false;
+      const auto& callback = instance().lock_callback_;
+      if (callback) {
+        callback(key, type, typeName<DerivedT>());
+      }
     }
 
     auto& modules = instance().modules;
@@ -172,28 +181,8 @@ class ModuleRegistry {
       return false;
     }
 
-    auto& types = instance().type_registry[key];
-    types.emplace_back(type, typeName<DerivedT>());
-    std::sort(types.begin(), types.end());
+    instance().type_registry[key][type] = typeName<DerivedT>();
     return true;
-  }
-
-  template <typename BaseT, typename... Args>
-  static bool hasModule(const std::string& type) {
-    using Factory = FactoryMethod<BaseT, Args...>;
-    const auto& modules = instance().modules;
-    const auto key = ModuleInfo::fromTypes<BaseT, Args...>();
-    const auto iter = modules.find(key);
-    if (iter == modules.end()) {
-      return false;
-    }
-
-    auto derived = dynamic_cast<FactoryMap<Factory>*>(iter->second.get());
-    if (!derived) {
-      return false;
-    }
-
-    return static_cast<bool>(derived->getEntry(type));
   }
 
   template <typename BaseT, typename... Args>
@@ -252,9 +241,11 @@ class ModuleRegistry {
     return iter == registry.end() ? "" : iter->second;
   }
 
+  static bool hasModule(const ModuleInfo& key, const std::string& type);
+  static void removeModule(const ModuleInfo& key, const std::string& type);
   static std::string getAllRegistered();
   static std::string getRegistered(const ModuleInfo& module);
-  static void lock();
+  static void lock(LockCallback callback);
   static void unlock();
   static bool locked();
 
@@ -264,10 +255,11 @@ class ModuleRegistry {
   ModuleRegistry() = default;
 
   bool locked_;
+  LockCallback lock_callback_;
 
   std::map<ModuleInfo, std::unique_ptr<FactoryMapBase>> modules;
   // Nested modules: base_type + args -> registered <type_name, type>.
-  std::map<ModuleInfo, std::vector<std::pair<std::string, std::string>>> type_registry;
+  std::map<ModuleInfo, std::map<std::string, std::string>> type_registry;
   // Mapping between BaseT + ConfigT and underlying string type
   std::map<ConfigPair, std::string> config_registry;
 };

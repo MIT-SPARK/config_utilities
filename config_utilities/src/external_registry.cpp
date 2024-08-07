@@ -39,6 +39,7 @@
 #include <config_utilities/factory.h>
 
 namespace config {
+namespace internal {
 
 template <typename T>
 struct ManagedInstance {
@@ -55,6 +56,100 @@ struct ManagedInstance {
   T* underlying_;
 };
 
+struct LibraryHolder {
+  virtual ~LibraryHolder() = default;
+};
+
+struct LibraryHolderImpl : LibraryHolder {
+  explicit LibraryHolderImpl(const std::filesystem::path& library_path) {
+    const auto mode = boost::dll::load_mode::append_decorations | boost::dll::load_mode::search_system_folders;
+    library = boost::dll::shared_library(library_path.string(), mode);
+  }
+
+  boost::dll::shared_library library;
+};
+
+struct ExternalRegistry {
+  struct RegistryEntry {
+    ModuleInfo key;
+    std::string type;
+    std::string derived;
+  };
+
+  ~ExternalRegistry();
+
+  void unload(const std::filesystem::path& library_path);
+  static void load(const std::filesystem::path& library_path);
+  static void registerType(const std::string& current_library,
+                           const ModuleInfo& info,
+                           const std::string& type,
+                           const std::string& derived);
+
+  static ExternalRegistry& instance();
+
+ private:
+  ExternalRegistry() = default;
+
+  std::map<std::string, std::unique_ptr<LibraryHolder>> libraries_;
+  std::map<std::string, std::vector<RegistryEntry>> entries_;
+};
+
+ExternalRegistry::~ExternalRegistry() {
+  std::vector<std::string> libraries;
+  for (const auto& [path, lib] : libraries_) {
+    libraries.push_back(path);
+  }
+
+  for (const auto& path : libraries) {
+    unload(path);
+  }
+}
+
+void ExternalRegistry::unload(const std::filesystem::path& library_path) {
+  std::cout << "Unloading " << library_path << std::endl;
+  auto iter = entries_.find(library_path);
+  if (iter != entries_.end()) {
+    for (const auto& entry : iter->second) {
+      std::cout << "Unloading " << entry.type << " for " << entry.key.signature() << std::endl;
+      internal::ModuleRegistry::removeModule(entry.key, entry.type);
+    }
+  }
+
+  entries_.erase(library_path);
+  libraries_.erase(library_path);
+}
+
+void ExternalRegistry::load(const std::filesystem::path& library_path) {
+  ModuleRegistry::lock([library_path](const auto& info, const auto& type, const auto& derived) {
+    ExternalRegistry::registerType(library_path, info, type, derived);
+  });
+
+  instance().libraries_.emplace(library_path, std::make_unique<LibraryHolderImpl>(library_path));
+  ModuleRegistry::unlock();
+}
+
+void ExternalRegistry::registerType(const std::string& current_library,
+                                    const ModuleInfo& info,
+                                    const std::string& type,
+                                    const std::string& derived) {
+  internal::Logger::logInfo("type: '" + type + "', info: " + info.signature() + ", derived: '" + derived + "'");
+
+  auto& entries = instance().entries_;
+  auto iter = entries.find(current_library);
+  if (iter == entries.end()) {
+    iter = entries.emplace(current_library, std::vector<RegistryEntry>()).first;
+  }
+
+  iter->second.push_back({info, type, derived});
+}
+
+ExternalRegistry& ExternalRegistry::instance() {
+  static ExternalRegistry s_instance;
+  return s_instance;
+}
+
+}  // namespace internal
+
 void loadExternalFactories(const std::filesystem::path& library_path, const std::string& registry_name) {
   // execution:
   // - ModuleRegistry is informed that an external library is about to be loaded
@@ -63,20 +158,12 @@ void loadExternalFactories(const std::filesystem::path& library_path, const std:
   //   - Registrations will go through one of three factories
   //     - Config factory registers type which has different instances in different shared objects
 
-  internal::ModuleRegistry::lock();
-  const auto mode = boost::dll::load_mode::append_decorations | boost::dll::load_mode::search_system_folders;
-  boost::dll::shared_library lib(library_path.string(), mode);
-
-  const auto default_registry_name = library_path.stem().string() + "_registry";
-  const auto func = lib.get<void()>(registry_name.empty() ? default_registry_name : registry_name);
-  func();
-
-  auto stdout_logge = internal::ObjectFactory<internal::Logger>::create("stdout");
-
-  internal::ModuleRegistry::unlock();
-  internal::Logger::logError(internal::ModuleRegistry::getAllRegistered());
-
+  internal::ExternalRegistry::load(library_path);
+  internal::Logger::logInfo(internal::ModuleRegistry::getAllRegistered());
   auto test_logger = internal::ObjectFactory<internal::Logger>::create("test_logger");
+  test_logger.reset();
+  internal::ExternalRegistry::instance().unload(library_path);
+  internal::Logger::logInfo(internal::ModuleRegistry::getAllRegistered());
 }
 
 }  // namespace config

@@ -45,7 +45,7 @@ std::string ModuleInfo::argumentString(const std::string& separator, const std::
   }
 
   if (arguments.size() == 1 && skip_first_arg) {
-    return cap + "*" + cap;
+    return cap + "_" + cap;
   }
 
   auto iter = arguments.begin();
@@ -53,7 +53,7 @@ std::string ModuleInfo::argumentString(const std::string& separator, const std::
     ++iter;
   }
 
-  std::string arg_list = cap + (skip_first_arg ? "*" + separator : "");
+  std::string arg_list = skip_first_arg ? "_" + separator : cap;
   while (iter != arguments.end()) {
     arg_list.append(*iter);
     ++iter;
@@ -66,7 +66,7 @@ std::string ModuleInfo::argumentString(const std::string& separator, const std::
 }
 
 std::string ModuleInfo::typeInfo() const {
-  return "BaseT='" + base_type + "' and ConstructorArguments={" + argumentString("', ", "'") + "}";
+  return "BaseT='" + base_type + "' and ConstructorArguments={" + argumentString(", '", "'") + "}";
 }
 
 std::string ModuleInfo::signature() const { return base_type + "(" + argumentString() + ")"; }
@@ -101,6 +101,34 @@ std::string ModuleRegistry::getAllRegistered() {
   return ss.str();
 }
 
+bool ModuleRegistry::hasModule(const ModuleInfo& key, const std::string& type) {
+  const auto& modules = instance().modules;
+  const auto iter = modules.find(key);
+  if (iter == modules.end()) {
+    return false;
+  }
+
+  return iter->second->hasEntry(type);
+}
+
+void ModuleRegistry::removeModule(const ModuleInfo& key, const std::string& type) {
+  {  // module scope
+    auto& modules = instance().modules;
+    const auto iter = modules.find(key);
+    if (iter != modules.end()) {
+      iter->second->removeEntry(type);
+    }
+  }
+
+  {  // registry scope
+    auto& registry = instance().type_registry;
+    const auto iter = registry.find(key);
+    if (iter != registry.end()) {
+      iter->second.erase(type);
+    }
+  }
+}
+
 std::string ModuleRegistry::getRegistered(const ModuleInfo& key) {
   const auto& registry = instance().type_registry;
   auto iter = registry.find(key);
@@ -120,9 +148,15 @@ std::string ModuleRegistry::getRegistered(const ModuleInfo& key) {
   return module_list;
 }
 
-void ModuleRegistry::lock() { instance().locked_ = true; }
+void ModuleRegistry::lock(LockCallback func) {
+  instance().locked_ = true;
+  instance().lock_callback_ = std::move(func);
+}
 
-void ModuleRegistry::unlock() { instance().locked_ = false; }
+void ModuleRegistry::unlock() {
+  instance().locked_ = false;
+  instance().lock_callback_ = {};
+}
 
 bool ModuleRegistry::locked() { return instance().locked_; }
 

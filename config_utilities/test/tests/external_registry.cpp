@@ -41,7 +41,7 @@
 
 namespace config::test {
 
-TEST(ExternalRegistry, DISABLED_ValidPath) {
+TEST(ExternalRegistry, ValidPath) {
   loadExternalFactories("./test_config_utilities_plugins");
 }
 
