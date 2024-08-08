@@ -24,8 +24,7 @@ This is done via `config::loadExternalFactories()`.
 
 Assuming you have the following definitions:
 ```c++
-
-/*********************************************** compiled in in main executable  *******************************/
+/******** compiled in main executable  **********************************************************************/
 
 namespace talker {
 
@@ -35,7 +34,7 @@ struct Talker {
 
 }  // namespace talker
 
-/************************** compiled in seperate library (`libexternal_talker_plugin.so`) *********************/
+/******** compiled in seperate library (`libexternal_talker_plugin.so`) *************************************/
 
 namespace external {
 
@@ -63,7 +62,7 @@ You could instantiate `ExternalTalker` from the external library as follows:
 > **ℹ️ Note**<br>
 > `loadExternalFactories` also supports a vector of libraries as an argument for convenience
 
-Note that in this example (on Linux), we are actually loading the file `libexternal_logger_plugin.so`, which is assumed to be available somewhere on `LD_LIBRARY_PATH`.
+Note that in this example (on Linux), we are actually loading the file `libexternal_talker_plugin.so`, which is assumed to be available somewhere on `LD_LIBRARY_PATH`.
 You can also load libraries via an absolute path (optionally omitting the `lib` prefix and the `.so` extension).
 
 Either version of `config::loadExternalFactories()` returns a scope-based guard that will unload the external libraries as soon as the guard is no longer in scope.
@@ -82,9 +81,9 @@ config::ManagedInstance<talker::Talker> talker;
     talker = config::createManaged(config::create<talker::Talker>("my_talker"));
     const auto view = talker.get();
     std::cout << view->talk() << std::end;  // should get 'Hello'
-} // external library is unloaded after this point and the external logger no longer works
+} // external library is unloaded after this point and the managed instance is no longer valid
 
-const auto view = external_logger.get();
+const auto view = talker.get();
 // view->talk(); // this would segfault
 
 // views can be implicitly converted to a bool to determine whether or not they are valid
