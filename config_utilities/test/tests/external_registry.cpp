@@ -38,18 +38,19 @@
 #include <gtest/gtest.h>
 
 #include "config_utilities/logging/log_to_stdout.h"
+#include "config_utilities/test/external_types.h"
 
 namespace config::test {
 
 TEST(ExternalRegistry, InstanceLifetimes) {
   auto plugin_lib = loadExternalFactories("./test_config_utilities_plugins");
 
-  auto test_logger = create<internal::Logger>("test_logger");
-  EXPECT_TRUE(test_logger);
-  test_logger.reset();
+  //auto unmanaged_logger = create<internal::Logger>("external_logger");
+  //EXPECT_TRUE(unmanaged_logger);
+  //unmanaged_logger.reset();
 
   auto internal_logger = createManaged(create<internal::Logger>("stdout"));
-  auto external_logger = createManaged(create<internal::Logger>("test_logger"));
+  auto external_logger = createManaged(create<internal::Logger>("external_logger"));
   ASSERT_TRUE(internal_logger);
   ASSERT_TRUE(external_logger);
   {  // limit scope for views
@@ -61,8 +62,8 @@ TEST(ExternalRegistry, InstanceLifetimes) {
 
   // after unloading, we shouldn't be able to make a test logger
   plugin_lib.unload();
-  test_logger = internal::ObjectFactory<internal::Logger>::create("test_logger");
-  EXPECT_FALSE(test_logger);
+  //unmanaged_logger = internal::ObjectFactory<internal::Logger>::create("external_logger");
+  //EXPECT_FALSE(unmanaged_logger);
 
   EXPECT_TRUE(internal_logger);
   EXPECT_FALSE(external_logger);
@@ -75,3 +76,29 @@ TEST(ExternalRegistry, InstanceLifetimes) {
 }
 
 }  // namespace config::test
+
+// globally namespaced to check example compilation
+TEST(ExternalRegistry, ManagedInstance) {
+  config::ManagedInstance<config::test::Talker> talker;
+  {  // scope where external library is loaded
+    const auto guard = config::loadExternalFactories("./test_config_utilities_plugins");
+    talker = config::createManaged(config::create<config::test::Talker>("external"));
+    const auto view = talker.get();
+    ASSERT_TRUE(view);
+    EXPECT_EQ(view->talk(), "external");
+  }  // external library is unloaded after this point
+
+  const auto view = talker.get();
+  EXPECT_FALSE(view);
+
+  {  // scope where external library is loaded
+    const auto guard = config::loadExternalFactories("./test_config_utilities_plugins");
+    talker = config::createManaged(config::create<config::test::Talker>("internal"));
+    EXPECT_TRUE(talker);
+  }  // external library is unloaded after this point
+
+  EXPECT_TRUE(talker);
+  const auto new_view = talker.get();
+  ASSERT_TRUE(new_view);
+  EXPECT_EQ(new_view->talk(), "internal");
+}

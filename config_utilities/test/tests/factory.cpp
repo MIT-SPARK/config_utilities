@@ -224,12 +224,14 @@ TEST(Factory, moduleNameConflicts) {
     'Derived2A' (config::test::Derived2A::Config),
     'DerivedC' (config::test::DerivedC::Config),
     'DerivedD' (config::test::DerivedD::Config),
+    'repeating' (config::test::RepeatingTalker::Config),
   },
   config::internal::Formatter(): {
     'asl' (config::internal::AslFormatter),
   },
   config::internal::Logger(): {
     'stdout' (config::internal::StdoutLogger),
+    'test_logger' (config::test::TestLogger),
   },
   config::test::Base(_, int): {
     'DerivedC' (config::test::DerivedC),
@@ -245,6 +247,12 @@ TEST(Factory, moduleNameConflicts) {
   },
   config::test::ProcessorBase(_): {
     'AddString' (config::test::AddString),
+  },
+  config::test::Talker(): {
+    'internal' (config::test::InternalTalker),
+  },
+  config::test::Talker(_): {
+    'repeating' (config::test::RepeatingTalker),
   },
   config::test::TemplatedBase<float>(): {
     'float_derived' (config::test::TemplatedDerived<float, float>),

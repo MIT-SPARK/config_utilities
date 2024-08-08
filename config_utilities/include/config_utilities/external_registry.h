@@ -37,6 +37,7 @@
 
 #include <filesystem>
 #include <functional>
+#include <iostream>
 #include <map>
 #include <mutex>
 #include <vector>
@@ -78,6 +79,7 @@ struct ManagedInstanceInfo : InstanceInfo<T> {
   explicit ManagedInstanceInfo(std::unique_ptr<T>&& instance) : InstanceInfo<T>(std::move(instance)) {}
 
   void cleanup() override {
+    std::cout << "Cleaning up " << InstanceInfo<T>::instance.get() << std::endl;
     std::lock_guard<std::mutex> lock(mutex);
     InstanceInfo<T>::instance.reset();
   }
@@ -102,16 +104,22 @@ struct ManagedInstance {
   using InstancePtr = std::shared_ptr<internal::InstanceInfo<T>>;
 
   ManagedInstance() : info_(new internal::InstanceInfo<T>()) {}
-  explicit ManagedInstance(std::unique_ptr<T>&& instance) : info_(new internal::InstanceInfo<T>(std::move(instance))) {}
-  explicit ManagedInstance(InstancePtr instance) : info_(std::move(instance)) {}
+  explicit ManagedInstance(std::unique_ptr<T>&& instance) : info_(new internal::InstanceInfo<T>(std::move(instance))) {
+    std::cout << "Creating managed instance from unmanaged pointer!" << std::endl;
+  }
+
+  explicit ManagedInstance(InstancePtr instance) : info_(std::move(instance)) {
+    std::cout << "Creating managed instance from managed pointer!" << std::endl;
+  }
+
   ~ManagedInstance() = default;
 
   ManagedInstance(const ManagedInstance& other) = delete;
   ManagedInstance& operator=(const ManagedInstance& other) = delete;
 
-  ManagedInstance(ManagedInstance&& other) : info_(std::exchange(other.info, nullptr)) {}
+  ManagedInstance(ManagedInstance&& other) : info_(std::exchange(other.info_, nullptr)) {}
   ManagedInstance& operator=(ManagedInstance&& other) {
-    info_ = std::exchange(other.info, nullptr);
+    info_ = std::exchange(other.info_, nullptr);
     return *this;
   }
 
@@ -191,6 +199,7 @@ struct ExternalRegistry {
 
   template <typename T>
   static ManagedInstance<T> createManaged(std::unique_ptr<T>&& underlying) {
+    std::cout << "Creating instance with " << underlying.get() << std::endl;
     if (!underlying) {
       // nullptr results in invalid managed instance
       return {};

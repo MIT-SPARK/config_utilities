@@ -128,6 +128,7 @@ void ExternalRegistry::unload(const std::filesystem::path& library_path) {
 
   entries_.erase(library_path);
   libraries_.erase(library_path);
+  instances_.erase(library_path);
 }
 
 LibraryGuard ExternalRegistry::load(const std::filesystem::path& library_path) {
@@ -153,6 +154,11 @@ LibraryGuard ExternalRegistry::load(const std::filesystem::path& library_path) {
 }
 
 void ExternalRegistry::registerType(const std::string& current_library, const RegistryEntry& entry) {
+  std::stringstream ss;
+  ss << "Registering type '" << entry.type << "' with signature " << entry.key.signature() << " for library '"
+     << current_library << "'";
+  Logger::logWarning(ss.str());
+
   auto& entries = instance().entries_;
   auto iter = entries.find(current_library);
   if (iter == entries.end()) {
@@ -208,6 +214,7 @@ std::optional<std::string> ExternalRegistry::getLibraryForAllocation(void* point
     return std::nullopt;
   }
 
+  external_allocations.erase(iter);
   return library_iter->second;
 }
 

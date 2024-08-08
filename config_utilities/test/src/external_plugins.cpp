@@ -40,80 +40,37 @@
 #include <config_utilities/factory.h>
 #include <config_utilities/logging/log_to_stdout.h>
 
+#include "config_utilities/test/external_types.h"
+
 namespace external {
 
-struct Foo {
-  virtual ~Foo() = default;
-  virtual std::string talk() const = 0;
+struct ExternalTalker : config::test::Talker {
+  std::string talk() const override { return "external"; }
+  inline static const auto reg = config::Registration<config::test::Talker, ExternalTalker>("external");
 };
 
-struct Bar : Foo {
-  std::string talk() const override { return "bar"; }
-  inline static const auto reg = config::Registration<Foo, Bar>("bar");
-};
-
-struct Derived : Foo {
-  std::string talk() const override { return "derived"; }
-  inline static const auto reg = config::Registration<Foo, Derived>("derived");
-};
-
-struct TestLogger : config::internal::Logger {
-  void logImpl(const config::internal::Severity severity, const std::string& message) {
-    record.push_back({severity, message});
-  }
-
-  std::vector<std::pair<config::internal::Severity, std::string>> record;
-  inline static const auto reg = config::Registration<config::internal::Logger, TestLogger>("test_logger");
-};
-
-struct FooWithConfig {
-  virtual ~FooWithConfig() = default;
-  virtual std::string talk() const = 0;
-};
-
-struct BarWithConfig : FooWithConfig {
-  struct Config {
-    size_t repeats = 5;
-    std::string message = "bar";
-  } const config;
-
-  explicit BarWithConfig(const Config& config) : config(config) {}
-
-  std::string talk() const override {
-    std::stringstream ss;
-    for (size_t i = 0; i < config.repeats; ++i) {
-      ss << config.message;
-    }
-    return ss.str();
-  }
-  inline static const auto reg =
-      config::RegistrationWithConfig<FooWithConfig, BarWithConfig, Config>("bar_with_config");
-};
-
-void declare_config(BarWithConfig::Config& config) {
-  config::name("BarWithConfig::Config");
-  config::field(config.repeats, "repeats");
-  config::field(config.message, "message");
-}
-
-struct DerivedWithConfig : FooWithConfig {
+struct FancyTalker : config::test::Talker {
   struct Config {
     std::string prefix = "* ";
     std::string suffix = " *";
   } const config;
 
-  explicit DerivedWithConfig(const Config& config) : config(config) {}
+  explicit FancyTalker(const Config& config) : config(config) {}
 
   std::string talk() const override { return config.prefix + "derived" + config.suffix; }
 
-  inline static const auto reg =
-      config::RegistrationWithConfig<FooWithConfig, DerivedWithConfig, Config>("derived_with_config");
+  inline static const auto reg = config::RegistrationWithConfig<config::test::Talker, FancyTalker, Config>("fancy");
 };
 
-void declare_config(DerivedWithConfig::Config& config) {
-  config::name("DerivedWithConfig::Config");
+void declare_config(FancyTalker::Config& config) {
+  config::name("FancyTalker::Config");
   config::field(config.prefix, "prefix");
   config::field(config.suffix, "suffix");
 }
+
+struct ExternalLogger : config::internal::Logger {
+  void logImpl(const config::internal::Severity, const std::string&) { throw std::runtime_error("External logger!"); }
+  inline static const auto reg = config::Registration<config::internal::Logger, ExternalLogger>("external_logger");
+};
 
 }  // namespace external
