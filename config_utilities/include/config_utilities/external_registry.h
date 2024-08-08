@@ -39,8 +39,8 @@
 #include <functional>
 #include <map>
 #include <mutex>
-#include <vector>
 #include <set>
+#include <vector>
 
 namespace config {
 namespace internal {
@@ -72,7 +72,7 @@ struct InstanceInfo : InstanceInfoBase {
   std::unique_ptr<T> instance;
 };
 
-//! @brief Instance holder for managed instances (thread-safety required)
+//! @brief Instance holder for managed instances (thread-safe version)
 template <typename T>
 struct ThreadsafeInstanceInfo : InstanceInfo<T> {
   ThreadsafeInstanceInfo() : InstanceInfo<T>() {}
@@ -251,13 +251,11 @@ struct ExternalRegistry {
 /**
  * @brief Wrap a created object that ensures external instance deletion on external library unload
  * @param unmanaged Object instance to wrap
+ * @param threadsafe Whether or not the underlying instance has a mutex
  *
  * Note that the unmanaged input might not be created from an external library (or might be null).
- * The registry checks the underlying pointer address and only tracks managed instances that
- * were recorded as being allocated by one of the registered factories from an external library.
- * In other cases, the managed instance functions as an unique_ptr (with an extra layer of indirection with get()).
- * Managed instances from external libraries are threadsafe. get() and valid() will require locking the underlying
- * mutex.
+ * Managed instances from external libraries are threadsafe by default. get() and valid() will require locking the
+ * underlying mutex.
  *
  * @returns Managed instance of object
  */
