@@ -48,8 +48,8 @@ TEST(ExternalRegistry, InstanceLifetimes) {
   EXPECT_TRUE(test_logger);
   test_logger.reset();
 
-  auto internal_logger = internal::ExternalRegistry::createManaged(create<internal::Logger>("stdout"));
-  auto external_logger = internal::ExternalRegistry::createManaged(create<internal::Logger>("test_logger"));
+  auto internal_logger = createManaged(create<internal::Logger>("stdout"));
+  auto external_logger = createManaged(create<internal::Logger>("test_logger"));
   ASSERT_TRUE(internal_logger);
   ASSERT_TRUE(external_logger);
   {  // limit scope for views

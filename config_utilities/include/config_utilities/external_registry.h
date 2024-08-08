@@ -261,4 +261,22 @@ struct ExternalRegistry {
  */
 [[nodiscard]] internal::LibraryGuard::List loadExternalFactories(const std::vector<std::filesystem::path>& libraries);
 
+/**
+ * @brief Wrap a created object that ensures external instance deletion on external library unload
+ * @param unmanaged Object instance to wrap
+ *
+ * Note that the unmanaged input might not be created from an external library (or might be null).
+ * The registry checks the underlying pointer address and only tracks managed instances that
+ * were recorded as being allocated by one of the registered factories from an external library.
+ * In other cases, the managed instance functions as an unique_ptr (with an extra layer of indirection with get()).
+ * Managed instances from external libraries are threadsafe. get() and valid() will require locking the underlying
+ * mutex.
+ *
+ * @returns Managed instance of object
+ */
+template <typename T>
+ManagedInstance<T> createManaged(std::unique_ptr<T>&& unmanaged) {
+  return internal::ExternalRegistry::createManaged<T>(std::move(unmanaged));
+}
+
 }  // namespace config
