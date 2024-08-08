@@ -20,25 +20,44 @@ The features described in this tutorial require including `config_utilities/exte
 To use registered factories from external libraries, you first have to load the libraries themselves.
 This is done via `config::loadExternalFactories()`.
 
-Assuming you have a library called `external_logger_plugin` containing the following definition:
+
+
+Assuming you have the following definitions:
 ```c++
-struct ExternalLogger : public config::internal::Loger {
-    ... // implementation
-    inline static const auto registration = config::Registration<config::internal::Logger, EternalLogger>("my_logger");
+
+/*********************************************** compiled in in main executable  *******************************/
+
+namespace talker {
+
+struct Talker {
+    virtual std::string talk() const = 0;
 };
+
+}  // namespace talker
+
+/************************** compiled in seperate library (`libexternal_talker_plugin.so`) *********************/
+
+namespace external {
+
+struct ExternalTalker : public Talker {
+    std::string talk() const { return "Hello"; }
+    inline static const auto registration = config::Registration<talker::Talker, ExternalTalker>("my_talker");
+};
+
+}  // namespace external
 ```
 
-You could instantiate the external logger as follows:
+You could instantiate `ExternalTalker` from the external library as follows:
 ```c++
 { // scope where external library is loaded
-    const auto guard = config::loadExternalFactories("external_logger_plugin");
+    const auto guard = config::loadExternalFactories("external_talker_plugin");
     { // scope to ensure anything instantiated is cleaned up
-        const auto external_logger = config::create<config::internal::Logger>("my_logger");
-        // do some logging
+        const auto talker = config::create<talker::Talker>("my_talker");
+        std::cout << talker.talk() << std::endl;  // should get 'Hello'
     } // end scope
 } // external library is unloaded after this point
 
-// note that calling create at this point with "my_logger" would fail!
+// note that calling create at this point with "my_talker" would fail!
 ```
 
 > **ℹ️ Note**<br>
@@ -47,7 +66,7 @@ You could instantiate the external logger as follows:
 Note that in this example (on Linux), we are actually loading the file `libexternal_logger_plugin.so`, which is assumed to be available somewhere on `LD_LIBRARY_PATH`.
 You can also load libraries via an absolute path (optionally omitting the `lib` prefix and the `.so` extension).
 
-Either version of `config::loadExternalFactories()` returns scope-based guard(s) that will unload the external libraries as soon as the guard(s) are no longer in scope.
+Either version of `config::loadExternalFactories()` returns a scope-based guard that will unload the external libraries as soon as the guard is no longer in scope.
 The recommended design for using external libraries is to call `config::loadExternalFactories()` near the beginning of `main()` and then enter a new scope.
 
 ## Managed instances
@@ -57,31 +76,28 @@ In these cases, it may make sense to use the `ManagedInstance` class.
 
 Assuming we have the same external library as before, we can do this instead:
 ```c++
-config::ManagedInstance<config::internal::Logger> external_logger;
+config::ManagedInstance<talker::Talker> talker;
 { // scope where external library is loaded
-    const auto guard = config::loadExternalFactories("external_logger_plugin");
-    external_logger = config::createManaged(config::create<config::internal::Logger>("my_logger"));
-    const auto view = external_logger.get();
-    view->logInfo("Hello!");
+    const auto guard = config::loadExternalFactories("external_talker_plugin");
+    talker = config::createManaged(config::create<talker::Talker>("my_talker"));
+    const auto view = talker.get();
+    std::cout << view->talk() << std::end;  // should get 'Hello'
 } // external library is unloaded after this point and the external logger no longer works
 
 const auto view = external_logger.get();
-// view->logInfo("world!"); // this would segfault
+// view->talk(); // this would segfault
 
 // views can be implicitly converted to a bool to determine whether or not they are valid
 if (!view) {
     std::cout << "world!" << std::endl;
 }
-
-{ // scope where external library is loaded
-    const auto guard = config::loadExternalFactories("external_logger_plugin");
-    external_logger = config::createManaged(config::create<config::internal::Logger>("stdout"));
-} // external library is unloaded after this point
-
-// the view is still valid in this case as `StdoutLogger` is not in libexternal_logger_plugin.so and doesn't need to be unallocated
-const auto new_view = external_logger.get();
-view->logInfo("Hello again!");
 ```
+
+> **:warning: Warning**<br>
+> All `ManagedInstance` instantiations will be invalidated as soon as any library is unloaded.
+> There is no safe way to determine whether or not the underlying types still have the necessary underlying libraries available.
+
+Note that `ManagedInstance` may be instantiated by factories that are already compiled into the executable.
 
 ## Debugging
 TBD
