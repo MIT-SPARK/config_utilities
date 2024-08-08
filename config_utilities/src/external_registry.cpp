@@ -70,26 +70,30 @@ struct LibraryHolderImpl : LibraryHolder {
 
 LibraryGuard::LibraryGuard() {}
 
-LibraryGuard::LibraryGuard(const std::filesystem::path library) : library_(library) {}
+LibraryGuard::LibraryGuard(const std::filesystem::path& library) { libraries_.push_back(library); }
 
 LibraryGuard::~LibraryGuard() { unload(); }
 
-LibraryGuard::LibraryGuard(LibraryGuard&& other) : library_(std::exchange(other.library_, "")) {}
+LibraryGuard::LibraryGuard(LibraryGuard&& other) {
+  libraries_.insert(libraries_.end(), other.libraries_.begin(), other.libraries_.end());
+  other.libraries_.clear();
+}
 
 LibraryGuard& LibraryGuard::operator=(LibraryGuard&& other) {
-  library_ = std::exchange(other.library_, "");
+  libraries_.insert(libraries_.end(), other.libraries_.begin(), other.libraries_.end());
+  other.libraries_.clear();
   return *this;
 }
 
-LibraryGuard::operator bool() const { return !library_.empty(); }
-
 void LibraryGuard::unload() {
-  if (!library_.empty()) {
-    ExternalRegistry::instance().unload(library_);
+  for (const auto& library : libraries_) {
+    ExternalRegistry::instance().unload(library);
   }
 
-  library_.clear();
+  libraries_.clear();
 }
+
+LibraryGuard::operator bool() const { return !libraries_.empty(); }
 
 ExternalRegistry::~ExternalRegistry() {
   std::vector<std::string> libraries;
@@ -112,23 +116,19 @@ void ExternalRegistry::unload(const std::filesystem::path& library_path) {
     // shouldn't do this, it's easy to happen in practice and will cause segfaults
     for (const auto& entry : iter->second) {
       internal::ModuleRegistry::removeModule(entry.key, entry.type);
-      library_lookup_.erase(entry);
     }
   }
 
-  auto instance_iter = instances_.find(library_path);
-  if (instance_iter != instances_.end()) {
-    for (const auto& internal_ref : instance_iter->second) {
-      const auto actual_ref = internal_ref.lock();
-      if (actual_ref) {
-        actual_ref->cleanup();
-      }
+  for (const auto& internal_ref : instances_) {
+    const auto actual_ref = internal_ref.lock();
+    if (actual_ref) {
+      actual_ref->cleanup();
     }
   }
 
   entries_.erase(library_path);
   libraries_.erase(library_path);
-  instances_.erase(library_path);
+  instances_.clear();
 }
 
 LibraryGuard ExternalRegistry::load(const std::filesystem::path& library_path) {
@@ -154,11 +154,6 @@ LibraryGuard ExternalRegistry::load(const std::filesystem::path& library_path) {
 }
 
 void ExternalRegistry::registerType(const std::string& current_library, const RegistryEntry& entry) {
-  std::stringstream ss;
-  ss << "Registering type '" << entry.type << "' with signature " << entry.key.signature() << " for library '"
-     << current_library << "'";
-  Logger::logWarning(ss.str());
-
   auto& entries = instance().entries_;
   auto iter = entries.find(current_library);
   if (iter == entries.end()) {
@@ -166,56 +161,14 @@ void ExternalRegistry::registerType(const std::string& current_library, const Re
   }
 
   iter->second.push_back(entry);
-  instance().library_lookup_[entry] = current_library;
-}
-
-void ExternalRegistry::registerInstance(const RegistryEntry& entry, void* pointer) {
-  const auto& library_lookup = instance().library_lookup_;
-  auto iter = library_lookup.find(entry);
-  if (iter == library_lookup.end()) {
-    return;
-  }
-
-  std::stringstream ss;
-  ss << "Allocated instance of '" << entry.type << "' for " << entry.key.signature() << " @ " << pointer
-     << " with library " << iter->second;
-  Logger::logWarning(ss.str());
-  instance().external_allocations_.emplace(pointer, entry);
 }
 
 ExternalRegistry& ExternalRegistry::instance() {
   if (!s_instance_) {
     s_instance_.reset(new ExternalRegistry());
-    ModuleRegistry::setCreationCallback([](const ModuleInfo& info, const std::string& type, void* pointer) {
-      registerInstance({info, type}, pointer);
-    });
   }
+
   return *s_instance_;
-}
-
-std::optional<std::string> ExternalRegistry::getLibraryForAllocation(void* pointer) {
-  auto& external_allocations = instance().external_allocations_;
-  auto iter = external_allocations.find(pointer);
-  if (iter == external_allocations.end()) {
-    return std::nullopt;
-  }
-
-  // TODO(nathan) validate types
-  /*
-  const auto base_type = internal::typeName<T>();
-  if (base_type != iter->second.key.base_type) {
-    Logger::logError("Invalid conversion between '" + base_type + "' and registered " + iter->second.signature());
-  }
-  */
-
-  const auto& library_lookup = instance().library_lookup_;
-  auto library_iter = library_lookup.find(iter->second);
-  if (library_iter == library_lookup.end()) {
-    return std::nullopt;
-  }
-
-  external_allocations.erase(iter);
-  return library_iter->second;
 }
 
 }  // namespace internal
@@ -224,13 +177,13 @@ internal::LibraryGuard loadExternalFactories(const std::filesystem::path& librar
   return internal::ExternalRegistry::load(library_path);
 }
 
-internal::LibraryGuard::List loadExternalFactories(const std::vector<std::filesystem::path>& libraries) {
-  internal::LibraryGuard::List guards;
+internal::LibraryGuard loadExternalFactories(const std::vector<std::filesystem::path>& libraries) {
+  internal::LibraryGuard guard;
   for (const auto& library_path : libraries) {
-    guards.push_back(internal::ExternalRegistry::load(library_path));
+    guard = internal::ExternalRegistry::load(library_path);
   }
 
-  return guards;
+  return guard;
 }
 
 }  // namespace config

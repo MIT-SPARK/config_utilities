@@ -45,9 +45,9 @@ namespace config::test {
 TEST(ExternalRegistry, InstanceLifetimes) {
   auto plugin_lib = loadExternalFactories("./test_config_utilities_plugins");
 
-  //auto unmanaged_logger = create<internal::Logger>("external_logger");
-  //EXPECT_TRUE(unmanaged_logger);
-  //unmanaged_logger.reset();
+  auto unmanaged_logger = create<internal::Logger>("external_logger");
+  EXPECT_TRUE(unmanaged_logger);
+  unmanaged_logger.reset();
 
   auto internal_logger = createManaged(create<internal::Logger>("stdout"));
   auto external_logger = createManaged(create<internal::Logger>("external_logger"));
@@ -62,14 +62,14 @@ TEST(ExternalRegistry, InstanceLifetimes) {
 
   // after unloading, we shouldn't be able to make a test logger
   plugin_lib.unload();
-  //unmanaged_logger = internal::ObjectFactory<internal::Logger>::create("external_logger");
-  //EXPECT_FALSE(unmanaged_logger);
+  unmanaged_logger = internal::ObjectFactory<internal::Logger>::create("external_logger");
+  EXPECT_FALSE(unmanaged_logger);
 
-  EXPECT_TRUE(internal_logger);
+  EXPECT_FALSE(internal_logger);
   EXPECT_FALSE(external_logger);
   {  // limit scope for views
     const auto internal_view = internal_logger.get();
-    EXPECT_TRUE(internal_view);
+    EXPECT_FALSE(internal_view);
     const auto external_view = external_logger.get();
     EXPECT_FALSE(external_view);
   }
@@ -97,8 +97,8 @@ TEST(ExternalRegistry, ManagedInstance) {
     EXPECT_TRUE(talker);
   }  // external library is unloaded after this point
 
-  EXPECT_TRUE(talker);
+  // even internal types get unallocated
+  EXPECT_FALSE(talker);
   const auto new_view = talker.get();
-  ASSERT_TRUE(new_view);
-  EXPECT_EQ(new_view->talk(), "internal");
+  EXPECT_FALSE(new_view);
 }

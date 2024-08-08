@@ -208,27 +208,12 @@ class ModuleRegistry {
     }
 
     const auto factory = derived->getEntry(type);
-    if (!factory) {
-      // warn user if they specified a type but there was no corresponding factory
-      if (!type.empty()) {
-        Logger::logError("No module of type '" + type + "' registered to the factory for " + key.typeInfo() +
-                         ". Registered are: '" + getRegistered(key) + "'.");
-      }
-      return factory;
+    if (!factory && !type.empty()) {
+      Logger::logError("No module of type '" + type + "' registered to the factory for " + key.typeInfo() +
+                       ". Registered are: '" + getRegistered(key) + "'.");
     }
 
-    const auto& create_callback = instance().create_callback_;
-    if (!create_callback) {
-      // just return factory if no external libraries are in play
-      return factory;
-    }
-
-    // wrap factory call to register any allocations
-    return [factory, key, type, create_callback](Args... args) -> BaseT* {
-      auto pointer = factory(args...);
-      create_callback(key, type, pointer);
-      return pointer;
-    };
+    return factory;
   }
 
   template <typename BaseT, typename ConfigT>
@@ -264,7 +249,6 @@ class ModuleRegistry {
   static void lock(LockCallback callback);
   static void unlock();
   static bool locked();
-  static void setCreationCallback(CreateCallback callback);
 
  private:
   static std::unique_ptr<ModuleRegistry> s_instance_;
@@ -273,7 +257,6 @@ class ModuleRegistry {
 
   bool locked_;
   LockCallback lock_callback_;
-  CreateCallback create_callback_;
 
   std::map<ModuleInfo, std::unique_ptr<FactoryMapBase>> modules;
   // Nested modules: base_type + args -> registered <type_name, type>.

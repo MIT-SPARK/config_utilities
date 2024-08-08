@@ -37,7 +37,6 @@
 
 #include <filesystem>
 #include <functional>
-#include <iostream>
 #include <map>
 #include <mutex>
 #include <vector>
@@ -49,7 +48,7 @@ struct InstanceInfoBase {
   virtual void cleanup() = 0;
 };
 
-//! @brief Instance holder for non-managed instances
+//! @brief Instance holder for managed instances
 template <typename T>
 struct InstanceInfo : InstanceInfoBase {
   struct View {
@@ -64,7 +63,7 @@ struct InstanceInfo : InstanceInfoBase {
   InstanceInfo() : instance(nullptr) {}
   explicit InstanceInfo(std::unique_ptr<T>&& instance) : instance(std::move(instance)) {}
 
-  void cleanup() override {}
+  void cleanup() override { instance.reset(); }
   virtual View view() const { return {instance.get()}; }
   virtual bool valid() const { return instance != nullptr; }
   operator bool() const { return valid(); }
@@ -74,14 +73,13 @@ struct InstanceInfo : InstanceInfoBase {
 
 //! @brief Instance holder for managed instances (thread-safety required)
 template <typename T>
-struct ManagedInstanceInfo : InstanceInfo<T> {
-  ManagedInstanceInfo() : InstanceInfo<T>() {}
-  explicit ManagedInstanceInfo(std::unique_ptr<T>&& instance) : InstanceInfo<T>(std::move(instance)) {}
+struct ThreadsafeInstanceInfo : InstanceInfo<T> {
+  ThreadsafeInstanceInfo() : InstanceInfo<T>() {}
+  explicit ThreadsafeInstanceInfo(std::unique_ptr<T>&& instance) : InstanceInfo<T>(std::move(instance)) {}
 
   void cleanup() override {
-    std::cout << "Cleaning up " << InstanceInfo<T>::instance.get() << std::endl;
     std::lock_guard<std::mutex> lock(mutex);
-    InstanceInfo<T>::instance.reset();
+    InstanceInfo<T>::cleanup();
   }
 
   typename InstanceInfo<T>::View view() const override {
@@ -104,13 +102,9 @@ struct ManagedInstance {
   using InstancePtr = std::shared_ptr<internal::InstanceInfo<T>>;
 
   ManagedInstance() : info_(new internal::InstanceInfo<T>()) {}
-  explicit ManagedInstance(std::unique_ptr<T>&& instance) : info_(new internal::InstanceInfo<T>(std::move(instance))) {
-    std::cout << "Creating managed instance from unmanaged pointer!" << std::endl;
-  }
+  explicit ManagedInstance(std::unique_ptr<T>&& instance) : info_(new internal::InstanceInfo<T>(std::move(instance))) {}
 
-  explicit ManagedInstance(InstancePtr instance) : info_(std::move(instance)) {
-    std::cout << "Creating managed instance from managed pointer!" << std::endl;
-  }
+  explicit ManagedInstance(InstancePtr instance) : info_(std::move(instance)) {}
 
   ~ManagedInstance() = default;
 
@@ -147,23 +141,21 @@ struct LibraryHolder {
 };
 
 /**
- * @brief Scope-based guard that unloads an external library once it leaves scope
+ * @brief Scope-based guard that unloads external libraries once it leaves scope
  */
 struct LibraryGuard {
-  using List = std::vector<LibraryGuard>;
   LibraryGuard();
-  explicit LibraryGuard(const std::filesystem::path library);
+  explicit LibraryGuard(const std::filesystem::path& library);
   ~LibraryGuard();
   LibraryGuard(const LibraryGuard& other) = delete;
   LibraryGuard& operator=(const LibraryGuard& other) = delete;
   LibraryGuard(LibraryGuard&& other);
   LibraryGuard& operator=(LibraryGuard&& other);
-
-  operator bool() const;
   void unload();
+  operator bool() const;
 
  private:
-  std::filesystem::path library_;
+  std::vector<std::filesystem::path> libraries_;
 };
 
 /**
@@ -171,6 +163,11 @@ struct LibraryGuard {
  */
 struct ExternalRegistry {
   struct RegistryEntry;
+
+  /**
+   * @brief Get external registry instance
+   */
+  static ExternalRegistry& instance();
 
   /**
    * @brief De-registers all external types and unloads external libraries
@@ -192,33 +189,17 @@ struct ExternalRegistry {
    */
   void unload(const std::filesystem::path& library_path);
 
-  /**
-   * @brief Get singleton instance of the registry
-   */
-  static ExternalRegistry& instance();
-
   template <typename T>
-  static ManagedInstance<T> createManaged(std::unique_ptr<T>&& underlying) {
-    std::cout << "Creating instance with " << underlying.get() << std::endl;
+  static ManagedInstance<T> createManaged(std::unique_ptr<T>&& underlying, bool threadsafe) {
     if (!underlying) {
       // nullptr results in invalid managed instance
       return {};
     }
 
-    const auto library = getLibraryForAllocation(underlying.get());
-    if (!library) {
-      // return unmanaged instance, instance not allocated externally
-      return ManagedInstance<T>(std::move(underlying));
-    }
-
-    auto& instances = instance().instances_;
-    auto iter = instances.find(*library);
-    if (iter == instances.end()) {
-      iter = instances.emplace(*library, std::vector<std::weak_ptr<InstanceInfoBase>>()).first;
-    }
-
-    auto managed_info = std::make_shared<ManagedInstanceInfo<T>>(std::move(underlying));
-    iter->second.push_back(managed_info);
+    std::shared_ptr<InstanceInfo<T>> managed_info =
+        threadsafe ? std::make_shared<ThreadsafeInstanceInfo<T>>(std::move(underlying))
+                   : std::make_shared<InstanceInfo<T>>(std::move(underlying));
+    instance().instances_.push_back(managed_info);
     return ManagedInstance<T>(managed_info);
   };
 
@@ -226,18 +207,12 @@ struct ExternalRegistry {
   ExternalRegistry() = default;
   static std::unique_ptr<ExternalRegistry> s_instance_;
 
-  static std::optional<std::string> getLibraryForAllocation(void* pointer);
   static void registerType(const std::string& current_library, const RegistryEntry& entry);
-  static void registerInstance(const RegistryEntry& entry, void* pointer);
 
   // maps from libraries to other information
   std::map<std::string, std::unique_ptr<LibraryHolder>> libraries_;
   std::map<std::string, std::vector<RegistryEntry>> entries_;
-  std::map<std::string, std::vector<std::weak_ptr<InstanceInfoBase>>> instances_;
-  // map from registered types to libraries
-  std::map<RegistryEntry, std::string> library_lookup_;
-  // current registered allocations
-  std::map<void*, RegistryEntry> external_allocations_;
+  std::vector<std::weak_ptr<InstanceInfoBase>> instances_;
 };
 
 }  // namespace internal
@@ -268,7 +243,7 @@ struct ExternalRegistry {
  *
  * @returns Guard that unloads library once out of scope
  */
-[[nodiscard]] internal::LibraryGuard::List loadExternalFactories(const std::vector<std::filesystem::path>& libraries);
+[[nodiscard]] internal::LibraryGuard loadExternalFactories(const std::vector<std::filesystem::path>& libraries);
 
 /**
  * @brief Wrap a created object that ensures external instance deletion on external library unload
@@ -284,8 +259,8 @@ struct ExternalRegistry {
  * @returns Managed instance of object
  */
 template <typename T>
-ManagedInstance<T> createManaged(std::unique_ptr<T>&& unmanaged) {
-  return internal::ExternalRegistry::createManaged<T>(std::move(unmanaged));
+ManagedInstance<T> createManaged(std::unique_ptr<T>&& unmanaged, bool threadsafe = true) {
+  return internal::ExternalRegistry::createManaged<T>(std::move(unmanaged), threadsafe);
 }
 
 }  // namespace config
