@@ -44,7 +44,7 @@ add_library(
 target_link_libraries(
   ${PROJECT_NAME}
   PUBLIC yaml-cpp
-  PRIVATE Boost::boost ${CMAKE_DL_LIBS})
+  PRIVATE Boost::filesystem Boost::system Boost::boost ${CMAKE_DL_LIBS})
 target_include_directories(
   ${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>
                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
