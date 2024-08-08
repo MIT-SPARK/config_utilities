@@ -35,7 +35,12 @@ The following tutorials will guide you through functionalities of `config_utilit
     - [Adding custom formatters](Advanced.md#adding-custom-formatters)
     - [Adding custom parsers](Advanced.md#adding-custom-parsers)
 
-7. [**Varia**](Varia.md)
+7. [**External Plugins**](External.md)
+    - [Loading an external library](External.md#loading-an-external-library)
+    - [Managed instances](External.md#managed-instances)
+    - [Debugging](External.md#debugging)
+
+8. [**Varia**](Varia.md)
     - [Settings](Varia.md#settings)
     - [Globals](Varia.md#globals)
 
