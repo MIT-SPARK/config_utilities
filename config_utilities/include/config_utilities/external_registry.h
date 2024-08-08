@@ -40,6 +40,7 @@
 #include <map>
 #include <mutex>
 #include <vector>
+#include <set>
 
 namespace config {
 namespace internal {
@@ -207,12 +208,14 @@ struct ExternalRegistry {
   ExternalRegistry() = default;
   static std::unique_ptr<ExternalRegistry> s_instance_;
 
+  static void logAllocation(const RegistryEntry& entry, void* pointer);
   static void registerType(const std::string& current_library, const RegistryEntry& entry);
 
   // maps from libraries to other information
   std::map<std::string, std::unique_ptr<LibraryHolder>> libraries_;
   std::map<std::string, std::vector<RegistryEntry>> entries_;
   std::vector<std::weak_ptr<InstanceInfoBase>> instances_;
+  std::set<RegistryEntry> all_entries_;
 };
 
 }  // namespace internal

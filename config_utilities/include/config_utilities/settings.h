@@ -51,36 +51,45 @@ struct Settings {
 
   /* Printing Settings. */
   // TODO(lschmid): These should probably be moved into a config or so for different formatters.
-  // Width of the 'toString()' output of configs.
+  // @brief Width of the 'toString()' output of configs.
   unsigned int print_width = 80u;
 
-  // Indent after which values are printed.
+  // @brief Indent after which values are printed.
   unsigned int print_indent = 30u;
 
-  // Indent for nested configs.
+  // @brief Indent for nested configs.
   unsigned int subconfig_indent = 3u;
 
-  // If true, indicate which values are identical to the default.
+  // @brief If true, indicate which values are identical to the default.
   bool indicate_default_values = true;
 
-  // If true, also display the unit of each parameter where provided.
+  // @brief If true, also display the unit of each parameter where provided.
   bool indicate_units = true;
 
-  // If true integrate subconfig fields into the main config, if false print them separately.
+  // @brief If true integrate subconfig fields into the main config, if false print them separately.
   bool inline_subconfig_field_names = true;
 
-  // If true, store all validated configs for global printing.
+  // @brief If true, store all validated configs for global printing.
   bool store_valid_configs = true;
 
-  // If true, attempts to print floats and float-like fields with default stream precision
+  // @brief If true, attempts to print floats and float-like fields with default stream precision
   bool reformat_floats = true;
 
-  // If true, prints fields that had no value present when being parsed
+  // @brief If true, prints fields that had no value present when being parsed
   bool print_missing = false;
 
   /* Factory settings */
-  // The factory will look for this param to deduce the type of the object to be created.
+  // @brief The factory will look for this param to deduce the type of the object to be created.
   std::string factory_type_param_name = "type";
+
+  //! @brief Whether or not loading external libraries are enabled
+  bool allow_external_libraries = true;
+
+  //! @brief Whether or not loading and unloading libraries should be verbose
+  bool verbose_external_load = true;
+
+  //! @brief Log any factory creation from an external library (for debugging purposes)
+  bool print_external_allocations = false;
 
   /* Options to specify the logger and formatter at run time. */
   // Specify the default logger to be used for printing. Loggers register themselves if included.

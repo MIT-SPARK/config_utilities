@@ -39,6 +39,7 @@
 
 #include <boost/dll.hpp>
 #include <config_utilities/factory.h>
+#include <config_utilities/settings.h>
 
 namespace config {
 namespace internal {
@@ -48,7 +49,6 @@ std::unique_ptr<ExternalRegistry> ExternalRegistry::s_instance_ = nullptr;
 struct ExternalRegistry::RegistryEntry {
   ModuleInfo key;
   std::string type;
-  std::string derived;
 };
 
 bool operator<(const ExternalRegistry::RegistryEntry& lhs, const ExternalRegistry::RegistryEntry& rhs) {
@@ -107,8 +107,12 @@ ExternalRegistry::~ExternalRegistry() {
 }
 
 void ExternalRegistry::unload(const std::filesystem::path& library_path) {
-  // TODO(nathan) toggle this via settings
-  std::cerr << "[WARNING] Unloading external library: " << library_path << std::endl;
+  if (Settings::instance().verbose_external_load) {
+    // NOTE(nathan) this is separate from the logger becuase there is no guarantee that it will be visible to the user
+    // if it is through the logger
+    std::cerr << "[WARNING] Unloading external library: " << library_path << std::endl;
+  }
+
   auto iter = entries_.find(library_path);
   if (iter != entries_.end()) {
     // Remove any factories that use code from the external library in question. This will also delete any factory
@@ -116,6 +120,7 @@ void ExternalRegistry::unload(const std::filesystem::path& library_path) {
     // shouldn't do this, it's easy to happen in practice and will cause segfaults
     for (const auto& entry : iter->second) {
       internal::ModuleRegistry::removeModule(entry.key, entry.type);
+      all_entries_.erase(entry);
     }
   }
 
@@ -132,14 +137,21 @@ void ExternalRegistry::unload(const std::filesystem::path& library_path) {
 }
 
 LibraryGuard ExternalRegistry::load(const std::filesystem::path& library_path) {
-  Logger::logInfo("Loading external library: " + library_path.string());
+  if (!Settings::instance().allow_external_libraries) {
+    Logger::logError("External library loading is disallowed! Not loading " + library_path.string());
+    return {};
+  }
+
+  if (Settings::instance().verbose_external_load) {
+    Logger::logInfo("Loading external library: " + library_path.string());
+  }
 
   // this sets the global registry to do two things:
   //   - it disallows registration of previously registered factories (silently) for registrations linked in the plugin
   //   - it provides a callback with information about everything that can be successfully registered (so that we can
   //   unload it when the library unloads)
-  ModuleRegistry::lock([library_path](const auto& key, const auto& type, const auto& derived) {
-    ExternalRegistry::registerType(library_path, {key, type, derived});
+  ModuleRegistry::lock([library_path](const auto& key, const auto& type, const auto&) {
+    ExternalRegistry::registerType(library_path, {key, type});
   });
 
   // load the library. This has the effect of calling all static initializers in the library (during the loading
@@ -161,11 +173,27 @@ void ExternalRegistry::registerType(const std::string& current_library, const Re
   }
 
   iter->second.push_back(entry);
+  instance().all_entries_.insert(entry);
+}
+
+void ExternalRegistry::logAllocation(const RegistryEntry& entry, void* pointer) {
+  if (!instance().all_entries_.count(entry)) {
+    return;
+  }
+
+  std::stringstream ss;
+  ss << "Allocating '" << entry.type << "' @ " << pointer << " for signature " << entry.key.signature();
+  Logger::logInfo(ss.str());
 }
 
 ExternalRegistry& ExternalRegistry::instance() {
   if (!s_instance_) {
     s_instance_.reset(new ExternalRegistry());
+    if (Settings::instance().print_external_allocations) {
+      ModuleRegistry::setCreationCallback([](const auto& info, const auto& type, void* pointer) {
+        ExternalRegistry::logAllocation({info, type}, pointer);
+      });
+    }
   }
 
   return *s_instance_;
