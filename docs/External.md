@@ -100,7 +100,7 @@ Note that `ManagedInstance` may be instantiated by factories that are already co
 
 Tracking down issues with code loaded from external libraries can be hard.
 You may find it helpful to turn on allocation logging by doing the following:
-```
+```c++
 #include <config_utilities/logging/log_to_stdout.h> // or your preferred logger
 #include <config_utilities/settings.h>
 
@@ -108,12 +108,12 @@ config::Settings::instance().print_external_allocations = true;
 ```
 
 You can also disable loading external libraries by doing the following:
-```
+```c++
 config::Settings::instance().allow_external_libraries = false;
 ```
 
 Finally, we intentionally print to stderr when a library is being unloaded.
 You can turn this behavior off by default by doing
-```
+```c++
 config::Settings::instance().verbose_external_load = false;
 ```
