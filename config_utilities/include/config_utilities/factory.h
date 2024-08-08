@@ -148,6 +148,7 @@ struct FactoryMap : FactoryMapBase {
 class ModuleRegistry {
  public:
   using LockCallback = std::function<void(const ModuleInfo&, std::string, std::string)>;
+  using CreateCallback = std::function<void(const ModuleInfo&, std::string, void*)>;
 
   template <typename BaseT, typename DerivedT, typename... Args>
   static bool addModule(const std::string& type, FactoryMethod<BaseT, Args...> method, bool skip_first_arg = false) {
@@ -207,12 +208,27 @@ class ModuleRegistry {
     }
 
     const auto factory = derived->getEntry(type);
-    if (!factory && !type.empty()) {
-      Logger::logError("No module of type '" + type + "' registered to the factory for " + key.typeInfo() +
-                       ". Registered are: '" + getRegistered(key) + "'.");
+    if (!factory) {
+      // warn user if they specified a type but there was no corresponding factory
+      if (!type.empty()) {
+        Logger::logError("No module of type '" + type + "' registered to the factory for " + key.typeInfo() +
+                         ". Registered are: '" + getRegistered(key) + "'.");
+      }
+      return factory;
     }
 
-    return factory;
+    const auto& create_callback = instance().create_callback_;
+    if (!create_callback) {
+      // just return factory if no external libraries are in play
+      return factory;
+    }
+
+    // wrap factory call to register any allocations
+    return [factory, key, type, create_callback](Args... args) -> BaseT* {
+      auto pointer = factory(args...);
+      create_callback(key, type, pointer);
+      return pointer;
+    };
   }
 
   template <typename BaseT, typename ConfigT>
@@ -248,6 +264,7 @@ class ModuleRegistry {
   static void lock(LockCallback callback);
   static void unlock();
   static bool locked();
+  static void setCreationCallback(CreateCallback callback);
 
  private:
   static std::unique_ptr<ModuleRegistry> s_instance_;
@@ -256,13 +273,14 @@ class ModuleRegistry {
 
   bool locked_;
   LockCallback lock_callback_;
+  CreateCallback create_callback_;
 
   std::map<ModuleInfo, std::unique_ptr<FactoryMapBase>> modules;
   // Nested modules: base_type + args -> registered <type_name, type>.
   std::map<ModuleInfo, std::map<std::string, std::string>> type_registry;
   // Mapping between BaseT + ConfigT and underlying string type
   std::map<ConfigPair, std::string> config_registry;
-};
+};  // namespace internal
 
 template <typename T>
 struct ModuleMapBase {};

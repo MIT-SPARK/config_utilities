@@ -41,17 +41,37 @@
 
 namespace config::test {
 
-TEST(ExternalRegistry, ValidPath) {
+TEST(ExternalRegistry, InstanceLifetimes) {
   auto plugin_lib = loadExternalFactories("./test_config_utilities_plugins");
 
-  auto test_logger = internal::ObjectFactory<internal::Logger>::create("test_logger");
+  auto test_logger = create<internal::Logger>("test_logger");
   EXPECT_TRUE(test_logger);
   test_logger.reset();
+
+  auto internal_logger = internal::ExternalRegistry::createManaged(create<internal::Logger>("stdout"));
+  auto external_logger = internal::ExternalRegistry::createManaged(create<internal::Logger>("test_logger"));
+  ASSERT_TRUE(internal_logger);
+  ASSERT_TRUE(external_logger);
+  {  // limit scope for views
+    const auto internal_view = internal_logger.get();
+    EXPECT_TRUE(internal_view);
+    const auto external_view = external_logger.get();
+    EXPECT_TRUE(external_view);
+  }
 
   // after unloading, we shouldn't be able to make a test logger
   plugin_lib.unload();
   test_logger = internal::ObjectFactory<internal::Logger>::create("test_logger");
   EXPECT_FALSE(test_logger);
+
+  EXPECT_TRUE(internal_logger);
+  EXPECT_FALSE(external_logger);
+  {  // limit scope for views
+    const auto internal_view = internal_logger.get();
+    EXPECT_TRUE(internal_view);
+    const auto external_view = external_logger.get();
+    EXPECT_FALSE(external_view);
+  }
 }
 
 }  // namespace config::test

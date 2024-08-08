@@ -166,6 +166,8 @@ void ModuleRegistry::unlock() {
 
 bool ModuleRegistry::locked() { return instance().locked_; }
 
+void ModuleRegistry::setCreationCallback(CreateCallback callback) { instance().create_callback_ = std::move(callback); }
+
 ModuleRegistry& ModuleRegistry::instance() {
   if (!s_instance_) {
     s_instance_.reset(new ModuleRegistry());

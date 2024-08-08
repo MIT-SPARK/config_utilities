@@ -43,11 +43,17 @@
 namespace config {
 namespace internal {
 
+std::unique_ptr<ExternalRegistry> ExternalRegistry::s_instance_ = nullptr;
+
 struct ExternalRegistry::RegistryEntry {
   ModuleInfo key;
   std::string type;
   std::string derived;
 };
+
+bool operator<(const ExternalRegistry::RegistryEntry& lhs, const ExternalRegistry::RegistryEntry& rhs) {
+  return lhs.type == rhs.type ? lhs.key < rhs.key : lhs.type < rhs.type;
+}
 
 struct LibraryHolderImpl : LibraryHolder {
   explicit LibraryHolderImpl(const std::filesystem::path& library_path) {
@@ -98,7 +104,7 @@ ExternalRegistry::~ExternalRegistry() {
 
 void ExternalRegistry::unload(const std::filesystem::path& library_path) {
   // TODO(nathan) toggle this via settings
-  std::cerr << "[Warning] Unloading external library: " << library_path << std::endl;
+  std::cerr << "[WARNING] Unloading external library: " << library_path << std::endl;
   auto iter = entries_.find(library_path);
   if (iter != entries_.end()) {
     // Remove any factories that use code from the external library in question. This will also delete any factory
@@ -106,6 +112,17 @@ void ExternalRegistry::unload(const std::filesystem::path& library_path) {
     // shouldn't do this, it's easy to happen in practice and will cause segfaults
     for (const auto& entry : iter->second) {
       internal::ModuleRegistry::removeModule(entry.key, entry.type);
+      library_lookup_.erase(entry);
+    }
+  }
+
+  auto instance_iter = instances_.find(library_path);
+  if (instance_iter != instances_.end()) {
+    for (const auto& internal_ref : instance_iter->second) {
+      const auto actual_ref = internal_ref.lock();
+      if (actual_ref) {
+        actual_ref->cleanup();
+      }
     }
   }
 
@@ -143,11 +160,55 @@ void ExternalRegistry::registerType(const std::string& current_library, const Re
   }
 
   iter->second.push_back(entry);
+  instance().library_lookup_[entry] = current_library;
+}
+
+void ExternalRegistry::registerInstance(const RegistryEntry& entry, void* pointer) {
+  const auto& library_lookup = instance().library_lookup_;
+  auto iter = library_lookup.find(entry);
+  if (iter == library_lookup.end()) {
+    return;
+  }
+
+  std::stringstream ss;
+  ss << "Allocated instance of '" << entry.type << "' for " << entry.key.signature() << " @ " << pointer
+     << " with library " << iter->second;
+  Logger::logWarning(ss.str());
+  instance().external_allocations_.emplace(pointer, entry);
 }
 
 ExternalRegistry& ExternalRegistry::instance() {
-  static ExternalRegistry s_instance;
-  return s_instance;
+  if (!s_instance_) {
+    s_instance_.reset(new ExternalRegistry());
+    ModuleRegistry::setCreationCallback([](const ModuleInfo& info, const std::string& type, void* pointer) {
+      registerInstance({info, type}, pointer);
+    });
+  }
+  return *s_instance_;
+}
+
+std::optional<std::string> ExternalRegistry::getLibraryForAllocation(void* pointer) {
+  auto& external_allocations = instance().external_allocations_;
+  auto iter = external_allocations.find(pointer);
+  if (iter == external_allocations.end()) {
+    return std::nullopt;
+  }
+
+  // TODO(nathan) validate types
+  /*
+  const auto base_type = internal::typeName<T>();
+  if (base_type != iter->second.key.base_type) {
+    Logger::logError("Invalid conversion between '" + base_type + "' and registered " + iter->second.signature());
+  }
+  */
+
+  const auto& library_lookup = instance().library_lookup_;
+  auto library_iter = library_lookup.find(iter->second);
+  if (library_iter == library_lookup.end()) {
+    return std::nullopt;
+  }
+
+  return library_iter->second;
 }
 
 }  // namespace internal
