@@ -106,8 +106,8 @@ std::string ModuleInfo::argumentString(const std::string& separator,
 }
 
 std::string ModuleInfo::typeInfo() const {
-  return "BaseT='" + base_type + (underlying_base.empty() ? "" : " (underlying: '" + base_type + "'") +
-         "' and ConstructorArguments={" + argumentString(", ", "'") + "}";
+  return "BaseT='" + base_type + "'" + (underlying_base.empty() ? "" : " (underlying: '" + underlying_base + "')") +
+         " and ConstructorArguments={" + argumentString(", ", "'") + "}";
 }
 
 std::string ModuleInfo::signature() const {
