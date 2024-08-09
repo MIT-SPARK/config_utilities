@@ -33,47 +33,34 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
-#pragma once
+#include "config_utilities/logging/log_to_stdout.h"
 
-#include <ros/console.h>
-
-#include "config_utilities/factory.h"
-#include "config_utilities/internal/logger.h"
+#include <exception>
+#include <iostream>
 
 namespace config::internal {
 
-/**
- * @brief Implements logging to roslog. This file pulls in ros as a dependency, but its not required if this file is
- * not included in the project.
- */
-class RosLogger : public Logger {
- public:
-  RosLogger() = default;
-  virtual ~RosLogger() = default;
+void StdoutLogger::logImpl(const Severity severity, const std::string& message) {
+  switch (severity) {
+    case Severity::kInfo:
+      std::cout << "[INFO] " << message << std::endl;
+      break;
 
- protected:
-  void logImpl(const Severity severity, const std::string& message) override {
-    switch (severity) {
-      case Severity::kInfo:
-        ROS_INFO_STREAM(message);
-        break;
+    case Severity::kWarning:
+      std::cout << "\033[33m[WARNING] " << message << "\033[0m" << std::endl;
+      break;
 
-      case Severity::kWarning:
-        ROS_WARN_STREAM(message);
-        break;
+    case Severity::kError:
+      std::cout << "\033[31m[ERROR] " << message << "\033[0m" << std::endl;
+      break;
 
-      case Severity::kError:
-        ROS_ERROR_STREAM(message);
-        break;
-
-      case Severity::kFatal:
-        ROS_FATAL_STREAM(message);
-    }
+    case Severity::kFatal:
+      throw std::runtime_error(message);
   }
+}
 
- private:
-  // Factory registration to allow setting of formatters via Settings::setLogger().
-  inline static const auto registration_ = Registration<Logger, RosLogger>("ros");
-};
+StdoutLogger::Initializer::Initializer() {
+  Logger::setLogger(std::make_shared<StdoutLogger>());
+}
 
 }  // namespace config::internal

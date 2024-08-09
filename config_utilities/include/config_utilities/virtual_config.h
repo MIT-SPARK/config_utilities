@@ -35,7 +35,6 @@
 
 #pragma once
 
-#include <functional>
 #include <memory>
 #include <string>
 #include <type_traits>
@@ -96,7 +95,7 @@ class VirtualConfig {
    */
   template <typename ConfigT>
   bool set(const ConfigT& config) {
-    const std::string type = internal::ConfigTypeRegistry<BaseT, ConfigT>::getType();
+    const std::string type = internal::ModuleRegistry::getType<BaseT, ConfigT>();
     if (type.empty()) {
       // No type defined for the config.
       internal::Logger::logError("No module for config '" + internal::typeName<ConfigT>() +
@@ -204,8 +203,7 @@ struct is_virtual_config<VirtualConfig<T>> : std::true_type {};
 // Declare the Virtual Config a config, so it can be handled like any other object.
 template <typename BaseT>
 void declare_config(VirtualConfig<BaseT>& config) {
-  std::optional<YAML::Node> data =
-      internal::Visitor::visitVirtualConfig(config.isSet(), config.optional_, config.getType());
+  auto data = internal::Visitor::visitVirtualConfig(config.isSet(), config.optional_, config.getType());
 
   // If setting values create the wrapped config using the string identifier.
   if (data) {
@@ -216,7 +214,7 @@ void declare_config(VirtualConfig<BaseT>& config) {
       config.config_ = internal::ConfigFactory<BaseT>::create(type);
     } else if (!config.optional_) {
       std::stringstream ss;
-      ss << "Could not get type for '" << internal::typeInfo<BaseT>() << "'";
+      ss << "Could not get type for '" << internal::ModuleInfo::fromTypes<BaseT>().typeInfo() << "'";
       internal::Logger::logError(ss.str());
     }
   }

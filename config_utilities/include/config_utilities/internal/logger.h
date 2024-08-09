@@ -76,7 +76,9 @@ class Logger {
   virtual void logImpl(const Severity severity, const std::string& message);
 
  private:
-  inline static Logger::Ptr logger_ = std::make_shared<Logger>();
+  static void dispatch(const Severity severity, const std::string& message);
+
+  static Logger::Ptr logger_;
 };
 
 }  // namespace config::internal
