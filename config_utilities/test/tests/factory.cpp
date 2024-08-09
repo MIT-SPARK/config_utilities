@@ -190,7 +190,7 @@ TEST(Factory, moduleNameConflicts) {
 
   // Same derived same name. Not allowed. NOTE(lschmid): Could also be an option to make this allowed (skip silently).
   const auto registration4 = config::Registration<TemplatedBase<int>, TemplatedDerived<int, int>>("name");
-  EXPECT_EQ(logger->numMessages(), 1);
+  ASSERT_EQ(logger->numMessages(), 1);
   EXPECT_EQ(logger->lastMessage(),
             "Cannot register already existent type 'name' for BaseT='config::test::TemplatedBase<int>' and "
             "ConstructorArguments={}.");

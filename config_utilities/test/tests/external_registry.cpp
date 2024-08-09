@@ -39,8 +39,15 @@
 
 #include "config_utilities/logging/log_to_stdout.h"
 #include "config_utilities/test/external_types.h"
+#include "config_utilities/test/utils.h"
 
 namespace config::test {
+
+struct LoggerGuard {
+  LoggerGuard() : logger(TestLogger::create()) {}
+  ~LoggerGuard() { internal::Logger::setLogger(std::make_shared<internal::StdoutLogger>()); }
+  std::shared_ptr<TestLogger> logger;
+};
 
 TEST(ExternalRegistry, InstanceLifetimes) {
   auto plugin_lib = loadExternalFactories("./test_config_utilities_plugins");
@@ -73,6 +80,14 @@ TEST(ExternalRegistry, InstanceLifetimes) {
     const auto external_view = external_logger.get();
     EXPECT_FALSE(external_view);
   }
+}
+
+TEST(ExternalRegistry, InvalidFile) {
+  const LoggerGuard logger_guard;
+  auto plugin_lib = loadExternalFactories("./some_invalid_file");
+  EXPECT_FALSE(plugin_lib);
+  ASSERT_GE(logger_guard.logger->numMessages(), 1);
+  EXPECT_EQ(logger_guard.logger->lastMessage().find("Unable to load library"), 0);
 }
 
 }  // namespace config::test

@@ -136,6 +136,14 @@ void ExternalRegistry::unload(const std::filesystem::path& library_path) {
   instances_.clear();
 }
 
+struct RegistryLock {
+  RegistryLock(std::function<void(const ModuleInfo&, const std::string&, const std::string&)> callback) {
+    ModuleRegistry::lock(std::move(callback));
+  }
+
+  ~RegistryLock() { ModuleRegistry::unlock(); }
+};
+
 LibraryGuard ExternalRegistry::load(const std::filesystem::path& library_path) {
   if (!Settings::instance().allow_external_libraries) {
     Logger::logError("External library loading is disallowed! Not loading " + library_path.string());
@@ -150,17 +158,28 @@ LibraryGuard ExternalRegistry::load(const std::filesystem::path& library_path) {
   //   - it disallows registration of previously registered factories (silently) for registrations linked in the plugin
   //   - it provides a callback with information about everything that can be successfully registered (so that we can
   //   unload it when the library unloads)
-  ModuleRegistry::lock([library_path](const auto& key, const auto& type, const auto&) {
+  RegistryLock lock([library_path](const auto& key, const auto& type, const auto&) {
     ExternalRegistry::registerType(library_path, {key, type});
   });
 
   // load the library. This has the effect of calling all static initializers in the library (during the loading
   // process), which registers all external factories
-  instance().libraries_.emplace(library_path, std::make_unique<LibraryHolderImpl>(library_path));
+  std::unique_ptr<LibraryHolder> library;
+  try {
+    library = std::make_unique<LibraryHolderImpl>(library_path);
+  } catch (const std::exception& e) {
+    const auto filename = boost::dll::shared_library::decorate(library_path.filename().string());
+    Logger::logError("Unable to load library '" + library_path.string() + "': '" + e.what() + "'. Please check that '" +
+                     filename.string() + "' exists " +
+                     (library_path.has_parent_path() ? "at '" + library_path.parent_path().string() + "'"
+                                                     : "on LD_LIBRARY_PATH or the platform equivalent"));
+  }
 
-  // return the global registry to the normal state (erroring on duplicate factories)
-  ModuleRegistry::unlock();
+  if (!library) {
+    return {};
+  }
 
+  instance().libraries_.emplace(library_path, std::move(library));
   // return a scoped guard that controls when the library is unloaded
   return LibraryGuard(library_path);
 }
@@ -173,6 +192,11 @@ void ExternalRegistry::registerType(const std::string& current_library, const Re
   }
 
   iter->second.push_back(entry);
+  if (instance().all_entries_.count(entry)) {
+    Logger::logWarning("Adding duplicate '" + entry.type + "' for " + entry.key.signature() + " in library '" +
+                       current_library + "'");
+  }
+
   instance().all_entries_.insert(entry);
 }
 
