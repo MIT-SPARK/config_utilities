@@ -18,16 +18,20 @@ option(CONFIG_UTILS_INSTALL_TESTS "Install test executable" ON)
 option(CONFIG_UTILS_BUILD_DEMOS "Build demo executables" ON)
 
 find_package(yaml-cpp REQUIRED)
-FIND_OPTIONAL(roscpp CONFIG_UTILS_ENABLE_ROS)
-FIND_OPTIONAL(Eigen3 CONFIG_UTILS_ENABLE_EIGEN)
-FIND_OPTIONAL_PKGCFG(libglog CONFIG_UTILS_ENABLE_GLOG)
+find_package(Boost REQUIRED COMPONENTS filesystem system)
+find_optional(roscpp CONFIG_UTILS_ENABLE_ROS)
+find_optional(Eigen3 CONFIG_UTILS_ENABLE_EIGEN)
+find_optional_pkgcfg(libglog CONFIG_UTILS_ENABLE_GLOG)
 
 add_library(
   ${PROJECT_NAME}
   src/asl_formatter.cpp
   src/conversions.cpp
+  src/external_registry.cpp
+  src/factory.cpp
   src/formatter.cpp
   src/logger.cpp
+  src/log_to_stdout.cpp
   src/meta_data.cpp
   src/namespacing.cpp
   src/path.cpp
@@ -37,7 +41,10 @@ add_library(
   src/visitor.cpp
   src/yaml_parser.cpp
   src/yaml_utils.cpp)
-target_link_libraries(${PROJECT_NAME} PUBLIC yaml-cpp)
+target_link_libraries(
+  ${PROJECT_NAME}
+  PUBLIC yaml-cpp
+  PRIVATE Boost::filesystem Boost::system Boost::boost ${CMAKE_DL_LIBS})
 target_include_directories(
   ${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>
                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)

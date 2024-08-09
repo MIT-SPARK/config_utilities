@@ -33,47 +33,44 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
-#pragma once
+#include <iostream>
 
-#include <ros/console.h>
+#include <config_utilities/config.h>
+#include <config_utilities/external_registry.h>
+#include <config_utilities/factory.h>
+#include <config_utilities/logging/log_to_stdout.h>
 
-#include "config_utilities/factory.h"
-#include "config_utilities/internal/logger.h"
+#include "config_utilities/test/external_types.h"
 
-namespace config::internal {
+namespace external {
 
-/**
- * @brief Implements logging to roslog. This file pulls in ros as a dependency, but its not required if this file is
- * not included in the project.
- */
-class RosLogger : public Logger {
- public:
-  RosLogger() = default;
-  virtual ~RosLogger() = default;
-
- protected:
-  void logImpl(const Severity severity, const std::string& message) override {
-    switch (severity) {
-      case Severity::kInfo:
-        ROS_INFO_STREAM(message);
-        break;
-
-      case Severity::kWarning:
-        ROS_WARN_STREAM(message);
-        break;
-
-      case Severity::kError:
-        ROS_ERROR_STREAM(message);
-        break;
-
-      case Severity::kFatal:
-        ROS_FATAL_STREAM(message);
-    }
-  }
-
- private:
-  // Factory registration to allow setting of formatters via Settings::setLogger().
-  inline static const auto registration_ = Registration<Logger, RosLogger>("ros");
+struct ExternalTalker : config::test::Talker {
+  std::string talk() const override { return "external"; }
+  inline static const auto reg = config::Registration<config::test::Talker, ExternalTalker>("external");
 };
 
-}  // namespace config::internal
+struct FancyTalker : config::test::Talker {
+  struct Config {
+    std::string prefix = "* ";
+    std::string suffix = " *";
+  } const config;
+
+  explicit FancyTalker(const Config& config) : config(config) {}
+
+  std::string talk() const override { return config.prefix + "derived" + config.suffix; }
+
+  inline static const auto reg = config::RegistrationWithConfig<config::test::Talker, FancyTalker, Config>("fancy");
+};
+
+void declare_config(FancyTalker::Config& config) {
+  config::name("FancyTalker::Config");
+  config::field(config.prefix, "prefix");
+  config::field(config.suffix, "suffix");
+}
+
+struct ExternalLogger : config::internal::Logger {
+  void logImpl(const config::internal::Severity, const std::string&) { throw std::runtime_error("External logger!"); }
+  inline static const auto reg = config::Registration<config::internal::Logger, ExternalLogger>("external_logger");
+};
+
+}  // namespace external

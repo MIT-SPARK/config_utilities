@@ -42,6 +42,7 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include "config_utilities/factory.h"
 #include "config_utilities/internal/logger.h"
 
 namespace config::test {
@@ -70,6 +71,8 @@ class TestLogger : public internal::Logger {
 
  private:
   Messages messages_;
+
+  inline static const auto registration_ = Registration<internal::Logger, TestLogger>("test_logger");
 };
 
 }  // namespace config::test

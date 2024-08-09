@@ -35,10 +35,6 @@
 
 #pragma once
 
-#include <memory>
-#include <string>
-#include <utility>
-
 #include <glog/logging.h>
 
 #include "config_utilities/factory.h"
@@ -79,11 +75,6 @@ class GlogLogger : public Logger {
  private:
   // Factory registration to allow setting of formatters via Settings::setLogger().
   inline static const auto registration_ = Registration<Logger, GlogLogger>("glog");
-
-  // Initialize the glog logger to be used if included.
-  inline static const struct Initializer {
-    Initializer() { Logger::setLogger(std::make_shared<GlogLogger>()); }
-  } initializer_;
 };
 
 }  // namespace config::internal

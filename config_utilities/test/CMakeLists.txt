@@ -2,6 +2,11 @@ find_package(GTest REQUIRED)
 include(GoogleTest)
 enable_testing()
 
+add_library(test_${PROJECT_NAME}_plugins src/external_plugins.cpp)
+target_include_directories(test_${PROJECT_NAME}_plugins PRIVATE include)
+target_link_libraries(test_${PROJECT_NAME}_plugins ${PROJECT_NAME})
+target_compile_options(test_${PROJECT_NAME}_plugins PRIVATE -fvisibility=hidden)
+
 add_executable(
   test_${PROJECT_NAME}
   main.cpp
@@ -12,6 +17,7 @@ add_executable(
   tests/config_maps.cpp
   tests/conversions.cpp
   tests/enums.cpp
+  tests/external_registry.cpp
   tests/factory.cpp
   tests/inheritance.cpp
   tests/missing_fields.cpp

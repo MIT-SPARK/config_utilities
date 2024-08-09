@@ -129,7 +129,7 @@ TEST(Factory, create) {
   ASSERT_EQ(logger->numMessages(), 1);
   std::string msg = logger->messages().back().second;
   EXPECT_EQ(msg.find("No module of type 'NotRegistered' registered to the factory"), 0);
-  EXPECT_NE(msg.find("Registered are: 'DerivedB', 'DerivedA'."), std::string::npos);
+  EXPECT_NE(msg.find("Registered are: 'DerivedA', 'DerivedB'."), std::string::npos) << msg;
 
   base = create<Base>("DerivedA", 1, 2.f);
   EXPECT_FALSE(base);
@@ -190,7 +190,7 @@ TEST(Factory, moduleNameConflicts) {
 
   // Same derived same name. Not allowed. NOTE(lschmid): Could also be an option to make this allowed (skip silently).
   const auto registration4 = config::Registration<TemplatedBase<int>, TemplatedDerived<int, int>>("name");
-  EXPECT_EQ(logger->numMessages(), 1);
+  ASSERT_EQ(logger->numMessages(), 1);
   EXPECT_EQ(logger->lastMessage(),
             "Cannot register already existent type 'name' for BaseT='config::test::TemplatedBase<int>' and "
             "ConstructorArguments={}.");
@@ -218,24 +218,41 @@ TEST(Factory, moduleNameConflicts) {
   const auto registration9 =
       config::Registration<TemplatedBase<float>, TemplatedDerived<float, float>>("float_derived");
   const std::string expected = R"""(Modules registered to factories: {
+  config::internal::ConfigWrapper(): {
+    'AddString' (config::test::AddString::Config),
+    'Derived2' (config::test::Derived2::Config),
+    'Derived2A' (config::test::Derived2A::Config),
+    'DerivedC' (config::test::DerivedC::Config),
+    'DerivedD' (config::test::DerivedD::Config),
+    'repeating' (config::test::RepeatingTalker::Config),
+  },
   config::internal::Formatter(): {
     'asl' (config::internal::AslFormatter),
   },
   config::internal::Logger(): {
     'stdout' (config::internal::StdoutLogger),
+    'test_logger' (config::test::TestLogger),
+  },
+  config::test::Base(_, int): {
+    'DerivedC' (config::test::DerivedC),
+    'DerivedD' (config::test::DerivedD),
   },
   config::test::Base(int): {
     'DerivedA' (config::test::DerivedA),
     'DerivedB' (config::test::DerivedB),
-    'DerivedC' (config::test::DerivedC),
-    'DerivedD' (config::test::DerivedD),
   },
-  config::test::Base2(): {
+  config::test::Base2(_): {
     'Derived2' (config::test::Derived2),
     'Derived2A' (config::test::Derived2A),
   },
-  config::test::ProcessorBase(): {
+  config::test::ProcessorBase(_): {
     'AddString' (config::test::AddString),
+  },
+  config::test::Talker(): {
+    'internal' (config::test::InternalTalker),
+  },
+  config::test::Talker(_): {
+    'repeating' (config::test::RepeatingTalker),
   },
   config::test::TemplatedBase<float>(): {
     'float_derived' (config::test::TemplatedDerived<float, float>),
