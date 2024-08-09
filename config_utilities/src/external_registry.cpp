@@ -143,7 +143,7 @@ LibraryGuard ExternalRegistry::load(const std::filesystem::path& library_path) {
   }
 
   if (Settings::instance().verbose_external_load) {
-    Logger::logInfo("Loading external library '" + library_path.string()) + "'.";
+    Logger::logInfo("Loading external library '" + library_path.string() + "'.");
   }
 
   // this sets the global registry to do two things:

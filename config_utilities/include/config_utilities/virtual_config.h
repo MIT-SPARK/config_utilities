@@ -35,6 +35,11 @@
 
 #pragma once
 
+#include <memory>
+#include <string>
+#include <type_traits>
+#include <utility>
+
 #include "config_utilities/factory.h"
 #include "config_utilities/traits.h"
 
@@ -198,8 +203,7 @@ struct is_virtual_config<VirtualConfig<T>> : std::true_type {};
 // Declare the Virtual Config a config, so it can be handled like any other object.
 template <typename BaseT>
 void declare_config(VirtualConfig<BaseT>& config) {
-  std::optional<YAML::Node> data =
-      internal::Visitor::visitVirtualConfig(config.isSet(), config.optional_, config.getType());
+  auto data = internal::Visitor::visitVirtualConfig(config.isSet(), config.optional_, config.getType());
 
   // If setting values create the wrapped config using the string identifier.
   if (data) {
