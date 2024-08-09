@@ -49,9 +49,11 @@ namespace config {
 
 namespace internal {
 
+//! @brief Convenience typedef for underlying construct used by factory methods
 template <typename BaseT, typename... Args>
 using FactoryMethod = std::function<BaseT*(Args...)>;
 
+//! @brief Convert parameter pack to vector of typenames
 template <typename... Args>
 std::vector<std::string> convertArguments() {
   return std::vector<std::string>{
@@ -65,6 +67,7 @@ bool getTypeImpl(const YAML::Node& data, std::string& type, const std::string& p
 //! @brief Get type from YAML node directly
 bool getType(const YAML::Node& data, std::string& type);
 
+//! @brief Struct recording typenames for a module (i.e., the constructor signature). Can be used as a map key
 struct ModuleInfo {
   template <typename BaseT, typename... Args>
   static ModuleInfo fromTypes(bool skip_first_arg = false) {
@@ -88,6 +91,7 @@ struct ModuleInfo {
 
 bool operator<(const ModuleInfo& lhs, const ModuleInfo& rhs);
 
+//! @brief Struct recording correspondence between Object and Config for ObjectWithConfig
 struct ConfigPair {
   template <typename BaseT, typename ConfigT>
   static ConfigPair fromTypes() {
@@ -100,7 +104,7 @@ struct ConfigPair {
 
 bool operator<(const ConfigPair& lhs, const ConfigPair& rhs);
 
-// Wrapper struct for any config type.
+//! @brief Wrapper struct for any config type.
 struct ConfigWrapper {
   explicit ConfigWrapper(const std::string& _type) : type(_type) {}
   virtual ~ConfigWrapper() = default;
@@ -110,6 +114,7 @@ struct ConfigWrapper {
   std::string type;
 };
 
+//! @brief Virtual base class for factories to hide constructor type
 struct FactoryMapBase {
   virtual ~FactoryMapBase() = default;
   virtual bool hasEntry(const std::string& type) = 0;
@@ -144,6 +149,7 @@ struct FactoryMap : FactoryMapBase {
   std::map<std::string, Constructor> map;
 };
 
+//! @brief Registry for all factories and config type names.
 class ModuleRegistry {
  public:
   using LockCallback = std::function<void(const ModuleInfo&, std::string, std::string)>;
@@ -284,9 +290,11 @@ class ModuleRegistry {
   std::map<ConfigPair, std::string> config_registry;
 };  // namespace internal
 
+//! @brief Base class to make partial specialization work
 template <typename T>
 struct ModuleMapBase {};
 
+//! @brief Original internal API for registering factories (used by public hydra_ros)
 template <typename BaseT, typename... Args>
 struct ModuleMapBase<std::function<BaseT*(const YAML::Node&, Args...)>> {
   [[deprecated("see ModuleRegistry instead")]] static void
@@ -295,6 +303,7 @@ struct ModuleMapBase<std::function<BaseT*(const YAML::Node&, Args...)>> {
   }
 };
 
+//! @brief Original internal API to get type signature (used by public hydra_ros)
 template <typename BaseT, typename... Args>
 [[deprecated("see ModuleInfo instead")]] std::string typeInfo() {
   return ModuleInfo::fromTypes<BaseT, Args...>().typeInfo();
