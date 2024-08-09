@@ -122,8 +122,7 @@ template <typename Factory>
 struct FactoryMap : FactoryMapBase {
   //! @brief Add entries to the map with verbose warnings.
   bool addEntry(const std::string& type, const Factory& method) {
-    const auto has_type = map.find(type) != map.end();
-    if (has_type) {
+    if (hasEntry(type)) {
       return false;
     }
 
