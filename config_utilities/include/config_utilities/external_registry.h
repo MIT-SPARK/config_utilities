@@ -249,6 +249,16 @@ struct ExternalRegistry {
 [[nodiscard]] internal::LibraryGuard loadExternalFactories(const std::vector<std::filesystem::path>& libraries);
 
 /**
+ * @brief Populate factory methods from a provided shared object libraries
+ * @param libraries Relative or absolute paths to libraries (without extension or lib prefix)
+ *
+ * See single library method for caveats
+ *
+ * @returns Guard that unloads library once out of scope
+ */
+[[nodiscard]] internal::LibraryGuard loadExternalFactories(const std::vector<std::string>& libraries);
+
+/**
  * @brief Wrap a created object that ensures external instance deletion on external library unload
  * @param unmanaged Object instance to wrap
  * @param threadsafe Whether or not the underlying instance has a mutex

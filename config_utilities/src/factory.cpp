@@ -37,15 +37,55 @@
 
 namespace config::internal {
 
+namespace {
+
+std::string showWithFilter(const std::map<ModuleInfo, std::map<std::string, std::string>>& registered,
+                           const std::function<bool(const ModuleInfo&)>& filter = {}) {
+  std::stringstream ss;
+  for (const auto& [key, types] : registered) {
+    if (filter && !filter(key)) {
+      continue;
+    }
+
+    ss << "\n" << key.signature() << ":";
+    for (const auto& [type_name, derived_type] : types) {
+      ss << "\n  '" << type_name << "' (" << derived_type << ")";
+    }
+
+    ss << "\n";
+  }
+  return ss.str();
+}
+
+bool isPlainObject(const ModuleInfo& info) { return !info.skip_first_arg && info.underlying_base.empty(); }
+
+bool isObjectWithConfig(const ModuleInfo& info) { return info.skip_first_arg && info.underlying_base.empty(); }
+
+bool isObjectConfig(const ModuleInfo& info) { return !info.underlying_base.empty(); }
+
+std::string banner(const std::string& msg, int width, char symbol = '#') {
+  if (width < 2) {
+    width = 2;
+  }
+
+  std::string symbol_str(1, symbol);
+  const auto center = symbol_str + printCenter(msg, width - 2, ' ') + symbol_str;
+  return std::string(center.size(), symbol) + "\n" + center + "\n" + std::string(center.size(), symbol) + "\n";
+}
+
+}  // namespace
+
 std::unique_ptr<ModuleRegistry> ModuleRegistry::s_instance_ = nullptr;
 
-std::string ModuleInfo::argumentString(const std::string& separator, const std::string& cap) const {
+std::string ModuleInfo::argumentString(const std::string& separator,
+                                       const std::string& wrapper,
+                                       const std::string& placeholder) const {
   if (arguments.empty()) {
     return "";
   }
 
   if (arguments.size() == 1 && skip_first_arg) {
-    return cap + "_" + cap;
+    return placeholder.empty() ? "" : placeholder;
   }
 
   auto iter = arguments.begin();
@@ -53,51 +93,47 @@ std::string ModuleInfo::argumentString(const std::string& separator, const std::
     ++iter;
   }
 
-  std::string arg_list = skip_first_arg ? "_" + separator : cap;
+  std::string arg_list = skip_first_arg && !placeholder.empty() ? placeholder + separator : "";
   while (iter != arguments.end()) {
-    arg_list.append(*iter);
+    arg_list.append(wrapper + *iter + wrapper);
     ++iter;
     if (iter != arguments.end()) {
       arg_list.append(separator);
     }
   }
 
-  return arg_list + cap;
+  return arg_list;
 }
 
 std::string ModuleInfo::typeInfo() const {
-  return "BaseT='" + base_type + "' and ConstructorArguments={" + argumentString(", '", "'") + "}";
+  return "BaseT='" + base_type + (underlying_base.empty() ? "" : " (underlying: '" + base_type + "'") +
+         "' and ConstructorArguments={" + argumentString(", ", "'") + "}";
 }
 
-std::string ModuleInfo::signature() const { return base_type + "(" + argumentString() + ")"; }
+std::string ModuleInfo::signature() const {
+  return (underlying_base.empty() ? base_type : "Config[" + underlying_base + "]") + "(" + argumentString() + ")";
+}
 
 bool operator<(const ModuleInfo& lhs, const ModuleInfo& rhs) {
   if (lhs.base_type == rhs.base_type) {
-    return lhs.arguments < rhs.arguments;
+    return (lhs.underlying_base == rhs.underlying_base) ? lhs.arguments < rhs.arguments
+                                                        : lhs.underlying_base < rhs.underlying_base;
   }
 
   return lhs.base_type < rhs.base_type;
 }
 
 bool operator<(const ConfigPair& lhs, const ConfigPair& rhs) {
-  if (lhs.base_type == rhs.base_type) {
-    return lhs.config_type < rhs.config_type;
-  }
-
-  return lhs.base_type < rhs.base_type;
+  return lhs.base_type == rhs.base_type ? lhs.config_type < rhs.config_type : lhs.base_type < rhs.base_type;
 }
 
 std::string ModuleRegistry::getAllRegistered() {
+  const auto width = Settings::instance().print_width;
+  const auto& registry = instance().type_registry;
   std::stringstream ss;
-  ss << "Modules registered to factories: {";
-  for (const auto& [key, types] : instance().type_registry) {
-    ss << "\n  " << key.signature() << ": {";
-    for (const auto& [type_name, derived_type] : types) {
-      ss << "\n    '" << type_name << "' (" << derived_type << "),";
-    }
-    ss << "\n  },";
-  }
-  ss << "\n}";
+  ss << banner("Registered Objects", width) << showWithFilter(registry, &isPlainObject) << "\n";
+  ss << banner("Registered Objects with Configs", width) << showWithFilter(registry, &isObjectWithConfig) << "\n";
+  ss << banner("Registered Configs", width) << showWithFilter(registry, &isObjectConfig) << "\n";
   return ss.str();
 }
 

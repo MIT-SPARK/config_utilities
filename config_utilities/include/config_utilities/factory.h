@@ -70,8 +70,8 @@ bool getType(const YAML::Node& data, std::string& type);
 //! @brief Struct recording typenames for a module (i.e., the constructor signature). Can be used as a map key
 struct ModuleInfo {
   template <typename BaseT, typename... Args>
-  static ModuleInfo fromTypes(bool skip_first_arg = false) {
-    return {skip_first_arg, typeName<BaseT>(), convertArguments<Args...>()};
+  static ModuleInfo fromTypes(bool skip_first_arg = false, const std::string underlying_base = "") {
+    return {skip_first_arg, typeName<BaseT>(), convertArguments<Args...>(), underlying_base};
   }
 
   //! Toggle whether the first argument is included (for printing only)
@@ -80,9 +80,13 @@ struct ModuleInfo {
   const std::string base_type;
   //! Factory function arguments
   const std::vector<std::string> arguments;
+  //! Underlying base type (for configs)
+  const std::string underlying_base;
 
   //! @brief Get a human-readable signature for arguments
-  std::string argumentString(const std::string& separator = ", ", const std::string& cap = "") const;
+  std::string argumentString(const std::string& separator = ", ",
+                             const std::string& wrapper = "",
+                             const std::string& placeholder = "") const;
   //! @brief Get the full signature in a human-readable format
   std::string typeInfo() const;
   //! @brief Get the human-readable function signature
@@ -156,8 +160,11 @@ class ModuleRegistry {
   using CreateCallback = std::function<void(const ModuleInfo&, std::string, void*)>;
 
   template <typename BaseT, typename DerivedT, typename... Args>
-  static bool addModule(const std::string& type, FactoryMethod<BaseT, Args...> method, bool skip_first_arg = false) {
-    const auto key = ModuleInfo::fromTypes<BaseT, Args...>(skip_first_arg);
+  static bool addModule(const std::string& type,
+                        FactoryMethod<BaseT, Args...> method,
+                        bool skip_first_arg = false,
+                        const std::string& actual_base = "") {
+    const auto key = ModuleInfo::fromTypes<BaseT, Args...>(skip_first_arg, actual_base);
     using Constructor = FactoryMethod<BaseT, Args...>;
     if (locked()) {
       if (hasModule(key, type)) {
@@ -197,10 +204,11 @@ class ModuleRegistry {
   template <typename BaseT, typename... Args>
   static FactoryMethod<BaseT, Args...> getModule(const std::string& type,
                                                  const std::string& registration_info,
-                                                 bool skip_first_arg = false) {
+                                                 bool skip_first_arg = false,
+                                                 const std::string& actual_base = "") {
     using Constructor = FactoryMethod<BaseT, Args...>;
     const auto& modules = instance().modules;
-    const auto key = ModuleInfo::fromTypes<BaseT, Args...>(skip_first_arg);
+    const auto key = ModuleInfo::fromTypes<BaseT, Args...>(skip_first_arg, actual_base);
     const auto iter = modules.find(key);
     if (iter == modules.end()) {
       Logger::logError("Cannot create a module of type '" + type + "': No modules registered to the factory for " +
@@ -332,14 +340,14 @@ struct ConfigFactory {
   template <class DerivedConfigT>
   static void addEntry(const std::string& type) {
     const Constructor method = [type]() -> ConfigWrapper* { return new ConfigWrapperImpl<DerivedConfigT>(type); };
-    if (ModuleRegistry::addModule<ConfigWrapper, DerivedConfigT>(type, method)) {
+    if (ModuleRegistry::addModule<ConfigWrapper, DerivedConfigT>(type, method, false, typeName<BaseT>())) {
       ModuleRegistry::registerConfig<BaseT, DerivedConfigT>(type);
     }
   }
 
   // Create the config.
   static std::unique_ptr<ConfigWrapper> create(const std::string& type) {
-    const auto factory = ModuleRegistry::getModule<ConfigWrapper>(type, registration_info);
+    const auto factory = ModuleRegistry::getModule<ConfigWrapper>(type, registration_info, false, typeName<BaseT>());
     if (!factory) {
       return nullptr;
     }

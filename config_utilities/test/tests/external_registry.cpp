@@ -51,7 +51,6 @@ struct LoggerGuard {
 
 TEST(ExternalRegistry, InstanceLifetimes) {
   auto plugin_lib = loadExternalFactories("./test_config_utilities_plugins");
-
   auto unmanaged_logger = create<internal::Logger>("external_logger");
   EXPECT_TRUE(unmanaged_logger);
   unmanaged_logger.reset();

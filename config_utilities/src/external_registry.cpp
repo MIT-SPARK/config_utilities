@@ -238,4 +238,13 @@ internal::LibraryGuard loadExternalFactories(const std::vector<std::filesystem::
   return guard;
 }
 
+internal::LibraryGuard loadExternalFactories(const std::vector<std::string>& libraries) {
+  internal::LibraryGuard guard;
+  for (const auto& library_path : libraries) {
+    guard = internal::ExternalRegistry::load(library_path);
+  }
+
+  return guard;
+}
+
 }  // namespace config

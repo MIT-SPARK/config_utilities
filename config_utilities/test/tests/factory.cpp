@@ -114,6 +114,24 @@ struct TemplatedDerived : public TemplatedBase<BaseT> {
   const bool b_;
 };
 
+TEST(Factory, moduleInfo) {
+  {  // first arg is valid
+    const auto info = internal::ModuleInfo::fromTypes<void, int, float, double, char>();
+    EXPECT_EQ(info.argumentString(), "int, float, double, char");
+    EXPECT_EQ(info.argumentString(" | ", "'"), "'int' | 'float' | 'double' | 'char'");
+    EXPECT_EQ(info.argumentString(", ", "", "_"), "int, float, double, char");
+    EXPECT_EQ(info.argumentString(", ", "'", "*"), "'int', 'float', 'double', 'char'");
+  }
+
+  {  // first arg is skipped
+    const auto info = internal::ModuleInfo::fromTypes<void, int, float, double, char>(true);
+    EXPECT_EQ(info.argumentString(), "float, double, char");
+    EXPECT_EQ(info.argumentString(" | ", "'"), "'float' | 'double' | 'char'");
+    EXPECT_EQ(info.argumentString(", ", "", "_"), "_, float, double, char");
+    EXPECT_EQ(info.argumentString(", ", "'", "*"), "*, 'float', 'double', 'char'");
+  }
+}
+
 TEST(Factory, create) {
   std::unique_ptr<Base> base = create<Base>("DerivedA", 1);
   EXPECT_TRUE(base);
@@ -217,62 +235,82 @@ TEST(Factory, moduleNameConflicts) {
   const auto registration8 = config::Registration<TemplatedBase<int>, TemplatedDerived<int, int>>("int_derived");
   const auto registration9 =
       config::Registration<TemplatedBase<float>, TemplatedDerived<float, float>>("float_derived");
-  const std::string expected = R"""(Modules registered to factories: {
-  config::internal::ConfigWrapper(): {
-    'AddString' (config::test::AddString::Config),
-    'Derived2' (config::test::Derived2::Config),
-    'Derived2A' (config::test::Derived2A::Config),
-    'DerivedC' (config::test::DerivedC::Config),
-    'DerivedD' (config::test::DerivedD::Config),
-    'repeating' (config::test::RepeatingTalker::Config),
-  },
-  config::internal::Formatter(): {
-    'asl' (config::internal::AslFormatter),
-  },
-  config::internal::Logger(): {
-    'stdout' (config::internal::StdoutLogger),
-    'test_logger' (config::test::TestLogger),
-  },
-  config::test::Base(_, int): {
-    'DerivedC' (config::test::DerivedC),
-    'DerivedD' (config::test::DerivedD),
-  },
-  config::test::Base(int): {
-    'DerivedA' (config::test::DerivedA),
-    'DerivedB' (config::test::DerivedB),
-  },
-  config::test::Base2(_): {
-    'Derived2' (config::test::Derived2),
-    'Derived2A' (config::test::Derived2A),
-  },
-  config::test::ProcessorBase(_): {
-    'AddString' (config::test::AddString),
-  },
-  config::test::Talker(): {
-    'internal' (config::test::InternalTalker),
-  },
-  config::test::Talker(_): {
-    'repeating' (config::test::RepeatingTalker),
-  },
-  config::test::TemplatedBase<float>(): {
-    'float_derived' (config::test::TemplatedDerived<float, float>),
-    'name' (config::test::TemplatedDerived<float, float>),
-  },
-  config::test::TemplatedBase<float>(bool): {
-    'different_name' (config::test::TemplatedDerived<float, float>),
-  },
-  config::test::TemplatedBase<int>(): {
-    'int_derived' (config::test::TemplatedDerived<int, int>),
-    'name' (config::test::TemplatedDerived<int, int>),
-    'other_name' (config::test::TemplatedDerived<int, int>),
-  },
-  config::test::TemplatedBase<int>(bool): {
-    'name' (config::test::TemplatedDerived<int, int>),
-  },
-})""";
+  const std::string expected = R"""(########################################
+#          Registered Objects          #
+########################################
+
+config::internal::Formatter():
+  'asl' (config::internal::AslFormatter)
+
+config::internal::Logger():
+  'stdout' (config::internal::StdoutLogger)
+  'test_logger' (config::test::TestLogger)
+
+config::test::Base(int):
+  'DerivedA' (config::test::DerivedA)
+  'DerivedB' (config::test::DerivedB)
+
+config::test::Talker():
+  'internal' (config::test::InternalTalker)
+
+config::test::TemplatedBase<float>():
+  'float_derived' (config::test::TemplatedDerived<float, float>)
+  'name' (config::test::TemplatedDerived<float, float>)
+
+config::test::TemplatedBase<float>(bool):
+  'different_name' (config::test::TemplatedDerived<float, float>)
+
+config::test::TemplatedBase<int>():
+  'int_derived' (config::test::TemplatedDerived<int, int>)
+  'name' (config::test::TemplatedDerived<int, int>)
+  'other_name' (config::test::TemplatedDerived<int, int>)
+
+config::test::TemplatedBase<int>(bool):
+  'name' (config::test::TemplatedDerived<int, int>)
+
+########################################
+#   Registered Objects with Configs    #
+########################################
+
+config::test::Base(int):
+  'DerivedC' (config::test::DerivedC)
+  'DerivedD' (config::test::DerivedD)
+
+config::test::Base2():
+  'Derived2' (config::test::Derived2)
+  'Derived2A' (config::test::Derived2A)
+
+config::test::ProcessorBase():
+  'AddString' (config::test::AddString)
+
+config::test::Talker():
+  'repeating' (config::test::RepeatingTalker)
+
+########################################
+#          Registered Configs          #
+########################################
+
+Config[config::test::Base]():
+  'DerivedC' (config::test::DerivedC::Config)
+  'DerivedD' (config::test::DerivedD::Config)
+
+Config[config::test::Base2]():
+  'Derived2' (config::test::Derived2::Config)
+  'Derived2A' (config::test::Derived2A::Config)
+
+Config[config::test::ProcessorBase]():
+  'AddString' (config::test::AddString::Config)
+
+Config[config::test::Talker]():
+  'repeating' (config::test::RepeatingTalker::Config)
+
+)""";
+
+  Settings().print_width = 40;
   const std::string modules = internal::ModuleRegistry::getAllRegistered();
   std::cout << modules << std::endl;
   EXPECT_EQ(modules, expected);
+  Settings().restoreDefaults();
 }
 
 }  // namespace config::test
