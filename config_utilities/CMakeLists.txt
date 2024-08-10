@@ -27,6 +27,7 @@ add_library(
   ${PROJECT_NAME}
   src/asl_formatter.cpp
   src/conversions.cpp
+  src/dynamic_config.cpp
   src/external_registry.cpp
   src/factory.cpp
   src/formatter.cpp
