@@ -85,7 +85,7 @@ void declare_config(DefaultConfig& config) {
   check(config.u8, CheckMode::LE, uint8_t(5), "u8");
   check(config.s, CheckMode::EQ, std::string("test string"), "s");
   check(config.b, CheckMode::NE, false, "b");
-  checkCondition(config.vec.size() == 3, "param 'vec' must b of size '3'");
+  checkCondition(config.vec.size() == 3, "param 'vec' must be of size '3'");
   checkInRange(config.d, 0.0, 500.0, "d");
 }
 
@@ -116,7 +116,7 @@ YAML::Node DefaultConfig::modifiedValues() {
   YAML::Node data;
   data["i"] = 2;
   data["f"] = -1.f;
-  data["d"] = 3.14159; // intentionally avoid precision issues
+  data["d"] = 3.14159;  // intentionally avoid precision issues
   data["b"] = false;
   data["u8"] = 255;
   data["s"] = "a different test string";
