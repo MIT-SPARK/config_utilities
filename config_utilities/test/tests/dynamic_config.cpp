@@ -38,13 +38,128 @@
 #include <gtest/gtest.h>
 
 #include "config_utilities/test/default_config.h"
+#include "config_utilities/test/utils.h"
 
 namespace config::test {
 
-TEST(DynamicConfig, CharConversionCorrect) {
-  auto config = DynamicConfig<DefaultConfig>("dynamic_config_1");
+DefaultConfig modified_config() {
+  DefaultConfig config;
+  config.i = 2;
+  config.f = 3.2f;
+  config.vec = {7, 8, 9};
+  config.sub_config.i = 3;
+  return config;
+}
 
-  //
+TEST(DynamicConfig, CheckRegistered) {
+  DynamicConfigServer server;
+
+  // No dynamic configs registered.
+  EXPECT_EQ(server.registeredConfigs().empty(), true);
+
+  // Register a dynamic config.
+  {
+    auto dyn1 = DynamicConfig<DefaultConfig>("dynamic_config_1");
+    auto dyn2 = DynamicConfig<DefaultConfig>("dynamic_config_2", modified_config());
+    const auto registered = server.registeredConfigs();
+    EXPECT_EQ(registered.size(), 2);
+    EXPECT_TRUE(std::find(registered.begin(), registered.end(), "dynamic_config_1") != registered.end());
+    EXPECT_TRUE(std::find(registered.begin(), registered.end(), "dynamic_config_2") != registered.end());
+
+    // Check names unique.
+    auto logger = TestLogger::create();
+    auto dyn3 = DynamicConfig<DefaultConfig>("dynamic_config_1");
+    EXPECT_EQ(logger->numMessages(), 1);
+    EXPECT_EQ(logger->lastMessage(), "Cannot register dynamic config: key 'dynamic_config_1' already exists.");
+  }
+
+  // Dynamic configs should deregister automatically.
+  EXPECT_EQ(server.registeredConfigs().empty(), true);
+}
+
+TEST(DynamicConfig, SetGet) {
+  DynamicConfig<DefaultConfig> dyn("dyn");
+
+  DynamicConfigServer server;
+
+  // Get values.
+  auto values = server.getValues("dyn");
+  EXPECT_TRUE(expectEqual(values, DefaultConfig::defaultValues()));
+
+  // Set values.
+  std::string yaml_str = R"(
+    i: 7
+    f: 7.7
+    vec: [7, 7, 7]
+    sub_ns:
+        i: 7
+  )";
+  auto yaml = YAML::Load(yaml_str);
+  server.setValues("dyn", yaml);
+
+  // Check actual values.
+  auto config = dyn.get();
+  EXPECT_EQ(config.i, 7);
+  EXPECT_EQ(config.f, 7.7f);
+  EXPECT_EQ(config.vec, std::vector<int>({7, 7, 7}));
+  EXPECT_EQ(config.sub_config.i, 7);
+
+  // Check serialized values.
+  values = server.getValues("dyn");
+  EXPECT_EQ(values["i"].as<int>(), 7);
+  EXPECT_EQ(values["f"].as<float>(), 7.7f);
+  EXPECT_EQ(values["vec"].as<std::vector<int>>(), std::vector<int>({7, 7, 7}));
+  EXPECT_EQ(values["sub_ns"]["i"].as<int>(), 7);
+  EXPECT_EQ(values["u8"].as<int>(), 4);  // Default value.
+
+  // Check invalid key.
+  values = server.getValues("invalid");
+  EXPECT_TRUE(values.IsNull());
+  server.setValues("invalid", DefaultConfig::defaultValues());
+  EXPECT_EQ(dyn.get().i, 7);
+}
+
+TEST(DynamicConfig, Hooks) {
+  auto server = std::make_unique<DynamicConfigServer>();
+  std::string logs;
+
+  // Register hooks.
+  DynamicConfigServer::Hooks hooks;
+  hooks.onRegister = [&logs](const std::string& key) { logs += "register " + key + "; "; };
+  hooks.onDeregister = [&logs](const std::string& key) { logs += "deregister " + key + "; "; };
+  hooks.onUpdate = [&logs](const std::string& key, const YAML::Node& new_values) { logs += "update " + key + "; "; };
+  server->setHooks(hooks);
+
+  // Register a dynamic config.
+  auto a = std::make_unique<DynamicConfig<DefaultConfig>>("A");
+  auto b = std::make_unique<DynamicConfig<DefaultConfig>>("B");
+  DefaultConfig config;
+  a->set(config);  // Should be identical, so not trigger update.
+  config.i = 123;
+  b->set(config);  // Should trigger update.
+  b.reset();
+  a.reset();
+  EXPECT_EQ(logs, "register A; register B; update B; deregister B; deregister A; ");
+
+  // Update hooks.
+  hooks.onRegister = [&logs](const std::string& key) { logs += "register " + key + " again; "; };
+  hooks.onDeregister = nullptr;
+  server->setHooks(hooks);
+  logs.clear();
+
+  // Register a dynamic config.
+  auto c = std::make_unique<DynamicConfig<DefaultConfig>>("C");
+  c.reset();
+  EXPECT_EQ(logs, "register C again; ");
+
+  // Deregister hooks.
+  server.reset();
+  logs.clear();
+
+  // Register a dynamic config.
+  auto d = std::make_unique<DynamicConfig<DefaultConfig>>("D");
+  d.reset();
+  EXPECT_EQ(logs, "");
 }
 
 }  // namespace config::test
