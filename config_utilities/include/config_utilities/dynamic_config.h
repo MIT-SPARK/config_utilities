@@ -54,6 +54,10 @@ namespace config {
 struct DynamicConfigServer {
   using Key = std::string;
 
+  /**
+   * @brief Hooks for the dynamic config server. These functions are called whenever a dynamic config is registered,
+   * deregistered, or updated.
+   */
   struct Hooks {
     std::function<void(const Key&)> onRegister;
     std::function<void(const Key&)> onDeregister;
@@ -88,14 +92,15 @@ struct DynamicConfigServer {
   YAML::Node getValues(const Key& key) const;
 
   /**
-   * @brief Set the values of a dynamic config.
+   * @brief Set the values of a dynamic config. If the requested values are invalid, no modifications are made.
    * @param key The unique key of the dynamic config.
    * @param values The new values to set.
+   * @return True if the values were updated, false otherwise.
    */
-  void setValues(const Key& key, const YAML::Node& values) const;
+  bool setValues(const Key& key, const YAML::Node& values) const;
 
   /**
-   * @brief Set the hooks for the dynamic config server.
+   * @brief Set the hooks for the dynamic config server. Setting empty hooks will deregister the current hooks.
    */
   void setHooks(const Hooks& hooks);
 
@@ -122,7 +127,7 @@ struct DynamicConfigRegistry {
    */
   struct ConfigInterface {
     std::function<YAML::Node()> getValues;
-    std::function<void(const YAML::Node&)> setValues;
+    std::function<bool(const YAML::Node&)> setValues;
     std::function<YAML::Node()> getInfo;
   };
 
@@ -165,6 +170,13 @@ struct DynamicConfigRegistry {
   void deregisterConfig(const Key& key);
 
   /**
+   * @brief Override an existing registration with a new interface when moving a dynamic config.
+   * @param key The unique key of the dynamic config.
+   * @param interface The new interface to the dynamic config.
+   */
+  void overrideRegistration(const Key& key, const ConfigInterface& interface);
+
+  /**
    * @brief Register hooks for a dynamic config server.
    * @param hooks The hooks to register.
    * @param hooks_id The id of the server adding the hooks.
@@ -199,86 +211,55 @@ struct DynamicConfigRegistry {
  */
 template <typename ConfigT>
 struct DynamicConfig {
+  using Callback = std::function<void(const ConfigT&)>;
+
   /**
    * @brief Construct a new Dynamic Config, wrapping a config_uilities config.
    * @param name Unique name of the dynamic config. This identifier is used to access the config on the client side
    * @param config The config to wrap.
    */
-  explicit DynamicConfig(const std::string& name, const ConfigT& config = {})
-      : name_(name), config_(config::checkValid(config)) {
-    static_assert(isConfig<ConfigT>(),
-                  "ConfigT must be declared to be a config. Implement 'void declare_config(ConfigT&)'.");
-    is_registered_ = internal::DynamicConfigRegistry::instance().registerConfig(
-        name_,
-        {std::bind(&DynamicConfig::getValues, this),
-         std::bind(&DynamicConfig::setValues, this, std::placeholders::_1),
-         std::bind(&DynamicConfig::getInfo, this)});
-  }
+  explicit DynamicConfig(const std::string& name, const ConfigT& config = {}, Callback callback = {});
 
-  ~DynamicConfig() {
-    if (is_registered_) {
-      internal::DynamicConfigRegistry::instance().deregisterConfig(name_);
-    }
-  }
+  ~DynamicConfig();
 
   DynamicConfig(const DynamicConfig&) = delete;
-  DynamicConfig(DynamicConfig&&) = default;
   DynamicConfig& operator=(const DynamicConfig&) = delete;
-  DynamicConfig& operator=(DynamicConfig&&) = default;
+  DynamicConfig(DynamicConfig&&);
+  DynamicConfig& operator=(DynamicConfig&&);
 
   /**
    * @brief Get the underlying dynamic config.
    * @note This returns a copy of the config, so changes to the returned config will not affect the dynamic config.
    */
-  ConfigT get() const {
-    std::lock_guard<std::mutex> lock(mutex_);
-    return config_;
-  }
+  ConfigT get() const;
 
   /**
    * @brief Set the underlying dynamic config.
+   * @param config The new config to set. If the config is invalid, no modifications are made.
+   * @return True if the config was updated, false otherwise.
    */
-  void set(const ConfigT& config) {
-    if (!config::isValid(config)) {
-      return;
-    }
-    if (!is_registered_) {
-      config_ = config;
-      return;
-    }
+  bool set(const ConfigT& config);
 
-    std::lock_guard<std::mutex> lock(mutex_);
-    const auto old_yaml = internal::Visitor::getValues(config_).data;
-    const auto new_yaml = internal::Visitor::getValues(config).data;
-    if (internal::isEqual(old_yaml, new_yaml)) {
-      return;
-    }
-    config_ = config;
-    internal::DynamicConfigRegistry::instance().configUpdated(name_, new_yaml);
-  }
+  /**
+   * @brief Set the callback function that is called whenever the config is updated.
+   * @param callback The callback function to be called.
+   */
+  void setCallback(const Callback& callback);
 
  private:
   const std::string name_;
   ConfigT config_;
   mutable std::mutex mutex_;
-  bool is_registered_;
+  Callback callback_;
+  const bool is_registered_;
 
-  void setValues(const YAML::Node& values) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    // TODO(lschmid): We should check if the values are valid before setting them. Ideally field by field...
-    internal::Visitor::setValues(config_, values);
-  }
-
-  YAML::Node getValues() const {
-    std::lock_guard<std::mutex> lock(mutex_);
-    return internal::Visitor::getValues(config_).data;
-  }
-
-  YAML::Node getInfo() const {
-    std::lock_guard<std::mutex> lock(mutex_);
-    // TODO(lschmid): Add a visitor function to get the info of a config.
-    return {};
-  }
+  bool setValues(const YAML::Node& values);
+  YAML::Node getValues() const;
+  YAML::Node getInfo() const;
+  internal::DynamicConfigRegistry::ConfigInterface getInterface();
+  void moveMembers(DynamicConfig&& other);
 };
 
 }  // namespace config
+
+#include <config_utilities/internal/dynamic_config_impl.hpp>

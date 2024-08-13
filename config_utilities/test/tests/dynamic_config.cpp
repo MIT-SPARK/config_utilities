@@ -162,4 +162,55 @@ TEST(DynamicConfig, Hooks) {
   EXPECT_EQ(logs, "");
 }
 
+TEST(DynamicConfig, Move) {
+  DynamicConfigServer server;
+
+  // Register a dynamic config.
+  DefaultConfig config;
+  config.i = 123;
+  auto dyn = DynamicConfig<DefaultConfig>("dyn", config);
+  EXPECT_EQ(server.registeredConfigs().size(), 1);
+  EXPECT_EQ(server.registeredConfigs()[0], "dyn");
+
+  // Move constructor.
+  DynamicConfig<DefaultConfig> dyn2(std::move(dyn));
+  EXPECT_EQ(server.registeredConfigs().size(), 1);
+  EXPECT_EQ(server.registeredConfigs()[0], "dyn");
+  EXPECT_EQ(dyn2.get().i, 123);
+
+  // Get/set.
+  YAML::Node update = YAML::Load("i: 456");
+  server.setValues("dyn", update);
+  EXPECT_EQ(dyn2.get().i, 456);
+  config.i = 456;
+  config.f = 2.3f;
+  dyn2.set(config);
+  auto values = server.getValues("dyn");
+  EXPECT_EQ(values["i"].as<int>(), 456);
+  EXPECT_EQ(values["f"].as<float>(), 2.3f);
+
+  // Move assignment.
+  DynamicConfig<DefaultConfig> dyn3("dyn3");
+  EXPECT_EQ(server.registeredConfigs().size(), 2);
+  EXPECT_EQ(server.registeredConfigs()[0], "dyn3");
+  EXPECT_EQ(server.registeredConfigs()[1], "dyn");
+
+  dyn3 = std::move(dyn2);
+  EXPECT_EQ(server.registeredConfigs().size(), 1);
+  EXPECT_EQ(server.registeredConfigs()[0], "dyn");
+  EXPECT_EQ(dyn3.get().i, 456);
+  EXPECT_EQ(dyn3.get().f, 2.3f);
+
+  // Get/set.
+  update = YAML::Load("i: 789");
+  server.setValues("dyn", update);
+  EXPECT_EQ(dyn3.get().i, 789);
+  config.i = 789;
+  config.f = 4.5f;
+  dyn3.set(config);
+  values = server.getValues("dyn");
+  EXPECT_EQ(values["i"].as<int>(), 789);
+  EXPECT_EQ(values["f"].as<float>(), 4.5f);
+}
+
 }  // namespace config::test

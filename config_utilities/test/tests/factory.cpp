@@ -308,7 +308,6 @@ Config[config::test::Talker]():
 
   Settings().print_width = 40;
   const std::string modules = internal::ModuleRegistry::getAllRegistered();
-  std::cout << modules << std::endl;
   EXPECT_EQ(modules, expected);
   Settings().restoreDefaults();
 }
