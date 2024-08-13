@@ -33,8 +33,8 @@ add_library(
   src/external_registry.cpp
   src/factory.cpp
   src/formatter.cpp
-  src/logger.cpp
   src/log_to_stdout.cpp
+  src/logger.cpp
   src/meta_data.cpp
   src/namespacing.cpp
   src/path.cpp
@@ -45,7 +45,9 @@ add_library(
   src/validation.cpp
   src/visitor.cpp
   src/yaml_parser.cpp
-  src/yaml_utils.cpp)
+  src/yaml_utils.cpp
+  $<$<BOOL:${ENABLE_roscpp}>:src/ros.cpp>
+  )
 target_link_libraries(
   ${PROJECT_NAME}
   PUBLIC yaml-cpp
