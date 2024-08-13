@@ -57,12 +57,12 @@ YAML::Node DynamicConfigServer::getValues(const Key& key) const {
   return config->getValues();
 }
 
-void DynamicConfigServer::setValues(const Key& key, const YAML::Node& values) const {
+bool DynamicConfigServer::setValues(const Key& key, const YAML::Node& values) const {
   const auto config = internal::DynamicConfigRegistry::instance().getConfig(key);
   if (!config) {
-    return;
+    return false;
   }
-  config->setValues(values);
+  return config->setValues(values);
 }
 
 YAML::Node DynamicConfigServer::getInfo(const Key& key) const {
@@ -129,6 +129,10 @@ void DynamicConfigRegistry::deregisterConfig(const Key& key) {
       hooks.onDeregister(key);
     }
   }
+}
+
+void DynamicConfigRegistry::overrideRegistration(const Key& key, const ConfigInterface& interface) {
+  configs_[key] = interface;
 }
 
 size_t DynamicConfigRegistry::registerHooks(const DynamicConfigServer::Hooks& hooks, size_t hooks_id) {
