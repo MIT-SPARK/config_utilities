@@ -36,17 +36,20 @@
 #pragma once
 
 #include <fstream>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include <ros/node_handle.h>
+#include <std_msgs/String.h>
 
+#include "config_utilities/dynamic_config.h"
 #include "config_utilities/factory.h"
 #include "config_utilities/internal/string_utils.h"
 #include "config_utilities/internal/visitor.h"
 #include "config_utilities/internal/yaml_utils.h"
-#include "config_utilities/parsing/yaml.h"  // NOTE(lschmid): This pulls in more than needed buyt avoids code duplication.
+#include "config_utilities/parsing/yaml.h"  // NOTE(lschmid): This pulls in more than needed but avoids code duplication.
 #include "config_utilities/update.h"
 
 namespace config {
@@ -183,9 +186,9 @@ std::unique_ptr<BaseT> createFromROSWithNamespace(const ros::NodeHandle& nh,
  * @brief Update the config with the current parameters in ROS.
  * @note This function will update the field and check the validity of the config afterwards. If the config is invalid,
  * the field will be reset to its original value.
-  * @param config The config to update.
-  * @param nh The ROS nodehandle to update the config from.
-  * @param name_space Optionally specify a name space to create the config from. Separate names with slashes '/'.
+ * @param config The config to update.
+ * @param nh The ROS nodehandle to update the config from.
+ * @param name_space Optionally specify a name space to create the config from. Separate names with slashes '/'.
  */
 template <typename ConfigT>
 bool updateFromRos(ConfigT& config, const ros::NodeHandle& nh, const std::string& name_space = "") {
@@ -193,5 +196,33 @@ bool updateFromRos(ConfigT& config, const ros::NodeHandle& nh, const std::string
   const YAML::Node node = internal::rosToYaml(ns_nh);
   return updateField(config, node, true, name_space);
 }
+
+/**
+ * @brief Dynamic config server that allows to set and get configs via ROS topics.
+ */
+class RosDynamicConfigServer {
+ public:
+  explicit RosDynamicConfigServer(const ros::NodeHandle& nh);
+
+ private:
+  struct ConfigReceiver {
+    ConfigReceiver(const DynamicConfigServer::Key& key, RosDynamicConfigServer* server, ros::NodeHandle& nh);
+    const DynamicConfigServer::Key key;
+    RosDynamicConfigServer* const server;
+    ros::Subscriber sub;
+    void callback(const std_msgs::String& msg);
+  };
+
+  ros::NodeHandle nh_;
+  std::map<DynamicConfigServer::Key, ros::Publisher> publishers_;
+  std::map<DynamicConfigServer::Key, std::unique_ptr<ConfigReceiver>> subscribers_;
+  ros::Publisher reg_pub_;
+  ros::Publisher dereg_pub_;
+  DynamicConfigServer server_;
+
+  void onRegister(const DynamicConfigServer::Key& key);
+  void onDeregister(const DynamicConfigServer::Key& key);
+  void onUpdate(const DynamicConfigServer::Key& key, const YAML::Node& new_values);
+};
 
 }  // namespace config
