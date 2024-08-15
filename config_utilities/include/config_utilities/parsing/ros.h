@@ -223,6 +223,7 @@ class RosDynamicConfigServer {
   void onRegister(const DynamicConfigServer::Key& key);
   void onDeregister(const DynamicConfigServer::Key& key);
   void onUpdate(const DynamicConfigServer::Key& key, const YAML::Node& new_values);
+  void onSet(const DynamicConfigServer::Key& key, const YAML::Node& new_values);
 };
 
 }  // namespace config

@@ -45,7 +45,7 @@ RosDynamicConfigServer::ConfigReceiver::ConfigReceiver(const DynamicConfigServer
 
 void RosDynamicConfigServer::ConfigReceiver::callback(const std_msgs::String& msg) {
   const auto values = YAML::Load(msg.data);
-  server->onUpdate(key, values);
+  server->onSet(key, values);
 }
 
 RosDynamicConfigServer::RosDynamicConfigServer(const ros::NodeHandle& nh) : nh_(nh) {
@@ -65,6 +65,9 @@ void RosDynamicConfigServer::onRegister(const DynamicConfigServer::Key& key) {
   std_msgs::String msg;
   msg.data = key;
   reg_pub_.publish(msg);
+
+  // Latch the current state of the config.
+  onUpdate(key, server_.getValues(key));
 }
 
 void RosDynamicConfigServer::onDeregister(const DynamicConfigServer::Key& key) {
@@ -76,7 +79,20 @@ void RosDynamicConfigServer::onDeregister(const DynamicConfigServer::Key& key) {
 }
 
 void RosDynamicConfigServer::onUpdate(const DynamicConfigServer::Key& key, const YAML::Node& values) {
-  server_.setValues(key, values);
+  const auto it = publishers_.find(key);
+  if (it == publishers_.end()) {
+    // Shouldn't happen but better to fail gracefully if people extend this.
+    internal::Logger::logWarning("Tried to publish to dynamic config '" + key + "' without existing publisher.");
+    return;
+  }
+
+  std_msgs::String msg;
+  msg.data = YAML::Dump(values);
+  it->second.publish(msg);
+}
+
+void RosDynamicConfigServer::onSet(const DynamicConfigServer::Key& key, const YAML::Node& new_values) {
+  server_.setValues(key, new_values);
 }
 
 }  // namespace config

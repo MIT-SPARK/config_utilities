@@ -1,0 +1,9 @@
+<launch>
+    <node pkg="config_utilities" type="demo_dynamic_config_server" name="demo_dynamic_config_server" output="screen" required="true">
+        <!-- <rosparam file="$(find config_utilities)/demos/resources/params.yaml"/> -->
+    </node>
+
+    <node pkg="config_utilities" type="demo_dynamic_config_client.py" name="demo_dynamic_config_client" output="screen" required="true">
+        <!-- <rosparam file="$(find config_utilities)/demos/resources/params.yaml"/> -->
+    </node>
+</launch>

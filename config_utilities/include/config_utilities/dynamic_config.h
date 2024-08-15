@@ -211,7 +211,7 @@ struct DynamicConfigRegistry {
  */
 template <typename ConfigT>
 struct DynamicConfig {
-  using Callback = std::function<void(const ConfigT&)>;
+  using Callback = std::function<void()>;
 
   /**
    * @brief Construct a new Dynamic Config, wrapping a config_uilities config.
