@@ -107,7 +107,7 @@ std::string dataToString(const YAML::Node& data, bool reformat_float = false);
 std::vector<size_t> findAllSubstrings(const std::string& text, const std::string& substring);
 
 /**
- * @brief Get a human readable type name of a type if cmopiled with GCC, otherwise default to the mangled typename.
+ * @brief Get a human readable type name of a type if compiled with GCC, otherwise default to the mangled typename.
  * @tparam T The type to get the name of.
  */
 template <typename T>

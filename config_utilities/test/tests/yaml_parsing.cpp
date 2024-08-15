@@ -220,7 +220,7 @@ TEST(YamlParsing, getValues) {
   EXPECT_EQ(meta_data.errors.size(), 0ul);
   meta_data.performOnAll([](const internal::MetaData& d) {
     for (const auto& field : d.field_infos) {
-      EXPECT_TRUE(field.is_default);
+      EXPECT_TRUE(field.isDefault());
     }
   });
   EXPECT_EQ(meta_data.name, "DefaultConfig");
@@ -233,7 +233,7 @@ TEST(YamlParsing, getValues) {
   EXPECT_EQ(meta_data.errors.size(), 0ul);
   meta_data.performOnAll([](const internal::MetaData& d) {
     for (const auto& field : d.field_infos) {
-      EXPECT_FALSE(field.is_default);
+      EXPECT_FALSE(field.isDefault());
     }
   });
 }
