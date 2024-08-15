@@ -225,7 +225,7 @@ std::string AslFormatter::formatSubconfig(const MetaData& data, size_t indent) c
   if (Settings::instance().indicate_default_values && indicate_subconfig_default_ && !data.is_virtual_config) {
     bool is_default = true;
     for (const FieldInfo& info : data.field_infos) {
-      if (!info.is_default) {
+      if (!info.isDefault()) {
         is_default = false;
         break;
       }
@@ -249,7 +249,7 @@ std::string AslFormatter::formatField(const FieldInfo& info, size_t indent) cons
 
   // field is the stringified value, The header is the field name.
   std::string field = dataToString(info.value, reformat_floats);
-  if (info.is_default && Settings::instance().indicate_default_values) {
+  if (info.isDefault() && Settings::instance().indicate_default_values) {
     field += " (default)";
   }
   std::string header = std::string(indent, ' ') + info.name;
