@@ -40,11 +40,13 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "config_utilities/internal/meta_data.h"
 #include "config_utilities/internal/namespacing.h"
 #include "config_utilities/internal/yaml_parser.h"
+#include "config_utilities/traits.h"
 
 namespace config {
 
@@ -64,7 +66,11 @@ struct Visitor {
   static bool hasInstance();
 
   // Interfaces for all internal tools interact with configs through the visitor.
-  // Set the data in the config from the node.
+  /**
+   * @brief Set the values of a config from a YAML node.
+   * @param config The config to set the values for.
+   * @param node The data to set the values from.
+   */
   template <typename ConfigT>
   static MetaData setValues(ConfigT& config,
                             const YAML::Node& node,
@@ -79,6 +85,13 @@ struct Visitor {
                             const bool print_warnings = true,
                             const std::string& name_space = "",
                             const std::string& field_name = "");
+
+  // Get the data and field info stored in the config.
+  template <typename ConfigT>
+  static MetaData getInfo(const ConfigT& config,
+                          const bool print_warnings = true,
+                          const std::string& name_space = "",
+                          const std::string& field_name = "");
 
   // Execute all checks specified in the config.
   template <typename ConfigT>
@@ -132,7 +145,7 @@ struct Visitor {
   friend std::string config::current_namespace();
 
   // Which operations to perform on the data.
-  enum class Mode { kGet, kGetDefaults, kSet, kCheck };
+  enum class Mode { kGet, kGetDefaults, kSet, kCheck, kGetInfo };
   const Mode mode;
 
   // Create and access the meta data for the current thread. Lifetime of the meta data is managed internally by the
@@ -141,18 +154,26 @@ struct Visitor {
   // by calling 'declare_config()'.
   explicit Visitor(Mode _mode, const std::string& _name_space = "", const std::string& _field_name = "");
 
+  // Singleton access.
   static Visitor& instance();
 
   /* Utility function to manipulate data. */
-  // Helper function to get the default values of a config.
+  // Dispatch getting a default meta data for a config.
   template <typename ConfigT, typename std::enable_if<!is_virtual_config<ConfigT>::value, bool>::type = true>
   static MetaData getDefaults(const ConfigT& config);
   template <typename ConfigT, typename std::enable_if<is_virtual_config<ConfigT>::value, bool>::type = true>
   static MetaData getDefaults(const ConfigT& config);
 
-  // Labels all fields in the data as default if they match the default values of the config.
+  // Dispatch getting field input info from conversions.
+  template <typename Conversion, typename std::enable_if<!hasFieldInputInfo<Conversion>(), bool>::type = true>
+  static FieldInputInfo::Ptr getFieldInputInfo();
+  template <typename Conversion, typename std::enable_if<hasFieldInputInfo<Conversion>(), bool>::type = true>
+  static FieldInputInfo::Ptr getFieldInputInfo();
+
+  // Computes the default values for all fields in the meta data. This assumes that the meta data is already created,
+  // and the meta data was created from ConfigT.
   template <typename ConfigT>
-  static void flagDefaultValues(const ConfigT& config, MetaData& data);
+  static void getDefaultValues(const ConfigT& config, MetaData& data);
 
   // Extend the current visitor with a sub-visitor, replicating the previous specification.
   template <typename ConfigT>
