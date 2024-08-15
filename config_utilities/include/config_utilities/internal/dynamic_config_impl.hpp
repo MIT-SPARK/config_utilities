@@ -79,7 +79,7 @@ ConfigT DynamicConfig<ConfigT>::get() const {
 
 template <typename ConfigT>
 bool DynamicConfig<ConfigT>::set(const ConfigT& config) {
-  if (!config::isValid(config)) {
+  if (!config::isValid(config, true)) {
     return false;
   }
   if (!is_registered_) {
@@ -89,13 +89,16 @@ bool DynamicConfig<ConfigT>::set(const ConfigT& config) {
     return true;
   }
 
-  std::lock_guard<std::mutex> lock(mutex_);
-  const auto old_yaml = internal::Visitor::getValues(config_).data;
   const auto new_yaml = internal::Visitor::getValues(config).data;
-  if (internal::isEqual(old_yaml, new_yaml)) {
-    return false;
-  }
-  config_ = config;
+  {  // critical section
+    std::lock_guard<std::mutex> lock(mutex_);
+    const auto old_yaml = internal::Visitor::getValues(config_).data;
+    if (internal::isEqual(old_yaml, new_yaml)) {
+      return false;
+    }
+    config_ = config;
+  }  // end critical section
+
   internal::DynamicConfigRegistry::instance().configUpdated(name_, new_yaml);
   return true;
 }
@@ -108,24 +111,31 @@ void DynamicConfig<ConfigT>::setCallback(const Callback& callback) {
 
 template <typename ConfigT>
 bool DynamicConfig<ConfigT>::setValues(const YAML::Node& values) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  ConfigT new_config = config_;
-  internal::Visitor::setValues(new_config, values);
-  if (!config::isValid(new_config)) {
-    return false;
+  YAML::Node new_yaml;
+  {  // start critical section
+    std::lock_guard<std::mutex> lock(mutex_);
+    ConfigT new_config = config_;
+    internal::Visitor::setValues(new_config, values);
+    if (!config::isValid(new_config, true)) {
+      return false;
+    }
+
+    // NOTE(lschmid): This is a bit cumbersome, but configs don't have to implement operator==, so we compare
+    // their YAML representation. Can consider making this optional in the future in the global settings?
+    const auto old_yaml = internal::Visitor::getValues(config_).data;
+    new_yaml = internal::Visitor::getValues(new_config).data;
+    if (internal::isEqual(old_yaml, new_yaml)) {
+      return false;
+    }
+    config_ = new_config;
+  }  // end critical section
+
+  if (callback_) {
+    callback_();
   }
 
-  // NOTE(lschmid): This is a bit cumbersome, but configs don't have to implement operator==, so we compare
-  // their YAML representation. Can consider making this optional in the future in the global settings?
-  const auto old_yaml = internal::Visitor::getValues(config_).data;
-  const auto new_yaml = internal::Visitor::getValues(new_config).data;
-  if (internal::isEqual(old_yaml, new_yaml)) {
-    return false;
-  }
-  config_ = new_config;
-  if (callback_) {
-    callback_(config_);
-  }
+  // Also notify other clients that the config has been updated.
+  internal::DynamicConfigRegistry::instance().configUpdated(name_, new_yaml);
   return true;
 }
 
