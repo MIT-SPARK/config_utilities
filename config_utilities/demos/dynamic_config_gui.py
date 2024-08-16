@@ -226,10 +226,10 @@ class DynamicConfigGUI(ctk.CTk):
 
     def setup_config_frame(self):
         if self.settings.method == "Type Info":
-            self.config_frame = TypeInfoConfigFrame(self, self.value_changed_cb)
+            self.config_frame = TypeInfoConfigFrame(self, self._value_changed_cb)
         else:
             # Default to plain text if unsupported.
-            self.config_frame = PlainTextConfigFrame(self, self.value_changed_cb)
+            self.config_frame = PlainTextConfigFrame(self, self._value_changed_cb)
         self.config_frame.grid(row=1, column=0, sticky="nsew", columnspan=2)
 
         if self.current_values is not None:
@@ -264,6 +264,9 @@ class DynamicConfigGUI(ctk.CTk):
             self.server_selected_cb(server)
 
     def _value_changed_cb(self):
+        # TMP
+        print("Sending Values: ")
+        print(self.config_frame.get_config())
         if self.value_changed_cb is not None:
             self.value_changed_cb(self.config_frame.get_config())
 
@@ -353,7 +356,7 @@ class RosStatusBar(SelectionDropDown):
             self.send_cb()
 
 
-class ConfigFrame(ctk.CTkFrame):
+class ConfigFrame:
     """
     Interface class for configuration editing.
     """
@@ -375,14 +378,16 @@ class ConfigFrame(ctk.CTkFrame):
         pass
 
 
-class PlainTextConfigFrame(ConfigFrame):
+class PlainTextConfigFrame(ConfigFrame, ctk.CTkFrame):
     """
     A frame to enable editing a config in plain YAML.
     """
 
     def __init__(self, master, send_update_fn=None):
         super().__init__(master, send_update_fn)
-        self.w_text = ctk.CTkTextbox(self, wrap=CHAR, width=1000, undo=True, font=ctk.CTkFont(size=14))
+        self.w_text = ctk.CTkTextbox(
+            self, wrap=CHAR, width=1000, undo=True, font=ctk.CTkFont(size=14)
+        )
         self.w_text.pack(fill=BOTH, expand=True, padx=PAD_X, pady=PAD_Y)
         self.w_text.bind("<KeyRelease>", self._on_key_release)
 
@@ -407,25 +412,318 @@ class PlainTextConfigFrame(ConfigFrame):
             self.send_update_fn()
 
 
-class TypeInfoConfigFrame(ConfigFrame):
+class TypeInfoConfigFrame(ConfigFrame, ctk.CTkScrollableFrame):
     """
     A frame to restrict editing a config based on type information.
     """
 
+    INDENT = 4  # Number of spaces per indent level.
+    ROW_HEIGHT = 18
+    CORNER_RADIUS = 2
+
     def __init__(self, master, send_update_fn=None):
         super().__init__(master, send_update_fn)
-        
-        # TODO Build frame from info.
+
+        self.current_row = 0
+        self.current_indent = 0
+        self.current_ns = []
+        self.get_value_fns = {}
+        self.set_value_fns = {}
+        self.widgets = []
 
     def set_config_info(self, new_info):
-        print(f"Got info: {new_info}")
+        # TODO(lschmid): Check if only values need to be updated.
+        self.clear_config_ui()
+        self.build_config_ui(new_info)
 
     def get_config(self):
-        return {}
+        yaml_data = {}
+        for key, fn in self.get_value_fns.items():
+            ns = key.split("/")
+            curr_node = yaml_data
+            for n in ns[:-1]:
+                if not n:
+                    continue
+                if not n in curr_node:
+                    curr_node[n] = {}
+                curr_node = curr_node[n]
+            curr_node[ns[-1]] = fn()
+        return yaml_data
+    
+    # Build the UI for a config info.
+    def clear_config_ui(self):
+        for widget in self.widgets:
+            widget.destroy()
+        self.current_row = 0
+        self.current_indent = 0
+        self.current_ns = []
+        self.widgets.clear()
+        self.get_value_fns.clear()
+
+    def build_config_ui(self, config_info):
+        # Header row.
+        name = config_info["name"] if "name" in config_info else "Unknown Config"
+        self.w_header_name = ctk.CTkLabel(self, text=f"{name}:", anchor="w")
+        self.w_header_name.grid(row=self.current_row, column=0, sticky="nsw", padx=PAD_X)
+        self.w_header_value = ctk.CTkLabel(
+            self,
+            text="Value:",
+            anchor="w",
+        )
+        self.w_header_value.grid(row=self.current_row, column=1, sticky="nsw", padx=PAD_X)
+        self.w_header_default = ctk.CTkLabel(
+            self,
+            text="Default:",
+            anchor="w",
+        )
+        self.w_header_default.grid(row=self.current_row, column=2, sticky="nsw", padx=PAD_X)
+        self.current_row += 1
+
+        # Build the config.
+        if "fields" in config_info:
+            for info in config_info["fields"]:
+                self.build(info)
+
+        # Configure columns.
+        self.rowconfigure([i for i in range(self.current_row + 1)], weight=0, pad=0)
+        self.columnconfigure(0, weight=0, pad=0)
+        self.columnconfigure(1, weight=1, pad=0)
+        self.columnconfigure(2, weight=0, pad=0)
+
+    def build(self, info):
+        # Build configs or fields.
+        if not "type" in info:
+            return
+        if info["type"] == "config":
+            self.build_config(info)
+        elif info["type"] == "field":
+            self.build_field(info)
+
+    def build_config(self, info):
+        name = info["field_name"] if "field_name" in info else "Unknown Field"
+        type = f" [{info['name']}]" if "name" in info else ""
+        self.add_label(f"{name}{type}:")
+        self.current_row += 1
+        if not "fields" in info:
+            return
+
+        self.current_indent += 1
+        self.current_ns.append(name)
+        for field in info["fields"]:
+            self.build(field)
+        self.current_indent -= 1
+        self.current_ns.pop()
+
+    def build_field(self, info):
+        name = info["name"] if "name" in info else "Unknown Field"
+        unit = f" [{info['unit']}]" if "unit" in info else ""
+        default = info["default"] if "default" in info else "Unknown Default"
+        self.add_label(f"{name}{unit}:")
+        self.add_value_entry(info)
+        self.add_default(str(default))
+        self.current_row += 1
+
+    def add_label(self, text):
+        label = ctk.CTkLabel(
+            self,
+            text=" " * self.current_indent * self.INDENT + text,
+            height=self.ROW_HEIGHT,
+            anchor="w",
+        )
+        label.grid(row=self.current_row, column=0, sticky="nsw", pady=0)
+        self.widgets.append(label)
+
+    def add_default(self, text):
+        label = ctk.CTkTextbox(
+            self,
+            fg_color="light gray",
+            text_color="gray",
+            border_spacing=0,
+            corner_radius=self.CORNER_RADIUS,
+            height=self.ROW_HEIGHT,
+        )
+        label.insert("1.0", text)
+        label.configure(state=DISABLED)
+        label.grid(row=self.current_row, column=2, sticky="nsw", pady=0)
+        self.widgets.append(label)
+
+    def add_value_entry(self, info):
+        input_type = "yaml"
+        param_name = "/".join(self.current_ns) + "/" + info["name"]
+        if "input_info" in info and "type" in info["input_info"]:
+            input_type = info["input_info"]["type"]
+        if input_type == "bool":
+            self.add_bool_value_entry(info, param_name)
+        elif input_type == "int":
+            self.add_numeric_value_entry(info, param_name, True)
+        elif input_type == "float":
+            self.add_numeric_value_entry(info, param_name, False)
+        elif input_type == "string":
+            self.add_string_value_entry(info, param_name)
+        elif input_type == "options":
+            self.add_options_value_entry(info, param_name)
+        else:
+            self.add_yaml_value_entry(info, param_name)
+
+    def add_yaml_value_entry(self, info, param_name):
+        widget = ctk.CTkTextbox(
+            self,
+            wrap=CHAR,
+            undo=True,
+            height=self.ROW_HEIGHT,
+            border_spacing=0,
+            corner_radius=self.CORNER_RADIUS,
+        )
+        widget.insert("0.0", yaml.dump(info["value"], default_flow_style=True).rstrip())
+        widget.grid(row=self.current_row, column=1, sticky="nsew", pady=0, padx=PAD_X)
+        self.widgets.append(widget)
+        self.get_value_fns[param_name] = lambda: self.get_yaml_value(widget)
+
+    def add_bool_value_entry(self, info, param_name):
+        widget = ctk.CTkCheckBox(
+            self, height=self.ROW_HEIGHT, corner_radius=self.CORNER_RADIUS, text=""
+        )
+        widget.grid(row=self.current_row, column=1, sticky="nsew", pady=0, padx=PAD_X)
+        if info["value"]:
+            widget.select()
+        else:
+            widget.deselect()
+        self.widgets.append(widget)
+        self.get_value_fns[param_name] = lambda: "true" if widget.get() else "false"
+
+    def add_numeric_value_entry(self, info, param_name, is_int = True):
+        frame = ctk.CTkFrame(self, height=self.ROW_HEIGHT, border_width=0)
+        frame.grid(row=self.current_row, column=1, sticky="nsew", pady=0, padx=PAD_X)
+        # Value.
+        w2 = ctk.CTkTextbox(
+            frame,
+            height=self.ROW_HEIGHT,
+            border_spacing=0,
+            corner_radius=self.CORNER_RADIUS,
+            width=50,
+        )
+        w2.insert("0.0", info["value"])
+        w2.grid(row=0, column=0, sticky="nsew", pady=0)
+        self.widgets.append(w2)
+        self.get_value_fns[param_name] = lambda: w2.get("1.0", END)
+        frame.columnconfigure(1, weight=0)
+        # Constraints.
+        min_val = None
+        max_val = None
+        if "min" in info["input_info"]:
+            min_val = info["input_info"]["min"]
+        if "max" in info["input_info"]:
+            max_val = info["input_info"]["max"]
+        if min_val is not None:
+            w3 = ctk.CTkLabel(
+                frame,
+                text=f"{'(' if 'lower_exclusive' in info['input_info'] else '['}{min_val}",
+                anchor="w",
+                height=self.ROW_HEIGHT,
+            )
+            w3.grid(row=0, column=1, sticky="nsw", pady=0)
+            frame.columnconfigure(1, weight=0)
+            self.widgets.append(w3)
+
+        if min_val is not None and max_val is not None:
+            slid_min = min_val
+            if is_int and 'lower_exclusive' in info['input_info']:
+                slid_min += 1
+            slid_max = max_val
+            if is_int and 'upper_exclusive' in info['input_info']:
+                slid_max -= 1
+            w4 = ctk.CTkSlider(
+                frame,
+                from_=slid_min,
+                to=slid_max,
+                orientation=HORIZONTAL,
+                corner_radius=self.CORNER_RADIUS,
+                command=lambda _: self.sync_text_to_slider(w2,w4, is_int)
+            )
+            w2.bind("<KeyRelease>", lambda _: self.sync_slider_to_text(w4, w2))
+            if is_int and max_val - slid_min < 100:
+                w4.configure(number_of_steps=slid_max - min_val + 1)
+            w4.set(info["value"])
+            w4.grid(row=0, column=2, sticky="nsew", pady=0)
+            self.widgets.append(w4)
+            frame.columnconfigure(2, weight=1)
+
+        if max_val is not None:
+            w5 = ctk.CTkLabel(
+                frame,
+                text=f"{', ' if min_val is None else ''}{max_val}{')' if 'upper_exclusive' in info['input_info'] else ']'}",
+                anchor="w",
+                height=self.ROW_HEIGHT,
+            )
+            col = 3 if min_val is not None else 1
+            w5.grid(row=0, column=col, sticky="nsw", pady=0)
+            frame.columnconfigure(col, weight=0)
+            self.widgets.append(w5)
+        self.widgets.append(frame)
+
+    def sync_slider_to_text(self, slider, text):
+        try:
+            value = float(text.get("1.0", END))
+            slider.set(value)
+        except ValueError:
+            pass
+
+    def sync_text_to_slider(self, text, slider, is_int):
+        text.delete("1.0", END)
+        new_text = f"{slider.get():.0f}" if is_int else f"{slider.get():.2f}"
+        text.insert("1.0", new_text)
+
+    def add_float_value_entry(self, info, param_name):
+        self.add_int_value_entry(info, param_name)
+
+    def add_string_value_entry(self, info, param_name):
+        widget = ctk.CTkTextbox(
+            self,
+            wrap=CHAR,
+            undo=True,
+            height=self.ROW_HEIGHT,
+            border_spacing=0,
+            corner_radius=self.CORNER_RADIUS,
+        )
+        widget.insert("0.0", info["value"])
+        widget.grid(row=self.current_row, column=1, sticky="nsew", pady=0, padx=PAD_X)
+        self.widgets.append(widget)
+        self.get_value_fns[param_name] = lambda: widget.get("1.0")
+
+    def add_options_value_entry(self, info, param_name):
+        options = []
+        if "options" in info["input_info"]:
+            for o in info["input_info"]["options"]:
+                options.append(str(o))
+        if str(info["value"]) not in options:
+            options.append(str(info["value"]))
+        widget = ctk.CTkOptionMenu(
+            self,
+            values=options,
+            corner_radius=self.CORNER_RADIUS,
+            height=self.ROW_HEIGHT,
+        )
+        widget.set(info["value"])
+        widget.grid(row=self.current_row, column=1, sticky="nsew", pady=0, padx=PAD_X)
+        self.widgets.append(widget)
+        self.get_value_fns[param_name] = lambda: widget.get()
+
+    def get_yaml_value(self, widget):
+        try:
+            return yaml.load(widget.get("1.0", END), Loader=yaml.FullLoader)
+        except yaml.YAMLError as e:
+            print(f"{GUI_NAME}Error parsing YAML: {e}")
+            return None
 
 
 def main():
     app = DynamicConfigGUI()
+    # TEST
+    data = yaml.load(
+        "{'type': 'config', 'name': 'MyConfig', 'fields': [{'type': 'field', 'name': 'i', 'value': 100, 'default': 100, 'input_info': {'type': 'int', 'min': 0, 'max': 2147483647, 'lower_exclusive': True}}, {'type': 'field', 'name': 'distance', 'unit': 'm', 'value': 42, 'default': 42, 'input_info': {'type': 'float', 'min': 0, 'max': 100}}, {'type': 'field', 'name': 'b', 'value': True, 'default': True, 'input_info': {'type': 'bool'}}, {'type': 'field', 'name': 'vec', 'value': [1, 2, 3], 'default': [1, 2, 3], 'input_info': {'type': 'yaml'}}, {'type': 'field', 'name': 'map', 'value': {'a': 1, 'b': 2, 'c': 3}, 'default': {'a': 1, 'b': 2, 'c': 3}, 'input_info': {'type': 'yaml'}}, {'type': 'field', 'name': 'mat', 'value': [[1, 0, 0], [0, 1, 0], [0, 0, 1]], 'default': [[1, 0, 0], [0, 1, 0], [0, 0, 1]], 'input_info': {'type': 'yaml'}}, {'type': 'field', 'name': 'my_enum', 'value': 'A', 'default': 'A', 'input_info': {'type': 'options', 'options': ['A', 'B', 'C']}}, {'type': 'config', 'name': 'SubConfig', 'field_name': 'sub_config', 'fields': [{'type': 'field', 'name': 'f', 'value': 1.1, 'default': 1.1, 'input_info': {'type': 'options', 'options': [0, 1.1, 2.2, 3.3]}}, {'type': 'field', 'name': 's', 'value': 'test', 'default': 'test', 'input_info': {'type': 'string'}}]}]}",
+        Loader=yaml.FullLoader,
+    )
+    app.set_config_info(data)
     app.mainloop()
 
 
