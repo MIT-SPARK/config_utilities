@@ -285,6 +285,7 @@ TEST(Factory, createWithConfig) {
   data["i"] = 3;
   data["f"] = 3.14f;
   data["type"] = "DerivedC";
+<<<<<<< HEAD
   {
     // Create DerivedC with config and r-value parameter
     auto base = createFromYaml<Base>(data, 12);
@@ -369,6 +370,35 @@ TEST(Factory, createWithConfig) {
     EXPECT_FLOAT_EQ(ptr->config_.f, 3.14f);
     EXPECT_EQ(*ptr->i_, 1);
   }
+=======
+
+  std::unique_ptr<Base> base = createFromYaml<Base>(data, 12);
+  EXPECT_TRUE(base);
+  EXPECT_EQ(base->name(), "DerivedC");
+  EXPECT_EQ(dynamic_cast<DerivedC*>(base.get())->config_.f, 3.14f);
+  EXPECT_EQ(base->i_, 12);
+
+  auto logger = TestLogger::create();
+  data["type"] = "NotRegistered";
+  base = createFromYaml<Base>(data, 12);
+  EXPECT_FALSE(base);
+  EXPECT_EQ(logger->numMessages(), 1);
+  std::string msg = logger->messages().back().second;
+  EXPECT_EQ(msg.find("No module of type 'NotRegistered' registered to the factory"), 0);
+
+  Settings().factory.type_param_name = "test_type";
+  base = createFromYaml<Base>(data, 12);
+  EXPECT_FALSE(base);
+  EXPECT_EQ(logger->numMessages(), 2);
+  msg = logger->messages().back().second;
+  EXPECT_EQ(msg, "Could not read the param 'test_type' to deduce the type of the module to create.");
+
+  data["test_type"] = "DerivedD";
+  base = createFromYaml<Base>(data, 12);
+  EXPECT_TRUE(base);
+  EXPECT_EQ(base->name(), "DerivedD");
+  EXPECT_EQ(dynamic_cast<DerivedD*>(base.get())->config_.i, 3);
+>>>>>>> refactor settings
 }
 
 TEST(Factory, moduleNameConflicts) {
@@ -501,7 +531,7 @@ Config[config::test::Talker]():
 
 )""";
 
-  Settings().print_width = 40;
+  Settings().printing.width = 40;
   const std::string modules = internal::ModuleRegistry::getAllRegistered();
   EXPECT_EQ(modules, expected);
   Settings().restoreDefaults();

@@ -128,7 +128,7 @@ bool operator<(const ConfigPair& lhs, const ConfigPair& rhs) {
 }
 
 std::string ModuleRegistry::getAllRegistered() {
-  const auto width = Settings::instance().print_width;
+  const auto width = Settings::instance().printing.width;
   const auto& registry = instance().type_registry;
   std::stringstream ss;
   ss << banner("Registered Objects", width) << showWithFilter(registry, &isPlainObject) << "\n";
