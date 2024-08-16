@@ -35,7 +35,6 @@
 #include "config_utilities/internal/field_input_info.h"
 
 #include <algorithm>
-#include <iostream>  // TMP
 #include <unordered_set>
 
 #include "config_utilities/internal/yaml_parser.h"
@@ -108,13 +107,13 @@ YAML::Node IntFieldInputInfo::toYaml() const {
 
 void IntFieldInputInfo::mergeSame(const FieldInputInfo& other) {
   const auto& other_info = dynamic_cast<const IntFieldInputInfo&>(other);
-  if (min > other_info.min) {
+  if (min < other_info.min) {
     min = other_info.min;
     lower_inclusive = other_info.lower_inclusive;
   } else if (min == other_info.min) {
     lower_inclusive = lower_inclusive && other_info.lower_inclusive;
   }
-  if (max < other_info.max) {
+  if (max > other_info.max) {
     max = other_info.max;
     upper_inclusive = other_info.upper_inclusive;
   } else if (max == other_info.max) {
@@ -125,23 +124,19 @@ void IntFieldInputInfo::mergeSame(const FieldInputInfo& other) {
 void IntFieldInputInfo::setMin(YAML::Node min, bool lower_inclusive) {
   auto val = YamlParser::fromYaml<int64_t>(min);
   if (!val) {
-    std::cout << "Failed to parse min int value: " << min << std::endl;
     return;
   }
   this->min = *val;
   this->lower_inclusive = lower_inclusive;
-  std::cout << "Set int min: " << this->min << std::endl;
 }
 
 void IntFieldInputInfo::setMax(YAML::Node max, bool upper_inclusive) {
   auto val = YamlParser::fromYaml<uint64_t>(max);
   if (!val) {
-    std::cout << "Failed to parse max int value: " << min << std::endl;
     return;
   }
   this->max = *val;
   this->upper_inclusive = upper_inclusive;
-  std::cout << "Set int max: " << this->max << std::endl;
 }
 
 YAML::Node FloatFieldInputInfo::toYaml() const {
@@ -160,13 +155,13 @@ YAML::Node FloatFieldInputInfo::toYaml() const {
 
 void FloatFieldInputInfo::mergeSame(const FieldInputInfo& other) {
   const auto& other_info = dynamic_cast<const FloatFieldInputInfo&>(other);
-  if (min > other_info.min) {
+  if (min < other_info.min) {
     min = other_info.min;
     lower_inclusive = other_info.lower_inclusive;
   } else if (min == other_info.min) {
     lower_inclusive = lower_inclusive && other_info.lower_inclusive;
   }
-  if (max < other_info.max) {
+  if (max > other_info.max) {
     max = other_info.max;
     upper_inclusive = other_info.upper_inclusive;
   } else if (max == other_info.max) {
@@ -177,23 +172,19 @@ void FloatFieldInputInfo::mergeSame(const FieldInputInfo& other) {
 void FloatFieldInputInfo::setMin(YAML::Node min, bool lower_inclusive) {
   auto val = YamlParser::fromYaml<double>(min);
   if (!val) {
-    std::cout << "Failed to parse min float value: " << min << std::endl;
     return;
   }
   this->min = *val;
   this->lower_inclusive = lower_inclusive;
-  std::cout << "Set float min: " << this->min << std::endl;
 }
 
 void FloatFieldInputInfo::setMax(YAML::Node max, bool upper_inclusive) {
   auto val = YamlParser::fromYaml<double>(max);
   if (!val) {
-    std::cout << "Failed to parse max float value: " << min << std::endl;
     return;
   }
   this->max = *val;
   this->upper_inclusive = upper_inclusive;
-  std::cout << "Set float max: " << this->max << std::endl;
 }
 
 YAML::Node OptionsFieldInputInfo::toYaml() const {

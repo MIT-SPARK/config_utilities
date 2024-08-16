@@ -48,6 +48,7 @@
 #include "config_utilities/internal/yaml_utils.h"
 #include "config_utilities/traits.h"
 
+
 namespace config::internal {
 
 /**
@@ -125,7 +126,7 @@ class YamlParser {
     YAML::Node node;
     std::string err;
     try {
-      node = toYamlImpl("", value, err);
+      node = toYamlImpl("tmp", value, err);
     } catch (const std::exception& e) {
       err = std::string(e.what());
     }
@@ -135,7 +136,7 @@ class YamlParser {
       }
       return YAML::Node(YAML::NodeType::Null);
     }
-    return node;
+    return node["tmp"];
   }
 
   /**
@@ -205,6 +206,7 @@ class YamlParser {
     }
     return node;
   }
+
 
   // Set.
   template <typename T>
