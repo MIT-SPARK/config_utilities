@@ -60,7 +60,8 @@ RosDynamicConfigServer::RosDynamicConfigServer(const ros::NodeHandle& nh) : nh_(
 }
 
 void RosDynamicConfigServer::onRegister(const DynamicConfigServer::Key& key) {
-  publishers_[key] = nh_.advertise<std_msgs::String>(key + "/get", 1, true);
+  value_publishers_[key] = nh_.advertise<std_msgs::String>(key + "/get", 1, true);
+  info_publishers_[key] = nh_.advertise<std_msgs::String>(key + "/info", 1, true);
   subscribers_[key] = std::make_unique<ConfigReceiver>(key, this, nh_);
   std_msgs::String msg;
   msg.data = key;
@@ -71,7 +72,8 @@ void RosDynamicConfigServer::onRegister(const DynamicConfigServer::Key& key) {
 }
 
 void RosDynamicConfigServer::onDeregister(const DynamicConfigServer::Key& key) {
-  publishers_.erase(key);
+  value_publishers_.erase(key);
+  info_publishers_.erase(key);
   subscribers_.erase(key);
   std_msgs::String msg;
   msg.data = key;
@@ -79,8 +81,8 @@ void RosDynamicConfigServer::onDeregister(const DynamicConfigServer::Key& key) {
 }
 
 void RosDynamicConfigServer::onUpdate(const DynamicConfigServer::Key& key, const YAML::Node& values) {
-  const auto it = publishers_.find(key);
-  if (it == publishers_.end()) {
+  const auto it = value_publishers_.find(key);
+  if (it == value_publishers_.end()) {
     // Shouldn't happen but better to fail gracefully if people extend this.
     internal::Logger::logWarning("Tried to publish to dynamic config '" + key + "' without existing publisher.");
     return;
@@ -89,6 +91,15 @@ void RosDynamicConfigServer::onUpdate(const DynamicConfigServer::Key& key, const
   std_msgs::String msg;
   msg.data = YAML::Dump(values);
   it->second.publish(msg);
+
+  // For now also always publish the info. Can consider being smarter about this if this ever is a limitation.
+  const auto info_it = info_publishers_.find(key);
+  if (info_it == info_publishers_.end()) {
+    return;
+  }
+  const auto info = server_.getInfo(key);
+  msg.data = YAML::Dump(info);
+  info_it->second.publish(msg);
 }
 
 void RosDynamicConfigServer::onSet(const DynamicConfigServer::Key& key, const YAML::Node& new_values) {
