@@ -180,7 +180,7 @@ TEST(Factory, createWithConfig) {
   std::string msg = logger->messages().back().second;
   EXPECT_EQ(msg.find("No module of type 'NotRegistered' registered to the factory"), 0);
 
-  Settings().factory_type_param_name = "test_type";
+  Settings().factory.type_param_name = "test_type";
   base = createFromYaml<Base>(data, 12);
   EXPECT_FALSE(base);
   EXPECT_EQ(logger->numMessages(), 2);
@@ -306,7 +306,7 @@ Config[config::test::Talker]():
 
 )""";
 
-  Settings().print_width = 40;
+  Settings().printing.width = 40;
   const std::string modules = internal::ModuleRegistry::getAllRegistered();
   EXPECT_EQ(modules, expected);
   Settings().restoreDefaults();

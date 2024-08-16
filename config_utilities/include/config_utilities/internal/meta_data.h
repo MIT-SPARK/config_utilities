@@ -65,7 +65,7 @@ struct FieldInfo {
   //! The default value of the field if the field is not a config.
   YAML::Node default_value;
 
-  //! Whether the field corresponds to its default value. Only queried if Settings().indicate_default_values is true.
+  //! Whether the field corresponds to its default value. Only queried if Settings().printing.show_defaults is true.
   bool isDefault() const;
 
   //! Whether or not the field was parsed

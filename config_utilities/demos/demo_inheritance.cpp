@@ -144,7 +144,7 @@ int main(int argc, char** argv) {
 
   const std::string my_root_path = std::string(argv[1]) + "/";
 
-  config::Settings().inline_subconfig_field_names = true;
+  config::Settings().printing.inline_subconfigs = true;
 
   // ===================================== Checking whether a struct is a config =====================================
 
