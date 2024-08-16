@@ -45,6 +45,7 @@ add_executable(
   tests/external_registry.cpp
   tests/factory.cpp
   tests/getters.cpp
+  tests/field_input_info.cpp
   tests/inheritance.cpp
   tests/missing_fields.cpp
   tests/namespacing.cpp

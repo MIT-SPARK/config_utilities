@@ -38,8 +38,6 @@
 #include <string>
 #include <type_traits>
 
-#include "config_utilities/internal/field_input_info.h"
-
 namespace config {
 namespace internal {
 
