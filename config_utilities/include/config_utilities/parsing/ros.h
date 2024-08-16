@@ -214,7 +214,8 @@ class RosDynamicConfigServer {
   };
 
   ros::NodeHandle nh_;
-  std::map<DynamicConfigServer::Key, ros::Publisher> publishers_;
+  std::map<DynamicConfigServer::Key, ros::Publisher> value_publishers_;
+  std::map<DynamicConfigServer::Key, ros::Publisher> info_publishers_;
   std::map<DynamicConfigServer::Key, std::unique_ptr<ConfigReceiver>> subscribers_;
   ros::Publisher reg_pub_;
   ros::Publisher dereg_pub_;

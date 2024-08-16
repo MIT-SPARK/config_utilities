@@ -231,7 +231,7 @@ class DynamicConfigGUI(ctk.CTk):
             # Default to plain text if unsupported.
             self.config_frame = PlainTextConfigFrame(self, self.value_changed_cb)
         self.config_frame.grid(row=1, column=0, sticky="nsew", columnspan=2)
-        
+
         if self.current_values is not None:
             self.config_frame.set_config(self.current_values)
         if self.current_info is not None:
@@ -249,10 +249,6 @@ class DynamicConfigGUI(ctk.CTk):
         self.config_frame.set_config(new_values)
 
     def set_config_info(self, new_info):
-        """
-        Update the GUI with new information about the configuration.
-        new_info: A dictionary with information about the configuration.
-        """
         self.current_info = new_info
         self.config_frame.set_config_info(new_info)
 
@@ -336,7 +332,7 @@ class RosStatusBar(SelectionDropDown):
         self.no_options_text = "No RosDynamicConfigServers Registered."
         self.w_label.configure(text="Config Server:")
         self.w_refresh_button = ctk.CTkButton(
-            self, text="Refresh", command=self._on_reset_button
+            self, text="Refresh", command=self._on_refresh_button
         )
         self.w_refresh_button.grid(
             row=0, column=3, padx=PAD_X, pady=PAD_Y, sticky="nse"
@@ -348,7 +344,7 @@ class RosStatusBar(SelectionDropDown):
         self.columnconfigure(2, weight=1)
         self.columnconfigure([0, 1, 3, 4], weight=0)
 
-    def _on_reset_button(self):
+    def _on_refresh_button(self):
         if self.refresh_cb is not None:
             self.refresh_cb()
 
@@ -386,7 +382,7 @@ class PlainTextConfigFrame(ConfigFrame):
 
     def __init__(self, master, send_update_fn=None):
         super().__init__(master, send_update_fn)
-        self.w_text = ctk.CTkTextbox(self, wrap=CHAR, width=1000, undo=True)
+        self.w_text = ctk.CTkTextbox(self, wrap=CHAR, width=1000, undo=True, font=ctk.CTkFont(size=14))
         self.w_text.pack(fill=BOTH, expand=True, padx=PAD_X, pady=PAD_Y)
         self.w_text.bind("<KeyRelease>", self._on_key_release)
 

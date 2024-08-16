@@ -148,8 +148,7 @@ YAML::Node DynamicConfig<ConfigT>::getValues() const {
 template <typename ConfigT>
 YAML::Node DynamicConfig<ConfigT>::getInfo() const {
   std::lock_guard<std::mutex> lock(mutex_);
-  // TODO(lschmid): Add a visitor function to get the info of a config.
-  return {};
+  return internal::Visitor::getInfo(config_).serializeFieldInfos();
 }
 
 template <typename ConfigT>
