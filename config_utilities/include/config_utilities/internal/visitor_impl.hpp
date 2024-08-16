@@ -68,7 +68,7 @@ MetaData Visitor::setValues(ConfigT& config,
     Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Severity::kWarning));
   }
 
-  if (print_missing && Settings::instance().print_missing && visitor.data.hasMissing()) {
+  if (print_missing && Settings::instance().printing.show_missing && visitor.data.hasMissing()) {
     Logger::logWarning(Formatter::formatMissing(visitor.data, "Missing fields from config", Severity::kWarning));
   }
 
@@ -84,7 +84,7 @@ MetaData Visitor::getValues(const ConfigT& config,
   // NOTE(lschmid): We know that in mode kGet, the config is not modified.
   ::config::declare_config(const_cast<ConfigT&>(config));
 
-  if (Settings::instance().indicate_default_values) {
+  if (Settings::instance().printing.show_defaults) {
     Visitor::getDefaultValues(config, visitor.data);
   }
   if (print_warnings && visitor.data.hasErrors()) {
