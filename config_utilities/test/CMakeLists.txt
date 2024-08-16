@@ -20,6 +20,7 @@ add_executable(
   tests/enums.cpp
   tests/external_registry.cpp
   tests/factory.cpp
+  tests/field_input_info.cpp
   tests/inheritance.cpp
   tests/missing_fields.cpp
   tests/namespacing.cpp

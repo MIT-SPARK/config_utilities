@@ -40,7 +40,7 @@
 #include <typeinfo>
 #include <vector>
 
-#include "config_utilities/internal/meta_data.h"
+#include <yaml-cpp/yaml.h>
 
 // clang-format off
 #ifdef __GNUG__

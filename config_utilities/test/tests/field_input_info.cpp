@@ -56,8 +56,9 @@ fields:
     default: 1
     input_info:
       type: int
-      min: -2147483648
+      min: 0
       max: 2147483647
+      lower_exclusive: true
   - type: field
     name: f
     unit: s
@@ -65,8 +66,8 @@ fields:
     default: 2.1
     input_info:
       type: float
-      min: -inf
-      max: inf
+      min: 0
+      max: 1.844674407370955e+19
   - type: field
     name: d
     unit: m/s
@@ -74,8 +75,9 @@ fields:
     default: 3.2
     input_info:
       type: float
-      min: -inf
-      max: inf
+      min: 0
+      max: 4
+      upper_exclusive: true
   - type: field
     name: b
     value: true
@@ -89,7 +91,7 @@ fields:
     input_info:
       type: int
       min: 0
-      max: 255
+      max: 5
   - type: field
     name: s
     value: test string
@@ -193,8 +195,9 @@ fields:
         default: 1
         input_info:
           type: int
-          min: -2147483648
+          min: 0
           max: 2147483647
+          lower_exclusive: true
       - type: config
         name: SubSubConfig
         field_name: sub_sub_config
@@ -205,8 +208,9 @@ fields:
             default: 1
             input_info:
               type: int
-              min: -2147483648
+              min: 0
               max: 2147483647
+              lower_exclusive: true
   - type: config
     name: SubSubConfig
     field_name: sub_sub_config
@@ -217,12 +221,11 @@ fields:
         default: 1
         input_info:
           type: int
-          min: -2147483648
+          min: 0
           max: 2147483647
+          lower_exclusive: true
 )";
-  // expectEqual(info, YAML::Load(expected));
-
-  // std::cout << info << std::endl;
+  expectEqual(info, YAML::Load(expected));
 }
 
 }  // namespace config::test
