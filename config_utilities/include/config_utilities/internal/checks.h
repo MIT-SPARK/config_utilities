@@ -109,7 +109,7 @@ class BinaryCheck : public CheckBase {
     if (!info || (info->type != FieldInputInfo::Type::kInt && info->type != FieldInputInfo::Type::kFloat)) {
       return nullptr;
     }
-    YAML::Node value = YamlParser::toYaml(value_);
+    YAML::Node value = YamlParser::toYaml(value_); 
     if (!value) {
       return nullptr;
     }
@@ -210,7 +210,7 @@ class CheckRange : public CheckBase {
       return nullptr;
     }
     info->setMin(YamlParser::toYaml(lower_), lower_inclusive_);
-    info->setMax(YamlParser::toYaml(lower_), upper_inclusive_);
+    info->setMax(YamlParser::toYaml(upper_), upper_inclusive_);
     return info;
   }
 

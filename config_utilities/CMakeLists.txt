@@ -33,6 +33,7 @@ add_library(
   src/external_registry.cpp
   src/factory.cpp
   src/formatter.cpp
+  src/field_input_info.cpp
   src/log_to_stdout.cpp
   src/logger.cpp
   src/meta_data.cpp
