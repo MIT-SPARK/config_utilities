@@ -259,7 +259,7 @@ nested:
 
 TEST(ConfigMaps, PrintMapConfigs) {
   std::map<size_t, MapConfig> configs{{2, {"a", 1}}, {3, {"b", 2}}, {4, {"c", 3}}};
-  Settings().print_indent = 20;
+  Settings().printing.indent = 20;
 
   internal::Formatter::setFormatter(std::make_unique<internal::AslFormatter>());
 

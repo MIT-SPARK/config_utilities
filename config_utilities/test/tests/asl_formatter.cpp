@@ -142,7 +142,7 @@ Warning: Failed to parse param 'Field 6': Error 6.
 ================================================================================)""";
   EXPECT_EQ(formatted, expected);
 
-  Settings().inline_subconfig_field_names = false;
+  Settings().printing.inline_subconfigs = false;
   formatted = internal::Formatter::formatErrors(data);
   EXPECT_EQ(countLines(formatted), 12);
 
@@ -177,7 +177,7 @@ TEST(AslFormatter, FormatChecks) {
   config.sub_config.sub_sub_config.i = -1;
 
   Settings().restoreDefaults();
-  Settings().inline_subconfig_field_names = false;
+  Settings().printing.inline_subconfigs = false;
   internal::MetaData data = internal::Visitor::getChecks(config);
   std::string formatted = internal::Formatter::formatErrors(data);
   std::string expected = R"""( 'DefaultConfig':
@@ -198,7 +198,7 @@ Warning: Check [1/1] failed for 'i': param > 0 (is: '-1').
 ================================================================================
   )""";
 
-  Settings().inline_subconfig_field_names = true;
+  Settings().printing.inline_subconfigs = true;
   data = internal::Visitor::getChecks(config);
   formatted = internal::Formatter::formatErrors(data);
   expected = R"""( 'DefaultConfig':
@@ -221,10 +221,10 @@ Warning: Check [11/11] failed for 'sub_sub_config.i': param > 0 (is: '-1').
 TEST(AslFormatter, FormatConfig) {
   internal::MetaData data = internal::Visitor::getValues(TestConfig());
 
-  Settings().indicate_default_values = false;
-  Settings().indicate_units = false;
-  Settings().inline_subconfig_field_names = true;
-  Settings().reformat_floats = true;
+  Settings().printing.show_defaults = false;
+  Settings().printing.show_units = false;
+  Settings().printing.inline_subconfigs = true;
+  Settings().printing.reformat_floats = true;
   std::string formatted = internal::Formatter::formatConfig(data);
   std::string expected =
       R"""(================================= Test Config ==================================
@@ -259,7 +259,7 @@ sub_sub_config [SubSubConfig]:
   EXPECT_EQ(formatted.size(), expected.size());
   EXPECT_EQ(formatted, expected);
 
-  Settings().print_width = 50;
+  Settings().printing.width = 50;
   formatted = internal::Formatter::formatConfig(data);
   expected =
       R"""(================== Test Config ===================
@@ -300,8 +300,8 @@ sub_sub_config [SubSubConfig]:
   EXPECT_EQ(formatted.size(), expected.size());
   EXPECT_EQ(formatted, expected);
 
-  Settings().print_width = 80;
-  Settings().print_indent = 20;
+  Settings().printing.width = 80;
+  Settings().printing.indent = 20;
   formatted = internal::Formatter::formatConfig(data);
   expected =
       R"""(================================= Test Config ==================================
@@ -338,11 +338,11 @@ sub_sub_config [SubSubConfig]:
 }
 
 TEST(AslFormatter, FormatUnits) {
-  Settings().indicate_default_values = false;
-  Settings().indicate_units = true;
-  Settings().inline_subconfig_field_names = true;
-  Settings().print_width = 80;  // force print width to be consistent for tests
-  Settings().print_indent = 20;
+  Settings().printing.show_defaults = false;
+  Settings().printing.show_units = true;
+  Settings().printing.inline_subconfigs = true;
+  Settings().printing.width = 80;  // force print width to be consistent for tests
+  Settings().printing.indent = 20;
 
   internal::MetaData data = internal::Visitor::getValues(TestConfig());
   const std::string formatted = internal::Formatter::formatConfig(data);
@@ -382,10 +382,10 @@ sub_sub_config [SubSubConfig]:
 }
 
 TEST(AslFormatter, FormatDefaultValues) {
-  Settings().indicate_default_values = true;
-  Settings().indicate_units = false;
-  Settings().inline_subconfig_field_names = true;
-  Settings().print_indent = 20;
+  Settings().printing.show_defaults = true;
+  Settings().printing.show_units = false;
+  Settings().printing.inline_subconfigs = true;
+  Settings().printing.indent = 20;
 
   const internal::MetaData default_data = internal::Visitor::getValues(TestConfig());
   std::string formatted = internal::Formatter::formatConfig(default_data);
