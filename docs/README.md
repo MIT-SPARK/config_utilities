@@ -49,14 +49,22 @@ The following tutorials will guide you through functionalities of `config_utilit
     - [Managed instances](External.md#managed-instances)
     - [Debugging](External.md#debugging)
 
+<<<<<<< HEAD
+=======
+8. [**Dynamic Configs**](Dynamic_Configs.md)
+- [Declaring a dynamic config](Dynamix_Configs.md#declaring-a-dynamic-config)
+- [Dynamic Config Callbacks](Dynamix_Configs.md#dynamic-config-callbacks)
+- [Setting Dynamic Configs](Dynamix_Configs.md#setting-dynamic-configs)
+- [Custom Dynamic Config Servers](Dynamix_Configs.md#custom-dynamic-config-servers)
+
+>>>>>>> 2d2b1e1 (update docs)
 9. [**Varia**](Varia.md)
     - [Settings](Varia.md#settings)
-    - [Globals](Varia.md#globals)
 
 
 ## Demos
 The (non-ros) demos can be run via the `run_demo.py` utility in the scripts directory. If you are building this library via catkin, you can run one of the following to see the results of one of the corresponding demo files:
-```
+```bash
 python3 scripts/run_demo.py config
 python3 scripts/run_demo.py inheritance
 python3 scripts/run_demo.py factory
@@ -65,9 +73,16 @@ python3 scripts/run_demo.py factory
 > **ℹ️ Note**<br>
 > If you're building via cmake, you can point `run_demo.py` to the build directory with `-b/--build_path`.
 
-The ros demo can be run via:
-```
+The ros demos can be run via:
+```bash
 roslaunch config_utilities demo_ros.launch
+roslaunch config_utilities demo_dynamic_config.launch
 ```
 
-If you are looking for a specific use case that is not in the tutorials or demos, chances are you can find a good example in the `tests/` directory!
+Note that for the `dynamic config demo` customtkinter is required to run the GUI:
+```bash
+pip install customtkinter
+```
+
+> **ℹ️ Note**<br>
+If you are looking for a specific use case that is not in the tutorials or demos, chances are you can find a good example in the `tests/` directory! Try and give it a look!

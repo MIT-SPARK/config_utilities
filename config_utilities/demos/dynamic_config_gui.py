@@ -2,7 +2,6 @@
 from tkinter import *
 import customtkinter as ctk
 import yaml
-import copy
 
 ctk.set_appearance_mode("System")  # Modes: "System" (standard), "Dark", "Light"
 ctk.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
@@ -10,13 +9,22 @@ PAD_X = 10
 PAD_Y = 10
 GUI_NAME = "[Config Utilities Dynamic Config GUI] "
 
+"""
+TODO(lschmid): Type Info known limitations:
+- Make sure namespaces are handled correctly.
+- Enable updating from values without re-building the entire GUI
+- Add registered type information for virtual configs.
+- Add support for config maps and vectors.
+- Find a good interface and visualization for int/float types (consider exteded type information).
+"""
+
 
 class Settings:
     """
     A class to store settings for the DynamicConfigGUI. This can also be opened as a top-level window.
     """
 
-    METHOD_OPTIONS = ["Type Info", "Plain YAML"]
+    METHOD_OPTIONS = [ "Plain YAML", "Type Info (Experimental)"]
     APPEARANCE_OPTIONS = ["System", "Light", "Dark"]
     COLOR_THEME_OPTIONS = ["blue", "green", "dark-blue"]
     SACLE_MIN = 0.5
