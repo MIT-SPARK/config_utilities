@@ -161,3 +161,8 @@ Many cool projects are already using `config_utilities`!
 These projects are openly available, check them out to se what `config_utilities` can do!
 * [MIT-SPARK/Khronos](https://github.com/MIT-SPARK/Khronos)
 * [MIT-SPARK/Hydra](https://github.com/MIT-SPARK/Hydra)
+
+### Use in Industry
+Several leading companies and start-ups in Robotics have let us know that they use `config_utilities`, but we cannot currently list them. 
+
+If you are using `config_utilities` and would like to be feature please open a pull request or reach out!
