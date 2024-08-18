@@ -19,13 +19,13 @@ void declare_config(MyConfig& config) { ... }   // Works!
 > The declaration of `declare_config` *must* be in the same namespace as the object type being declared.
 
 ```c++
-#include external/other_object.h
+#include <external/other_object.h>
 namespace external {
     void declare_config(OtherObject& config) { ... }  // Also works!
 }   // namespace external
 ```
 ```c++
-#include external/other_object.h
+#include <external/other_object.h>
 void declare_config(external::OtherObject& config) { ... }  // Will not work!
 ```
 
