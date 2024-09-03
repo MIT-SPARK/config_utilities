@@ -207,7 +207,7 @@ struct DynamicConfigRegistry {
 /**
  * @brief A wrapper class for for configs that can be dynamically changed.
  *
- * @tparam ConfigT The contained configuration type
+ * @tparam ConfigT The contained configuration type.
  */
 template <typename ConfigT>
 struct DynamicConfig {
@@ -215,7 +215,7 @@ struct DynamicConfig {
 
   /**
    * @brief Construct a new Dynamic Config, wrapping a config_uilities config.
-   * @param name Unique name of the dynamic config. This identifier is used to access the config on the client side
+   * @param name Unique name of the dynamic config. This identifier is used to access the config on the client side.
    * @param config The config to wrap.
    */
   explicit DynamicConfig(const std::string& name, const ConfigT& config = {}, Callback callback = {});

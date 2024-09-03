@@ -92,32 +92,47 @@ FieldInputInfo::Ptr FieldInputInfo::merge(const FieldInputInfo::Ptr& from, const
 
 YAML::Node IntFieldInputInfo::toYaml() const {
   YAML::Node node;
-  node["type"] = "int";
-  node["min"] = min;
-  node["max"] = max;
-  // Only store the rarer cases.
-  if (!lower_inclusive) {
-    node["lower_exclusive"] = true;
+  node["type"] = type_str;
+  if (min) {
+    node["min"] = *min;
+    // Only store the rarer cases.
+    if (!lower_inclusive) {
+      node["lower_exclusive"] = true;
+    }
   }
-  if (!upper_inclusive) {
-    node["upper_exclusive"] = true;
+  if (max) {
+    node["max"] = *max;
+    if (!upper_inclusive) {
+      node["upper_exclusive"] = true;
+    }
   }
   return node;
 }
 
 void IntFieldInputInfo::mergeSame(const FieldInputInfo& other) {
   const auto& other_info = dynamic_cast<const IntFieldInputInfo&>(other);
-  if (min < other_info.min) {
+  if (!min && other_info.min) {
     min = other_info.min;
     lower_inclusive = other_info.lower_inclusive;
-  } else if (min == other_info.min) {
-    lower_inclusive = lower_inclusive && other_info.lower_inclusive;
+  } else if (min && other_info.min) {
+    if (*min < *other_info.min) {
+      min = *other_info.min;
+      lower_inclusive = other_info.lower_inclusive;
+    } else if (*min == *other_info.min) {
+      lower_inclusive = lower_inclusive && other_info.lower_inclusive;
+    }
   }
-  if (max > other_info.max) {
+
+  if (!max && other_info.max) {
     max = other_info.max;
     upper_inclusive = other_info.upper_inclusive;
-  } else if (max == other_info.max) {
-    upper_inclusive = upper_inclusive && other_info.upper_inclusive;
+  } else if (max && other_info.max) {
+    if (*max > *other_info.max) {
+      max = other_info.max;
+      upper_inclusive = other_info.upper_inclusive;
+    } else if (*max == *other_info.max) {
+      upper_inclusive = upper_inclusive && other_info.upper_inclusive;
+    }
   }
 }
 
@@ -141,31 +156,47 @@ void IntFieldInputInfo::setMax(YAML::Node max, bool upper_inclusive) {
 
 YAML::Node FloatFieldInputInfo::toYaml() const {
   YAML::Node node;
-  node["type"] = "float";
-  node["min"] = min;
-  node["max"] = max;
-  if (!lower_inclusive) {
-    node["lower_exclusive"] = true;
+  node["type"] = type_str;
+  if (min) {
+    node["min"] = *min;
+    // Only store the rarer cases.
+    if (!lower_inclusive) {
+      node["lower_exclusive"] = true;
+    }
   }
-  if (!upper_inclusive) {
-    node["upper_exclusive"] = true;
+  if (max) {
+    node["max"] = *max;
+    if (!upper_inclusive) {
+      node["upper_exclusive"] = true;
+    }
   }
   return node;
 }
 
 void FloatFieldInputInfo::mergeSame(const FieldInputInfo& other) {
   const auto& other_info = dynamic_cast<const FloatFieldInputInfo&>(other);
-  if (min < other_info.min) {
+  if (!min && other_info.min) {
     min = other_info.min;
     lower_inclusive = other_info.lower_inclusive;
-  } else if (min == other_info.min) {
-    lower_inclusive = lower_inclusive && other_info.lower_inclusive;
+  } else if (min && other_info.min) {
+    if (*min < *other_info.min) {
+      min = *other_info.min;
+      lower_inclusive = other_info.lower_inclusive;
+    } else if (*min == *other_info.min) {
+      lower_inclusive = lower_inclusive && other_info.lower_inclusive;
+    }
   }
-  if (max > other_info.max) {
+
+  if (!max && other_info.max) {
     max = other_info.max;
     upper_inclusive = other_info.upper_inclusive;
-  } else if (max == other_info.max) {
-    upper_inclusive = upper_inclusive && other_info.upper_inclusive;
+  } else if (max && other_info.max) {
+    if (*max > *other_info.max) {
+      max = other_info.max;
+      upper_inclusive = other_info.upper_inclusive;
+    } else if (*max == *other_info.max) {
+      upper_inclusive = upper_inclusive && other_info.upper_inclusive;
+    }
   }
 }
 
@@ -206,15 +237,6 @@ void OptionsFieldInputInfo::mergeSame(const FieldInputInfo& other) {
   }
 }
 
-// Helper function for int types.
-template <typename InfoT, typename NumericT>
-FieldInputInfo::Ptr createNumericInfo() {
-  auto info = std::make_shared<InfoT>();
-  info->min = std::numeric_limits<NumericT>::lowest();
-  info->max = std::numeric_limits<NumericT>::max();
-  return info;
-}
-
 // Bool.
 template <>
 FieldInputInfo::Ptr createFieldInputInfo<bool>() {
@@ -224,53 +246,53 @@ FieldInputInfo::Ptr createFieldInputInfo<bool>() {
 // Ints.
 template <>
 FieldInputInfo::Ptr createFieldInputInfo<int8_t>() {
-  return createNumericInfo<IntFieldInputInfo, int16_t>();
+  return std::make_shared<IntFieldInputInfo>("int8");
 }
 
 template <>
 FieldInputInfo::Ptr createFieldInputInfo<int16_t>() {
-  return createNumericInfo<IntFieldInputInfo, int16_t>();
+  return std::make_shared<IntFieldInputInfo>("int16");
 }
 
 template <>
 FieldInputInfo::Ptr createFieldInputInfo<int32_t>() {
-  return createNumericInfo<IntFieldInputInfo, int32_t>();
+  return std::make_shared<IntFieldInputInfo>("int32");
 }
 
 template <>
 FieldInputInfo::Ptr createFieldInputInfo<int64_t>() {
-  return createNumericInfo<IntFieldInputInfo, int64_t>();
+  return std::make_shared<IntFieldInputInfo>("int64");
 }
 
 template <>
 FieldInputInfo::Ptr createFieldInputInfo<uint8_t>() {
-  return createNumericInfo<IntFieldInputInfo, uint8_t>();
+  return std::make_shared<IntFieldInputInfo>("uint8");
 }
 
 template <>
 FieldInputInfo::Ptr createFieldInputInfo<uint16_t>() {
-  return createNumericInfo<IntFieldInputInfo, uint16_t>();
+  return std::make_shared<IntFieldInputInfo>("uint16");
 }
 
 template <>
 FieldInputInfo::Ptr createFieldInputInfo<uint32_t>() {
-  return createNumericInfo<IntFieldInputInfo, uint32_t>();
+  return std::make_shared<IntFieldInputInfo>("uint32");
 }
 
 template <>
 FieldInputInfo::Ptr createFieldInputInfo<uint64_t>() {
-  return createNumericInfo<IntFieldInputInfo, uint64_t>();
+  return std::make_shared<IntFieldInputInfo>("uint64");
 }
 
 // Floats.
 template <>
 FieldInputInfo::Ptr createFieldInputInfo<float>() {
-  return std::make_shared<FloatFieldInputInfo>();
+  return std::make_shared<FloatFieldInputInfo>("float32");
 }
 
 template <>
 FieldInputInfo::Ptr createFieldInputInfo<double>() {
-  return std::make_shared<FloatFieldInputInfo>();
+  return std::make_shared<FloatFieldInputInfo>("float64");
 }
 
 // Strings.

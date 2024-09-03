@@ -562,9 +562,9 @@ class TypeInfoConfigFrame(ConfigFrame, ctk.CTkScrollableFrame):
             input_type = info["input_info"]["type"]
         if input_type == "bool":
             self.add_bool_value_entry(info, param_name)
-        elif input_type == "int":
+        elif "int" in input_type:
             self.add_numeric_value_entry(info, param_name, True)
-        elif input_type == "float":
+        elif "float" in input_type:
             self.add_numeric_value_entry(info, param_name, False)
         elif input_type == "string":
             self.add_string_value_entry(info, param_name)
