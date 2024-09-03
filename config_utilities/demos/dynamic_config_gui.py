@@ -233,7 +233,7 @@ class DynamicConfigGUI(ctk.CTk):
         self.columnconfigure(0, weight=1, pad=PAD_X)
 
     def setup_config_frame(self):
-        if self.settings.method == "Type Info":
+        if self.settings.method == "Type Info (Experimental)":
             self.config_frame = TypeInfoConfigFrame(self, self._value_changed_cb)
         else:
             # Default to plain text if unsupported.
