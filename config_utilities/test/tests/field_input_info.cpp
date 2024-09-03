@@ -55,9 +55,8 @@ fields:
     value: 1
     default: 1
     input_info:
-      type: int
+      type: int32
       min: 0
-      max: 2147483647
       lower_exclusive: true
   - type: field
     name: f
@@ -65,16 +64,15 @@ fields:
     value: 2.1
     default: 2.1
     input_info:
-      type: float
+      type: float32
       min: 0
-      max: 1.844674407370955e+19
   - type: field
     name: d
     unit: m/s
     value: 3.2
     default: 3.2
     input_info:
-      type: float
+      type: float64
       min: 0
       max: 4
       upper_exclusive: true
@@ -89,8 +87,7 @@ fields:
     value: 4
     default: 4
     input_info:
-      type: int
-      min: 0
+      type: uint8
       max: 5
   - type: field
     name: s
@@ -194,9 +191,8 @@ fields:
         value: 1
         default: 1
         input_info:
-          type: int
+          type: int32
           min: 0
-          max: 2147483647
           lower_exclusive: true
       - type: config
         name: SubSubConfig
@@ -207,9 +203,8 @@ fields:
             value: 1
             default: 1
             input_info:
-              type: int
+              type: int32
               min: 0
-              max: 2147483647
               lower_exclusive: true
   - type: config
     name: SubSubConfig
@@ -220,9 +215,8 @@ fields:
         value: 1
         default: 1
         input_info:
-          type: int
+          type: int32
           min: 0
-          max: 2147483647
           lower_exclusive: true
 )";
   expectEqual(info, YAML::Load(expected));
