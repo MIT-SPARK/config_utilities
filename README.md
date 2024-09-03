@@ -155,14 +155,12 @@ If you are looking for a specific use case that is not in the tutorials or demos
 
 
 # Example Projects using `config_utilities`
-Many cool projects are already using `config_utilities`!
+Many cool projects are already using `config_utilities`! If you are using `config_utilities` and would like to be featured, please open a pull request or reach out!
 
 ### Academic Open-source Projects
-These projects are openly available, check them out to se what `config_utilities` can do!
+These projects are openly available, check them out to see what `config_utilities` can do!
 * [MIT-SPARK/Khronos](https://github.com/MIT-SPARK/Khronos)
 * [MIT-SPARK/Hydra](https://github.com/MIT-SPARK/Hydra)
 
 ### Use in Industry
-Several leading companies and start-ups in Robotics have let us know that they use `config_utilities`, but we cannot currently list them. 
-
-If you are using `config_utilities` and would like to be feature please open a pull request or reach out!
+Several leading companies and start-ups in robotics have let us know that they use `config_utilities`, but we cannot currently list them. 
