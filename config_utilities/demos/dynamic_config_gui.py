@@ -24,7 +24,7 @@ class Settings:
     A class to store settings for the DynamicConfigGUI. This can also be opened as a top-level window.
     """
 
-    METHOD_OPTIONS = [ "Plain YAML", "Type Info (Experimental)"]
+    METHOD_OPTIONS = ["Plain YAML", "Type Info (Experimental)"]
     APPEARANCE_OPTIONS = ["System", "Light", "Dark"]
     COLOR_THEME_OPTIONS = ["blue", "green", "dark-blue"]
     SACLE_MIN = 0.5
@@ -457,7 +457,7 @@ class TypeInfoConfigFrame(ConfigFrame, ctk.CTkScrollableFrame):
                 curr_node = curr_node[n]
             curr_node[ns[-1]] = fn()
         return yaml_data
-    
+
     # Build the UI for a config info.
     def clear_config_ui(self):
         for widget in self.widgets:
@@ -472,19 +472,25 @@ class TypeInfoConfigFrame(ConfigFrame, ctk.CTkScrollableFrame):
         # Header row.
         name = config_info["name"] if "name" in config_info else "Unknown Config"
         self.w_header_name = ctk.CTkLabel(self, text=f"{name}:", anchor="w")
-        self.w_header_name.grid(row=self.current_row, column=0, sticky="nsw", padx=PAD_X)
+        self.w_header_name.grid(
+            row=self.current_row, column=0, sticky="nsw", padx=PAD_X
+        )
         self.w_header_value = ctk.CTkLabel(
             self,
             text="Value:",
             anchor="w",
         )
-        self.w_header_value.grid(row=self.current_row, column=1, sticky="nsw", padx=PAD_X)
+        self.w_header_value.grid(
+            row=self.current_row, column=1, sticky="nsw", padx=PAD_X
+        )
         self.w_header_default = ctk.CTkLabel(
             self,
             text="Default:",
             anchor="w",
         )
-        self.w_header_default.grid(row=self.current_row, column=2, sticky="nsw", padx=PAD_X)
+        self.w_header_default.grid(
+            row=self.current_row, column=2, sticky="nsw", padx=PAD_X
+        )
         self.current_row += 1
 
         # Build the config.
@@ -599,7 +605,7 @@ class TypeInfoConfigFrame(ConfigFrame, ctk.CTkScrollableFrame):
         self.widgets.append(widget)
         self.get_value_fns[param_name] = lambda: "true" if widget.get() else "false"
 
-    def add_numeric_value_entry(self, info, param_name, is_int = True):
+    def add_numeric_value_entry(self, info, param_name, is_int=True):
         frame = ctk.CTkFrame(self, height=self.ROW_HEIGHT, border_width=0)
         frame.grid(row=self.current_row, column=1, sticky="nsew", pady=0, padx=PAD_X)
         # Value.
@@ -622,23 +628,24 @@ class TypeInfoConfigFrame(ConfigFrame, ctk.CTkScrollableFrame):
             min_val = info["input_info"]["min"]
         if "max" in info["input_info"]:
             max_val = info["input_info"]["max"]
-        if min_val is not None:
+
+        if min_val is not None and max_val is not None:
+            # Clamped values: Use slider.
             w3 = ctk.CTkLabel(
                 frame,
                 text=f"{'(' if 'lower_exclusive' in info['input_info'] else '['}{min_val}",
                 anchor="w",
                 height=self.ROW_HEIGHT,
             )
-            w3.grid(row=0, column=1, sticky="nsw", pady=0)
+            w3.grid(row=0, column=1, sticky="nsw", pady=0, padx=PAD_X)
             frame.columnconfigure(1, weight=0)
             self.widgets.append(w3)
 
-        if min_val is not None and max_val is not None:
             slid_min = min_val
-            if is_int and 'lower_exclusive' in info['input_info']:
+            if is_int and "lower_exclusive" in info["input_info"]:
                 slid_min += 1
             slid_max = max_val
-            if is_int and 'upper_exclusive' in info['input_info']:
+            if is_int and "upper_exclusive" in info["input_info"]:
                 slid_max -= 1
             w4 = ctk.CTkSlider(
                 frame,
@@ -646,7 +653,7 @@ class TypeInfoConfigFrame(ConfigFrame, ctk.CTkScrollableFrame):
                 to=slid_max,
                 orientation=HORIZONTAL,
                 corner_radius=self.CORNER_RADIUS,
-                command=lambda _: self.sync_text_to_slider(w2,w4, is_int)
+                command=lambda _: self.sync_text_to_slider(w2, w4, is_int),
             )
             w2.bind("<KeyRelease>", lambda _: self.sync_slider_to_text(w4, w2))
             if is_int and max_val - slid_min < 100:
@@ -655,8 +662,6 @@ class TypeInfoConfigFrame(ConfigFrame, ctk.CTkScrollableFrame):
             w4.grid(row=0, column=2, sticky="nsew", pady=0)
             self.widgets.append(w4)
             frame.columnconfigure(2, weight=1)
-
-        if max_val is not None:
             w5 = ctk.CTkLabel(
                 frame,
                 text=f"{', ' if min_val is None else ''}{max_val}{')' if 'upper_exclusive' in info['input_info'] else ']'}",
@@ -667,6 +672,23 @@ class TypeInfoConfigFrame(ConfigFrame, ctk.CTkScrollableFrame):
             w5.grid(row=0, column=col, sticky="nsw", pady=0)
             frame.columnconfigure(col, weight=0)
             self.widgets.append(w5)
+        elif min_val is not None or max_val is not None:
+            # Constraints: Use label.
+            w3 = ctk.CTkLabel(
+                frame,
+                text=(
+                    f"(>{'' if 'lower_exclusive' in info['input_info'] else '='}{min_val})"
+                    if min_val is not None
+                    else f"(<{'' if 'upper_exclusive' in info['input_info'] else '='}{max_val})"
+                ),
+                anchor="w",
+                height=self.ROW_HEIGHT,
+            )
+            w3.grid(row=0, column=1, sticky="nsw", pady=0, padx=PAD_X)
+            frame.columnconfigure(1, weight=0)
+            frame.columnconfigure(0, weight=1)
+            self.widgets.append(w3)
+
         self.widgets.append(frame)
 
     def sync_slider_to_text(self, slider, text):
