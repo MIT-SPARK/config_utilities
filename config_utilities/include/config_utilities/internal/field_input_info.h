@@ -72,12 +72,13 @@ struct FieldInputInfo {
 };
 
 struct IntFieldInputInfo : public FieldInputInfo {
-  IntFieldInputInfo() : FieldInputInfo(Type::kInt) {}
+  IntFieldInputInfo(const std::string& type_str) : FieldInputInfo(Type::kInt), type_str(type_str) {}
 
   // Constraints for the field.
-  // NOTE(lschmid): We do not consider data larger than 64 bit integers.
-  int64_t min = std::numeric_limits<int64_t>::lowest();
-  uint64_t max = std::numeric_limits<uint64_t>::max();
+  // NOTE(lschmid): We currently do not consider data larger than 64 bit integers.
+  std::string type_str;  // "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64"
+  std::optional<int64_t> min;
+  std::optional<uint64_t> max;
   bool lower_inclusive = true;
   bool upper_inclusive = true;
 
@@ -88,11 +89,13 @@ struct IntFieldInputInfo : public FieldInputInfo {
 };
 
 struct FloatFieldInputInfo : public FieldInputInfo {
-  FloatFieldInputInfo() : FieldInputInfo(Type::kFloat) {}
+  FloatFieldInputInfo(const std::string& type_str) : FieldInputInfo(Type::kFloat), type_str(type_str) {}
 
   // Constraints for the field.
-  double min = std::numeric_limits<int64_t>::lowest();
-  double max = std::numeric_limits<uint64_t>::max();
+  // NOTE(lschmid): We currently do not consider data larger than 64 bit floats.
+  std::string type_str;  // "float32", "float64"
+  std::optional<double> min;
+  std::optional<double> max;
   bool lower_inclusive = true;
   bool upper_inclusive = true;
 
