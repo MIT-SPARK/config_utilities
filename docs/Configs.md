@@ -29,18 +29,18 @@ namespace external {
 void declare_config(external::OtherObject& config) { ... }  // Will not work!
 ```
 
-In the body of `declare_config`, we tell `config_utilities` everything it needs to know about a config. This consists of a `name` used for human readable printing and warnings, `fields` and their names to read and write the config, and `checks` that define whether the value stored in config are valid or not:
+In the body of `declare_config`, we tell `config_utilities` everything it needs to know about a config. This consists of a `name` used for human-readable printing and warnings, `fields` and their names to read and write the config, and `checks` that define whether the values stored in config are valid or not:
 ```c++
 void declare_config(MyConfig& config) {
     config::name("MyConfig");
-    // Declares the name to be 'MyConfig'. Does not have to match the truct name but is recmmended.
+    // Declares the name to be 'MyConfig'. Does not have to match the struct name but is recommended.
 
     config::field(config.int_val, "int_val_name");
     // Declares that 'MyConfig' has a public member 'int_val' that will be referred to as
     // 'int_val_name' for parsing and printing.
 
     config::field(config.x, "x", "m");
-    // Optionally specify a unit as 3rd argument. This will print that x is in nmeters.
+    // Optionally specify a unit as 3rd argument. This will print that x is in meters.
 
     config::check(config.x, config::GT, 0, "x");
     // Declares that the config is only valid if config.x > 0. The second "x" defines the name to
@@ -56,8 +56,8 @@ Binary checks such as GT (>), GE (>=), LT (<), LE (<=), EQ (==), NE (!=) can be 
 config::check(config.x, config::GT, 0, "x");
 ```
 
-For a double sided value check, use `checkInRange(field,, lower, upper, field_name, lower_inclusive, upper_inclusive)`.
-E.g. the condition `x is within [0, 100)` becomes:
+For a double-sided value check, use `checkInRange(field,, lower, upper, field_name, lower_inclusive, upper_inclusive)`.
+E.g., the condition `x is within [0, 100)` becomes:
 ```c++
   config::checkInRange(config.x, 0.0, 100.0, "x", true, false);
 ```
@@ -114,7 +114,7 @@ private:
 
 ## Printing configs
 
-To print configs to string incldue `printing.h`.
+To print configs to string include `printing.h`.
 This defines `toString()` for objects declared a config:
 ```c++
 MyConfig cfg;
