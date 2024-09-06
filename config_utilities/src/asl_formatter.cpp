@@ -164,8 +164,9 @@ std::string AslFormatter::formatChecksInternal(const MetaData& data, const std::
     }
     const std::string rendered_name = check->name().empty() ? "" : " for '" + name_prefix_ + check->name() + "'";
     const std::string rendered_num =
-        indicate_num_checks_ ? "[" + std::to_string(current_check_) + "/" + std::to_string(total_num_checks_) + "] "
-                             : "";
+        Settings::instance().printing.show_num_checks
+            ? "[" + std::to_string(current_check_) + "/" + std::to_string(total_num_checks_) + "] "
+            : "";
     const std::string msg = sev + "Check " + rendered_num + "failed" + rendered_name + ": " + check->message() + ".";
     result.append(wrapString(msg, length, sev.length(), false) + "\n");
   }
