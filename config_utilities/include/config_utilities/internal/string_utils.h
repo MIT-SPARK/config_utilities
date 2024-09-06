@@ -91,7 +91,7 @@ std::string joinNamespace(const std::string& namespace_1,
 
 /**
  * @brief Formatting of YAML nodes to strings. Most config types can be neatly represented as low-depth yaml nodes, or
- * should otherwise probably be wrapped in a separate confi struct.
+ * should otherwise probably be wrapped in a separate config struct.
  * @param data The data to be formatted.
  * @param reformat_float Whether to try and print floats with default stream precision
  * @returns The formatted string.

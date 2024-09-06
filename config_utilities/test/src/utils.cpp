@@ -69,7 +69,7 @@ bool expectEqualImpl(const YAML::Node& a, const YAML::Node& b) {
       for (const auto& kv_pair : a) {
         const std::string key = kv_pair.first.Scalar();
         if (!b[key]) {
-          ADD_FAILURE() << "Key " << key << " not found in b.";
+          ADD_FAILURE() << "Key '" << key << "' not found in b.";
           return false;
         }
         EXPECT_TRUE(expectEqualImpl(kv_pair.second, b[key]));
@@ -109,4 +109,5 @@ void TestLogger::print() const {
     std::cout << internal::severityToString(message.first) << ": " << message.second << std::endl;
   }
 }
+
 }  // namespace config::test
