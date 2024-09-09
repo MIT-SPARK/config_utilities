@@ -62,8 +62,8 @@ bool expectEqual(const YAML::Node& a, const YAML::Node& b, double epsilon) {
         return false;
       }
       for (size_t i = 0; i < a.size(); ++i) {
-        EXPECT_TRUE(expectEqual(a[i], b[i]));
-        if (!expectEqual(a[i], b[i])) {
+        EXPECT_TRUE(expectEqual(a[i], b[i], epsilon));
+        if (!expectEqual(a[i], b[i], epsilon)) {
           return false;
         }
       }
@@ -79,8 +79,8 @@ bool expectEqual(const YAML::Node& a, const YAML::Node& b, double epsilon) {
           ADD_FAILURE() << "Key '" << key << "' not found in b.";
           return false;
         }
-        EXPECT_TRUE(expectEqual(kv_pair.second, b[key]));
-        if (!expectEqual(kv_pair.second, b[key])) {
+        EXPECT_TRUE(expectEqual(kv_pair.second, b[key], epsilon));
+        if (!expectEqual(kv_pair.second, b[key], epsilon)) {
           return false;
         }
       }
