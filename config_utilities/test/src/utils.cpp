@@ -39,13 +39,21 @@
 
 namespace config::test {
 
-bool expectEqual(const YAML::Node& a, const YAML::Node& b) {
+bool expectEqual(const YAML::Node& a, const YAML::Node& b, double epsilon) {
   EXPECT_EQ(a.Type(), b.Type());
   if (a.Type() != b.Type()) {
     return false;
   }
   switch (a.Type()) {
     case YAML::NodeType::Scalar:
+      if (epsilon > 0.0) {
+        // Attempt double conversion and comparison.
+        double a_val, b_val;
+        if (YAML::convert<double>::decode(a, a_val) && YAML::convert<double>::decode(b, b_val)) {
+          EXPECT_NEAR(a_val, b_val, epsilon);
+          return std::abs(a_val - b_val) <= epsilon;
+        }
+      }
       EXPECT_EQ(a.Scalar(), b.Scalar());
       return a.Scalar() == b.Scalar();
     case YAML::NodeType::Sequence:

@@ -47,7 +47,13 @@
 
 namespace config::test {
 
-bool expectEqual(const YAML::Node& a, const YAML::Node& b);
+/**
+ * @brief Compare two YAML nodes for equality.
+ * @param a The first node.
+ * @param b The second node.
+ * @param epsilon The tolerance for floating point comparisons.
+ */
+bool expectEqual(const YAML::Node& a, const YAML::Node& b, double epsilon = 0);
 
 class TestLogger : public internal::Logger {
  public:
