@@ -220,7 +220,7 @@ fields:
           lower_exclusive: true
 )";
   // Epect near equal for floating point values.
-  expectEqual(info, YAML::Load(expected), 1e-4);
+  expectEqual(info, YAML::Load(expected), 1e-6);
 }
 
 }  // namespace config::test
