@@ -32,7 +32,7 @@ struct Talker {
 
 }  // namespace talker
 
-/******** compiled in seperate library (`libexternal_talker_plugin.so`) *************************************/
+/******** compiled in a separate library (`libexternal_talker_plugin.so`) *************************************/
 
 namespace external {
 
