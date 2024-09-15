@@ -63,6 +63,8 @@ struct Foo {
   // Foo is already instantiable as a base class, so it is repeated twice as an argument
   inline static const auto registration_ = config::Registration<Foo, Foo, int, Bar>("Foo");
 }
+```
+
 ## Creating objects with individual configs
 
 We further provide a version of the factory that allows the declaration of an additional config struct for each derived type. The config is expected to be a `config_utilities` config, the first argument to the constructor, and will be created from the data provided to create the object:
