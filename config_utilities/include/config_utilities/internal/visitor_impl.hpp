@@ -36,7 +36,6 @@
 #pragma once
 
 #include <exception>
-#include <iostream>
 #include <map>
 #include <memory>
 #include <set>
@@ -113,7 +112,6 @@ MetaData Visitor::subVisit(ConfigT& config,
   const std::string name_space = joinNamespace(current_visitor.name_space, sub_ns);
   switch (current_visitor.mode) {
     case Visitor::Mode::kGet:
-    case Visitor::Mode::kGetDefaults:
       data = getValues(config, print_warnings, name_space, field_name);
       break;
     case Visitor::Mode::kSet:
@@ -208,12 +206,16 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
 template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type>
 void Visitor::visitField(ConfigT& config, const std::string& field_name, const std::string& name_space) {
   Visitor& visitor = Visitor::instance();
+  if (visitor.mode == Visitor::Mode::kGetDefaults) {
+    return;
+  }
+
   // Visit subconfig.
   MetaData& data = visitor.data;
   MetaData& new_data = data.sub_configs.emplace_back(Visitor::subVisit(config, false, field_name, name_space));
 
   // Aggregate data.
-  if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetDefaults) {
+  if (visitor.mode == Visitor::Mode::kGet) {
     // When getting data add the new data also to the parent data node. This is automatically using the correct
     // namespace.
     mergeYamlNodes(data.data, new_data.data);
@@ -224,11 +226,15 @@ void Visitor::visitField(ConfigT& config, const std::string& field_name, const s
 template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type>
 void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_name, const std::string& /* unit */) {
   Visitor& visitor = Visitor::instance();
+  if (visitor.mode == Visitor::Mode::kGetDefaults) {
+    return;
+  }
+
   if (visitor.mode == Visitor::Mode::kSet) {
     const auto array_ns = visitor.name_space.empty() ? field_name : visitor.name_space + "/" + field_name;
     const auto subnode = lookupNamespace(visitor.data.data, array_ns);
     if (!subnode) {
-      return;
+      return;  // don't override the field if not present
     }
 
     // When setting the values first allocate the correct amount of configs.
@@ -242,7 +248,7 @@ void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_
     }
   }
 
-  if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetDefaults) {
+  if (visitor.mode == Visitor::Mode::kGet) {
     const std::string name_space = joinNamespace(visitor.name_space, field_name);
     YAML::Node array_node(YAML::NodeType::Sequence);
     size_t index = 0;
@@ -273,11 +279,8 @@ void Visitor::visitField(std::map<K, ConfigT>& config, const std::string& field_
     return;
   }
 
-  OrderedMap<K, ConfigT> intermediate;
-  // copy current config state if doing something else other than settings the config
-  if (visitor.mode != Visitor::Mode::kSet) {
-    intermediate.insert(intermediate.begin(), config.begin(), config.end());
-  }
+  // copy current config state
+  OrderedMap<K, ConfigT> intermediate(config.begin(), config.end());
 
   // make use of more general named parsing
   visitField<K, ConfigT>(intermediate, field_name, unit);
@@ -300,10 +303,15 @@ void Visitor::visitField(OrderedMap<K, ConfigT>& config, const std::string& fiel
   }
 
   if (visitor.mode == Visitor::Mode::kSet) {
+    const auto map_ns = visitor.name_space.empty() ? field_name : visitor.name_space + "/" + field_name;
+    const auto subnode = lookupNamespace(visitor.data.data, map_ns);
+    if (!subnode) {
+      return;  // don't override the field if not present
+    }
+
     // When setting the values first allocate the correct amount of configs.
     config.clear();
-    const auto map_ns = visitor.name_space.empty() ? field_name : visitor.name_space + "/" + field_name;
-    const auto nodes = getNodeMap(lookupNamespace(visitor.data.data, map_ns));
+    const auto nodes = getNodeMap(subnode);
     for (auto&& [key, node] : nodes) {
       auto& entry = config.emplace_back();
       entry.first = key.template as<K>();
@@ -391,7 +399,6 @@ void Visitor::flagDefaultValues(const ConfigT& config, MetaData& data) {
   size_t default_idx = 0;
   for (size_t i = 0; i < data.field_infos.size(); ++i) {
     FieldInfo& info = data.field_infos.at(i);
-    std::cout << "Looking for " << info.name << std::endl;
     // note that default config may not contain the same fields as the current config
     // if certain fields are conditionally enabled
     for (; default_idx < default_data.field_infos.size(); ++default_idx) {
@@ -407,8 +414,6 @@ void Visitor::flagDefaultValues(const ConfigT& config, MetaData& data) {
     // NOTE(lschmid): Operator YAML::Node== checks for identity, not equality. Since these are all scalars, comparing
     // the formatted strings should be identical.
     const auto& default_info = default_data.field_infos.at(default_idx);
-    std::cout << "Result for " << info.name << ": " << internal::dataToString(info.value) << " vs. "
-              << internal::dataToString(default_info.value) << std::endl;
     if (internal::dataToString(info.value) == internal::dataToString(default_info.value)) {
       info.is_default = true;
     }

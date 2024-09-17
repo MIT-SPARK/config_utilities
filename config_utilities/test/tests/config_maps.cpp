@@ -99,6 +99,17 @@ void declare_config(ConfigWithNestedMaps& config) {
   field(config.nested, "nested");
 }
 
+struct ConfigWithDefaultMap {
+  std::map<std::string, MapConfig> configs{{"name1", {"world!", 1}}, {"name2", {"hello", 3}}};
+};
+
+void declare_config(ConfigWithDefaultMap& config) {
+  name("ConfigWithDefaultMap");
+  field(config.configs, "configs");
+}
+
+bool operator==(const ConfigWithDefaultMap& lhs, const ConfigWithDefaultMap& rhs) { return lhs.configs == rhs.configs; }
+
 TEST(ConfigMaps, FromYamlMap) {
   const std::string yaml_map = R"(
 x:
@@ -276,6 +287,23 @@ config_map[4] [MapConfig]:
    f:               3
 ================================================================================)";
   EXPECT_EQ(formatted, expected);
+}
+
+TEST(ConfigMaps, MapWithDefault) {
+  {  // make sure not specifying anything results in default
+    const auto node = YAML::Load("");
+    auto config = fromYaml<ConfigWithDefaultMap>(node);
+    EXPECT_EQ(config.configs.size(), 2);
+    EXPECT_EQ(config, ConfigWithDefaultMap());
+  }
+
+  {  // specifying empty list clears default
+    const auto node = YAML::Load("configs: {}");
+    auto config = fromYaml<ConfigWithDefaultMap>(node);
+    EXPECT_EQ(config.configs.size(), 0);
+    ConfigWithDefaultMap expected{{}};
+    EXPECT_EQ(config, expected);
+  }
 }
 
 }  // namespace config::test

@@ -143,15 +143,6 @@ bool operator==(const ConfigWithDefaultArray& lhs, const ConfigWithDefaultArray&
   return lhs.configs == rhs.configs;
 }
 
-struct NestedConfigWithDefaultArray {
-  ConfigWithDefaultArray nested;
-};
-
-void declare_config(NestedConfigWithDefaultArray& config) {
-  name("NestedConfigWithDefaultArray");
-  field(config.nested, "nested");
-}
-
 TEST(ConfigArrays, FromYamlSeq) {
   const std::string yaml_seq = R"(
 - s: "a"
@@ -445,30 +436,6 @@ TEST(ConfigArrays, ArrayWithDefaults) {
     EXPECT_EQ(config.configs.size(), 0);
     ConfigWithDefaultArray expected{{}};
     EXPECT_EQ(config, expected);
-  }
-}
-
-TEST(ConfigArrays, ArrayWithDefaultsDefaultMark) {
-  {  // make sure not specifying anything results in default
-    const NestedConfigWithDefaultArray config_array;
-    const auto result = toString(config_array);
-    const auto expected = R"(========================= NestedConfigWithDefaultArray =========================
-nested [ConfigWithDefaultArray] (default):
-   configs[0] [AddString]:
-      s:                      world!
-   configs[1] [AddString]:
-      s:                      hello
-================================================================================)";
-    EXPECT_EQ(result, expected);
-  }
-
-  {  // make sure an empty config is not marked as default
-    const NestedConfigWithDefaultArray config_array{{{}}};
-    const auto result = toString(config_array);
-    const auto expected = R"(========================= NestedConfigWithDefaultArray =========================
-nested [ConfigWithDefaultArray]:
-================================================================================)";
-    EXPECT_EQ(result, expected);
   }
 }
 
