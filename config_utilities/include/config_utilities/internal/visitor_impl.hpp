@@ -36,6 +36,7 @@
 #pragma once
 
 #include <exception>
+#include <iostream>
 #include <map>
 #include <memory>
 #include <set>
@@ -112,6 +113,7 @@ MetaData Visitor::subVisit(ConfigT& config,
   const std::string name_space = joinNamespace(current_visitor.name_space, sub_ns);
   switch (current_visitor.mode) {
     case Visitor::Mode::kGet:
+    case Visitor::Mode::kGetDefaults:
       data = getValues(config, print_warnings, name_space, field_name);
       break;
     case Visitor::Mode::kSet:
@@ -206,16 +208,12 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
 template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type>
 void Visitor::visitField(ConfigT& config, const std::string& field_name, const std::string& name_space) {
   Visitor& visitor = Visitor::instance();
-  if (visitor.mode == Visitor::Mode::kGetDefaults) {
-    return;
-  }
-
   // Visit subconfig.
   MetaData& data = visitor.data;
   MetaData& new_data = data.sub_configs.emplace_back(Visitor::subVisit(config, false, field_name, name_space));
 
   // Aggregate data.
-  if (visitor.mode == Visitor::Mode::kGet) {
+  if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetDefaults) {
     // When getting data add the new data also to the parent data node. This is automatically using the correct
     // namespace.
     mergeYamlNodes(data.data, new_data.data);
@@ -226,15 +224,16 @@ void Visitor::visitField(ConfigT& config, const std::string& field_name, const s
 template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type>
 void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_name, const std::string& /* unit */) {
   Visitor& visitor = Visitor::instance();
-  if (visitor.mode == Visitor::Mode::kGetDefaults) {
-    return;
-  }
-
   if (visitor.mode == Visitor::Mode::kSet) {
+    const auto array_ns = visitor.name_space.empty() ? field_name : visitor.name_space + "/" + field_name;
+    const auto subnode = lookupNamespace(visitor.data.data, array_ns);
+    if (!subnode) {
+      return;
+    }
+
     // When setting the values first allocate the correct amount of configs.
     config.clear();
-    const auto array_ns = visitor.name_space.empty() ? field_name : visitor.name_space + "/" + field_name;
-    const std::vector<YAML::Node> nodes = getNodeArray(lookupNamespace(visitor.data.data, array_ns));
+    const std::vector<YAML::Node> nodes = getNodeArray(subnode);
     size_t index = 0;
     for (const auto& node : nodes) {
       ConfigT& sub_config = config.emplace_back();
@@ -243,7 +242,7 @@ void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_
     }
   }
 
-  if (visitor.mode == Visitor::Mode::kGet) {
+  if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetDefaults) {
     const std::string name_space = joinNamespace(visitor.name_space, field_name);
     YAML::Node array_node(YAML::NodeType::Sequence);
     size_t index = 0;
@@ -392,6 +391,7 @@ void Visitor::flagDefaultValues(const ConfigT& config, MetaData& data) {
   size_t default_idx = 0;
   for (size_t i = 0; i < data.field_infos.size(); ++i) {
     FieldInfo& info = data.field_infos.at(i);
+    std::cout << "Looking for " << info.name << std::endl;
     // note that default config may not contain the same fields as the current config
     // if certain fields are conditionally enabled
     for (; default_idx < default_data.field_infos.size(); ++default_idx) {
@@ -407,6 +407,8 @@ void Visitor::flagDefaultValues(const ConfigT& config, MetaData& data) {
     // NOTE(lschmid): Operator YAML::Node== checks for identity, not equality. Since these are all scalars, comparing
     // the formatted strings should be identical.
     const auto& default_info = default_data.field_infos.at(default_idx);
+    std::cout << "Result for " << info.name << ": " << internal::dataToString(info.value) << " vs. "
+              << internal::dataToString(default_info.value) << std::endl;
     if (internal::dataToString(info.value) == internal::dataToString(default_info.value)) {
       info.is_default = true;
     }
