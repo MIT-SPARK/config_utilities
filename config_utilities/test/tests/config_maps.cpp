@@ -110,6 +110,8 @@ void declare_config(ConfigWithDefaultMap& config) {
 
 bool operator==(const ConfigWithDefaultMap& lhs, const ConfigWithDefaultMap& rhs) { return lhs.configs == rhs.configs; }
 
+void PrintTo(const ConfigWithDefaultMap& config, std::ostream* os) { *os << toString(config); }
+
 TEST(ConfigMaps, FromYamlMap) {
   const std::string yaml_map = R"(
 x:

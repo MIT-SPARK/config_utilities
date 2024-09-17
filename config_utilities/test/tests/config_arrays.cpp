@@ -143,6 +143,8 @@ bool operator==(const ConfigWithDefaultArray& lhs, const ConfigWithDefaultArray&
   return lhs.configs == rhs.configs;
 }
 
+void PrintTo(const ConfigWithDefaultArray& config, std::ostream* os) { *os << toString(config); }
+
 TEST(ConfigArrays, FromYamlSeq) {
   const std::string yaml_seq = R"(
 - s: "a"
