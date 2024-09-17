@@ -231,10 +231,15 @@ void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_
   }
 
   if (visitor.mode == Visitor::Mode::kSet) {
+    const auto array_ns = visitor.name_space.empty() ? field_name : visitor.name_space + "/" + field_name;
+    const auto subnode = lookupNamespace(visitor.data.data, array_ns);
+    if (!subnode) {
+      return;  // don't override the field if not present
+    }
+
     // When setting the values first allocate the correct amount of configs.
     config.clear();
-    const auto array_ns = visitor.name_space.empty() ? field_name : visitor.name_space + "/" + field_name;
-    const std::vector<YAML::Node> nodes = getNodeArray(lookupNamespace(visitor.data.data, array_ns));
+    const std::vector<YAML::Node> nodes = getNodeArray(subnode);
     size_t index = 0;
     for (const auto& node : nodes) {
       ConfigT& sub_config = config.emplace_back();
@@ -274,11 +279,8 @@ void Visitor::visitField(std::map<K, ConfigT>& config, const std::string& field_
     return;
   }
 
-  OrderedMap<K, ConfigT> intermediate;
-  // copy current config state if doing something else other than settings the config
-  if (visitor.mode != Visitor::Mode::kSet) {
-    intermediate.insert(intermediate.begin(), config.begin(), config.end());
-  }
+  // copy current config state
+  OrderedMap<K, ConfigT> intermediate(config.begin(), config.end());
 
   // make use of more general named parsing
   visitField<K, ConfigT>(intermediate, field_name, unit);
@@ -301,10 +303,15 @@ void Visitor::visitField(OrderedMap<K, ConfigT>& config, const std::string& fiel
   }
 
   if (visitor.mode == Visitor::Mode::kSet) {
+    const auto map_ns = visitor.name_space.empty() ? field_name : visitor.name_space + "/" + field_name;
+    const auto subnode = lookupNamespace(visitor.data.data, map_ns);
+    if (!subnode) {
+      return;  // don't override the field if not present
+    }
+
     // When setting the values first allocate the correct amount of configs.
     config.clear();
-    const auto map_ns = visitor.name_space.empty() ? field_name : visitor.name_space + "/" + field_name;
-    const auto nodes = getNodeMap(lookupNamespace(visitor.data.data, map_ns));
+    const auto nodes = getNodeMap(subnode);
     for (auto&& [key, node] : nodes) {
       auto& entry = config.emplace_back();
       entry.first = key.template as<K>();

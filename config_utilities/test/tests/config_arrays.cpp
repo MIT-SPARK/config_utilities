@@ -105,6 +105,8 @@ class AddString : public ProcessorBase {
       config::RegistrationWithConfig<ProcessorBase, AddString, AddString::Config>("AddString");
 };
 
+bool operator==(const AddString::Config& lhs, const AddString::Config& rhs) { return lhs.s == rhs.s; }
+
 void declare_config(AddString::Config& config) {
   name("AddString");
   field(config.s, "s");
@@ -127,6 +129,21 @@ void declare_config(ConfigWithNestedArray& config) {
   name("ConfigWithNextedArrays");
   field(config.nested, "nested");
 }
+
+struct ConfigWithDefaultArray {
+  std::vector<AddString::Config> configs{{"world!"}, {"hello"}};
+};
+
+void declare_config(ConfigWithDefaultArray& config) {
+  name("ConfigWithDefaultArray");
+  field(config.configs, "configs");
+}
+
+bool operator==(const ConfigWithDefaultArray& lhs, const ConfigWithDefaultArray& rhs) {
+  return lhs.configs == rhs.configs;
+}
+
+void PrintTo(const ConfigWithDefaultArray& config, std::ostream* os) { *os << toString(config); }
 
 TEST(ConfigArrays, FromYamlSeq) {
   const std::string yaml_seq = R"(
@@ -405,6 +422,23 @@ config_array[2] [ArrConfig]:
    f:               3
 ================================================================================)";
   EXPECT_EQ(formatted, expected);
+}
+
+TEST(ConfigArrays, ArrayWithDefaults) {
+  {  // make sure not specifying anything results in default
+    const auto node = YAML::Load("");
+    auto config = fromYaml<ConfigWithDefaultArray>(node);
+    EXPECT_EQ(config.configs.size(), 2);
+    EXPECT_EQ(config, ConfigWithDefaultArray());
+  }
+
+  {  // specifying empty list clears default
+    const auto node = YAML::Load("configs: []");
+    auto config = fromYaml<ConfigWithDefaultArray>(node);
+    EXPECT_EQ(config.configs.size(), 0);
+    ConfigWithDefaultArray expected{{}};
+    EXPECT_EQ(config, expected);
+  }
 }
 
 }  // namespace config::test
