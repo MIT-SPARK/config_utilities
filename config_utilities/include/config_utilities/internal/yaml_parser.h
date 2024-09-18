@@ -37,6 +37,7 @@
 
 #include <limits>
 #include <map>
+#include <optional>
 #include <set>
 #include <string>
 #include <vector>
@@ -46,6 +47,7 @@
 #include "config_utilities/internal/string_utils.h"
 #include "config_utilities/internal/yaml_utils.h"
 #include "config_utilities/traits.h"
+
 
 namespace config::internal {
 
@@ -58,6 +60,29 @@ class YamlParser {
  public:
   YamlParser() = default;
   ~YamlParser() = default;
+
+  /**
+   * @brief Parse a single node to a value. If the conversion fails, a warning is issued and the value is not modified.
+   * @param node The yaml node to parse the value from.
+   * @param error Optional: Where to store the error message if conversion fails.
+   */
+  template <typename T>
+  static std::optional<T> fromYaml(const YAML::Node& node, std::string* error = nullptr) {
+    auto value = T();
+    std::string err;
+    try {
+      fromYamlImpl(value, node, err);
+    } catch (const std::exception& e) {
+      err = std::string(e.what());
+    }
+    if (!err.empty()) {
+      if (error) {
+        *error = err;
+      }
+      return std::nullopt;
+    }
+    return value;
+  }
 
   /**
    * @brief Parse a value from the yaml node. If the value is not found, the value is not modified, and thus should
@@ -89,6 +114,29 @@ class YamlParser {
       error = std::string(e.what());
     }
     return error.empty();
+  }
+
+  /**
+   * @brief Parse a single value to the yaml node.
+   * @param value The value to parse.
+   * @param error Optional: Where to store the error message if conversion fails.
+   */
+  template <typename T>
+  static YAML::Node toYaml(const T& value, std::string* error = nullptr) {
+    YAML::Node node;
+    std::string err;
+    try {
+      node = toYamlImpl("tmp", value, err);
+    } catch (const std::exception& e) {
+      err = std::string(e.what());
+    }
+    if (!err.empty()) {
+      if (error) {
+        *error = err;
+      }
+      return YAML::Node(YAML::NodeType::Null);
+    }
+    return node["tmp"];
   }
 
   /**
@@ -158,6 +206,7 @@ class YamlParser {
     }
     return node;
   }
+
 
   // Set.
   template <typename T>

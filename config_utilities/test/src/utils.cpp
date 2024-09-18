@@ -39,13 +39,21 @@
 
 namespace config::test {
 
-bool expectEqual(const YAML::Node& a, const YAML::Node& b) {
+bool expectEqual(const YAML::Node& a, const YAML::Node& b, double epsilon) {
   EXPECT_EQ(a.Type(), b.Type());
   if (a.Type() != b.Type()) {
     return false;
   }
   switch (a.Type()) {
     case YAML::NodeType::Scalar:
+      if (epsilon > 0.0) {
+        // Attempt double conversion and comparison.
+        double a_val, b_val;
+        if (YAML::convert<double>::decode(a, a_val) && YAML::convert<double>::decode(b, b_val)) {
+          EXPECT_NEAR(a_val, b_val, epsilon);
+          return std::abs(a_val - b_val) <= epsilon;
+        }
+      }
       EXPECT_EQ(a.Scalar(), b.Scalar());
       return a.Scalar() == b.Scalar();
     case YAML::NodeType::Sequence:
@@ -54,8 +62,8 @@ bool expectEqual(const YAML::Node& a, const YAML::Node& b) {
         return false;
       }
       for (size_t i = 0; i < a.size(); ++i) {
-        EXPECT_TRUE(expectEqual(a[i], b[i]));
-        if (!expectEqual(a[i], b[i])) {
+        EXPECT_TRUE(expectEqual(a[i], b[i], epsilon));
+        if (!expectEqual(a[i], b[i], epsilon)) {
           return false;
         }
       }
@@ -68,11 +76,11 @@ bool expectEqual(const YAML::Node& a, const YAML::Node& b) {
       for (const auto& kv_pair : a) {
         const std::string key = kv_pair.first.Scalar();
         if (!b[key]) {
-          ADD_FAILURE() << "Key " << key << " not found in b.";
+          ADD_FAILURE() << "Key '" << key << "' not found in b.";
           return false;
         }
-        EXPECT_TRUE(expectEqual(kv_pair.second, b[key]));
-        if (!expectEqual(kv_pair.second, b[key])) {
+        EXPECT_TRUE(expectEqual(kv_pair.second, b[key], epsilon));
+        if (!expectEqual(kv_pair.second, b[key], epsilon)) {
           return false;
         }
       }
@@ -100,4 +108,5 @@ void TestLogger::print() const {
     std::cout << internal::severityToString(message.first) << ": " << message.second << std::endl;
   }
 }
+
 }  // namespace config::test

@@ -208,7 +208,7 @@ void declare_config(VirtualConfig<BaseT>& config) {
   // If setting values create the wrapped config using the string identifier.
   if (data) {
     std::string type;
-    const bool success = config.optional_ ? internal::getTypeImpl(*data, type, Settings().factory_type_param_name)
+    const bool success = config.optional_ ? internal::getTypeImpl(*data, type, Settings().factory.type_param_name)
                                           : internal::getType(*data, type);
     if (success) {
       config.config_ = internal::ConfigFactory<BaseT>::create(type);

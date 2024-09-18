@@ -75,10 +75,9 @@ void Visitor::visitName(const std::string& name) {
 
 void Visitor::visitCheck(const CheckBase& check) {
   Visitor& visitor = Visitor::instance();
-  if (visitor.mode != Visitor::Mode::kCheck) {
-    return;
+  if (visitor.mode == Visitor::Mode::kCheck || visitor.mode == Visitor::Mode::kGetInfo) {
+    visitor.data.checks.emplace_back(check.clone());
   }
-  visitor.data.checks.emplace_back(check.clone());
 }
 
 std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set, bool is_optional, const std::string& type) {
@@ -96,12 +95,12 @@ std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set, bool is_optio
     }
   }
 
-  if (visitor.mode == Visitor::Mode::kGet) {
+  if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetInfo) {
     if (is_set) {
       // Also write the type param back to file.
       std::string error;
       YAML::Node type_node =
-          YamlParser::toYaml(Settings::instance().factory_type_param_name, type, visitor.name_space, error);
+          YamlParser::toYaml(Settings::instance().factory.type_param_name, type, visitor.name_space, error);
       mergeYamlNodes(visitor.data.data, type_node);
     }
   }
