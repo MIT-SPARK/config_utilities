@@ -206,13 +206,14 @@ void declare_config(VirtualConfig<BaseT>& config) {
   auto data = internal::Visitor::visitVirtualConfig(config.isSet(), config.optional_, config.getType());
 
   // If setting values create the wrapped config using the string identifier.
+  const bool type_optional = config.optional_ || config.config_;
   if (data) {
     std::string type;
-    const bool success = config.optional_ ? internal::getTypeImpl(*data, type, Settings().factory_type_param_name)
-                                          : internal::getType(*data, type);
+    const bool success = type_optional ? internal::getTypeImpl(*data, type, Settings().factory_type_param_name)
+                                       : internal::getType(*data, type);
     if (success) {
       config.config_ = internal::ConfigFactory<BaseT>::create(type);
-    } else if (!config.optional_) {
+    } else if (!type_optional) {
       std::stringstream ss;
       ss << "Could not get type for '" << internal::ModuleInfo::fromTypes<BaseT>().typeInfo() << "'";
       internal::Logger::logError(ss.str());
