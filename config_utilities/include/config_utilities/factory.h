@@ -69,9 +69,6 @@ std::vector<std::string> convertArguments() {
  */
 bool getType(const YAML::Node& data, std::string& type, bool required = true, const std::string& param_name = "");
 
-/*//! @brief Get type from YAML node directly*/
-/*bool getType(const YAML::Node& data, std::string& type);*/
-
 //! @brief Struct recording typenames for a module (i.e., the constructor signature). Can be used as a map key
 struct ModuleInfo {
   template <typename BaseT, typename... Args>
