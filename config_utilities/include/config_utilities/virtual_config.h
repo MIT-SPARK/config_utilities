@@ -205,14 +205,16 @@ template <typename BaseT>
 void declare_config(VirtualConfig<BaseT>& config) {
   auto data = internal::Visitor::visitVirtualConfig(config.isSet(), config.optional_, config.getType());
 
+  // underlying derived type is not required if the config is optional, or if the config has been
+  // initialized to a derived type already (i.e., config_ is already populated)
+  const bool type_required = !config.optional_ && !config.config_;
+
   // If setting values create the wrapped config using the string identifier.
   if (data) {
     std::string type;
-    const bool success = config.optional_ ? internal::getTypeImpl(*data, type, Settings().factory_type_param_name)
-                                          : internal::getType(*data, type);
-    if (success) {
+    if (internal::getType(*data, type, type_required)) {
       config.config_ = internal::ConfigFactory<BaseT>::create(type);
-    } else if (!config.optional_) {
+    } else if (type_required) {
       std::stringstream ss;
       ss << "Could not get type for '" << internal::ModuleInfo::fromTypes<BaseT>().typeInfo() << "'";
       internal::Logger::logError(ss.str());
