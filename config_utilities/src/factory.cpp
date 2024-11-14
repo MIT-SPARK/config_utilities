@@ -213,7 +213,7 @@ ModuleRegistry& ModuleRegistry::instance() {
 }
 
 // Helper function to read the type param from a node.
-bool getTypeImpl(const YAML::Node& data, std::string& type, bool required, const std::string& key) {
+bool getTypeImpl(const YAML::Node& data, std::string& type, const std::string& key) {
   if (!data.IsMap()) {
     return false;
   }
@@ -234,12 +234,12 @@ bool getTypeImpl(const YAML::Node& data, std::string& type, bool required, const
 
 bool getType(const YAML::Node& data, std::string& type, bool required, const std::string& param_name) {
   const std::string key = param_name.empty() ? Settings::instance().factory_type_param_name : param_name;
-  if (!getTypeImpl(data, type, required, key)) {
+  const auto success = getTypeImpl(data, type, key);
+  if (!success && required) {
     Logger::logError("Could not read the param '" + key + "' to deduce the type of the module to create.");
-    return false;
   }
 
-  return true;
+  return success;
 }
 
 }  // namespace config::internal
