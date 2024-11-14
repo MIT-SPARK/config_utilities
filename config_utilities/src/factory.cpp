@@ -213,28 +213,32 @@ ModuleRegistry& ModuleRegistry::instance() {
 }
 
 // Helper function to read the type param from a node.
-bool getTypeImpl(const YAML::Node& data, std::string& type, const std::string& param_name) {
+bool getTypeImpl(const YAML::Node& data, std::string& type, bool required, const std::string& key) {
   if (!data.IsMap()) {
     return false;
   }
-  if (!data[param_name]) {
+
+  // Get the type or print an error.
+  if (!data[key]) {
     return false;
   }
+
   try {
-    type = data[param_name].as<std::string>();
+    type = data[key].as<std::string>();
   } catch (const YAML::Exception& e) {
     return false;
   }
+
   return true;
 }
 
-bool getType(const YAML::Node& data, std::string& type) {
-  // Get the type or print an error.
-  const std::string param_name = Settings::instance().factory_type_param_name;
-  if (!getTypeImpl(data, type, param_name)) {
-    Logger::logError("Could not read the param '" + param_name + "' to deduce the type of the module to create.");
+bool getType(const YAML::Node& data, std::string& type, bool required, const std::string& param_name) {
+  const std::string key = param_name.empty() ? Settings::instance().factory_type_param_name : param_name;
+  if (!getTypeImpl(data, type, required, key)) {
+    Logger::logError("Could not read the param '" + key + "' to deduce the type of the module to create.");
     return false;
   }
+
   return true;
 }
 

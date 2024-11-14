@@ -61,11 +61,16 @@ std::vector<std::string> convertArguments() {
   };
 }
 
-//! @brief Helper function to read the type param from a node.
-bool getTypeImpl(const YAML::Node& data, std::string& type, const std::string& param_name);
+/** @brief Helper function to read the type param from a node.
+ * @param data YAML node to read type from
+ * @param type Type value to filll
+ * @param required Whether or not the type field is required
+ * @param param_name Field in YAML node to read (empty string defaults to Settings().factory_type_param_name)
+ */
+bool getType(const YAML::Node& data, std::string& type, bool required = true, const std::string& param_name = "");
 
-//! @brief Get type from YAML node directly
-bool getType(const YAML::Node& data, std::string& type);
+/*//! @brief Get type from YAML node directly*/
+/*bool getType(const YAML::Node& data, std::string& type);*/
 
 //! @brief Struct recording typenames for a module (i.e., the constructor signature). Can be used as a map key
 struct ModuleInfo {
