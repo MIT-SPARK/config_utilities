@@ -241,7 +241,7 @@ class YamlParser {
     for (const auto& element : node) {
       const T& element_value = element.as<T>();
       if (value.find(element_value) != value.end()) {
-        repeated_entries.insert(dataToString(element));
+        repeated_entries.insert(yamlToString(element));
       } else {
         value.insert(element_value);
       }

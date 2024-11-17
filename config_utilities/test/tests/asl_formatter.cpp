@@ -89,26 +89,26 @@ void declare_config(ConfigUsingArrays& config) {
   field(config.arr, "arr");
 }
 
-TEST(AslFormatter, DataToString) {
+TEST(AslFormatter, yamlToString) {
   YAML::Node data = internal::Visitor::getValues(TestConfig()).data;
   // note: float reformatting should have no effect on other fields (and fixes full precision formatting for internal
   // yaml representation)
-  EXPECT_EQ(internal::dataToString(data["i"], true), "1");
-  EXPECT_EQ(internal::dataToString(data["f"], true), "2.1");
-  EXPECT_EQ(internal::dataToString(data["d"], true), "3.2");
-  EXPECT_EQ(internal::dataToString(data["b"], true), "true");
-  EXPECT_EQ(internal::dataToString(data["u8"], true), "4");
-  EXPECT_EQ(internal::dataToString(data["s"], true), "test string");
-  EXPECT_EQ(internal::dataToString(data["vec"], true), "[1, 2, 3]");
-  EXPECT_EQ(internal::dataToString(data["map"], true), "{a: 1, b: 2, c: 3}");
-  EXPECT_EQ(internal::dataToString(data["set"], true), "[1.1, 2.2, 3.3]");
-  EXPECT_EQ(internal::dataToString(data["mat"], true), "[[1, 0, 0], [0, 1, 0], [0, 0, 1]]");
+  EXPECT_EQ(internal::yamlToString(data["i"], true), "1");
+  EXPECT_EQ(internal::yamlToString(data["f"], true), "2.1");
+  EXPECT_EQ(internal::yamlToString(data["d"], true), "3.2");
+  EXPECT_EQ(internal::yamlToString(data["b"], true), "true");
+  EXPECT_EQ(internal::yamlToString(data["u8"], true), "4");
+  EXPECT_EQ(internal::yamlToString(data["s"], true), "test string");
+  EXPECT_EQ(internal::yamlToString(data["vec"], true), "[1, 2, 3]");
+  EXPECT_EQ(internal::yamlToString(data["map"], true), "{a: 1, b: 2, c: 3}");
+  EXPECT_EQ(internal::yamlToString(data["set"], true), "[1.1, 2.2, 3.3]");
+  EXPECT_EQ(internal::yamlToString(data["mat"], true), "[[1, 0, 0], [0, 1, 0], [0, 0, 1]]");
   YAML::Node nested_set;
   nested_set["a"]["x"] = 1;
   nested_set["a"]["y"] = 2;
   nested_set["b"]["x"] = 3;
   nested_set["b"]["y"] = 4;
-  EXPECT_EQ(internal::dataToString(nested_set, true), "{a: {x: 1, y: 2}, b: {x: 3, y: 4}}");
+  EXPECT_EQ(internal::yamlToString(nested_set, true), "{a: {x: 1, y: 2}, b: {x: 3, y: 4}}");
 }
 
 TEST(AslFormatter, FormatErrors) {

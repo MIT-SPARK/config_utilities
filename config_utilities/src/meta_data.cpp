@@ -42,7 +42,7 @@ namespace config::internal {
 bool FieldInfo::isDefault() const {
   // NOTE(lschmid): Operator YAML::Node== checks for identity, not equality. Since these are all scalars, comparing
   // the formatted strings should be identical.
-  return internal::dataToString(value) == internal::dataToString(default_value);
+  return internal::yamlToString(value) == internal::yamlToString(default_value);
 }
 
 bool MetaData::hasErrors() const {

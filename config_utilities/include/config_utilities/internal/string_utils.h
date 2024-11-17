@@ -40,8 +40,6 @@
 #include <typeinfo>
 #include <vector>
 
-#include <yaml-cpp/yaml.h>
-
 // clang-format off
 #ifdef __GNUG__
 #include <cstdlib>
@@ -88,15 +86,6 @@ std::string joinNamespace(const std::vector<std::string>& namespaces, const std:
 std::string joinNamespace(const std::string& namespace_1,
                           const std::string& namespace_2,
                           const std::string& delimiter = "/");
-
-/**
- * @brief Formatting of YAML nodes to strings. Most config types can be neatly represented as low-depth yaml nodes, or
- * should otherwise probably be wrapped in a separate config struct.
- * @param data The data to be formatted.
- * @param reformat_float Whether to try and print floats with default stream precision
- * @returns The formatted string.
- */
-std::string dataToString(const YAML::Node& data, bool reformat_float = false);
 
 /**
  * @brief Find all occurences of a substring in a string.
