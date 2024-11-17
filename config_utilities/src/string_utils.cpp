@@ -36,7 +36,6 @@
 #include "config_utilities/internal/string_utils.h"
 
 #include <algorithm>
-#include <regex>
 #include <sstream>
 
 namespace config::internal {
@@ -87,67 +86,6 @@ std::string joinNamespace(const std::string& namespace_1,
   const std::vector<std::string> ns_2 = splitNamespace(namespace_2, delimiter);
   ns_1.insert(ns_1.end(), ns_2.begin(), ns_2.end());
   return joinNamespace(ns_1, delimiter);
-}
-
-std::string scalarToString(const YAML::Node& data, bool reformat_float) {
-  std::stringstream orig;
-  orig << data;
-  if (!reformat_float) {
-    return orig.str();
-  }
-
-  const std::regex float_detector("[+-]?[0-9]*[.][0-9]+");
-  if (!std::regex_search(orig.str(), float_detector)) {
-    return orig.str();  // no reason to reformat if no decimal points
-  }
-
-  double value;
-  try {
-    value = data.as<double>();
-  } catch (const std::exception&) {
-    return orig.str();  // value is some sort of string that can't be parsed as a float
-  }
-
-  // this should have default ostream precision for formatting float
-  std::stringstream ss;
-  ss << value;
-  return ss.str();
-}
-
-std::string dataToString(const YAML::Node& data, bool reformat_float) {
-  switch (data.Type()) {
-    case YAML::NodeType::Scalar: {
-      // scalars require special handling for float precision
-      return scalarToString(data, reformat_float);
-    }
-    case YAML::NodeType::Sequence: {
-      std::string result = "[";
-      for (size_t i = 0; i < data.size(); ++i) {
-        result += dataToString(data[i], reformat_float);
-        if (i < data.size() - 1) {
-          result += ", ";
-        }
-      }
-      result += "]";
-      return result;
-    }
-    case YAML::NodeType::Map: {
-      std::string result = "{";
-      bool has_data = false;
-      for (const auto& kv_pair : data) {
-        has_data = true;
-        result +=
-            dataToString(kv_pair.first, reformat_float) + ": " + dataToString(kv_pair.second, reformat_float) + ", ";
-      }
-      if (has_data) {
-        result = result.substr(0, result.length() - 2);
-      }
-      result += "}";
-      return result;
-    }
-    default:
-      return kInvalidField;
-  }
 }
 
 std::vector<size_t> findAllSubstrings(const std::string& text, const std::string& substring) {
