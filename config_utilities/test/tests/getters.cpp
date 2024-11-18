@@ -33,11 +33,14 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
+#include "config_utilities/getters.h"
+
 #include <gtest/gtest.h>
 
 #include "config_utilities/config.h"
 #include "config_utilities/parsing/yaml.h"
 #include "config_utilities/test/default_config.h"
+#include "config_utilities/test/utils.h"
 
 namespace config::test {
 
@@ -76,11 +79,16 @@ some_string: "Hello"
   EXPECT_TRUE(string.has_value());
   EXPECT_EQ(string.value(), "Hello");
 
+  auto logger = TestLogger::create();
   const auto wrong = getField<GetterStruct, int>(config, "some_string");
   EXPECT_FALSE(wrong.has_value());
+  EXPECT_EQ(logger->numMessages(), 1);
+  EXPECT_EQ(logger->lastMessage(), "Field 'some_string' could not be converted to the requested type: bad conversion");
 
   const auto wrong2 = getField<GetterStruct, std::string>(config, "non_existent_field");
   EXPECT_FALSE(wrong2.has_value());
+  EXPECT_EQ(logger->numMessages(), 2);
+  EXPECT_EQ(logger->lastMessage(), "Field 'non_existent_field' not found in config.");
 }
 
 }  // namespace config::test

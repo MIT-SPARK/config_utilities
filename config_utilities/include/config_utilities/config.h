@@ -42,7 +42,6 @@
 #include <vector>
 
 #include "config_utilities/internal/checks.h"
-#include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/namespacing.h"
 #include "config_utilities/internal/visitor.h"
 #include "config_utilities/traits.h"
@@ -93,61 +92,6 @@ static void field(ConfigT& field, const std::string& field_name, bool use_name_a
 template <typename Conversion, typename T>
 void field(T& field, const std::string& field_name, const std::string& unit = "") {
   internal::Visitor::visitField<Conversion>(field, field_name, unit);
-}
-
-
-/**
- * @brief Lists all the fields of the given configuration.
- *
- * This function retrieves metadata from the provided configuration object
- * and extracts the names of all fields, returning them in a vector.
- *
- * @tparam ConfigT The type of the configuration.
- * @param config The configuration object whose fields are to be listed.
- * @return A vector containing the names of all fields in the configuration.
- */
-template <typename ConfigT>
-std::vector<std::string> listFields(const ConfigT& config) {
-  internal::MetaData data = internal::Visitor::getValues(config);
-  std::vector<std::string> fields;
-  for (const auto& field_info : data.field_infos) {
-    fields.emplace_back(field_info.name);
-  }
-  return fields;
-}
-
-/**
- * @brief Retrieves the value of a specified field from the given configuration.
- *
- * This function searches for a field with the specified name in the provided
- * configuration object and attempts to convert its value to the requested type.
- * If the field is found and the conversion is successful, the value is returned
- * as an optional. If the field is not found or the conversion fails, a warning
- * is logged and an empty optional is returned.
- *
- * @tparam ConfigT The type of the configuration.
- * @tparam T The type to which the field value should be converted.
- * @param config The configuration object from which the field value is to be retrieved.
- * @param field_name The name of the field whose value is to be retrieved.
- * @return An optional containing the value of the field if found and successfully converted,
- *         otherwise an empty optional.
- */
-template <typename ConfigT, typename T>
-std::optional<T> getField(const ConfigT& config, const std::string& field_name) {
-  internal::MetaData data = internal::Visitor::getValues(config);
-  for (const auto& field_info : data.field_infos) {
-    if (field_info.name == field_name) {
-      try {
-        return field_info.value.as<T>();
-      } catch (const YAML::BadConversion& e) {
-        internal::Logger::logWarning("Field " + field_name + " could not be converted to the requested type.");
-
-        return std::nullopt;
-      }
-    }
-  }
-  internal::Logger::logWarning("Field " + field_name + " not found in config.");
-  return std::nullopt;
 }
 
 /**
