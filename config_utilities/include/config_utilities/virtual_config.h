@@ -50,8 +50,9 @@ namespace config {
  * class.
  *
  * @tparam BaseT The base class of the object that should be created from the config.
+ * @tparam BaseT Whether or not the virtual config is optional when constructed (useful for maps and vectors of configs)
  */
-template <class BaseT>
+template <class BaseT, bool OptionalByDefault = false>
 class VirtualConfig {
  public:
   VirtualConfig() = default;
@@ -184,25 +185,25 @@ class VirtualConfig {
   }
 
  private:
-  template <typename T>
-  friend void declare_config(VirtualConfig<T>&);
+  template <typename T, bool Opt>
+  friend void declare_config(VirtualConfig<T, Opt>&);
   friend struct internal::Visitor;
 
-  bool optional_ = false;
+  bool optional_ = OptionalByDefault;
   std::unique_ptr<internal::ConfigWrapper> config_;
 };
 
 namespace internal {
 
 // Declare virtual config types.
-template <typename T>
-struct is_virtual_config<VirtualConfig<T>> : std::true_type {};
+template <typename T, bool Opt>
+struct is_virtual_config<VirtualConfig<T, Opt>> : std::true_type {};
 
 }  // namespace internal
 
 // Declare the Virtual Config a config, so it can be handled like any other object.
-template <typename BaseT>
-void declare_config(VirtualConfig<BaseT>& config) {
+template <typename BaseT, bool Opt>
+void declare_config(VirtualConfig<BaseT, Opt>& config) {
   auto data = internal::Visitor::visitVirtualConfig(config.isSet(), config.optional_, config.getType());
 
   // underlying derived type is not required if the config is optional, or if the config has been
