@@ -117,6 +117,27 @@ void declare_config(ObjectWithBase::Config& config) {
   config::field(config.base_config, "base_config", false);
 }
 
+struct ObjectWithOptionalConfigs {
+  struct Config {
+    std::vector<VirtualConfig<Base2, true>> modules;
+  } const config;
+
+  explicit ObjectWithOptionalConfigs(const Config& config) : config(config::checkValid(config)) {
+    for (const auto& base_config : config.modules) {
+      if (base_config) {
+        valid.emplace_back(base_config.create());
+      }
+    }
+  }
+
+  std::vector<std::unique_ptr<Base2>> valid;
+};
+
+void declare_config(ObjectWithOptionalConfigs::Config& config) {
+  config::name("ObjectWithOptionalConfigs");
+  config::field(config.modules, "modules");
+}
+
 TEST(VirtualConfig, isSet) {
   Settings().restoreDefaults();
 
@@ -346,6 +367,21 @@ TEST(VirtualConfig, getUnderlying) {
   EXPECT_TRUE(config.isSet());
   EXPECT_FALSE(config.getUnderlying<Derived2::Config>());
   EXPECT_TRUE(config.getUnderlying<Derived2A::Config>());
+}
+
+TEST(VirtualConfig, optionalByDefault) {
+  Settings().restoreDefaults();
+
+  const std::string yaml_str = R"""(modules:
+  - {type: testing}
+  - {a: 5, b: 6}
+  - {type: Derived2}
+)""";
+
+  const auto node = YAML::Load(yaml_str);
+  const auto config = config::fromYaml<ObjectWithOptionalConfigs::Config>(node);
+  const ObjectWithOptionalConfigs object(config);
+  EXPECT_EQ(object.valid.size(), 1u);
 }
 
 }  // namespace config::test
