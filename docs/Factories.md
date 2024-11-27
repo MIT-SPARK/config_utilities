@@ -95,7 +95,7 @@ std::unique_ptr<Base> = createFromYamlFile<Base>(file_name, 42);
 
 Note that the type of object to create is read from the data source. By default, a param with name `type` needs to be set. This can be changed in the `config_utilities` [settings](Varia.md#settings). A sample file could look like:
 ```yaml
-type: "Dervied"
+type: "Derived"
 derived_config_param: value
 ```
 
