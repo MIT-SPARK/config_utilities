@@ -11,7 +11,6 @@ setup(
         ("share/" + package_name, ["package.xml"]),
     ],
     install_requires=["setuptools"],
-    zip_safe=True,
     maintainer="nathan",
     maintainer_email="nathan.h.hughes@gmail.com",
     description="TODO: Package description",
