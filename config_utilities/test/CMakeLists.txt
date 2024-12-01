@@ -19,6 +19,7 @@ add_executable(
   tests/enums.cpp
   tests/external_registry.cpp
   tests/factory.cpp
+  tests/getters.cpp
   tests/inheritance.cpp
   tests/missing_fields.cpp
   tests/namespacing.cpp
