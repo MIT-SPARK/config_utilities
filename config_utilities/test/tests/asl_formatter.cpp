@@ -89,26 +89,26 @@ void declare_config(ConfigUsingArrays& config) {
   field(config.arr, "arr");
 }
 
-TEST(AslFormatter, DataToString) {
+TEST(AslFormatter, yamlToString) {
   YAML::Node data = internal::Visitor::getValues(TestConfig()).data;
   // note: float reformatting should have no effect on other fields (and fixes full precision formatting for internal
   // yaml representation)
-  EXPECT_EQ(internal::dataToString(data["i"], true), "1");
-  EXPECT_EQ(internal::dataToString(data["f"], true), "2.1");
-  EXPECT_EQ(internal::dataToString(data["d"], true), "3.2");
-  EXPECT_EQ(internal::dataToString(data["b"], true), "true");
-  EXPECT_EQ(internal::dataToString(data["u8"], true), "4");
-  EXPECT_EQ(internal::dataToString(data["s"], true), "test string");
-  EXPECT_EQ(internal::dataToString(data["vec"], true), "[1, 2, 3]");
-  EXPECT_EQ(internal::dataToString(data["map"], true), "{a: 1, b: 2, c: 3}");
-  EXPECT_EQ(internal::dataToString(data["set"], true), "[1.1, 2.2, 3.3]");
-  EXPECT_EQ(internal::dataToString(data["mat"], true), "[[1, 0, 0], [0, 1, 0], [0, 0, 1]]");
+  EXPECT_EQ(internal::yamlToString(data["i"], true), "1");
+  EXPECT_EQ(internal::yamlToString(data["f"], true), "2.1");
+  EXPECT_EQ(internal::yamlToString(data["d"], true), "3.2");
+  EXPECT_EQ(internal::yamlToString(data["b"], true), "true");
+  EXPECT_EQ(internal::yamlToString(data["u8"], true), "4");
+  EXPECT_EQ(internal::yamlToString(data["s"], true), "test string");
+  EXPECT_EQ(internal::yamlToString(data["vec"], true), "[1, 2, 3]");
+  EXPECT_EQ(internal::yamlToString(data["map"], true), "{a: 1, b: 2, c: 3}");
+  EXPECT_EQ(internal::yamlToString(data["set"], true), "[1.1, 2.2, 3.3]");
+  EXPECT_EQ(internal::yamlToString(data["mat"], true), "[[1, 0, 0], [0, 1, 0], [0, 0, 1]]");
   YAML::Node nested_set;
   nested_set["a"]["x"] = 1;
   nested_set["a"]["y"] = 2;
   nested_set["b"]["x"] = 3;
   nested_set["b"]["y"] = 4;
-  EXPECT_EQ(internal::dataToString(nested_set, true), "{a: {x: 1, y: 2}, b: {x: 3, y: 4}}");
+  EXPECT_EQ(internal::yamlToString(nested_set, true), "{a: {x: 1, y: 2}, b: {x: 3, y: 4}}");
 }
 
 TEST(AslFormatter, FormatErrors) {
@@ -142,7 +142,7 @@ Warning: Failed to parse param 'Field 6': Error 6.
 ================================================================================)""";
   EXPECT_EQ(formatted, expected);
 
-  Settings().inline_subconfig_field_names = false;
+  Settings().printing.inline_subconfigs = false;
   formatted = internal::Formatter::formatErrors(data);
   EXPECT_EQ(countLines(formatted), 12);
 
@@ -177,7 +177,7 @@ TEST(AslFormatter, FormatChecks) {
   config.sub_config.sub_sub_config.i = -1;
 
   Settings().restoreDefaults();
-  Settings().inline_subconfig_field_names = false;
+  Settings().printing.inline_subconfigs = false;
   internal::MetaData data = internal::Visitor::getChecks(config);
   std::string formatted = internal::Formatter::formatErrors(data);
   std::string expected = R"""( 'DefaultConfig':
@@ -187,7 +187,7 @@ Warning: Check [2/8] failed for 'f': param >= 0 (is: '-1').
 Warning: Check [3/8] failed for 'd': param < 4 (is: '1000').
 Warning: Check [5/8] failed for 's': param == test string (is: '').
 Warning: Check [6/8] failed for 'b': param != 0 (is: '0').
-Warning: Check [7/8] failed: param 'vec' must b of size '3'.
+Warning: Check [7/8] failed: param 'vec' must be of size '3'.
 Warning: Check [8/8] failed for 'd': param within [0, 500] (is: '1000').
 ---------------------------------- SubConfig -----------------------------------
 Warning: Check [1/1] failed for 'i': param > 0 (is: '-1').
@@ -198,7 +198,7 @@ Warning: Check [1/1] failed for 'i': param > 0 (is: '-1').
 ================================================================================
   )""";
 
-  Settings().inline_subconfig_field_names = true;
+  Settings().printing.inline_subconfigs = true;
   data = internal::Visitor::getChecks(config);
   formatted = internal::Formatter::formatErrors(data);
   expected = R"""( 'DefaultConfig':
@@ -208,7 +208,7 @@ Warning: Check [2/11] failed for 'f': param >= 0 (is: '-1').
 Warning: Check [3/11] failed for 'd': param < 4 (is: '1000').
 Warning: Check [5/11] failed for 's': param == test string (is: '').
 Warning: Check [6/11] failed for 'b': param != 0 (is: '0').
-Warning: Check [7/11] failed: param 'vec' must b of size '3'.
+Warning: Check [7/11] failed: param 'vec' must be of size '3'.
 Warning: Check [8/11] failed for 'd': param within [0, 500] (is: '1000').
 Warning: Check [9/11] failed for 'sub_config.i': param > 0 (is: '-1').
 Warning: Check [10/11] failed for 'sub_config.sub_sub_config.i': param > 0 (is:
@@ -221,10 +221,10 @@ Warning: Check [11/11] failed for 'sub_sub_config.i': param > 0 (is: '-1').
 TEST(AslFormatter, FormatConfig) {
   internal::MetaData data = internal::Visitor::getValues(TestConfig());
 
-  Settings().indicate_default_values = false;
-  Settings().indicate_units = false;
-  Settings().inline_subconfig_field_names = true;
-  Settings().reformat_floats = true;
+  Settings().printing.show_defaults = false;
+  Settings().printing.show_units = false;
+  Settings().printing.inline_subconfigs = true;
+  Settings().printing.reformat_floats = true;
   std::string formatted = internal::Formatter::formatConfig(data);
   std::string expected =
       R"""(================================= Test Config ==================================
@@ -259,7 +259,7 @@ sub_sub_config [SubSubConfig]:
   EXPECT_EQ(formatted.size(), expected.size());
   EXPECT_EQ(formatted, expected);
 
-  Settings().print_width = 50;
+  Settings().printing.width = 50;
   formatted = internal::Formatter::formatConfig(data);
   expected =
       R"""(================== Test Config ===================
@@ -300,8 +300,8 @@ sub_sub_config [SubSubConfig]:
   EXPECT_EQ(formatted.size(), expected.size());
   EXPECT_EQ(formatted, expected);
 
-  Settings().print_width = 80;
-  Settings().print_indent = 20;
+  Settings().printing.width = 80;
+  Settings().printing.indent = 20;
   formatted = internal::Formatter::formatConfig(data);
   expected =
       R"""(================================= Test Config ==================================
@@ -338,11 +338,11 @@ sub_sub_config [SubSubConfig]:
 }
 
 TEST(AslFormatter, FormatUnits) {
-  Settings().indicate_default_values = false;
-  Settings().indicate_units = true;
-  Settings().inline_subconfig_field_names = true;
-  Settings().print_width = 80;  // force print width to be consistent for tests
-  Settings().print_indent = 20;
+  Settings().printing.show_defaults = false;
+  Settings().printing.show_units = true;
+  Settings().printing.inline_subconfigs = true;
+  Settings().printing.width = 80;  // force print width to be consistent for tests
+  Settings().printing.indent = 20;
 
   internal::MetaData data = internal::Visitor::getValues(TestConfig());
   const std::string formatted = internal::Formatter::formatConfig(data);
@@ -382,10 +382,10 @@ sub_sub_config [SubSubConfig]:
 }
 
 TEST(AslFormatter, FormatDefaultValues) {
-  Settings().indicate_default_values = true;
-  Settings().indicate_units = false;
-  Settings().inline_subconfig_field_names = true;
-  Settings().print_indent = 20;
+  Settings().printing.show_defaults = true;
+  Settings().printing.show_units = false;
+  Settings().printing.inline_subconfigs = true;
+  Settings().printing.indent = 20;
 
   const internal::MetaData default_data = internal::Visitor::getValues(TestConfig());
   std::string formatted = internal::Formatter::formatConfig(default_data);

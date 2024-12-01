@@ -80,4 +80,13 @@ std::vector<YAML::Node> getNodeArray(const YAML::Node& node);
  */
 std::vector<std::pair<YAML::Node, YAML::Node>> getNodeMap(const YAML::Node& node);
 
+/**
+ * @brief Formatting of YAML nodes to strings. Most config types can be neatly represented as low-depth yaml nodes, or
+ * should otherwise probably be wrapped in a separate config struct.
+ * @param data The data to be formatted.
+ * @param reformat_float Whether to try and print floats with default stream precision
+ * @returns The formatted string.
+ */
+std::string yamlToString(const YAML::Node& data, bool reformat_float = false);
+
 }  // namespace config::internal

@@ -26,11 +26,16 @@ struct convert<MyType> {
 ## Adding custom conversions
 To implement custom field conversions, you can create a conversion struct. The struct must implement two static conversion functions `toIntermediate` and `fromIntermediate`, where intermediate is a yaml-castable type. Examples of this are given in `types/conversions.h`.
 
+Conversions can also optionally implement a `getFieldInputInfo()` function to return additional field info constraints when getting config infos. If this function is not implemented, no additional field info will be issued.
+
 ```c++
 struct MyConversion {
   // If conversion fails, set 'error' to the failure message.
   static IntermediateType toIntermediate(MyType value, std::string& error);
   static void fromIntermediate(const IntermediateType& intermediate, MyType& value, std::string& error);
+
+  // Optionally provide more field info. Must have exaxctly this signature.
+  static config::internal::FieldInputInfo::Ptr getFieldInputInfo();
 };
 ```
 

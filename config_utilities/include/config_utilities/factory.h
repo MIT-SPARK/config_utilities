@@ -65,7 +65,7 @@ std::vector<std::string> convertArguments() {
  * @param data YAML node to read type from
  * @param type Type value to filll
  * @param required Whether or not the type field is required
- * @param param_name Field in YAML node to read (empty string defaults to Settings().factory_type_param_name)
+ * @param param_name Field in YAML node to read (empty string defaults to Settings().factory.type_param_name)
  */
 bool getType(const YAML::Node& data, std::string& type, bool required = true, const std::string& param_name = "");
 

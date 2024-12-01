@@ -36,6 +36,7 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <utility>
@@ -63,7 +64,6 @@ std::map<EnumT, std::string> createEnumMap(const std::vector<std::string>& enum_
   }
   return enum_map;
 }
-
 
 /**
  * @brief A struct that provides conversion between an ennum type and its string representation. The enum definition can
@@ -128,19 +128,6 @@ struct Enum {
     explicit Initializer(const std::map<EnumT, std::string>& enum_names) { setNames(enum_names); }
   };
 
- private:
-  friend internal::Visitor;
-  template <typename T>
-  friend void enum_field(T&, const std::string&, const std::map<T, std::string>&);
-
-  // Singleton implementation as initialization order of static variables is not guaranteed.
-  Enum() = default;
-
-  static Enum<EnumT>& instance() {
-    static Enum<EnumT> instance;
-    return instance;
-  }
-
   // Interfaces to work as a type converter for config field parsing.
   static std::string toIntermediate(EnumT value, std::string& error) {
     std::string result;
@@ -157,6 +144,28 @@ struct Enum {
     if (!instance().parse(intermediate, value)) {
       error = "Name '" + intermediate + "' is out of bounds for enum with names [" + instance().printNameList() + "]";
     }
+  }
+
+  static internal::FieldInputInfo::Ptr getFieldInputInfo() {
+    std::lock_guard<std::mutex> lock(instance().mutex_);
+    auto info = std::make_shared<internal::OptionsFieldInputInfo>();
+    for (const auto& [value, name] : instance().enum_names_) {
+      info->options.push_back(name);
+    }
+    return info;
+  }
+
+ private:
+  friend internal::Visitor;
+  template <typename T>
+  friend void enum_field(T&, const std::string&, const std::map<T, std::string>&);
+
+  // Singleton implementation as initialization order of static variables is not guaranteed.
+  Enum() = default;
+
+  static Enum<EnumT>& instance() {
+    static Enum<EnumT> instance;
+    return instance;
   }
 
   // Tools to print the enum names and values for error messages. These are therefore not locked.
