@@ -29,7 +29,19 @@ class ConfigField:
 
 
 def _substitute(context, value):
-    return perform_substitutions(context, normalize_to_list_of_substitutions(value))
+    match value:
+        case ConfigFile(filepath, ns, allow_substs):
+            if allow_substs:
+                filepath = perform_substitutions(
+                    context, normalize_to_list_of_substitutions(filepath)
+                )
+            return {ns: filepath}
+        case ConfigField(name, value, allow_substs):
+            if allow_substs:
+                value = perform_substitutions(
+                    context, normalize_to_list_of_substitutions(value)
+                )
+            return {name: value}
 
 
 def _parse_config_section(section, parser):
