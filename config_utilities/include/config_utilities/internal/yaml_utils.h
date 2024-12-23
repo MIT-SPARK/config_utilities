@@ -44,9 +44,10 @@ namespace config::internal {
 
 /**
  * @brief Merges node b into a, overwriting values previously defined in a if they can not be
- * merged. Modifies node a, whereas b is const.
+ * merged. Modifies node a, whereas b is const. Sequences can optionally be appended together at the same level of the
+ * YAML tree.
  */
-void mergeYamlNodes(YAML::Node& a, const YAML::Node& b);
+void mergeYamlNodes(YAML::Node& a, const YAML::Node& b, bool extend_sequences = false);
 
 /**
  * @brief Get a pointer to the final node of the specified namespace if it exists, where each map in the yaml is
