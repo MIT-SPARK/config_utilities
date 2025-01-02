@@ -27,6 +27,7 @@ find_optional_pkgcfg(libglog CONFIG_UTILS_ENABLE_GLOG)
 add_library(
   ${PROJECT_NAME}
   src/asl_formatter.cpp
+  src/commandline_utils.cpp
   src/context.cpp
   src/conversions.cpp
   src/external_registry.cpp
