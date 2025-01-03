@@ -38,69 +38,11 @@
 #include <gtest/gtest.h>
 
 #include "config_utilities/config.h"
-#include "config_utilities/internal/yaml_utils.h"
 #include "config_utilities/parsing/yaml.h"
 #include "config_utilities/test/default_config.h"
 #include "config_utilities/test/utils.h"
 
 namespace config::test {
-
-YAML::Node createData() {
-  YAML::Node data;
-  data["a"]["b"]["c"] = 1;
-  data["a"]["b"]["d"] = "test";
-  data["a"]["b"]["e"] = std::vector<float>({1, 2, 3});
-  data["a"]["b"]["f"] = std::map<std::string, int>({{"1_str", 1}, {"2_str", 2}});
-  data["a"]["g"] = 3;
-  return data;
-}
-
-TEST(YamlParsing, lookupNamespace) {
-  YAML::Node data = createData();
-
-  expectEqual(data, data);
-
-  YAML::Node data_1 = YAML::Clone(data);
-  data_1["a"]["b"]["c"] = 2;
-  EXPECT_FALSE(internal::isEqual(data, data_1));
-
-  YAML::Node data_2 = internal::lookupNamespace(data, "");
-  // NOTE(lschmid): lookupNamespace returns a pointer, so this should be identity.
-  EXPECT_TRUE(data == data_2);
-  expectEqual(data, data_2);
-
-  YAML::Node b = internal::lookupNamespace(data, "a/b");
-  // NOTE(lschmid): lookupNamespace returns a pointer, so this should be identity.
-  EXPECT_TRUE(b == data["a"]["b"]);
-  expectEqual(b, data["a"]["b"]);
-
-  YAML::Node b2 = internal::lookupNamespace(YAML::Clone(data), "a/b");
-
-  expectEqual(b2, data["a"]["b"]);
-
-  YAML::Node c = internal::lookupNamespace(data, "a/b/c");
-  EXPECT_TRUE(c.IsScalar());
-  EXPECT_EQ(c.as<int>(), 1);
-
-  YAML::Node invalid = internal::lookupNamespace(data, "a/b/c/d");
-  EXPECT_FALSE(invalid.IsDefined());
-  EXPECT_FALSE(static_cast<bool>(invalid));
-
-  // Make sure the input node is not modified.
-  expectEqual(data, createData());
-}
-
-TEST(YamlParsing, moveDownNamespace) {
-  YAML::Node data = createData();
-
-  internal::moveDownNamespace(data, "");
-  expectEqual(data, createData());
-
-  YAML::Node expected_data;
-  expected_data["a"]["b"]["c"] = createData();
-  internal::moveDownNamespace(data, "a/b/c");
-  expectEqual(data, expected_data);
-}
 
 TEST(YamlParsing, parsefromYaml) {
   DefaultConfig config;
