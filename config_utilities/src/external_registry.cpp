@@ -98,10 +98,12 @@ LibraryGuard::operator bool() const { return !libraries_.empty(); }
 ExternalRegistry::~ExternalRegistry() {
   std::vector<std::string> libraries;
   for (const auto& [path, lib] : libraries_) {
+    // NOTE(nathan) technically unreachable (library guards call unload first)
     libraries.push_back(path);
   }
 
   for (const auto& path : libraries) {
+    // NOTE(nathan) technically unreachable (library guards call unload first)
     unload(path);
   }
 }

@@ -35,6 +35,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <functional>
 #include <memory>
 #include <sstream>
@@ -82,7 +83,7 @@ struct CompareMessageTrait {
 template <typename T, typename Compare>
 class BinaryCheck : public CheckBase {
  public:
-  BinaryCheck(const T& param, const T& value, const std::string name = "")
+  BinaryCheck(const T& param, const T& value, const std::string& name = "")
       : param_(param), value_(value), name_(name) {}
 
   bool valid() const override { return Compare{}(param_, value_); }
@@ -186,12 +187,8 @@ class CheckIsOneOf : public CheckBase {
       : param_(param), candidates_(candidates), name_(name) {}
 
   bool valid() const override {
-    for (const T& cadidate : candidates_) {
-      if (param_ == cadidate) {
-        return true;
-      }
-    }
-    return false;
+    // check that param matches any candidate
+    return std::any_of(candidates_.begin(), candidates_.end(), [this](const auto& c) { return c == param_; });
   }
 
   std::string message() const override {

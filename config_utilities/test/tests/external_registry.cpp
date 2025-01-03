@@ -38,6 +38,7 @@
 #include <gtest/gtest.h>
 
 #include "config_utilities/logging/log_to_stdout.h"
+#include "config_utilities/settings.h"
 #include "config_utilities/test/external_types.h"
 #include "config_utilities/test/utils.h"
 
@@ -48,6 +49,27 @@ struct LoggerGuard {
   ~LoggerGuard() { internal::Logger::setLogger(std::make_shared<internal::StdoutLogger>()); }
   std::shared_ptr<TestLogger> logger;
 };
+
+struct SettingsGuard {
+  SettingsGuard() {}
+  ~SettingsGuard() { Settings().restoreDefaults(); }
+};
+
+TEST(ExternalRegistry, MoveableGuard) {
+  // guard is valid with at least one library
+  internal::LibraryGuard guard("some_library_path");
+  EXPECT_TRUE(guard);
+
+  // default constructor is invalid state
+  internal::LibraryGuard other = std::move(guard);
+  EXPECT_FALSE(guard);
+  EXPECT_TRUE(other);
+
+  // move assignment should revert invalid/valid states
+  guard = std::move(other);
+  EXPECT_FALSE(other);
+  EXPECT_TRUE(guard);
+}
 
 TEST(ExternalRegistry, InstanceLifetimes) {
   auto plugin_lib = loadExternalFactories("./test_config_utilities_plugins");
@@ -89,13 +111,25 @@ TEST(ExternalRegistry, InvalidFile) {
   EXPECT_EQ(logger_guard.logger->lastMessage().find("Unable to load library"), 0);
 }
 
+TEST(ExternalRegistry, DisableLoading) {
+  config::test::SettingsGuard settings_guard;
+  config::Settings().allow_external_libraries = false;
+
+  const auto guard = config::loadExternalFactories("./test_config_utilities_plugins");
+  EXPECT_FALSE(guard);
+}
+
 }  // namespace config::test
 
 // globally namespaced to check example compilation
 TEST(ExternalRegistry, ManagedInstance) {
+  config::test::SettingsGuard settings_guard;
+  config::Settings().print_external_allocations = true;
+
   config::ManagedInstance<config::test::Talker> talker;
   {  // scope where external library is loaded
-    const auto guard = config::loadExternalFactories("./test_config_utilities_plugins");
+    const std::vector<std::string> to_load{"./test_config_utilities_plugins"};
+    const auto guard = config::loadExternalFactories(to_load);
     talker = config::createManaged(config::create<config::test::Talker>("external"));
     const auto view = talker.get();
     ASSERT_TRUE(view);
@@ -106,7 +140,8 @@ TEST(ExternalRegistry, ManagedInstance) {
   EXPECT_FALSE(view);
 
   {  // scope where external library is loaded
-    const auto guard = config::loadExternalFactories("./test_config_utilities_plugins");
+    const std::vector<std::filesystem::path> to_load{"./test_config_utilities_plugins"};
+    const auto guard = config::loadExternalFactories(to_load);
     talker = config::createManaged(config::create<config::test::Talker>("internal"));
     EXPECT_TRUE(talker);
   }  // external library is unloaded after this point
