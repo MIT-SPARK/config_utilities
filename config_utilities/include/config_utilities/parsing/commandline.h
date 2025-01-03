@@ -35,10 +35,8 @@
 
 #pragma once
 
-#include <fstream>
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "config_utilities/factory.h"
 #include "config_utilities/internal/commandline_utils.h"
@@ -46,6 +44,14 @@
 #include "config_utilities/internal/yaml_utils.h"
 
 namespace config {
+
+/**
+ * @brief Initialize global config context from the command line
+ * @param argc Number of arguments.
+ * @param argv Actual command line arguments.
+ * @param remove_arguments Remove parsed command line arguments.
+ */
+void initContext(int argc, char* argv[], bool remove_arguments = true);
 
 /**
  * @brief Loads a config based on collated YAML data specified via the command line
