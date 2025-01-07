@@ -76,6 +76,7 @@ if(CONFIG_UTILS_BUILD_DEMOS)
 endif()
 
 if(CONFIG_UTILS_BUILD_TESTS)
+  include(CTest)
   enable_testing()
   add_subdirectory(test)
 endif()

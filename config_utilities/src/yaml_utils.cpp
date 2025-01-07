@@ -78,7 +78,7 @@ void mergeYamlNodes(YAML::Node& a, const YAML::Node& b, bool extend_sequences) {
     if (a[key]) {
       // Node exists. Merge recursively.
       YAML::Node a_sub = a[key];  // This node is a ref.
-      mergeYamlNodes(a_sub, node.second);
+      mergeYamlNodes(a_sub, node.second, extend_sequences);
     } else {
       // Leaf of a, but b continues: insert b
       a[key] = YAML::Clone(node.second);
