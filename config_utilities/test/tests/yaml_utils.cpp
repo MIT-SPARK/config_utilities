@@ -97,6 +97,46 @@ TEST(YamlUtils, mergeYamlNodesExtend) {
   }
 }
 
+TEST(YamlUtils, isEqual) {
+  {  // different node types are inequal
+    const auto node_a = YAML::Load(R"""(5)""");
+    const auto node_b = YAML::Load(R"""([5])""");
+    EXPECT_TRUE(internal::isEqual(node_a, YAML::Clone(node_a)));
+    EXPECT_FALSE(internal::isEqual(node_a, node_b));
+  }
+
+  {  // sequences work as expected
+    const auto node_a = YAML::Load(R"""([1, 2, 3, 4, 5])""");
+    const auto node_b = YAML::Load(R"""([1, 2, 2, 4, 5])""");
+    const auto node_c = YAML::Load(R"""([1, 2, 2, 4])""");
+    EXPECT_TRUE(internal::isEqual(node_a, YAML::Clone(node_a)));
+    EXPECT_FALSE(internal::isEqual(node_a, node_b));
+    EXPECT_FALSE(internal::isEqual(node_a, node_c));
+    EXPECT_FALSE(internal::isEqual(node_b, node_c));
+  }
+
+  {  // maps work as expected
+    const auto node_a = YAML::Load(R"""({a: 1, b: 2, c: 3})""");
+    const auto node_b = YAML::Load(R"""({a: 1, b: 1, c: 3})""");
+    const auto node_c = YAML::Load(R"""({a: 1, d: 1, c: 3})""");
+    const auto node_d = YAML::Load(R"""({a: 1, b: 2})""");
+    EXPECT_TRUE(internal::isEqual(node_a, YAML::Clone(node_a)));
+    EXPECT_FALSE(internal::isEqual(node_a, node_b));
+    EXPECT_FALSE(internal::isEqual(node_b, node_c));
+    EXPECT_FALSE(internal::isEqual(node_a, node_c));
+    EXPECT_FALSE(internal::isEqual(node_b, node_d));
+  }
+
+  {  // null nodes are equal
+    const auto node_a = YAML::Node();
+    const auto node_b = YAML::Node();
+    const auto node_c = YAML::Load(R"""({a: 1, d: 1, c: 3})""");
+    EXPECT_TRUE(internal::isEqual(node_a, node_b));
+    EXPECT_FALSE(internal::isEqual(node_a, node_c));
+    EXPECT_FALSE(internal::isEqual(node_b, node_c));
+  }
+}
+
 TEST(YamlUtils, lookupNamespace) {
   YAML::Node data = createData();
 

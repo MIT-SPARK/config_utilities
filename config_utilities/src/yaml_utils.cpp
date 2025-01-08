@@ -111,6 +111,7 @@ bool isEqual(const YAML::Node& a, const YAML::Node& b) {
   if (a.Type() != b.Type()) {
     return false;
   }
+
   switch (a.Type()) {
     case YAML::NodeType::Scalar:
       return a.Scalar() == b.Scalar();
@@ -139,10 +140,10 @@ bool isEqual(const YAML::Node& a, const YAML::Node& b) {
       }
       return true;
     case YAML::NodeType::Null:
-      return true;
     case YAML::NodeType::Undefined:
       return true;
   }
+
   return false;
 }
 

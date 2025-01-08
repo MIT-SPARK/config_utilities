@@ -120,6 +120,26 @@ sub_ns:
   EXPECT_EQ(errors[4]->message(), "Name 'D' is out of bounds for enum with names ['A', 'B', 'C']");
 }
 
+TEST(YamlParsing, overflowConversionFailure) {
+  const auto node = YAML::Load(R"yaml({under: -1, over: 256})yaml");
+
+  {  // values below [0, 255] cause errors
+    uint8_t value = 0;
+    std::string error;
+    EXPECT_FALSE(internal::YamlParser::fromYaml(node, "under", value, "", error));
+    EXPECT_EQ(value, 0u);
+    EXPECT_EQ(error, "Value '-1' overflows storage min of '0'.");
+  }
+
+  {  // values above [0, 255] cause errors
+    uint8_t value = 0;
+    std::string error;
+    EXPECT_FALSE(internal::YamlParser::fromYaml(node, "over", value, "", error));
+    EXPECT_EQ(value, 0u);
+    EXPECT_EQ(error, "Value '256' overflows storage max of '255'.");
+  }
+}
+
 TEST(YamlParsing, setValues) {
   YAML::Node data = DefaultConfig::modifiedValues();
   DefaultConfig config;
