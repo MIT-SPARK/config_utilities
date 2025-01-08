@@ -128,7 +128,7 @@ TEST(YamlParsing, overflowConversionFailure) {
     std::string error;
     EXPECT_FALSE(internal::YamlParser::fromYaml(node, "under", value, "", error));
     EXPECT_EQ(value, 0u);
-    EXPECT_EQ(error, "Value '-1' overflows storage min of '0'.");
+    EXPECT_EQ(error, "Value '-1' underflows storage min of '0'.");
   }
 
   {  // values above [0, 255] cause errors

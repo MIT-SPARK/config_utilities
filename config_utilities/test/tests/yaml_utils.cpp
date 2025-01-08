@@ -81,18 +81,53 @@ TEST(YamlUtils, mergeYamlNodesInvalidKey) {
 }
 
 TEST(YamlUtils, mergeYamlNodesExtend) {
-  const auto node_a = YAML::Load(R"""(root: {a: 1, b: [2]})""");
-  const auto node_b = YAML::Load(R"""(root: {a: 1, b: [4], c: 3})""");
+  // NOTE(nathan) structured to require appending at different levels of recursion
+  const auto node_a = YAML::Load(R"""(
+root:
+  a: 1
+  b: [2]
+  c:
+    foo: [1, 2, 3]
+    bar: [{1: 2, 3: 4}, {5, 6}]
+other: [1, 2]
+)""");
+  const auto node_b = YAML::Load(R"""(
+root:
+  a: 1
+  b: [4]
+  c:
+    bar: [7]
+  d: 3.0
+other: [3, 4, 5]
+)""");
 
   {  // without extend, lists should override
     auto result = doMerge(node_a, node_b);
-    const auto expected = YAML::Load(R"""(root: {a: 1, b: [4], c: 3})""");
+    const auto expected = YAML::Load(R"""(
+root:
+  a: 1
+  b: [4]
+  c:
+    foo: [1, 2, 3]
+    bar: [7]
+  d: 3.0
+other: [3, 4, 5]
+)""");
     expectEqual(result, expected);
   }
 
   {  // with extend, lists should append
     auto result = doMerge(node_a, node_b, true);
-    const auto expected = YAML::Load(R"""(root: {a: 1, b: [2, 4], c: 3})""");
+    const auto expected = YAML::Load(R"""(
+root:
+  a: 1
+  b: [2, 4]
+  c:
+    foo: [1, 2, 3]
+    bar: [{1: 2, 3: 4}, {5, 6}, 7]
+  d: 3.0
+other: [1, 2, 3, 4, 5]
+)""");
     expectEqual(result, expected);
   }
 }
