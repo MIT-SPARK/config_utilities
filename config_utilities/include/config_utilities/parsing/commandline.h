@@ -50,7 +50,7 @@ namespace internal {
  * @param argc Number of command line arguments
  * @param argv Command line argument strings
  */
-YAML::Node loadFromArguments(int argc, char* argv[], bool remove_args);
+YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args);
 
 }  // namespace internal
 
@@ -60,7 +60,7 @@ YAML::Node loadFromArguments(int argc, char* argv[], bool remove_args);
  * @param argv Actual command line arguments.
  * @param remove_arguments Remove parsed command line arguments.
  */
-void initContext(int argc, char* argv[], bool remove_arguments = true);
+void initContext(int& argc, char* argv[], bool remove_arguments = true);
 
 /**
  * @brief Loads a config based on collated YAML data specified via the command line

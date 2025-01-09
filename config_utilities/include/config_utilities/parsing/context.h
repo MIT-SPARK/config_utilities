@@ -37,39 +37,40 @@
 
 #include <string>
 
-#include <yaml-cpp/yaml.h>
+#include "config_utilities/internal/context.h"
 
-#include "config_utilities/factory.h"
-#include "config_utilities/internal/visitor.h"
-
-namespace config::internal {
+namespace config {
 
 /**
- * @brief Context is a singleton that holds the raw parsed information used to generate configs
+ * @brief Loads a config from the global context
+ *
+ * @tparam ConfigT The config type. This can also be a VirtualConfig<BaseT> or a std::vector<ConfigT>.
+ * @param name_space Optionally specify a name space to create the config from. Separate names with slashes '/'.
+ * Example: "my_config/my_sub_config".
+ * @returns The config.
  */
-class Context {
- public:
-  ~Context() = default;
+template <typename ConfigT>
+ConfigT fromContext(const std::string& name_space = "") {
+  return internal::Context::loadConfig<ConfigT>(name_space);
+}
 
-  static void update(const YAML::Node& other, const std::string& ns);
+/**
+ * @brief Create a derived type object based on a the data stored in a yaml node. All derived types need to be
+ * registered to the factory using a static config::Registration<BaseT, DerivedT, ConstructorArguments...> struct. They
+ * need to implement a config as a public member struct named 'Config' and use the config as the first constructor
+ * argument.
+ *
+ * @tparam BaseT Type of the base class to be constructed.
+ * @tparam Args Other constructor arguments. Note that each unique set of constructor arguments will result in a
+ * different base-entry in the factory.
+ * @param args Other constructor arguments.
+ * @returns Unique pointer of type base that contains the derived object.
+ */
+template <typename BaseT, typename... ConstructorArguments>
+std::unique_ptr<BaseT> createFromContext(ConstructorArguments... args) {
+  return internal::Context::create<BaseT, ConstructorArguments...>(args...);
+}
 
-  template <typename BaseT, typename... ConstructorArguments>
-  static std::unique_ptr<BaseT> create(ConstructorArguments... args) {
-    return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(instance().contents_, args...);
-  }
+// TODO(nathan) pull other options from ROS file
 
-  template <typename ConfigT>
-  static ConfigT loadConfig(const std::string& name_space = "") {
-    ConfigT config;
-    internal::Visitor::setValues(config, internal::lookupNamespace(instance().contents_, name_space), true);
-    return config;
-  }
-
- private:
-  Context() = default;
-  static Context& instance();
-
-  YAML::Node contents_;
-};
-
-}  // namespace config::internal
+}  // namespace config

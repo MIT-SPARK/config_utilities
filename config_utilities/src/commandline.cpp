@@ -35,9 +35,8 @@
 
 #include "config_utilities/parsing/commandline.h"
 
+#include <filesystem>
 #include <iostream>
-
-#include <boost/program_options.hpp>
 
 #include "config_utilities/internal/context.h"
 #include "config_utilities/internal/yaml_utils.h"
@@ -45,55 +44,183 @@
 namespace config {
 namespace internal {
 
-namespace po = boost::program_options;
+namespace fs = std::filesystem;
 
-YAML::Node loadFromArguments(int argc, char* argv[], bool remove_args) {
+struct CliParser {
+  static constexpr auto FILE_OPT = "--config-utilities-file";
+  static constexpr auto YAML_OPT = "--config-utilities-yaml";
+
+  CliParser() = default;
+  CliParser& parse(int& argc, char* argv[], bool remove_args);
+
+  std::vector<fs::path> files;
+  std::vector<std::string> yaml_entries;
+};
+
+struct Span {
+  int pos = 0;
+  int num_tokens = 1;
+  std::string extractTokens(int argc, char* argv[]) const;
+};
+
+std::string Span::extractTokens(int argc, char* argv[]) const {
+  if (pos < 0) {
+    return "";
+  }
+
+  std::stringstream ss;
+  const auto total = std::min(argc, pos + num_tokens + 1);
+  for (int i = pos + 1; i < total; ++i) {
+    ss << argv[i];
+    if (i < total - 1) {
+      ss << " ";
+    }
+  }
+
+  return ss.str();
+}
+
+std::ostream& operator<<(std::ostream& out, const Span& span) {
+  out << "[" << span.pos << ", " << span.pos + span.num_tokens << "]";
+  return out;
+}
+
+std::optional<Span> getSpan(int argc, char* argv[], int pos, bool parse_all, std::string& error) {
+  int index = pos + 1;
+  while (index < argc) {
+    const std::string curr_opt = argv[index];
+    const bool is_flag = !curr_opt.empty() && curr_opt[0] == '-';
+    if (is_flag && index == pos + 1) {
+      error = parse_all ? "at least one value required!" : "missing required value!";
+      return std::nullopt;
+    }
+
+    if (!parse_all) {
+      return Span{pos, 1};
+    }
+
+    if (is_flag) {
+      break;  // stop parsing the span
+    }
+
+    ++index;
+  }
+
+  // return multi-token span
+  return Span{pos, index - pos - 1};
+}
+
+void removeSpan(int& argc, char* argv[], const Span& span) {
+  for (int token = span.num_tokens; token >= 0; --token) {
+    for (int i = span.pos + token; i < argc - (span.num_tokens - token); ++i) {
+      // bubble-sort esque shuffle to move args to end
+      std::swap(argv[i], argv[i + 1]);
+    }
+  }
+
+  argc -= span.num_tokens + 1;
+}
+
+void removeSpans(int& argc, char* argv[], const std::map<std::string, std::vector<Span>>& arg_spans) {
+  std::vector<Span> spans;
+  for (const auto& [key, key_spans] : arg_spans) {
+    for (const auto& span : key_spans) {
+      spans.push_back(span);
+    }
+  }
+
+  std::sort(spans.begin(), spans.end(), [](const auto& lhs, const auto& rhs) { return lhs.pos > rhs.pos; });
+  for (const auto& span : spans) {
+    removeSpan(argc, argv, span);
+  }
+}
+
+CliParser& CliParser::parse(int& argc, char* argv[], bool remove_args) {
+  std::map<std::string, std::vector<Span>> spans;
+
+  int i = 0;
+  while (i < argc) {
+    const std::string curr_opt(argv[i]);
+    std::string error;
+    std::optional<Span> curr_span;
+    if (curr_opt == FILE_OPT || curr_opt == YAML_OPT) {
+      curr_span = getSpan(argc, argv, i, curr_opt == YAML_OPT, error);
+    }
+
+    if (curr_span) {
+      auto iter = spans.find(curr_opt);
+      if (iter == spans.end()) {
+        iter = spans.emplace(curr_opt, std::vector<Span>()).first;
+      }
+
+      iter->second.emplace_back(*curr_span);
+      i += curr_span->num_tokens;
+      continue;
+    }
+
+    if (!error.empty()) {
+      std::cerr << "Parse issue for '" << curr_opt << "': " << error << std::endl;
+    }
+
+    ++i;
+  }
+
+  for (const auto& [key, key_spans] : spans) {
+    for (const auto& span : key_spans) {
+      if (key == FILE_OPT) {
+        files.push_back(span.extractTokens(argc, argv));
+      } else {
+        yaml_entries.push_back(span.extractTokens(argc, argv));
+      }
+    }
+  }
+
+  if (remove_args) {
+    removeSpans(argc, argv, spans);
+  }
+
+  return *this;
+}
+
+YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args) {
   YAML::Node node;
 
-  po::options_description desc("config_utilities options");
-  // clang-format off
-  desc.add_options()
-    ("config-utilities-file", po::value<std::vector<std::string>>(), "file(s) to load")
-    ("config-utilities-yaml", po::value<std::vector<std::string>>()->multitoken(), "yaml to load");
-  // clang-format on
+  const auto parser = CliParser().parse(argc, argv, remove_args);
 
-  po::variables_map vm;
-  po::store(po::command_line_parser(argc, argv).options(desc).allow_unregistered().run(), vm);
-  po::notify(vm);
-
-  if (vm.count("config-utilities-file")) {
-    const auto files = vm["config-utilities-file"].as<std::vector<std::string>>();
-    for (const auto& file : files) {
-      YAML::Node file_node;
-      try {
-        file_node = YAML::LoadFile(file);
-      } catch (const std::exception& e) {
-        std::cerr << "Failure for '" << file << "': " << e.what() << std::endl;
-      }
-      internal::mergeYamlNodes(node, file_node, true);
+  for (const auto& file : parser.files) {
+    if (!fs::exists(file)) {
+      // TODO(nathan) log instead of manual print
+      std::cerr << "File " << file << " does not exist!" << std::endl;
     }
+
+    YAML::Node file_node;
+    try {
+      file_node = YAML::LoadFile(file);
+    } catch (const std::exception& e) {
+      std::cerr << "Failure for " << file << ": " << e.what() << std::endl;
+    }
+
+    internal::mergeYamlNodes(node, file_node, true);
   }
 
-  if (vm.count("config-utilities-yaml")) {
-    const auto entries = vm["config-utilities-yaml"].as<std::vector<std::string>>();
-    for (const auto& entry : entries) {
-      YAML::Node cli_node;
-      try {
-        cli_node = YAML::Load(entry);
-      } catch (const std::exception& e) {
-        std::cerr << "Failure for '" << entry << "': " << e.what() << std::endl;
-      }
-
-      internal::mergeYamlNodes(node, cli_node, true);
+  for (const auto& entry : parser.yaml_entries) {
+    YAML::Node cli_node;
+    try {
+      cli_node = YAML::Load(entry);
+    } catch (const std::exception& e) {
+      std::cerr << "Failure for '" << entry << "': " << e.what() << std::endl;
     }
+
+    internal::mergeYamlNodes(node, cli_node, true);
   }
 
+  std::cerr << "Loaded YAML:\n" << node << std::endl;;
   return node;
 }
 
 }  // namespace internal
 
-void initContext(int argc, char* argv[], bool remove_arguments) {
+void initContext(int& argc, char* argv[], bool remove_arguments) {
   const auto node = internal::loadFromArguments(argc, argv, remove_arguments);
   internal::Context::update(node, "");
 }
