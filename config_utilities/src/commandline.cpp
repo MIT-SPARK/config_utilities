@@ -53,7 +53,7 @@ struct CliParser {
   CliParser() = default;
   CliParser& parse(int& argc, char* argv[], bool remove_args);
 
-  std::vector<fs::path> files;
+  std::vector<std::string> files;
   std::vector<std::string> yaml_entries;
 };
 
@@ -188,10 +188,20 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args) {
 
   const auto parser = CliParser().parse(argc, argv, remove_args);
 
-  for (const auto& file : parser.files) {
+  for (const auto& entry : parser.files) {
+    auto filepath = entry;
+    std::string ns;
+    const auto index = filepath.find("@");
+    if (index != std::string::npos) {
+      ns = filepath.substr(index + 1);
+      filepath = filepath.substr(0, index);
+    }
+
+    std::filesystem::path file(filepath);
     if (!fs::exists(file)) {
       // TODO(nathan) log instead of manual print
       std::cerr << "File " << file << " does not exist!" << std::endl;
+      continue;
     }
 
     YAML::Node file_node;
@@ -200,6 +210,11 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args) {
     } catch (const std::exception& e) {
       // TODO(nathan) log instead of manual print
       std::cerr << "Failure for " << file << ": " << e.what() << std::endl;
+      continue;
+    }
+
+    if (!ns.empty()) {
+      internal::moveDownNamespace(file_node, ns);
     }
 
     internal::mergeYamlNodes(node, file_node, true);
