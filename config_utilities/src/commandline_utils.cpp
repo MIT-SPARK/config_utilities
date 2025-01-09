@@ -35,10 +35,57 @@
 
 #include "config_utilities/internal/commandline_utils.h"
 
+#include <iostream>
+
+#include <boost/program_options.hpp>
+
+#include "config_utilities/internal/yaml_utils.h"
+
 namespace config::internal {
+
+namespace po = boost::program_options;
 
 YAML::Node loadFromArguments(int argc, char* argv[], bool remove_args) {
   YAML::Node node;
+
+  po::options_description desc("config_utilities options");
+  // clang-format off
+  desc.add_options()
+    ("config-utilities-file", po::value<std::vector<std::string>>(), "file(s) to load")
+    ("config-utilities-yaml", po::value<std::vector<std::string>>(), "yaml to load");
+  // clang-format on
+
+  po::variables_map vm;
+  po::store(po::command_line_parser(argc, argv).options(desc).allow_unregistered().run(), vm);
+  po::notify(vm);
+
+  if (vm.count("config-utilities-file")) {
+    const auto files = vm["config-utilities-file"].as<std::vector<std::string>>();
+    for (const auto& file : files) {
+      YAML::Node file_node;
+      try {
+        file_node = YAML::LoadFile(file);
+      } catch (const std::exception& e) {
+        std::cerr << "Failure for '" << file << "': " << e.what() << std::endl;
+      }
+      internal::mergeYamlNodes(node, file_node, true);
+    }
+  }
+
+  if (vm.count("config-utilities-yaml")) {
+    const auto entries = vm["config-utilities-yaml"].as<std::vector<std::string>>();
+    for (const auto& entry : entries) {
+      YAML::Node cli_node;
+      try {
+        cli_node = YAML::Load(entry);
+      } catch (const std::exception& e) {
+        std::cerr << "Failure for '" << entry << "': " << e.what() << std::endl;
+      }
+
+      internal::mergeYamlNodes(node, cli_node, true);
+    }
+  }
+
   return node;
 }
 
