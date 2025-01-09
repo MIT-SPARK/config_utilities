@@ -159,6 +159,7 @@ CliParser& CliParser::parse(int& argc, char* argv[], bool remove_args) {
     }
 
     if (!error.empty()) {
+      // TODO(nathan) log instead of manual print
       std::cerr << "Parse issue for '" << curr_opt << "': " << error << std::endl;
     }
 
@@ -197,6 +198,7 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args) {
     try {
       file_node = YAML::LoadFile(file);
     } catch (const std::exception& e) {
+      // TODO(nathan) log instead of manual print
       std::cerr << "Failure for " << file << ": " << e.what() << std::endl;
     }
 
@@ -208,13 +210,13 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args) {
     try {
       cli_node = YAML::Load(entry);
     } catch (const std::exception& e) {
+      // TODO(nathan) log instead of manual print
       std::cerr << "Failure for '" << entry << "': " << e.what() << std::endl;
     }
 
     internal::mergeYamlNodes(node, cli_node, true);
   }
 
-  std::cerr << "Loaded YAML:\n" << node << std::endl;;
   return node;
 }
 
