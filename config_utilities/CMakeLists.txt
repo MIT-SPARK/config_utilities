@@ -26,7 +26,6 @@ add_library(
   ${PROJECT_NAME}
   src/asl_formatter.cpp
   src/commandline.cpp
-  src/commandline_utils.cpp
   src/context.cpp
   src/conversions.cpp
   src/external_registry.cpp

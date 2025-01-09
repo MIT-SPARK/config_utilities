@@ -39,11 +39,20 @@
 #include <string>
 
 #include "config_utilities/factory.h"
-#include "config_utilities/internal/commandline_utils.h"
 #include "config_utilities/internal/visitor.h"
 #include "config_utilities/internal/yaml_utils.h"
 
 namespace config {
+namespace internal {
+
+/**
+ * @brief Parse and collate YAML node from arguments, optionally removing arguments
+ * @param argc Number of command line arguments
+ * @param argv Command line argument strings
+ */
+YAML::Node loadFromArguments(int argc, char* argv[], bool remove_args);
+
+}  // namespace internal
 
 /**
  * @brief Initialize global config context from the command line
