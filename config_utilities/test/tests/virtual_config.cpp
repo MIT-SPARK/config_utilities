@@ -276,6 +276,19 @@ Warning: Check [1/1] failed: Virtual config is not set and not marked optional.
   EXPECT_TRUE(isValid(config));
 }
 
+TEST(VirtualConfig, defaultOptional) {
+  {
+    constexpr bool kDefaultOptional = true;
+    VirtualConfig<Base2, kDefaultOptional> config;
+    EXPECT_TRUE(isValid(config));
+  }
+  {
+    constexpr bool kDefaultOptional = false;
+    VirtualConfig<Base2, kDefaultOptional> config;
+    EXPECT_FALSE(isValid(config));
+  }
+}
+
 TEST(VirtualConfig, printing) {
   VirtualConfig<Base2> config;
   std::string msg = toString(config);
@@ -382,6 +395,67 @@ TEST(VirtualConfig, optionalByDefault) {
   const auto config = config::fromYaml<ObjectWithOptionalConfigs::Config>(node);
   const ObjectWithOptionalConfigs object(config);
   EXPECT_EQ(object.valid.size(), 1u);
+}
+
+TEST(VirtualConfig, parseOptionalMissingField) {
+  {
+    constexpr bool kDefaultOptional = true;
+    YAML::Node data;
+    auto config = fromYaml<VirtualConfig<Base2, kDefaultOptional>>(data);
+    EXPECT_TRUE(isValid(config));
+    EXPECT_TRUE(config.optional());
+  }
+  {
+    constexpr bool kDefaultOptional = false;
+    YAML::Node data;
+    auto config = fromYaml<VirtualConfig<Base2, kDefaultOptional>>(data);
+    EXPECT_FALSE(isValid(config));
+    EXPECT_FALSE(config.optional());
+  }
+}
+
+TEST(VirtualConfig, parseOptionalFieldPresent) {
+  YAML::Node data;
+  data["type"] = "Derived2";
+  data["f"] = 1.f;
+  data["s"] = "blahblah";
+
+  {
+    constexpr bool kDefaultOptional = true;
+    auto config = fromYaml<VirtualConfig<Base2, kDefaultOptional>>(data);
+    EXPECT_TRUE(isValid(config));
+    EXPECT_TRUE(config.isSet());
+    EXPECT_EQ(config.getType(), "Derived2");
+    EXPECT_TRUE(config.optional());
+
+    auto actual_config = config.getUnderlying<Derived2::Config>();
+    ASSERT_TRUE(actual_config);
+    EXPECT_FLOAT_EQ(actual_config->f, 1.f);
+    EXPECT_EQ(actual_config->s, "blahblah");
+  }
+  {
+    constexpr bool kDefaultOptional = false;
+    auto config = fromYaml<VirtualConfig<Base2, kDefaultOptional>>(data);
+    EXPECT_TRUE(isValid(config));
+    EXPECT_TRUE(config.isSet());
+    EXPECT_EQ(config.getType(), "Derived2");
+    EXPECT_FALSE(config.optional());
+
+    auto actual_config = config.getUnderlying<Derived2::Config>();
+    ASSERT_TRUE(actual_config);
+    EXPECT_FLOAT_EQ(actual_config->f, 1.f);
+    EXPECT_EQ(actual_config->s, "blahblah");
+  }
+}
+
+TEST(VirtualConfig, optionalNullCreation) {
+  YAML::Node data;
+  constexpr bool kDefaultOptional = true;
+  auto config = fromYaml<VirtualConfig<Base2, kDefaultOptional>>(data);
+  ASSERT_TRUE(isValid(config));
+
+  auto object = config.create();
+  ASSERT_EQ(object, nullptr);
 }
 
 }  // namespace config::test
