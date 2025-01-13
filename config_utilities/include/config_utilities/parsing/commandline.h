@@ -116,10 +116,10 @@ std::unique_ptr<BaseT> createFromCLI(int argc, char* argv[], ConstructorArgument
  * @returns Unique pointer of type base that contains the derived object.
  */
 template <typename BaseT, typename... ConstructorArguments>
-std::unique_ptr<BaseT> createFromYamlWithNamespace(int argc,
-                                                   char* argv[],
-                                                   const std::string& name_space,
-                                                   ConstructorArguments... args) {
+std::unique_ptr<BaseT> createFromCLIWithNamespace(int argc,
+                                                  char* argv[],
+                                                  const std::string& name_space,
+                                                  ConstructorArguments... args) {
   // when parsing CLI locally we don't want to modify the arguments ever
   const auto node = internal::loadFromArguments(argc, argv, false);
   const auto ns_node = internal::lookupNamespace(node, name_space);
