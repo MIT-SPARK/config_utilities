@@ -100,9 +100,10 @@ It is also possible to use the same interfaces as in the yaml or ROS case but vi
 > **✅ Supports**<br>
 > Note that the `--config-utilities-file` flag allows for a namespace (i.e., `some/custom/ns`) to apply to the file globally. This is specified as `--config-utilities-file SOME_FILE@some/custom/ns`.
 
-When aggregating the YAML from the command line, the various inputs are merged left to right (where conflicting keys from the last specified flag take precedence) and any sequences are appended together.
+Both command line flags can be specified as many times as needed.
+When aggregating the YAML from the command line, the various flags are merged left to right (where conflicting keys from the last specified flag take precedence) and any sequences are appended together.
 For those familiar with how the ROS parameter server works, this is the same behavior.
-Please also note that the `--config-utilities-yaml` currently accepts multiple space-delimited tokens (because the ROS2 launch file infrastructure doesn't support escaping), so
+Please also note that the `--config-utilities-yaml` currently accepts multiple space-delimited tokens (because the ROS2 launch file infrastructure does not currently correctly handle escaped substitutions), so
 ```
 some_command --config-utilities-yaml '{my: {cool: config}}' --config-utilities-file some_file.yaml
 ```
