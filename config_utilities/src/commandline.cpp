@@ -38,11 +38,9 @@
 #include <filesystem>
 #include <iostream>
 
-#include "config_utilities/internal/context.h"
 #include "config_utilities/internal/yaml_utils.h"
 
-namespace config {
-namespace internal {
+namespace config::internal {
 
 namespace fs = std::filesystem;
 
@@ -226,11 +224,4 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args) {
   return node;
 }
 
-}  // namespace internal
-
-void initContext(int& argc, char* argv[], bool remove_arguments) {
-  const auto node = internal::loadFromArguments(argc, argv, remove_arguments);
-  internal::Context::update(node, "");
-}
-
-}  // namespace config
+}  // namespace config::internal

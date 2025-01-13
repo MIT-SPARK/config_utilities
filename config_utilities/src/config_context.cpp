@@ -33,43 +33,27 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
-#pragma once
+#include "config_utilities/internal/config_context.h"
 
-#include <string>
-
-#include <yaml-cpp/yaml.h>
-
-#include "config_utilities/factory.h"
-#include "config_utilities/internal/visitor.h"
+#include "config_utilities/internal/yaml_utils.h"
 
 namespace config::internal {
 
-/**
- * @brief Context is a singleton that holds the raw parsed information used to generate configs
- */
-class Context {
- public:
-  ~Context() = default;
+Context& Context::instance() {
+  static Context s_instance;
+  return s_instance;
+}
 
-  static void update(const YAML::Node& other, const std::string& ns);
+void Context::update(const YAML::Node& other, const std::string& ns) {
+  auto& context = instance();
+  auto node = YAML::Clone(other);
+  moveDownNamespace(node, ns);
+  // default behavior of context is to act like the ROS1 param server and extend sequences
+  mergeYamlNodes(context.contents_, node, true);
+}
 
-  template <typename BaseT, typename... ConstructorArguments>
-  static std::unique_ptr<BaseT> create(ConstructorArguments... args) {
-    return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(instance().contents_, args...);
-  }
+void Context::clear() { instance().contents_ = YAML::Node(); }
 
-  template <typename ConfigT>
-  static ConfigT loadConfig(const std::string& name_space = "") {
-    ConfigT config;
-    internal::Visitor::setValues(config, internal::lookupNamespace(instance().contents_, name_space), true);
-    return config;
-  }
-
- private:
-  Context() = default;
-  static Context& instance();
-
-  YAML::Node contents_;
-};
+YAML::Node Context::toYaml() { return YAML::Clone(instance().contents_); }
 
 }  // namespace config::internal

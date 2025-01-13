@@ -26,7 +26,8 @@ add_library(
   ${PROJECT_NAME}
   src/asl_formatter.cpp
   src/commandline.cpp
-  src/context.cpp
+  src/config_context.cpp # global singleton
+  src/context.cpp # parsing
   src/conversions.cpp
   src/external_registry.cpp
   src/factory.cpp

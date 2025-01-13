@@ -55,14 +55,6 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args);
 }  // namespace internal
 
 /**
- * @brief Initialize global config context from the command line
- * @param argc Number of arguments.
- * @param argv Actual command line arguments.
- * @param remove_arguments Remove parsed command line arguments.
- */
-void initContext(int& argc, char* argv[], bool remove_arguments = true);
-
-/**
  * @brief Loads a config based on collated YAML data specified via the command line
  *
  * See fromYaml() for more specific behavioral information.

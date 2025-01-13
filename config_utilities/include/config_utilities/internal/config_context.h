@@ -33,22 +33,53 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
-#include "config_utilities/parsing/context.h"
+#pragma once
 
-#include "config_utilities/internal/config_context.h"
-#include "config_utilities/parsing/commandline.h"
+#include <string>
 
-namespace config {
+#include <yaml-cpp/yaml.h>
 
-void initContext(int& argc, char* argv[], bool remove_arguments) {
-  const auto node = internal::loadFromArguments(argc, argv, remove_arguments);
-  internal::Context::update(node, "");
-}
+#include "config_utilities/factory.h"
+#include "config_utilities/internal/visitor.h"
 
-void pushToContext(const YAML::Node& node, const std::string& ns) { internal::Context::update(node, ns); }
+namespace config::internal {
 
-void clearContext() { internal::Context::clear(); }
+/**
+ * @brief Context is a singleton that holds the raw parsed information used to generate configs
+ */
+class Context {
+ public:
+  ~Context() = default;
 
-YAML::Node contextToYaml() { return internal::Context::toYaml(); }
+  static void update(const YAML::Node& other, const std::string& ns);
 
-}  // namespace config
+  static void clear();
+
+  static YAML::Node toYaml();
+
+  template <typename BaseT, typename... ConstructorArguments>
+  static std::unique_ptr<BaseT> create(ConstructorArguments... args) {
+    return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(instance().contents_, args...);
+  }
+
+  template <typename BaseT, typename... ConstructorArguments>
+  static std::unique_ptr<BaseT> createNamespaced(const std::string& name_space, ConstructorArguments... args) {
+    const auto ns_node = internal::lookupNamespace(instance().contents_, name_space);
+    return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(ns_node, args...);
+  }
+
+  template <typename ConfigT>
+  static ConfigT loadConfig(const std::string& name_space = "") {
+    ConfigT config;
+    internal::Visitor::setValues(config, internal::lookupNamespace(instance().contents_, name_space), true);
+    return config;
+  }
+
+ private:
+  Context() = default;
+  static Context& instance();
+
+  YAML::Node contents_;
+};
+
+}  // namespace config::internal

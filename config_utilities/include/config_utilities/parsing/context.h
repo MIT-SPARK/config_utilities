@@ -37,9 +37,34 @@
 
 #include <string>
 
-#include "config_utilities/internal/context.h"
+#include "config_utilities/internal/config_context.h"
 
 namespace config {
+
+/**
+ * @brief Initialize global config context from the command line
+ * @param argc Number of arguments.
+ * @param argv Actual command line arguments.
+ * @param remove_arguments Remove parsed command line arguments.
+ */
+void initContext(int& argc, char* argv[], bool remove_arguments = true);
+
+/**
+ * @brief Aggregate YAML node into global context
+ * @param node YAML to add to context
+ * @param ns Optional namespace
+ */
+void pushToContext(const YAML::Node& node, const std::string& ns = "");
+
+/**
+ * @brief Delete parsed context
+ */
+void clearContext();
+
+/**
+ * @brief Dump current context for exporting or saving
+ */
+YAML::Node contextToYaml();
 
 /**
  * @brief Loads a config from the global context
@@ -55,10 +80,7 @@ ConfigT fromContext(const std::string& name_space = "") {
 }
 
 /**
- * @brief Create a derived type object based on a the data stored in a yaml node. All derived types need to be
- * registered to the factory using a static config::Registration<BaseT, DerivedT, ConstructorArguments...> struct. They
- * need to implement a config as a public member struct named 'Config' and use the config as the first constructor
- * argument.
+ * @brief Create a derived type object based on currently stored YAML in config::internal::Context.
  *
  * @tparam BaseT Type of the base class to be constructed.
  * @tparam Args Other constructor arguments. Note that each unique set of constructor arguments will result in a
@@ -71,6 +93,20 @@ std::unique_ptr<BaseT> createFromContext(ConstructorArguments... args) {
   return internal::Context::create<BaseT, ConstructorArguments...>(args...);
 }
 
-// TODO(nathan) pull other options from ROS file
+/**
+ * @brief Create a derived type object based on currently stored YAML in config::internal::Context.
+ *
+ * See createFromYamlWithNamespace() for more specific behavioral information.
+ *
+ * @tparam BaseT Type of the base class to be constructed.
+ * @tparam Args Other constructor arguments.
+ * @param name_space Optionally specify a name space to create the object from.
+ * @param args Other constructor arguments.
+ * @returns Unique pointer of type base that contains the derived object.
+ */
+template <typename BaseT, typename... ConstructorArguments>
+std::unique_ptr<BaseT> createFromContextWithNamespace(const std::string& name_space, ConstructorArguments... args) {
+  return internal::Context::createNamespaced<BaseT, ConstructorArguments...>(name_space, args...);
+}
 
 }  // namespace config
