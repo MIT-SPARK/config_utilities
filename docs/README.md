@@ -14,7 +14,8 @@ The following tutorials will guide you through functionalities of `config_utilit
 3. [**Parsing configs from data sources**](Parsing.md)
     - [Parse from yaml](Parsing.md#parse-from-yaml)
     - [Parse from ROS](Parsing.md#parse-from-ros)
-    - [Parse from command line](Parsing.md#parse-from-command-line)
+    - [Parse from the command line](Parsing.md#parse-from-the-command-line)
+    - [Parse via global context](Parsing.md#parse-via-global-context)
 
 4. [**Handling complex configs or types**](Types.md)
     - [Sub-configs](Types.md#sub-configs)

@@ -5,6 +5,7 @@ This tutorial explains how to create configs and other objects from source data.
 - [Parse from yaml](#parse-from-yaml)
 - [Parse from ROS](#parse-from-ros)
 - [Parse from the command line](#parse-from-the-command-line)
+- [Parse via global context](#parse-via-global-context)
 
 ## Parse from yaml
 
@@ -127,7 +128,7 @@ int main(int argc, char** argv) {
 }
 ```
 
-# Parsing via global context
+# Parse via global context
 
 Usually the command line arguments or parsed YAML are not globally available to every part of an executable.
 Similar to the ROS1 parameter server (and access to the parameter server by `ros::NodeHandle`), we provide a global `config::internal::Context` object (included via `parsing/context.h`) that handles tracking parsed YAML.
