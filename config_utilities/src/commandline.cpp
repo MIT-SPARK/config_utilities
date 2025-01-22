@@ -36,8 +36,9 @@
 #include "config_utilities/parsing/commandline.h"
 
 #include <filesystem>
-#include <iostream>
+#include <sstream>
 
+#include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/yaml_utils.h"
 
 namespace config::internal {
@@ -139,8 +140,9 @@ CliParser& CliParser::parse(int& argc, char* argv[], bool remove_args) {
     }
 
     if (!error.empty()) {
-      // TODO(nathan) log instead of manual print
-      std::cerr << "Parse issue for '" << curr_opt << "': " << error << std::endl;
+      std::stringstream ss;
+      ss << "Parse issue for '" << curr_opt << "': " << error;
+      Logger::logError(ss.str());
     }
 
     ++i;
@@ -173,16 +175,18 @@ YAML::Node nodeFromFileEntry(const CliParser::Entry& entry) {
   YAML::Node node;
   std::filesystem::path file(filepath);
   if (!fs::exists(file)) {
-    // TODO(nathan) log instead of manual print
-    std::cerr << "File " << file << " does not exist!" << std::endl;
+    std::stringstream ss;
+    ss << "File " << file << " does not exist!";
+    Logger::logError(ss.str());
     return node;
   }
 
   try {
     node = YAML::LoadFile(file);
   } catch (const std::exception& e) {
-    // TODO(nathan) log instead of manual print
-    std::cerr << "Failure for " << file << ": " << e.what() << std::endl;
+    std::stringstream ss;
+    ss << "Failure for " << file << ": " << e.what();
+    Logger::logError(ss.str());
     return node;
   }
 
@@ -198,8 +202,9 @@ YAML::Node nodeFromLiteralEntry(const CliParser::Entry& entry) {
   try {
     node = YAML::Load(entry.value);
   } catch (const std::exception& e) {
-    // TODO(nathan) log instead of manual print
-    std::cerr << "Failure for '" << entry.value << "': " << e.what() << std::endl;
+    std::stringstream ss;
+    ss << "Failure for '" << entry.value << "': " << e.what();
+    Logger::logError(ss.str());
   }
 
   return node;

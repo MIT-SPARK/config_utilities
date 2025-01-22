@@ -35,6 +35,9 @@
 
 #include "config_utilities/internal/yaml_utils.h"
 
+#include <sstream>
+
+#include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/string_utils.h"
 
 namespace config::internal {
@@ -70,7 +73,9 @@ void mergeYamlNodes(YAML::Node& a, const YAML::Node& b, bool extend_sequences) {
   // Both a and b are maps: merge all entries of b into a.
   for (const auto& node : b) {
     if (!node.first.IsScalar()) {
-      // TODO(nathan) warn about not handling complex keys
+      std::stringstream ss;
+      ss << "Complex keys not supported, dropping '" << node.first << "' during merge";
+      Logger::logWarning(ss.str());
       continue;
     }
 
