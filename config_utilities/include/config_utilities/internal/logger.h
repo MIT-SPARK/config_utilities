@@ -42,8 +42,8 @@
 
 namespace config::internal {
 
-// Enum for different severity levels of logging.
-enum class Severity { kInfo, kWarning, kError, kFatal };
+// Enum for different severity levels of logging. Enum values are used for comparing logging levels.
+enum class Severity { kInfo = 0, kWarning = 1, kError = 2, kFatal = 3 };
 
 std::string severityToString(const Severity severity);
 
