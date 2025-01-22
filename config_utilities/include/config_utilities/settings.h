@@ -91,6 +91,9 @@ struct Settings {
   //! @brief Log any factory creation from an external library (for debugging purposes)
   bool print_external_allocations = false;
 
+  //! @brief Control whether config_utilities is initialized to log to stdout/stderr by default
+  bool disable_default_stdout_logger = false;
+
   /* Options to specify the logger and formatter at run time. */
   // Specify the default logger to be used for printing. Loggers register themselves if included.
   void setLogger(const std::string& name);

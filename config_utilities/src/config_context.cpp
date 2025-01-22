@@ -33,52 +33,27 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
-#pragma once
+#include "config_utilities/internal/config_context.h"
 
-#include <string>
-#include <vector>
-
-#include <yaml-cpp/yaml.h>
+#include "config_utilities/internal/yaml_utils.h"
 
 namespace config::internal {
 
-/**
- * @brief Merges node b into a, overwriting values previously defined in a if they can not be
- * merged. Modifies node a, whereas b is const. Sequences can optionally be appended together at the same level of the
- * YAML tree.
- */
-void mergeYamlNodes(YAML::Node& a, const YAML::Node& b, bool extend_sequences = false);
+Context& Context::instance() {
+  static Context s_instance;
+  return s_instance;
+}
 
-/**
- * @brief Get a pointer to the final node of the specified namespace if it exists, where each map in the yaml is
- * separated by the separator.
- */
-YAML::Node lookupNamespace(const YAML::Node& node, const std::string& name_space, const std::string& separator = "/");
+void Context::update(const YAML::Node& other, const std::string& ns) {
+  auto& context = instance();
+  auto node = YAML::Clone(other);
+  moveDownNamespace(node, ns);
+  // default behavior of context is to act like the ROS1 param server and extend sequences
+  mergeYamlNodes(context.contents_, node, true);
+}
 
-/**
- * @brief Move the node down the specified namespace, where each namespace separated by the separator is represented as
- * a map key.
- */
-void moveDownNamespace(YAML::Node& node, const std::string& name_space, const std::string& separator = "/");
+void Context::clear() { instance().contents_ = YAML::Node(); }
 
-/**
- * @brief Check whether two yaml nodes are equal. Note that since since yaml-cpp operator== checks for identity and not
- * equality, scalar values will be compared by string representation.
- */
-bool isEqual(const YAML::Node& a, const YAML::Node& b);
-
-/**
- * @brief Convert a yaml node that contains a map or sequence to a list of corresponding nodes.
- * @param node The node to convert.
- * @return The list of nodes. Nodes stored in this struct are references to the original data.
- */
-std::vector<YAML::Node> getNodeArray(const YAML::Node& node);
-
-/**
- * @brief Convert a yaml node that contains a map or sequence to a list of corresponding nodes.
- * @param node The node to convert.
- * @return The list of nodes. Nodes stored in this struct are references to the original data.
- */
-std::vector<std::pair<YAML::Node, YAML::Node>> getNodeMap(const YAML::Node& node);
+YAML::Node Context::toYaml() { return YAML::Clone(instance().contents_); }
 
 }  // namespace config::internal

@@ -40,27 +40,39 @@
 
 namespace config::internal {
 
+StdoutLogger::StdoutLogger(Severity min_severity, Severity stderr_severity)
+    : min_severity_(min_severity), stderr_severity_(stderr_severity) {}
+
 void StdoutLogger::logImpl(const Severity severity, const std::string& message) {
+  if (severity < min_severity_ && severity != Severity::kFatal) {
+    return;
+  }
+
+  std::stringstream ss;
   switch (severity) {
     case Severity::kInfo:
-      std::cout << "[INFO] " << message << std::endl;
+      ss << "[INFO] " << message;
       break;
 
     case Severity::kWarning:
-      std::cout << "\033[33m[WARNING] " << message << "\033[0m" << std::endl;
+      ss << "\033[33m[WARNING] " << message << "\033[0m";
       break;
 
     case Severity::kError:
-      std::cout << "\033[31m[ERROR] " << message << "\033[0m" << std::endl;
+      ss << "\033[31m[ERROR] " << message << "\033[0m";
       break;
 
     case Severity::kFatal:
       throw std::runtime_error(message);
   }
+
+  if (severity < stderr_severity_) {
+    std::cout << ss.str() << std::endl;
+  } else {
+    std::cerr << ss.str() << std::endl;
+  }
 }
 
-StdoutLogger::Initializer::Initializer() {
-  Logger::setLogger(std::make_shared<StdoutLogger>());
-}
+StdoutLogger::Initializer::Initializer() { Logger::setLogger(std::make_shared<StdoutLogger>()); }
 
 }  // namespace config::internal

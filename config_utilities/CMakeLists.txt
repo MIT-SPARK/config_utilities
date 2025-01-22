@@ -14,7 +14,6 @@ option(CONFIG_UTILS_ENABLE_ROS "Export roscpp and build related code" ON)
 option(CONFIG_UTILS_ENABLE_EIGEN "Export Eigen and build related code" ON)
 option(CONFIG_UTILS_ENABLE_GLOG "Export glog and build related code" ON)
 option(CONFIG_UTILS_BUILD_TESTS "Build unit tests" ON)
-option(CONFIG_UTILS_INSTALL_TESTS "Install test executable" ON)
 option(CONFIG_UTILS_BUILD_DEMOS "Build demo executables" ON)
 
 find_package(yaml-cpp REQUIRED)
@@ -26,6 +25,9 @@ find_optional_pkgcfg(libglog CONFIG_UTILS_ENABLE_GLOG)
 add_library(
   ${PROJECT_NAME}
   src/asl_formatter.cpp
+  src/commandline.cpp
+  src/config_context.cpp # global singleton
+  src/context.cpp # parsing
   src/conversions.cpp
   src/external_registry.cpp
   src/factory.cpp
@@ -74,6 +76,7 @@ if(CONFIG_UTILS_BUILD_DEMOS)
 endif()
 
 if(CONFIG_UTILS_BUILD_TESTS)
+  include(CTest)
   enable_testing()
   add_subdirectory(test)
 endif()

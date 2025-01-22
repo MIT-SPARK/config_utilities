@@ -1,6 +1,7 @@
 @PACKAGE_INIT@
 
-get_filename_component(config_utilities_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+get_filename_component(config_utilities_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}"
+                       PATH)
 include(CMakeFindDependencyMacro)
 
 find_dependency(yaml-cpp REQUIRED)
@@ -11,6 +12,11 @@ endif()
 
 if(@ENABLE_roscpp@)
   find_dependency(roscpp REQUIRED)
+  set(config_utilities_FOUND_CATKIN_PROJECT TRUE)
+endif()
+
+if(@ENABLE_rclcpp@)
+  find_dependency(rclcpp REQUIRED)
 endif()
 
 if(@ENABLE_libglog@)
@@ -23,7 +29,5 @@ if(NOT TARGET config_utilities::config_utilities)
 endif()
 
 set(config_utilities_LIBRARIES config_utilities::config_utilities)
-
-set(config_utilities_FOUND_CATKIN_PROJECT TRUE)
 
 check_required_components(config_utilities)

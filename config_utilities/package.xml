@@ -13,6 +13,7 @@
   <license>BSD-3-Clause</license>
 
   <buildtool_depend>cmake</buildtool_depend>
+  <depend>yaml-cpp</depend>
 
   <export>
       <build_type>cmake</build_type>

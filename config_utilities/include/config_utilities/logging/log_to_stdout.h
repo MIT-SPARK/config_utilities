@@ -45,13 +45,21 @@ namespace config::internal {
  */
 class StdoutLogger : public Logger {
  public:
-  StdoutLogger() = default;
+  /**
+   * @brief Construct a logger to output to stdout or stderr depending on configuration
+   * @param min_severity Mininum severity to output
+   * @param stderr_severity Mininum severity to log to stderr instead of stdout
+   */
+  StdoutLogger(Severity min_severity = Severity::kWarning, Severity stderr_severity = Severity::kError);
+
   virtual ~StdoutLogger() = default;
 
  protected:
   void logImpl(const Severity severity, const std::string& message) override;
 
  private:
+  const Severity min_severity_;
+  const Severity stderr_severity_;
   // Factory registration to allow setting of formatters via Settings::setLogger().
   inline static const auto registration_ = Registration<Logger, StdoutLogger>("stdout");
 

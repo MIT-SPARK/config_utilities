@@ -35,40 +35,58 @@
 
 #include "config_utilities/internal/yaml_utils.h"
 
+#include <sstream>
+
+#include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/string_utils.h"
 
 namespace config::internal {
+namespace {
 
-void mergeYamlNodes(YAML::Node& a, const YAML::Node& b) {
-  if (!b.IsMap()) {
-    // If b is not a map, merge result is b, unless b is null.
-    if (b.IsNull() || !b.IsDefined()) {
-      return;
+inline void mergeLeaves(YAML::Node& a, const YAML::Node& b, bool extend_sequences) {
+  // If b is invalid, we can't do anything.
+  if (b.IsNull() || !b.IsDefined()) {
+    return;
+  }
+
+  // If either a or b is not a sequence, assign b to a (or if extending is disabled)
+  if (!extend_sequences || !a.IsSequence() || !b.IsSequence()) {
+    a = YAML::Clone(b);
+    return;
+  }
+
+  // both a and b are sequences: append b to a.
+  for (const auto& child : b) {
+    a.push_back(YAML::Clone(child));
+  }
+}
+
+}  // namespace
+
+void mergeYamlNodes(YAML::Node& a, const YAML::Node& b, bool extend_sequences) {
+  // If either node is a leaf in the config tree, pass merging behavior to helper function
+  if (!b.IsMap() || !a.IsMap()) {
+    mergeLeaves(a, b, extend_sequences);
+    return;
+  }
+
+  // Both a and b are maps: merge all entries of b into a.
+  for (const auto& node : b) {
+    if (!node.first.IsScalar()) {
+      std::stringstream ss;
+      ss << "Complex keys not supported, dropping '" << node.first << "' during merge";
+      Logger::logWarning(ss.str());
+      continue;
     }
-    a = YAML::Clone(b);
-    return;
-  }
-  if (!a.IsMap()) {
-    // If a is not a map, merge result is b
-    a = YAML::Clone(b);
-    return;
-  }
-  if (!b.size()) {
-    // If a is a map, and b is an empty map, return a
-    return;
-  }
 
-  // Merge all entries of b into a.
-  for (const auto kv_pair : b) {
-    if (kv_pair.first.IsScalar()) {
-      const std::string& key = kv_pair.first.Scalar();
-      if (a[key]) {
-        // Node exists. Merge recursively.
-        YAML::Node a_sub = a[key];  // This node is a ref.
-        mergeYamlNodes(a_sub, kv_pair.second);
-      } else {
-        a[key] = YAML::Clone(kv_pair.second);
-      }
+    const auto& key = node.first.Scalar();
+    if (a[key]) {
+      // Node exists. Merge recursively.
+      YAML::Node a_sub = a[key];  // This node is a ref.
+      mergeYamlNodes(a_sub, node.second, extend_sequences);
+    } else {
+      // Leaf of a, but b continues: insert b
+      a[key] = YAML::Clone(node.second);
     }
   }
 }
@@ -98,6 +116,7 @@ bool isEqual(const YAML::Node& a, const YAML::Node& b) {
   if (a.Type() != b.Type()) {
     return false;
   }
+
   switch (a.Type()) {
     case YAML::NodeType::Scalar:
       return a.Scalar() == b.Scalar();
@@ -126,10 +145,10 @@ bool isEqual(const YAML::Node& a, const YAML::Node& b) {
       }
       return true;
     case YAML::NodeType::Null:
-      return true;
     case YAML::NodeType::Undefined:
       return true;
   }
+
   return false;
 }
 
