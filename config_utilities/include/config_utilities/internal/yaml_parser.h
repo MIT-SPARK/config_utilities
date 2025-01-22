@@ -92,6 +92,29 @@ class YamlParser {
   }
 
   /**
+   * @brief Parse a single yaml node into a value.
+   * @param node The yaml node to parse the value from.
+   * @param error Optional: Where to store the error message if conversion fails.
+   */
+  template <typename T>
+  static std::optional<T> fromYaml(const YAML::Node& node, std::string* error = nullptr) {
+    T value;
+    std::string err;
+    try {
+      fromYamlImpl(value, node, err);
+    } catch (const std::exception& e) {
+      err = std::string(e.what());
+    }
+    if (!err.empty()) {
+      if (error) {
+        *error = err;
+      }
+      return std::nullopt;
+    }
+    return value;
+  }
+
+  /**
    * @brief Parse a C++ value to the yaml node. If the conversion fails, a warning is issued and the node is not
    * modified.
    *
