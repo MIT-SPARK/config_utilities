@@ -52,6 +52,12 @@ namespace internal {
  */
 YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args);
 
+/**
+ * @brief Parse and collate YAML node from arguments
+ * @param args Vector of command line argument strings
+ */
+YAML::Node loadFromArguments(const std::vector<std::string>& args);
+
 }  // namespace internal
 
 /**
@@ -69,6 +75,25 @@ template <typename ConfigT>
 ConfigT fromCLI(int argc, char* argv[], const std::string& name_space = "") {
   // when parsing CLI locally we don't want to modify the arguments ever
   const auto node = internal::loadFromArguments(argc, argv, false);
+
+  ConfigT config;
+  internal::Visitor::setValues(config, internal::lookupNamespace(node, name_space), true);
+  return config;
+}
+
+/**
+ * @brief Loads a config based on collated YAML data specified via the command line
+ *
+ * See fromYaml() for more specific behavioral information.
+ *
+ * @tparam ConfigT The config type. This can also be a VirtualConfig<BaseT> or a std::vector<ConfigT>.
+ * @param argc Vector of command line arguments.
+ * @param name_space Optional namespace to use under the resolved YAML parameter tree.
+ * @returns The config.
+ */
+template <typename ConfigT>
+ConfigT fromCLI(const std::vector<std::string>& args, const std::string& name_space = "") {
+  const auto node = internal::loadFromArguments(args);
 
   ConfigT config;
   internal::Visitor::setValues(config, internal::lookupNamespace(node, name_space), true);
@@ -97,6 +122,23 @@ std::unique_ptr<BaseT> createFromCLI(int argc, char* argv[], ConstructorArgument
 /**
  * @brief Create a derived type object based on collated YAML data specified via the command line
  *
+ * See createFromYaml() for more specific behavioral information.
+ *
+ * @tparam BaseT Type of the base class to be constructed.
+ * @tparam Args Other constructor arguments.
+ * @param argv Command line arguments
+ * @param args Other constructor arguments.
+ * @returns Unique pointer of type base that contains the derived object.
+ */
+template <typename BaseT, typename... ConstructorArguments>
+std::unique_ptr<BaseT> createFromCLI(const std::vector<std::string>& argv, ConstructorArguments... args) {
+  const auto node = internal::loadFromArguments(argv);
+  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(node, args...);
+}
+
+/**
+ * @brief Create a derived type object based on collated YAML data specified via the command line
+ *
  * See createFromYamlWithNamespace() for more specific behavioral information.
  *
  * @tparam BaseT Type of the base class to be constructed.
@@ -114,6 +156,27 @@ std::unique_ptr<BaseT> createFromCLIWithNamespace(int argc,
                                                   ConstructorArguments... args) {
   // when parsing CLI locally we don't want to modify the arguments ever
   const auto node = internal::loadFromArguments(argc, argv, false);
+  const auto ns_node = internal::lookupNamespace(node, name_space);
+  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(ns_node, args...);
+}
+
+/**
+ * @brief Create a derived type object based on collated YAML data specified via the command line
+ *
+ * See createFromYamlWithNamespace() for more specific behavioral information.
+ *
+ * @tparam BaseT Type of the base class to be constructed.
+ * @tparam Args Other constructor arguments.
+ * @param argv Vector of command line arguments.
+ * @param name_space Optionally specify a name space to create the object from.
+ * @param args Other constructor arguments.
+ * @returns Unique pointer of type base that contains the derived object.
+ */
+template <typename BaseT, typename... ConstructorArguments>
+std::unique_ptr<BaseT> createFromCLIWithNamespace(const std::vector<std::string>& argv,
+                                                  const std::string& name_space,
+                                                  ConstructorArguments... args) {
+  const auto node = internal::loadFromArguments(argv);
   const auto ns_node = internal::lookupNamespace(node, name_space);
   return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(ns_node, args...);
 }

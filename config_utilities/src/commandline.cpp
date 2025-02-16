@@ -229,4 +229,14 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args) {
   return node;
 }
 
+YAML::Node loadFromArguments(const std::vector<std::string>& _args) {
+  std::vector<std::string> args(_args.begin(), _args.end());
+
+  int argc = args.size();
+  std::vector<char*> argv;
+  std::transform(args.begin(), args.end(), std::back_inserter(argv), [](auto& m) { return m.data(); });
+  // no need to remove arguments given that the original vector won't be modified
+  return loadFromArguments(argc, argv.data(), false);
+}
+
 }  // namespace config::internal
