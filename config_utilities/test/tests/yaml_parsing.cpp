@@ -241,4 +241,14 @@ TEST(YamlParsing, emptyCollections) {
   EXPECT_EQ(expected, result);
 }
 
+TEST(YamlParsing, updateCorrect) {
+  SubSubConfig config;
+  // configs that don't pass checks should fail to update underlying config
+  EXPECT_FALSE(updateFromYaml(config, YAML::Load("i: -1")));
+  EXPECT_EQ(config.i, 1);
+  // configs that 't pass checks should update underlying config
+  EXPECT_TRUE(updateFromYaml(config, YAML::Load("i: 5")));
+  EXPECT_EQ(config.i, 5);
+}
+
 }  // namespace config::test
