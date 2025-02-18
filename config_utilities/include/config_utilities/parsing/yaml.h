@@ -47,6 +47,7 @@
 #include "config_utilities/internal/string_utils.h"
 #include "config_utilities/internal/visitor.h"
 #include "config_utilities/internal/yaml_utils.h"
+#include "config_utilities/update.h"
 
 namespace config {
 
@@ -206,7 +207,7 @@ std::unique_ptr<BaseT> createFromYamlFileWithNamespace(const std::string& file_n
  */
 template <typename ConfigT>
 bool updateFromYaml(ConfigT& config, const YAML::Node& node, const std::string& name_space = "") {
-  return updateField(config, node, true, name_space);
+  return updateFields(config, node, true, name_space);
 }
 
 }  // namespace config
