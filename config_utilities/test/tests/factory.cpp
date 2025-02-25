@@ -308,6 +308,9 @@ config::test::Base(int):
   'DerivedA' (config::test::DerivedA)
   'DerivedB' (config::test::DerivedB)
 
+config::test::MoveOnlyBase(std::unique_ptr<int, std::default_delete<int> >):
+  'MoveOnlyDerived' (config::test::MoveOnlyDerived)
+
 config::test::Talker():
   'internal' (config::test::InternalTalker)
 
@@ -338,6 +341,9 @@ config::test::Base2():
   'Derived2' (config::test::Derived2)
   'Derived2A' (config::test::Derived2A)
 
+config::test::MoveOnlyBase(std::unique_ptr<int, std::default_delete<int> >):
+  'MoveOnlyDerivedWithConfig' (config::test::MoveOnlyDerivedWithConfig)
+
 config::test::ProcessorBase():
   'AddString' (config::test::AddString)
 
@@ -355,6 +361,9 @@ Config[config::test::Base]():
 Config[config::test::Base2]():
   'Derived2' (config::test::Derived2::Config)
   'Derived2A' (config::test::Derived2A::Config)
+
+Config[config::test::MoveOnlyBase]():
+  'MoveOnlyDerivedWithConfig' (config::test::MoveOnlyDerivedWithConfig::Config)
 
 Config[config::test::ProcessorBase]():
   'AddString' (config::test::AddString::Config)
