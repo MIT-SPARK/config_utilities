@@ -194,6 +194,64 @@ TEST(Factory, createWithConfig) {
   EXPECT_EQ(dynamic_cast<DerivedD*>(base.get())->config_.i, 3);
 }
 
+struct MoveOnlyBase {
+  virtual ~MoveOnlyBase() = default;
+  virtual void print() { std::cout << "Hi! I'm Base\n"; }
+};
+
+struct MoveOnlyDerived : public MoveOnlyBase {
+  explicit MoveOnlyDerived(std::unique_ptr<int> i) : i_(std::move(i)) {}
+  ~MoveOnlyDerived() override = default;
+
+  std::unique_ptr<int> i_;
+  inline static const auto registration =
+    config::Registration<MoveOnlyBase, MoveOnlyDerived, std::unique_ptr<int>>("MoveOnlyDerived");
+};
+
+struct MoveOnlyDerivedWithConfig : public MoveOnlyBase {
+  struct Config {
+    int i = 0;
+  };
+
+  explicit MoveOnlyDerivedWithConfig(const Config& config, std::unique_ptr<int> i) : config_(config), i_(std::move(i)) {}
+  ~MoveOnlyDerivedWithConfig() override = default;
+
+  Config config_;
+  std::unique_ptr<int> i_;
+  inline static const auto registration =
+    config::RegistrationWithConfig<MoveOnlyBase, MoveOnlyDerivedWithConfig, Config, std::unique_ptr<int>>(
+      "MoveOnlyDerivedWithConfig");
+};
+
+void declare_config(MoveOnlyDerivedWithConfig::Config& config) {
+  // Declare the config using the config utilities.
+  config::name("MoveOnlyDerivedWithConfig");
+  config::field(config.i, "i");
+}
+
+TEST(Factory, createWithMoveOnlyArgument) {
+  {
+    auto i = std::make_unique<int>(42);
+    auto base = config::create<MoveOnlyBase>("MoveOnlyDerived", std::move(i));
+    EXPECT_NE(base, nullptr);
+    auto ptr = dynamic_cast<MoveOnlyDerived*>(base.get());
+    EXPECT_NE(ptr, nullptr);
+    EXPECT_EQ(*ptr->i_, 42);
+  }
+  {
+    auto i = std::make_unique<int>(24);
+    YAML::Node yaml;
+    yaml["type"] = "MoveOnlyDerivedWithConfig";
+    yaml["i"] = 24;
+
+    auto base = config::createFromYaml<MoveOnlyBase>(yaml, std::move(i));
+    EXPECT_NE(base, nullptr);
+    auto ptr = dynamic_cast<MoveOnlyDerivedWithConfig*>(base.get());
+    EXPECT_NE(ptr, nullptr);
+    EXPECT_EQ(*ptr->i_, 24);
+  }
+}
+
 TEST(Factory, moduleNameConflicts) {
   auto logger = TestLogger::create();
 
@@ -250,6 +308,9 @@ config::test::Base(int):
   'DerivedA' (config::test::DerivedA)
   'DerivedB' (config::test::DerivedB)
 
+config::test::MoveOnlyBase(std::unique_ptr<int, std::default_delete<int> >):
+  'MoveOnlyDerived' (config::test::MoveOnlyDerived)
+
 config::test::Talker():
   'internal' (config::test::InternalTalker)
 
@@ -280,6 +341,9 @@ config::test::Base2():
   'Derived2' (config::test::Derived2)
   'Derived2A' (config::test::Derived2A)
 
+config::test::MoveOnlyBase(std::unique_ptr<int, std::default_delete<int> >):
+  'MoveOnlyDerivedWithConfig' (config::test::MoveOnlyDerivedWithConfig)
+
 config::test::ProcessorBase():
   'AddString' (config::test::AddString)
 
@@ -297,6 +361,9 @@ Config[config::test::Base]():
 Config[config::test::Base2]():
   'Derived2' (config::test::Derived2::Config)
   'Derived2A' (config::test::Derived2A::Config)
+
+Config[config::test::MoveOnlyBase]():
+  'MoveOnlyDerivedWithConfig' (config::test::MoveOnlyDerivedWithConfig::Config)
 
 Config[config::test::ProcessorBase]():
   'AddString' (config::test::AddString::Config)

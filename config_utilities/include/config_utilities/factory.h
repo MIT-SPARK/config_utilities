@@ -242,8 +242,8 @@ class ModuleRegistry {
     }
 
     // wrap factory call to register any allocations
-    return [factory, key, type, create_callback](Args... args) -> BaseT* {
-      auto pointer = factory(args...);
+    return [factory, key, type, create_callback](Args&&... args) -> BaseT* {
+      auto pointer = factory(std::forward<Args>(args)...);
       create_callback(key, type, pointer);
       return pointer;
     };
@@ -367,17 +367,17 @@ struct ObjectFactory {
   // Add entries.
   template <typename DerivedT>
   static void addEntry(const std::string& type) {
-    const Constructor method = [](Args... args) -> BaseT* { return new DerivedT(args...); };
+    const Constructor method = [](Args&&... args) -> BaseT* { return new DerivedT(std::forward<Args>(args)...); };
     ModuleRegistry::addModule<BaseT, DerivedT, Args...>(type, method);
   }
 
-  static std::unique_ptr<BaseT> create(const std::string& type, Args... args) {
+  static std::unique_ptr<BaseT> create(const std::string& type, Args&&... args) {
     const auto factory = ModuleRegistry::getModule<BaseT, Args...>(type, registration_info);
     if (!factory) {
       return nullptr;
     }
 
-    return std::unique_ptr<BaseT>(factory(args...));
+    return std::unique_ptr<BaseT>(factory(std::forward<Args>(args)...));
   }
 };
 
@@ -391,16 +391,16 @@ struct ObjectWithConfigFactory {
   // Add entries.
   template <typename DerivedT, typename DerivedConfigT>
   static void addEntry(const std::string& type) {
-    const Constructor method = [](const YAML::Node& data, Args... args) -> BaseT* {
+    const Constructor method = [](const YAML::Node& data, Args&&... args) -> BaseT* {
       DerivedConfigT config;
       Visitor::setValues(config, data);
-      return new DerivedT(config, args...);
+      return new DerivedT(config, std::forward<Args>(args)...);
     };
 
     ModuleRegistry::addModule<BaseT, DerivedT, const YAML::Node&, Args...>(type, method, true);
   }
 
-  static std::unique_ptr<BaseT> create(const YAML::Node& data, Args... args) {
+  static std::unique_ptr<BaseT> create(const YAML::Node& data, Args&&... args) {
     std::string type;
     if (!getType(data, type)) {
       return nullptr;
@@ -411,7 +411,7 @@ struct ObjectWithConfigFactory {
       return nullptr;
     }
 
-    return std::unique_ptr<BaseT>(factory(data, args...));
+    return std::unique_ptr<BaseT>(factory(data, std::forward<Args>(args)...));
   }
 };
 
@@ -468,8 +468,9 @@ struct RegistrationWithConfig {
  * @returns Unique pointer of type base that contains the derived object.
  */
 template <typename BaseT, typename... ConstructorArguments>
-std::unique_ptr<BaseT> create(const std::string& type, ConstructorArguments... args) {
-  return internal::ObjectFactory<BaseT, ConstructorArguments...>::create(type, args...);
+std::unique_ptr<BaseT> create(const std::string& type, ConstructorArguments&&... args) {
+  return internal::ObjectFactory<BaseT, ConstructorArguments...>::create(type,
+    std::forward<ConstructorArguments>(args)...);
 }
 
 }  // namespace config
