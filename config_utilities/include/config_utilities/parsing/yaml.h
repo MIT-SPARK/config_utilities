@@ -129,8 +129,9 @@ bool toYamlFile(const ConfigT& config, const std::string& file_name) {
  * @returns Unique pointer of type base that contains the derived object.
  */
 template <typename BaseT, typename... ConstructorArguments>
-std::unique_ptr<BaseT> createFromYaml(const YAML::Node& node, ConstructorArguments... args) {
-  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(node, args...);
+std::unique_ptr<BaseT> createFromYaml(const YAML::Node& node, ConstructorArguments&&... args) {
+  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(node,
+    std::forward<ConstructorArguments>(args)...);
 }
 
 /**
@@ -151,9 +152,10 @@ std::unique_ptr<BaseT> createFromYaml(const YAML::Node& node, ConstructorArgumen
 template <typename BaseT, typename... ConstructorArguments>
 std::unique_ptr<BaseT> createFromYamlWithNamespace(const YAML::Node& node,
                                                    const std::string& name_space,
-                                                   ConstructorArguments... args) {
+                                                   ConstructorArguments&&... args) {
   const YAML::Node ns_node = internal::lookupNamespace(node, name_space);
-  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(ns_node, args...);
+  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(ns_node,
+    std::forward<ConstructorArguments>(args)...);
 }
 
 /**
@@ -170,8 +172,9 @@ std::unique_ptr<BaseT> createFromYamlWithNamespace(const YAML::Node& node,
  * @returns Unique pointer of type base that contains the derived object.
  */
 template <typename BaseT, typename... ConstructorArguments>
-std::unique_ptr<BaseT> createFromYamlFile(const std::string& file_name, ConstructorArguments... args) {
-  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(YAML::LoadFile(file_name), args...);
+std::unique_ptr<BaseT> createFromYamlFile(const std::string& file_name, ConstructorArguments&&... args) {
+  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(YAML::LoadFile(file_name),
+    std::forward<ConstructorArguments>(args)...);
 }
 
 /**
@@ -192,9 +195,10 @@ std::unique_ptr<BaseT> createFromYamlFile(const std::string& file_name, Construc
 template <typename BaseT, typename... ConstructorArguments>
 std::unique_ptr<BaseT> createFromYamlFileWithNamespace(const std::string& file_name,
                                                        const std::string& name_space,
-                                                       ConstructorArguments... args) {
+                                                       ConstructorArguments&&... args) {
   const YAML::Node node = internal::lookupNamespace(YAML::LoadFile(file_name), name_space);
-  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(node, args...);
+  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(node,
+    std::forward<ConstructorArguments>(args)...);
 }
 
 /**
