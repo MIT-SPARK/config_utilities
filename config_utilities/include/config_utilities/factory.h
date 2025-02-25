@@ -242,7 +242,7 @@ class ModuleRegistry {
     }
 
     // wrap factory call to register any allocations
-    return [factory, key, type, create_callback](Args... args) -> BaseT* {
+    return [factory, key, type, create_callback](Args&&... args) -> BaseT* {
       auto pointer = factory(std::forward<Args>(args)...);
       create_callback(key, type, pointer);
       return pointer;
