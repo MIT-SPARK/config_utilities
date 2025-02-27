@@ -113,11 +113,10 @@ ConfigT fromCLI(const std::vector<std::string>& args, const std::string& name_sp
  * @returns Unique pointer of type base that contains the derived object.
  */
 template <typename BaseT, typename... ConstructorArguments>
-std::unique_ptr<BaseT> createFromCLI(int argc, char* argv[], ConstructorArguments&&... args) {
+std::unique_ptr<BaseT> createFromCLI(int argc, char* argv[], ConstructorArguments... args) {
   // when parsing CLI locally we don't want to modify the arguments ever
   const auto node = internal::loadFromArguments(argc, argv, false);
-  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(node,
-    std::forward<ConstructorArguments>(args)...);
+  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(node, args...);
 }
 
 /**
@@ -132,10 +131,9 @@ std::unique_ptr<BaseT> createFromCLI(int argc, char* argv[], ConstructorArgument
  * @returns Unique pointer of type base that contains the derived object.
  */
 template <typename BaseT, typename... ConstructorArguments>
-std::unique_ptr<BaseT> createFromCLI(const std::vector<std::string>& argv, ConstructorArguments&&... args) {
+std::unique_ptr<BaseT> createFromCLI(const std::vector<std::string>& argv, ConstructorArguments... args) {
   const auto node = internal::loadFromArguments(argv);
-  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(node,
-    std::forward<ConstructorArguments>(args)...);
+  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(node, args...);
 }
 
 /**
@@ -155,12 +153,11 @@ template <typename BaseT, typename... ConstructorArguments>
 std::unique_ptr<BaseT> createFromCLIWithNamespace(int argc,
                                                   char* argv[],
                                                   const std::string& name_space,
-                                                  ConstructorArguments&&... args) {
+                                                  ConstructorArguments... args) {
   // when parsing CLI locally we don't want to modify the arguments ever
   const auto node = internal::loadFromArguments(argc, argv, false);
   const auto ns_node = internal::lookupNamespace(node, name_space);
-  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(ns_node,
-    std::forward<ConstructorArguments>(args)...);
+  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(ns_node, args...);
 }
 
 /**
@@ -178,11 +175,10 @@ std::unique_ptr<BaseT> createFromCLIWithNamespace(int argc,
 template <typename BaseT, typename... ConstructorArguments>
 std::unique_ptr<BaseT> createFromCLIWithNamespace(const std::vector<std::string>& argv,
                                                   const std::string& name_space,
-                                                  ConstructorArguments&&... args) {
+                                                  ConstructorArguments... args) {
   const auto node = internal::loadFromArguments(argv);
   const auto ns_node = internal::lookupNamespace(node, name_space);
-  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(ns_node,
-    std::forward<ConstructorArguments>(args)...);
+  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(ns_node, args...);
 }
 
 }  // namespace config
