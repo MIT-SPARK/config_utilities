@@ -58,16 +58,15 @@ class Context {
   static YAML::Node toYaml();
 
   template <typename BaseT, typename... ConstructorArguments>
-  static std::unique_ptr<BaseT> create(ConstructorArguments&&... args) {
+  static std::unique_ptr<BaseT> create(ConstructorArguments... args) {
     return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(instance().contents_,
-    std::forward<ConstructorArguments>(args)...);
+      std::move(args)...);
   }
 
   template <typename BaseT, typename... ConstructorArguments>
-  static std::unique_ptr<BaseT> createNamespaced(const std::string& name_space, ConstructorArguments&&... args) {
+  static std::unique_ptr<BaseT> createNamespaced(const std::string& name_space, ConstructorArguments... args) {
     const auto ns_node = internal::lookupNamespace(instance().contents_, name_space);
-    return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(ns_node,
-      std::forward<ConstructorArguments>(args)...);
+    return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(ns_node, std::move(args)...);
   }
 
   template <typename ConfigT>

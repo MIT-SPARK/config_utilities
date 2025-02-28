@@ -90,7 +90,7 @@ ConfigT fromContext(const std::string& name_space = "") {
  */
 template <typename BaseT, typename... ConstructorArguments>
 std::unique_ptr<BaseT> createFromContext(ConstructorArguments... args) {
-  return internal::Context::create<BaseT, ConstructorArguments...>(args...);
+  return internal::Context::create<BaseT, ConstructorArguments...>(std::move(args)...);
 }
 
 /**

@@ -103,6 +103,53 @@ void declare_config(DerivedD::Config& config) {
   config::field(config.i, "i");
 }
 
+class DerivedWithMoveOnlyParameter : public Base {
+ public:
+  explicit DerivedWithMoveOnlyParameter(std::unique_ptr<int> i) : Base(*i), i_(std::move(i)) {}
+  std::string name() const override { return "DerivedWithMoveOnlyParameter"; }
+
+  const std::unique_ptr<int> i_;
+ private:
+  inline static const auto registration_ =
+    config::Registration<Base, DerivedWithMoveOnlyParameter, std::unique_ptr<int>>("DerivedWithMoveOnlyParameter");
+};
+
+class DerivedWithComplexParameter : public Base {
+ public:
+  explicit DerivedWithComplexParameter(std::shared_ptr<int> i) : Base(*i), i_(std::move(i)) {}
+  std::string name() const override { return "DerivedWithComplexParameter"; }
+
+  std::shared_ptr<int> i_;
+ private:
+  inline static const auto registration_ =
+    config::Registration<Base, DerivedWithComplexParameter, std::shared_ptr<int>>("DerivedWithComplexParameter");
+};
+
+class DerivedWithMoveOnlyParameterAndConfig : public Base {
+ public:
+  struct Config {
+    float f = 123.f;
+  };
+
+  DerivedWithMoveOnlyParameterAndConfig(const Config& config, std::unique_ptr<int> i) :
+    Base(*i), i_(std::move(i)), config_(config) {}
+  std::string name() const override { return "DerivedWithMoveOnlyParameterAndConfig"; }
+
+  const std::unique_ptr<int> i_;
+  Config config_;
+
+ private:
+  inline static const auto registration_ =
+    config::RegistrationWithConfig<Base, DerivedWithMoveOnlyParameterAndConfig, Config, std::unique_ptr<int>>(
+      "DerivedWithMoveOnlyParameterAndConfig");
+};
+
+void declare_config(DerivedWithMoveOnlyParameterAndConfig::Config & config) {
+  // Declare the config using the config utilities.
+  config::name("DerivedWithMoveOnlyParameterAndConfig");
+  config::field(config.f, "f");
+}
+
 template <typename T>
 struct TemplatedBase {
   virtual ~TemplatedBase() = default;
@@ -133,31 +180,104 @@ TEST(Factory, moduleInfo) {
 }
 
 TEST(Factory, create) {
-  std::unique_ptr<Base> base = create<Base>("DerivedA", 1);
-  EXPECT_TRUE(base);
-  EXPECT_EQ(base->name(), "DerivedA");
-
-  base = create<Base>("DerivedB", 1);
-  EXPECT_TRUE(base);
-  EXPECT_EQ(base->name(), "DerivedB");
-
-  auto logger = TestLogger::create();
-  base = create<Base>("NotRegistered", 1);
-  EXPECT_FALSE(base);
-  ASSERT_EQ(logger->numMessages(), 1);
-  std::string msg = logger->messages().back().second;
-  EXPECT_EQ(msg.find("No module of type 'NotRegistered' registered to the factory"), 0);
-  EXPECT_NE(msg.find("Registered are: 'DerivedA', 'DerivedB'."), std::string::npos) << msg;
-
-  base = create<Base>("DerivedA", 1, 2.f);
-  EXPECT_FALSE(base);
-  ASSERT_GE(logger->numMessages(), 2);
-  msg = logger->messages().at(1).second;
-  EXPECT_EQ(msg.find("Cannot create a module of type 'DerivedA': No modules registered to the factory"), 0);
-  EXPECT_NE(
-      msg.find(
-          "Register modules using a static config::Registration<BaseT, DerivedT, ConstructorArguments...> struct."),
-      std::string::npos);
+  {
+    auto base = create<Base>("DerivedA", 1);
+    EXPECT_TRUE(base);
+    EXPECT_EQ(base->name(), "DerivedA");
+  }
+  {
+    // Create b with an r-value
+    auto base = create<Base>("DerivedB", 1);
+    EXPECT_TRUE(base);
+    EXPECT_EQ(base->name(), "DerivedB");
+  }
+  {
+    // Create b with an l-value
+    int i = 1;
+    auto base = create<Base>("DerivedB", i);
+    EXPECT_TRUE(base);
+    EXPECT_EQ(base->name(), "DerivedB");
+  }
+  {
+    // Create b with an r-value reference
+    int i = 1;
+    auto base = create<Base>("DerivedB", std::move(i));
+    EXPECT_TRUE(base);
+    EXPECT_EQ(base->name(), "DerivedB");
+  }
+  {
+    // Try to create an object that is not registered
+    auto logger = TestLogger::create();
+    auto base = create<Base>("NotRegistered", 1);
+    EXPECT_FALSE(base);
+    ASSERT_EQ(logger->numMessages(), 1);
+    std::string msg = logger->messages().back().second;
+    EXPECT_EQ(msg.find("No module of type 'NotRegistered' registered to the factory"), 0);
+    EXPECT_NE(msg.find("Registered are: 'DerivedA', 'DerivedB'."), std::string::npos) << msg;
+  }
+  {
+    // Try to create an object that is registered but with the wrong arguments
+    auto logger = TestLogger::create();
+    auto base = create<Base>("DerivedA", 1, 2.f);
+    EXPECT_FALSE(base);
+    ASSERT_EQ(logger->numMessages(), 1);
+    auto msg = logger->messages().back().second;
+    EXPECT_EQ(msg.find("Cannot create a module of type 'DerivedA': No modules registered to the factory"), 0);
+    EXPECT_NE(
+        msg.find(
+            "Register modules using a static config::Registration<BaseT, DerivedT, ConstructorArguments...> struct."),
+        std::string::npos);
+  }
+  {
+    // Try to create an object that takes a move-only parameter r-value
+    auto base = create<Base>("DerivedWithMoveOnlyParameter", std::make_unique<int>(1));
+    EXPECT_TRUE(base);
+    EXPECT_EQ(base->i_, 1);
+    EXPECT_EQ(base->name(), "DerivedWithMoveOnlyParameter");
+    auto ptr = dynamic_cast<DerivedWithMoveOnlyParameter*>(base.get());
+    ASSERT_NE(ptr, nullptr);
+    EXPECT_EQ(*ptr->i_, 1);
+  }
+  {
+    // Try to create an object that takes a move-only parameter l-value
+    auto i = std::make_unique<int>(1);
+    auto base = create<Base>("DerivedWithMoveOnlyParameter", std::move(i));
+    EXPECT_TRUE(base);
+    EXPECT_EQ(base->i_, 1);
+    EXPECT_EQ(base->name(), "DerivedWithMoveOnlyParameter");
+    auto ptr = dynamic_cast<DerivedWithMoveOnlyParameter*>(base.get());
+    ASSERT_NE(ptr, nullptr);
+    EXPECT_EQ(*ptr->i_, 1);
+  }
+  {
+    // Try to create an object that takes a complex parameter by copy from an l-value
+    auto i = std::make_shared<int>(1);
+    auto base = create<Base>("DerivedWithComplexParameter", i);
+    EXPECT_TRUE(base);
+    EXPECT_EQ(base->i_, 1);
+    EXPECT_EQ(base->name(), "DerivedWithComplexParameter");
+    auto ptr = dynamic_cast<DerivedWithComplexParameter*>(base.get());
+    ASSERT_NE(ptr, nullptr);
+  }
+  {
+    // Try to create an object that takes a complex parameter by copy from an r-value
+    auto base = create<Base>("DerivedWithComplexParameter", std::make_shared<int>(1));
+    EXPECT_TRUE(base);
+    EXPECT_EQ(base->i_, 1);
+    EXPECT_EQ(base->name(), "DerivedWithComplexParameter");
+    auto ptr = dynamic_cast<DerivedWithComplexParameter*>(base.get());
+    ASSERT_NE(ptr, nullptr);
+  }
+  {
+    // Try to create an object that takes a complex parameter using an r-value reference
+    auto i = std::make_shared<int>(1);
+    auto base = create<Base>("DerivedWithComplexParameter", std::move(i));
+    EXPECT_TRUE(base);
+    EXPECT_EQ(base->i_, 1);
+    EXPECT_EQ(base->name(), "DerivedWithComplexParameter");
+    auto ptr = dynamic_cast<DerivedWithComplexParameter*>(base.get());
+    ASSERT_NE(ptr, nullptr);
+  }
 }
 
 TEST(Factory, createWithConfig) {
@@ -165,90 +285,89 @@ TEST(Factory, createWithConfig) {
   data["i"] = 3;
   data["f"] = 3.14f;
   data["type"] = "DerivedC";
-
-  std::unique_ptr<Base> base = createFromYaml<Base>(data, 12);
-  EXPECT_TRUE(base);
-  EXPECT_EQ(base->name(), "DerivedC");
-  EXPECT_EQ(dynamic_cast<DerivedC*>(base.get())->config_.f, 3.14f);
-  EXPECT_EQ(base->i_, 12);
-
-  auto logger = TestLogger::create();
-  data["type"] = "NotRegistered";
-  base = createFromYaml<Base>(data, 12);
-  EXPECT_FALSE(base);
-  EXPECT_EQ(logger->numMessages(), 1);
-  std::string msg = logger->messages().back().second;
-  EXPECT_EQ(msg.find("No module of type 'NotRegistered' registered to the factory"), 0);
-
-  Settings().factory_type_param_name = "test_type";
-  base = createFromYaml<Base>(data, 12);
-  EXPECT_FALSE(base);
-  EXPECT_EQ(logger->numMessages(), 2);
-  msg = logger->messages().back().second;
-  EXPECT_EQ(msg, "Could not read the param 'test_type' to deduce the type of the module to create.");
-
-  data["test_type"] = "DerivedD";
-  base = createFromYaml<Base>(data, 12);
-  EXPECT_TRUE(base);
-  EXPECT_EQ(base->name(), "DerivedD");
-  EXPECT_EQ(dynamic_cast<DerivedD*>(base.get())->config_.i, 3);
-}
-
-struct MoveOnlyBase {
-  virtual ~MoveOnlyBase() = default;
-  virtual void print() { std::cout << "Hi! I'm Base\n"; }
-};
-
-struct MoveOnlyDerived : public MoveOnlyBase {
-  explicit MoveOnlyDerived(std::unique_ptr<int> i) : i_(std::move(i)) {}
-  ~MoveOnlyDerived() override = default;
-
-  std::unique_ptr<int> i_;
-  inline static const auto registration =
-    config::Registration<MoveOnlyBase, MoveOnlyDerived, std::unique_ptr<int>>("MoveOnlyDerived");
-};
-
-struct MoveOnlyDerivedWithConfig : public MoveOnlyBase {
-  struct Config {
-    int i = 0;
-  };
-
-  explicit MoveOnlyDerivedWithConfig(const Config& config, std::unique_ptr<int> i) : config_(config), i_(std::move(i)) {}
-  ~MoveOnlyDerivedWithConfig() override = default;
-
-  Config config_;
-  std::unique_ptr<int> i_;
-  inline static const auto registration =
-    config::RegistrationWithConfig<MoveOnlyBase, MoveOnlyDerivedWithConfig, Config, std::unique_ptr<int>>(
-      "MoveOnlyDerivedWithConfig");
-};
-
-void declare_config(MoveOnlyDerivedWithConfig::Config& config) {
-  // Declare the config using the config utilities.
-  config::name("MoveOnlyDerivedWithConfig");
-  config::field(config.i, "i");
-}
-
-TEST(Factory, createWithMoveOnlyArgument) {
   {
-    auto i = std::make_unique<int>(42);
-    auto base = config::create<MoveOnlyBase>("MoveOnlyDerived", std::move(i));
-    EXPECT_NE(base, nullptr);
-    auto ptr = dynamic_cast<MoveOnlyDerived*>(base.get());
-    EXPECT_NE(ptr, nullptr);
-    EXPECT_EQ(*ptr->i_, 42);
+    // Create DerivedC with config and r-value parameter
+    auto base = createFromYaml<Base>(data, 12);
+    EXPECT_TRUE(base);
+    EXPECT_EQ(base->name(), "DerivedC");
+    EXPECT_EQ(dynamic_cast<DerivedC*>(base.get())->config_.f, 3.14f);
+    EXPECT_EQ(base->i_, 12);
   }
   {
-    auto i = std::make_unique<int>(24);
-    YAML::Node yaml;
-    yaml["type"] = "MoveOnlyDerivedWithConfig";
-    yaml["i"] = 24;
-
-    auto base = config::createFromYaml<MoveOnlyBase>(yaml, std::move(i));
-    EXPECT_NE(base, nullptr);
-    auto ptr = dynamic_cast<MoveOnlyDerivedWithConfig*>(base.get());
-    EXPECT_NE(ptr, nullptr);
-    EXPECT_EQ(*ptr->i_, 24);
+    // Create DerivedC with config and l-value parameter
+    int i = 12;
+    auto base = createFromYaml<Base>(data, i);
+    EXPECT_TRUE(base);
+    EXPECT_EQ(base->name(), "DerivedC");
+    EXPECT_EQ(dynamic_cast<DerivedC*>(base.get())->config_.f, 3.14f);
+    EXPECT_EQ(base->i_, 12);
+  }
+  {
+    // Create DerivedC with config and const l-value parameter
+    const int i = 12;
+    auto base = createFromYaml<Base>(data, i);
+    EXPECT_TRUE(base);
+    EXPECT_EQ(base->name(), "DerivedC");
+    EXPECT_EQ(dynamic_cast<DerivedC*>(base.get())->config_.f, 3.14f);
+    EXPECT_EQ(base->i_, 12);
+  }
+  {
+    // Create DerivedC with config and an r-value reference
+    int i = 12;
+    auto base = createFromYaml<Base>(data, std::move(i));
+    EXPECT_TRUE(base);
+    EXPECT_EQ(base->name(), "DerivedC");
+    EXPECT_EQ(dynamic_cast<DerivedC*>(base.get())->config_.f, 3.14f);
+    EXPECT_EQ(base->i_, 12);
+  }
+  {
+    auto logger = TestLogger::create();
+    data["type"] = "NotRegistered";
+    auto base = createFromYaml<Base>(data, 12);
+    EXPECT_FALSE(base);
+    EXPECT_EQ(logger->numMessages(), 1);
+    std::string msg = logger->messages().back().second;
+    EXPECT_EQ(msg.find("No module of type 'NotRegistered' registered to the factory"), 0);
+  }
+  {
+    auto logger = TestLogger::create();
+    Settings().factory_type_param_name = "test_type";
+    auto base = createFromYaml<Base>(data, 12);
+    EXPECT_FALSE(base);
+    EXPECT_EQ(logger->numMessages(), 1);
+    auto msg = logger->messages().back().second;
+    EXPECT_EQ(msg, "Could not read the param 'test_type' to deduce the type of the module to create.");
+  }
+  {
+    data["test_type"] = "DerivedD";
+    auto base = createFromYaml<Base>(data, 12);
+    EXPECT_TRUE(base);
+    EXPECT_EQ(base->name(), "DerivedD");
+    EXPECT_EQ(dynamic_cast<DerivedD*>(base.get())->config_.i, 3);
+  }
+  {
+    // Build with r-value move-only parameter
+    Settings().restoreDefaults();
+    data["type"] = "DerivedWithMoveOnlyParameterAndConfig";
+    auto base = createFromYaml<Base>(data, std::make_unique<int>(1));
+    EXPECT_TRUE(base);
+    EXPECT_EQ(base->name(), "DerivedWithMoveOnlyParameterAndConfig");
+    auto ptr = dynamic_cast<DerivedWithMoveOnlyParameterAndConfig*>(base.get());
+    ASSERT_NE(ptr, nullptr);
+    EXPECT_FLOAT_EQ(ptr->config_.f, 3.14f);
+    EXPECT_EQ(*ptr->i_, 1);
+  }
+  {
+    // Build with l-value move-only parameter
+    data["type"] = "DerivedWithMoveOnlyParameterAndConfig";
+    auto i = std::make_unique<int>(1);
+    auto base = createFromYaml<Base>(data, std::move(i));
+    EXPECT_TRUE(base);
+    EXPECT_EQ(base->name(), "DerivedWithMoveOnlyParameterAndConfig");
+    auto ptr = dynamic_cast<DerivedWithMoveOnlyParameterAndConfig*>(base.get());
+    ASSERT_NE(ptr, nullptr);
+    EXPECT_FLOAT_EQ(ptr->config_.f, 3.14f);
+    EXPECT_EQ(*ptr->i_, 1);
   }
 }
 
@@ -308,8 +427,11 @@ config::test::Base(int):
   'DerivedA' (config::test::DerivedA)
   'DerivedB' (config::test::DerivedB)
 
-config::test::MoveOnlyBase(std::unique_ptr<int, std::default_delete<int> >):
-  'MoveOnlyDerived' (config::test::MoveOnlyDerived)
+config::test::Base(std::shared_ptr<int>):
+  'DerivedWithComplexParameter' (config::test::DerivedWithComplexParameter)
+
+config::test::Base(std::unique_ptr<int, std::default_delete<int> >):
+  'DerivedWithMoveOnlyParameter' (config::test::DerivedWithMoveOnlyParameter)
 
 config::test::Talker():
   'internal' (config::test::InternalTalker)
@@ -337,12 +459,18 @@ config::test::Base(int):
   'DerivedC' (config::test::DerivedC)
   'DerivedD' (config::test::DerivedD)
 
+config::test::Base(std::unique_ptr<int, std::default_delete<int> >):
+  'DerivedWithMoveOnlyParameterAndConfig' (config::test::DerivedWithMoveOnlyParameterAndConfig)
+
 config::test::Base2():
   'Derived2' (config::test::Derived2)
   'Derived2A' (config::test::Derived2A)
 
-config::test::MoveOnlyBase(std::unique_ptr<int, std::default_delete<int> >):
-  'MoveOnlyDerivedWithConfig' (config::test::MoveOnlyDerivedWithConfig)
+config::test::Base2(std::shared_ptr<int>):
+  'Derived2WithComplexParam' (config::test::Derived2WithComplexParam)
+
+config::test::Base2(std::unique_ptr<int, std::default_delete<int> >):
+  'Derived2WithMoveOnlyParam' (config::test::Derived2WithMoveOnlyParam)
 
 config::test::ProcessorBase():
   'AddString' (config::test::AddString)
@@ -357,13 +485,13 @@ config::test::Talker():
 Config[config::test::Base]():
   'DerivedC' (config::test::DerivedC::Config)
   'DerivedD' (config::test::DerivedD::Config)
+  'DerivedWithMoveOnlyParameterAndConfig' (config::test::DerivedWithMoveOnlyParameterAndConfig::Config)
 
 Config[config::test::Base2]():
   'Derived2' (config::test::Derived2::Config)
   'Derived2A' (config::test::Derived2A::Config)
-
-Config[config::test::MoveOnlyBase]():
-  'MoveOnlyDerivedWithConfig' (config::test::MoveOnlyDerivedWithConfig::Config)
+  'Derived2WithComplexParam' (config::test::Derived2WithComplexParam::Config)
+  'Derived2WithMoveOnlyParam' (config::test::Derived2WithMoveOnlyParam::Config)
 
 Config[config::test::ProcessorBase]():
   'AddString' (config::test::AddString::Config)
