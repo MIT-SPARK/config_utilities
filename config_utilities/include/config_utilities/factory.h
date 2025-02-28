@@ -243,7 +243,7 @@ class ModuleRegistry {
 
     // wrap factory call to register any allocations
     return [factory, key, type, create_callback](Args... args) -> BaseT* {
-      auto pointer = factory(args...);
+      auto pointer = factory(std::move(args)...);
       create_callback(key, type, pointer);
       return pointer;
     };
@@ -367,7 +367,7 @@ struct ObjectFactory {
   // Add entries.
   template <typename DerivedT>
   static void addEntry(const std::string& type) {
-    const Constructor method = [](Args... args) -> BaseT* { return new DerivedT(args...); };
+    const Constructor method = [](Args... args) -> BaseT* { return new DerivedT(std::move(args)...); };
     ModuleRegistry::addModule<BaseT, DerivedT, Args...>(type, method);
   }
 
@@ -377,7 +377,7 @@ struct ObjectFactory {
       return nullptr;
     }
 
-    return std::unique_ptr<BaseT>(factory(args...));
+    return std::unique_ptr<BaseT>(factory(std::move(args)...));
   }
 };
 
@@ -394,7 +394,7 @@ struct ObjectWithConfigFactory {
     const Constructor method = [](const YAML::Node& data, Args... args) -> BaseT* {
       DerivedConfigT config;
       Visitor::setValues(config, data);
-      return new DerivedT(config, args...);
+      return new DerivedT(config, std::move(args)...);
     };
 
     ModuleRegistry::addModule<BaseT, DerivedT, const YAML::Node&, Args...>(type, method, true);
@@ -411,7 +411,7 @@ struct ObjectWithConfigFactory {
       return nullptr;
     }
 
-    return std::unique_ptr<BaseT>(factory(data, args...));
+    return std::unique_ptr<BaseT>(factory(data, std::move(args)...));
   }
 };
 
@@ -469,7 +469,7 @@ struct RegistrationWithConfig {
  */
 template <typename BaseT, typename... ConstructorArguments>
 std::unique_ptr<BaseT> create(const std::string& type, ConstructorArguments... args) {
-  return internal::ObjectFactory<BaseT, ConstructorArguments...>::create(type, args...);
+  return internal::ObjectFactory<BaseT, ConstructorArguments...>::create(type, std::move(args)...);
 }
 
 }  // namespace config

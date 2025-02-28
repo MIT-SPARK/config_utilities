@@ -181,7 +181,7 @@ class VirtualConfig {
     // also be de-serialized so this should not result in any warnings, we print them anyways to be sure. The factory
     // should take proper care of any other verbose error management.
     const internal::MetaData data = internal::Visitor::getValues(*this);
-    return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(data.data, args...);
+    return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(data.data, std::move(args)...);
   }
 
  private:

@@ -59,13 +59,14 @@ class Context {
 
   template <typename BaseT, typename... ConstructorArguments>
   static std::unique_ptr<BaseT> create(ConstructorArguments... args) {
-    return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(instance().contents_, args...);
+    return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(instance().contents_,
+      std::move(args)...);
   }
 
   template <typename BaseT, typename... ConstructorArguments>
   static std::unique_ptr<BaseT> createNamespaced(const std::string& name_space, ConstructorArguments... args) {
     const auto ns_node = internal::lookupNamespace(instance().contents_, name_space);
-    return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(ns_node, args...);
+    return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(ns_node, std::move(args)...);
   }
 
   template <typename ConfigT>

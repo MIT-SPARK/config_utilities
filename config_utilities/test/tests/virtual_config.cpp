@@ -86,6 +86,42 @@ void declare_config(Derived2A::Config& config) {
   config::field(config.i, "i");
 }
 
+struct Derived2WithComplexParam : public Base2 {
+  struct Config {
+    int i = 0;
+  };
+  explicit Derived2WithComplexParam(const Config& config, std::shared_ptr<int> i) : config_(config), i_(i) {}
+  std::string name() const override { return "Derived2WithComplexParam"; }
+  const Config config_;
+  const std::shared_ptr<int> i_;
+  inline static const auto registration_ =
+      config::RegistrationWithConfig<Base2, Derived2WithComplexParam, Config, std::shared_ptr<int>>(
+        "Derived2WithComplexParam");
+};
+
+void declare_config(Derived2WithComplexParam::Config& config) {
+  config::name("Derived2WithComplexParam");
+  config::field(config.i, "i");
+}
+
+struct Derived2WithMoveOnlyParam : public Base2 {
+  struct Config {
+    int i = 0;
+  };
+  explicit Derived2WithMoveOnlyParam(const Config& config, std::unique_ptr<int> i) : config_(config), i_(std::move(i)) {}
+  std::string name() const override { return "Derived2WithMoveOnlyParam"; }
+  const Config config_;
+  const std::unique_ptr<int> i_;
+  inline static const auto registration_ =
+      config::RegistrationWithConfig<Base2, Derived2WithMoveOnlyParam, Config, std::unique_ptr<int>>(
+        "Derived2WithMoveOnlyParam");
+};
+
+void declare_config(Derived2WithMoveOnlyParam::Config& config) {
+  config::name("Derived2WithMoveOnlyParam");
+  config::field(config.i, "i");
+}
+
 struct NotDerivedFromBase2 {
   struct Config {
     bool b = false;
@@ -246,18 +282,94 @@ TEST(VirtualConfig, assignConfig) {
 }
 
 TEST(VirtualConfig, create) {
-  VirtualConfig<Base2> config;
-  std::unique_ptr<Base2> object = config.create();
-  EXPECT_FALSE(object);
-
-  YAML::Node data;
-  data["type"] = "Derived2";
-  data["f"] = 1.f;
-  config = fromYaml<VirtualConfig<Base2>>(data);
-  object = config.create();
-  EXPECT_TRUE(object);
-  EXPECT_EQ(object->name(), "Derived2");
-  EXPECT_EQ(dynamic_cast<Derived2*>(object.get())->config_.f, 1.f);
+  {
+    VirtualConfig<Base2> config;
+    std::unique_ptr<Base2> object = config.create();
+    EXPECT_FALSE(object);
+  }
+  {
+    YAML::Node data;
+    data["type"] = "Derived2";
+    data["f"] = 1.f;
+    auto config = fromYaml<VirtualConfig<Base2>>(data);
+    auto object = config.create();
+    EXPECT_TRUE(object);
+    EXPECT_EQ(object->name(), "Derived2");
+    EXPECT_EQ(dynamic_cast<Derived2*>(object.get())->config_.f, 1.f);
+  }
+  {
+    // Create an object with a parameter
+    YAML::Node data;
+    data["type"] = "Derived2WithComplexParam";
+    data["i"] = 1234;
+    auto config = fromYaml<VirtualConfig<Base2>>(data);
+    {
+      // Create by l-value
+      auto i = std::make_shared<int>(5678);
+      auto object = config.create(i);
+      EXPECT_TRUE(object);
+      EXPECT_EQ(object->name(), "Derived2WithComplexParam");
+      auto ptr = dynamic_cast<Derived2WithComplexParam*>(object.get());
+      ASSERT_NE(ptr, nullptr);
+      EXPECT_EQ(ptr->config_.i, 1234);
+      EXPECT_EQ(*ptr->i_, 5678);
+    }
+    {
+      // Create by const l-value
+      const auto i = std::make_shared<int>(5678);
+      auto object = config.create(i);
+      EXPECT_TRUE(object);
+      EXPECT_EQ(object->name(), "Derived2WithComplexParam");
+      auto ptr = dynamic_cast<Derived2WithComplexParam*>(object.get());
+      ASSERT_NE(ptr, nullptr);
+      EXPECT_EQ(ptr->config_.i, 1234);
+      EXPECT_EQ(*ptr->i_, 5678);
+    }
+    {
+      // Create by r-value
+      auto object = config.create(std::make_shared<int>(5678));
+      EXPECT_TRUE(object);
+      EXPECT_EQ(object->name(), "Derived2WithComplexParam");
+      auto ptr = dynamic_cast<Derived2WithComplexParam*>(object.get());
+      ASSERT_NE(ptr, nullptr);
+      EXPECT_EQ(ptr->config_.i, 1234);
+      EXPECT_EQ(*ptr->i_, 5678);
+    }
+  }
+  {
+    // Create an object with a move-only parameter
+    YAML::Node data;
+    data["type"] = "Derived2WithMoveOnlyParam";
+    data["i"] = 4321;
+    auto config = fromYaml<VirtualConfig<Base2>>(data);
+    {
+      // Create by l-value
+      auto i = std::make_unique<int>(8765);
+      auto object = config.create(std::move(i));
+      ASSERT_TRUE(object);
+      EXPECT_EQ(object->name(), "Derived2WithMoveOnlyParam");
+      auto ptr = dynamic_cast<Derived2WithMoveOnlyParam*>(object.get());
+      ASSERT_NE(ptr, nullptr);
+      EXPECT_EQ(ptr->config_.i, 4321);
+      EXPECT_EQ(*ptr->i_, 8765);
+    }
+    {
+      // Create by r-value
+      auto object = config.create(std::make_unique<int>(8765));
+      ASSERT_TRUE(object);
+      EXPECT_EQ(object->name(), "Derived2WithMoveOnlyParam");
+      auto ptr = dynamic_cast<Derived2WithMoveOnlyParam*>(object.get());
+      ASSERT_NE(ptr, nullptr);
+      EXPECT_EQ(ptr->config_.i, 4321);
+      EXPECT_EQ(*ptr->i_, 8765);
+    }
+    {
+      // Create incorrectly
+      auto i = std::make_unique<const int>(8765);  // The const should create a type mismatch
+      auto object = config.create(std::move(i));
+      EXPECT_FALSE(object);
+    }
+  }
 }
 
 TEST(VirtualConfig, isOptional) {

@@ -130,7 +130,7 @@ bool toYamlFile(const ConfigT& config, const std::string& file_name) {
  */
 template <typename BaseT, typename... ConstructorArguments>
 std::unique_ptr<BaseT> createFromYaml(const YAML::Node& node, ConstructorArguments... args) {
-  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(node, args...);
+  return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(node, std::move(args)...);
 }
 
 /**
