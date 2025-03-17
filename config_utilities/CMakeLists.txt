@@ -29,6 +29,7 @@ add_library(
   src/config_context.cpp # global singleton
   src/context.cpp # parsing
   src/conversions.cpp
+  src/dynamic_config.cpp
   src/external_registry.cpp
   src/factory.cpp
   src/formatter.cpp
