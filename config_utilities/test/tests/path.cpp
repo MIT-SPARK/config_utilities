@@ -36,6 +36,7 @@
 #include "config_utilities/types/path.h"
 
 #include <fstream>
+#include <cstdlib>
 
 #include <gtest/gtest.h>
 
@@ -124,6 +125,66 @@ TEST(Path, Conversion) {
   EXPECT_EQ(path, expected_path);
   Path::fromIntermediate(with_slashes, str, error);
   EXPECT_EQ(str, expected);
+}
+
+TEST(Path, AbsoluteConversion) {
+  const std::string expected = "/tmp/a/test.txt";
+  const std::string expected_abs = std::filesystem::current_path() / "a/test.txt";
+  const std::string expected_home = std::filesystem::path(std::getenv("HOME")) / "a/test.txt";
+
+  const std::string with_dot = "/tmp//a/./test.txt";
+  const std::string relative = "./a/test.txt";
+  const std::string with_home = "~//a/./test.txt";
+  const std::filesystem::path expected_path(expected);
+  const std::filesystem::path with_dot_path(with_dot);
+  const std::filesystem::path relative_path(relative);
+  const std::filesystem::path with_home_path(with_home);
+
+  std::string error;
+  EXPECT_EQ(Path::Absolute::toIntermediate(expected, error), expected);
+  EXPECT_EQ(Path::Absolute::toIntermediate(with_dot, error), expected);
+  EXPECT_EQ(Path::Absolute::toIntermediate(relative, error), expected_abs);
+  EXPECT_EQ(Path::Absolute::toIntermediate(with_home, error), expected_home);
+  EXPECT_EQ(Path::Absolute::toIntermediate(expected_path, error), expected);
+  EXPECT_EQ(Path::Absolute::toIntermediate(with_dot_path, error), expected);
+  EXPECT_EQ(Path::Absolute::toIntermediate(relative_path, error), expected_abs);
+  EXPECT_EQ(Path::Absolute::toIntermediate(with_home_path, error), expected_home);
+
+  { // check that absolute path is not modified
+    std::filesystem::path path;
+    std::string str;
+    Path::Absolute::fromIntermediate(expected, path, error);
+    EXPECT_EQ(path, expected_path);
+    Path::Absolute::fromIntermediate(expected, str, error);
+    EXPECT_EQ(str, expected);
+  }
+
+  { // check that non-canonical absolute path is cleaned
+    std::filesystem::path path;
+    std::string str;
+    Path::Absolute::fromIntermediate(with_dot, path, error);
+    EXPECT_EQ(path, expected_path);
+    Path::Absolute::fromIntermediate(with_dot, str, error);
+    EXPECT_EQ(str, expected);
+  }
+
+  { // check that relative path is appended to cwd
+    std::filesystem::path path;
+    std::string str;
+    Path::Absolute::fromIntermediate(relative, path, error);
+    EXPECT_EQ(path, std::filesystem::path(expected_abs));
+    Path::Absolute::fromIntermediate(relative, str, error);
+    EXPECT_EQ(str, expected_abs);
+  }
+
+  { // check that home is expanded
+    std::filesystem::path path;
+    std::string str;
+    Path::Absolute::fromIntermediate(with_home, path, error);
+    EXPECT_EQ(path, std::filesystem::path(expected_home));
+    Path::Absolute::fromIntermediate(with_home, str, error);
+    EXPECT_EQ(str, expected_home);
+  }
 }
 
 TEST(Path, IsSet) {
