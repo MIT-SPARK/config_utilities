@@ -73,6 +73,14 @@ struct Path {
   static std::string toIntermediate(std::string value, std::string&);
   static void fromIntermediate(const std::string& intermediate, std::string& value, std::string&);
 
+  struct Absolute {
+    // Path conversion converts a path or string into its lexically normal form.
+    static std::string toIntermediate(const std::filesystem::path& value, std::string&);
+    static void fromIntermediate(const std::string& intermediate, std::filesystem::path& value, std::string&);
+    static std::string toIntermediate(std::string value, std::string&);
+    static void fromIntermediate(const std::string& intermediate, std::string& value, std::string&);
+  };
+
   // Checks to run on paths.
   /**
    * @brief Check if a path is not empty.
