@@ -135,20 +135,24 @@ TEST(Path, AbsoluteConversion) {
   const std::string with_dot = "/tmp//a/./test.txt";
   const std::string relative = "./a/test.txt";
   const std::string with_home = "~//a/./test.txt";
+  const std::string empty = "";
   const std::filesystem::path expected_path(expected);
   const std::filesystem::path with_dot_path(with_dot);
   const std::filesystem::path relative_path(relative);
   const std::filesystem::path with_home_path(with_home);
+  const std::filesystem::path empty_path(empty);
 
   std::string error;
   EXPECT_EQ(Path::Absolute::toIntermediate(expected, error), expected);
   EXPECT_EQ(Path::Absolute::toIntermediate(with_dot, error), expected);
   EXPECT_EQ(Path::Absolute::toIntermediate(relative, error), expected_abs);
   EXPECT_EQ(Path::Absolute::toIntermediate(with_home, error), expected_home);
+  EXPECT_EQ(Path::Absolute::toIntermediate(empty, error), "");
   EXPECT_EQ(Path::Absolute::toIntermediate(expected_path, error), expected);
   EXPECT_EQ(Path::Absolute::toIntermediate(with_dot_path, error), expected);
   EXPECT_EQ(Path::Absolute::toIntermediate(relative_path, error), expected_abs);
   EXPECT_EQ(Path::Absolute::toIntermediate(with_home_path, error), expected_home);
+  EXPECT_EQ(Path::Absolute::toIntermediate(empty_path, error), "");
 
   { // check that absolute path is not modified
     std::filesystem::path path;
@@ -184,6 +188,18 @@ TEST(Path, AbsoluteConversion) {
     EXPECT_EQ(path, std::filesystem::path(expected_home));
     Path::Absolute::fromIntermediate(with_home, str, error);
     EXPECT_EQ(str, expected_home);
+  }
+
+  { // check that empty paths are handled correctly
+    error.clear();
+    std::filesystem::path path;
+    std::string str;
+    Path::Absolute::fromIntermediate("", path, error);
+    EXPECT_EQ(path, std::filesystem::path());
+    EXPECT_TRUE(error.empty()) << error;
+    Path::Absolute::fromIntermediate("", str, error);
+    EXPECT_EQ(str, "");
+    EXPECT_TRUE(error.empty()) << error;
   }
 }
 
