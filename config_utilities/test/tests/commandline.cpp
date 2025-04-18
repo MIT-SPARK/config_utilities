@@ -216,9 +216,38 @@ a: 6.0
 b: [4]
 d: world!
   )yaml");
-  std::cerr << node << std::endl;
   expectEqual(expected, node);
   EXPECT_EQ(args.get_cmd(), "some_command --verbose=true --some-flag --ros-args -r other_arg:=something");
+}
+
+TEST(Commandline, NegativeValue) {
+  // Checks that we correctly don't detect negative values as flags
+  CliArgs cli_args(std::vector<std::string>{"some_command", "--config-utilities-yaml", "{c:", "6.0, a:", "-7.0}"});
+  auto args = cli_args.get();
+  const auto node = internal::loadFromArguments(args.argc, args.argv, true);
+  const auto expected = YAML::Load(R"yaml({c: 6.0, a: -7.0})yaml");
+  expectEqual(expected, node);
+  EXPECT_EQ(args.get_cmd(), "some_command");
+}
+
+TEST(Commandline, ShortOpt) {
+  // Checks that we correctly don't detect negative values as flags
+  CliArgs cli_args(std::vector<std::string>{"some_command",
+                                            "--config-utilities-yaml",
+                                            "{c:",
+                                            "6.0, a:",
+                                            "-7.0}",
+                                            "-h",
+                                            "--config-utilities-yaml",
+                                            "{c:",
+                                            "-h,",
+                                            "a:",
+                                            "9.0}"});
+  auto args = cli_args.get();
+  const auto node = internal::loadFromArguments(args.argc, args.argv, true);
+  const auto expected = YAML::Load(R"yaml({c: '-h', a: 9.0})yaml");
+  expectEqual(expected, node);
+  EXPECT_EQ(args.get_cmd(), "some_command -h");
 }
 
 }  // namespace config::test

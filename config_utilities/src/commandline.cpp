@@ -37,6 +37,7 @@
 
 #include <filesystem>
 #include <sstream>
+#include <regex>
 
 #include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/yaml_utils.h"
@@ -86,10 +87,14 @@ std::string Span::extractTokens(int argc, char* argv[]) const {
 }
 
 std::optional<Span> getSpan(int argc, char* argv[], int pos, bool parse_all, std::string& error) {
+  std::regex flag_regex(R"regex(^-{1,2}[\w-]+)regex");
+
   int index = pos + 1;
   while (index < argc) {
     const std::string curr_opt = argv[index];
-    const bool is_flag = !curr_opt.empty() && curr_opt[0] == '-';
+
+    std::smatch m;
+    const bool is_flag = std::regex_match(curr_opt, m, flag_regex);
     if (is_flag) {
       break;  // stop parsing the span
     }
