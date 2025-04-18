@@ -231,7 +231,7 @@ TEST(Commandline, NegativeValue) {
 }
 
 TEST(Commandline, ShortOpt) {
-  // Checks that we correctly don't detect negative values as flags
+  // Check that short options still break parsing
   CliArgs cli_args(std::vector<std::string>{"some_command",
                                             "--config-utilities-yaml",
                                             "{c:",
