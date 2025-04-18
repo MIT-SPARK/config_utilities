@@ -250,4 +250,19 @@ TEST(Commandline, ShortOpt) {
   EXPECT_EQ(args.get_cmd(), "some_command -h");
 }
 
+TEST(Commandline, EqualOpt) {
+  // Check that short options still break parsing
+  CliArgs cli_args(std::vector<std::string>{"some_command",
+                                            "--config-utilities-yaml",
+                                            "{c:",
+                                            "6.0, a:",
+                                            "-7.0}",
+                                            "--some-arg=value}"});
+  auto args = cli_args.get();
+  const auto node = internal::loadFromArguments(args.argc, args.argv, true);
+  const auto expected = YAML::Load(R"yaml({c: 6.0, a: -7.0})yaml");
+  expectEqual(expected, node);
+  EXPECT_EQ(args.get_cmd(), "some_command --some-arg=value}");
+}
+
 }  // namespace config::test
