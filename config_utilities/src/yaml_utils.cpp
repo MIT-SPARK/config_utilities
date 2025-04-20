@@ -35,6 +35,7 @@
 
 #include "config_utilities/internal/yaml_utils.h"
 
+#include <iostream>
 #include <sstream>
 
 #include "config_utilities/internal/logger.h"
@@ -49,9 +50,27 @@ inline void mergeLeaves(YAML::Node& a, const YAML::Node& b, bool extend_sequence
     return;
   }
 
+  bool clear_tag = false;
+  const auto tag = b.Tag();
+  if (tag != "?") {
+    if (tag == "!append") {
+      clear_tag = true;
+      extend_sequences = true;
+    }
+
+    if (tag == "!replace") {
+      clear_tag = true;
+      extend_sequences = false;
+    }
+  }
+
   // If either a or b is not a sequence, assign b to a (or if extending is disabled)
   if (!extend_sequences || !a.IsSequence() || !b.IsSequence()) {
     a = YAML::Clone(b);
+    if (clear_tag) {
+      a.SetTag("");
+    }
+
     return;
   }
 
@@ -61,15 +80,9 @@ inline void mergeLeaves(YAML::Node& a, const YAML::Node& b, bool extend_sequence
   }
 }
 
-}  // namespace
+inline bool isLeaf(const YAML::Node& a) { return !a.IsMap() && !a.IsSequence(); }
 
-void mergeYamlNodes(YAML::Node& a, const YAML::Node& b, bool extend_sequences) {
-  // If either node is a leaf in the config tree, pass merging behavior to helper function
-  if (!b.IsMap() || !a.IsMap()) {
-    mergeLeaves(a, b, extend_sequences);
-    return;
-  }
-
+inline void mergeYamlMaps(YAML::Node& a, const YAML::Node& b, bool extend_sequences) {
   // Both a and b are maps: merge all entries of b into a.
   for (const auto& node : b) {
     if (!node.first.IsScalar()) {
@@ -88,6 +101,52 @@ void mergeYamlNodes(YAML::Node& a, const YAML::Node& b, bool extend_sequences) {
       // Leaf of a, but b continues: insert b
       a[key] = YAML::Clone(node.second);
     }
+  }
+}
+
+inline void mergeYamlSequences(YAML::Node& a, const YAML::Node& b, bool extend_sequences) {
+  // Both a and b are maps: merge all entries of b into a.
+  for (const auto& node : b) {
+    if (!node.first.IsScalar()) {
+      std::stringstream ss;
+      ss << "Complex keys not supported, dropping '" << node.first << "' during merge";
+      Logger::logWarning(ss.str());
+      continue;
+    }
+
+    const auto& key = node.first.Scalar();
+    if (a[key]) {
+      // Node exists. Merge recursively.
+      YAML::Node a_sub = a[key];  // This node is a ref.
+      mergeYamlNodes(a_sub, node.second, extend_sequences);
+    } else {
+      // Leaf of a, but b continues: insert b
+      a[key] = YAML::Clone(node.second);
+    }
+  }
+}
+
+}  // namespace
+
+void mergeYamlNodes(YAML::Node& a, const YAML::Node& b, bool extend_sequences) {
+  // If either node is a leaf in the config tree, pass merging behavior to helper function
+  if (isLeaf(b) || isLeaf(a)) {
+    mergeLeaves(a, b, extend_sequences);
+    return;
+  }
+
+  if (a.Type() != b.Type()) {
+    return;
+  }
+
+  if (a.IsMap() && b.IsMap()) {
+    mergeYamlMaps(a, b, extend_sequences);
+  } else if (a.IsSequence() && b.IsSequence()) {
+    mergeYamlSequences(a, b, extend_sequences);
+  } else {
+    std::stringstream ss;
+    ss << "Cannot merge map and sequence! Discarding '" << b << "'";
+    Logger::logWarning(ss.str());
   }
 }
 

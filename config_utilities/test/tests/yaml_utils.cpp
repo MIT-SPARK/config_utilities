@@ -219,4 +219,58 @@ TEST(YamlUtils, moveDownNamespace) {
   expectEqual(data, expected_data);
 }
 
+TEST(YamlUtils, mergeWithTags) {
+  // NOTE(nathan) structured to require parsing tags at different levels of recursion
+  const auto node_a = YAML::Load(R"""(
+root:
+  b: [2]
+  c: [1, 4]
+other: [1, 2]
+)""");
+  const auto node_b = YAML::Load(R"""(
+root:
+  b: !append [4]
+  c: !replace [0]
+other: !append [3, 4, 5]
+)""");
+
+  {  // check that tags get parsed corrrectly
+    auto result = doMerge(node_a, node_b);
+    const auto expected = YAML::Load(R"""(
+root:
+  b: [2, 4]
+  c: [0]
+other: [1, 2, 3, 4, 5]
+)""");
+    expectEqual(result, expected);
+  }
+}
+
+TEST(YamlUtils, mergeWithNestedTags) {
+  // NOTE(nathan) structured to require parsing tags at different levels of recursion
+  const auto node_a = YAML::Load(R"""(
+root:
+  children:
+    - {a: [2]}
+    - {c: [1, 4]}
+)""");
+  const auto node_b = YAML::Load(R"""(
+root:
+  children:
+    - {a: !append [4]}
+    - {c: !replace [0]}
+)""");
+
+  {  // check that tags get parsed corrrectly
+    auto result = doMerge(node_a, node_b);
+    const auto expected = YAML::Load(R"""(
+root:
+  children:
+    - {a: [2, 4]}
+    - {c: [0]}
+)""");
+    expectEqual(result, expected);
+  }
+}
+
 }  // namespace config::test
