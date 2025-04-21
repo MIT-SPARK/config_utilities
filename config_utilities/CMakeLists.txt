@@ -39,6 +39,7 @@ add_library(
   src/path.cpp
   src/settings.cpp
   src/string_utils.cpp
+  src/tag_processors.cpp
   src/validation.cpp
   src/visitor.cpp
   src/yaml_parser.cpp
