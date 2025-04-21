@@ -33,10 +33,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
-#include "config_utilities/tag_processors.h"
-
 #include <gtest/gtest.h>
 
+#include "config_utilities/substitutions.h"
 #include "config_utilities/test/utils.h"
 
 namespace config::test {
@@ -45,13 +44,13 @@ namespace {
 
 inline YAML::Node doResolve(const YAML::Node& orig) {
   auto result = YAML::Clone(orig);
-  resolveTags(result);
+  resolveSubstitutions(result);
   return result;
 }
 
 }  // namespace
 
-TEST(YamlUtils, resolveLeftoverTags) {
+TEST(Substitutions, clearLeftoverTags) {
   const auto node = YAML::Load(R"""(
 root:
   children:
@@ -80,7 +79,7 @@ root:
   expectEqual(result, expected);
 }
 
-TEST(YamlUtils, resolveEnvTags) {
+TEST(Substitutions, resolveEnv) {
   {  // check that we don't try to pass non-scalars to getenv
     const auto node = YAML::Load("root: !env [1, 2, 3]");
     const auto result = doResolve(node);
