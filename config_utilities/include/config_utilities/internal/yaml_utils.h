@@ -42,12 +42,21 @@
 
 namespace config::internal {
 
+enum class MergeMode {
+  //! @brief Combine the two trees, recursing into matching sequence entries
+  UPDATE,
+  //! @brief Combine the two trees, appending left sequences into the right
+  APPEND,
+  //! @brief Combine the two trees, replacing left sequences with the right
+  REPLACE
+};
+
 /**
  * @brief Merges node b into a, overwriting values previously defined in a if they can not be
  * merged. Modifies node a, whereas b is const. Sequences can optionally be appended together at the same level of the
  * YAML tree.
  */
-void mergeYamlNodes(YAML::Node& a, const YAML::Node& b, bool extend_sequences = false);
+void mergeYamlNodes(YAML::Node& a, const YAML::Node& b, MergeMode = MergeMode::UPDATE);
 
 /**
  * @brief Get a pointer to the final node of the specified namespace if it exists, where each map in the yaml is

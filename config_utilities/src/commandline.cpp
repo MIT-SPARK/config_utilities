@@ -36,8 +36,8 @@
 #include "config_utilities/parsing/commandline.h"
 
 #include <filesystem>
-#include <sstream>
 #include <regex>
+#include <sstream>
 
 #include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/yaml_utils.h"
@@ -242,7 +242,7 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args) {
     }
 
     // no-op for invalid parsed node
-    internal::mergeYamlNodes(node, parsed_node, true);
+    internal::mergeYamlNodes(node, parsed_node, MergeMode::APPEND);
   }
 
   return node;

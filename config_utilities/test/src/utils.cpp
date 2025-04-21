@@ -38,8 +38,9 @@
 #include <gtest/gtest.h>
 
 namespace config::test {
+namespace {
 
-bool expectEqual(const YAML::Node& a, const YAML::Node& b) {
+bool expectEqualImpl(const YAML::Node& a, const YAML::Node& b) {
   EXPECT_EQ(a.Type(), b.Type());
   if (a.Type() != b.Type()) {
     return false;
@@ -54,8 +55,8 @@ bool expectEqual(const YAML::Node& a, const YAML::Node& b) {
         return false;
       }
       for (size_t i = 0; i < a.size(); ++i) {
-        EXPECT_TRUE(expectEqual(a[i], b[i]));
-        if (!expectEqual(a[i], b[i])) {
+        EXPECT_TRUE(expectEqualImpl(a[i], b[i]));
+        if (!expectEqualImpl(a[i], b[i])) {
           return false;
         }
       }
@@ -71,8 +72,8 @@ bool expectEqual(const YAML::Node& a, const YAML::Node& b) {
           ADD_FAILURE() << "Key " << key << " not found in b.";
           return false;
         }
-        EXPECT_TRUE(expectEqual(kv_pair.second, b[key]));
-        if (!expectEqual(kv_pair.second, b[key])) {
+        EXPECT_TRUE(expectEqualImpl(kv_pair.second, b[key]));
+        if (!expectEqualImpl(kv_pair.second, b[key])) {
           return false;
         }
       }
@@ -83,6 +84,14 @@ bool expectEqual(const YAML::Node& a, const YAML::Node& b) {
       return true;
   }
   return false;
+}
+
+}  // namespace
+
+bool expectEqual(const YAML::Node& a, const YAML::Node& b) {
+  const auto equal = expectEqualImpl(a, b);
+  EXPECT_TRUE(equal) << "---\na:\n---\n" << a << "\n---\nb:\n---\n" << b;
+  return equal;
 }
 
 void TestLogger::logImpl(const internal::Severity severity, const std::string& message) {

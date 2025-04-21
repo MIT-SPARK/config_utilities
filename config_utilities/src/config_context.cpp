@@ -49,7 +49,7 @@ void Context::update(const YAML::Node& other, const std::string& ns) {
   auto node = YAML::Clone(other);
   moveDownNamespace(node, ns);
   // default behavior of context is to act like the ROS1 param server and extend sequences
-  mergeYamlNodes(context.contents_, node, true);
+  mergeYamlNodes(context.contents_, node, MergeMode::APPEND);
 }
 
 void Context::clear() { instance().contents_ = YAML::Node(); }
