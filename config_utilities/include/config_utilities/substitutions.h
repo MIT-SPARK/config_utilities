@@ -39,56 +39,57 @@
 
 namespace config {
 
-struct TagProcessor {
-  virtual ~TagProcessor() = default;
+struct Substitution {
+  virtual ~Substitution() = default;
 
   /**
-   * @brief Attempt to replace node with corresponding tag
-   * @param[in] node Node to perform substitution on
+   * @brief Process arguments to substitution
+   * @param[in] contents Arguments following {{
    */
-  virtual void processNode(YAML::Node node) const = 0;
+  virtual std::string process(const std::string& contents) const = 0;
 };
 
-class RegisteredTags {
+class RegisteredSubstitutions {
  public:
   template <typename T>
   struct Registration {
-    explicit Registration(const std::string& tag);
+    Registration();
   };
 
-  ~RegisteredTags() = default;
+  ~RegisteredSubstitutions() = default;
 
-  static const TagProcessor* getEntry(const std::string& tag);
+  static const Substitution* getEntry(const std::string& tag);
 
  private:
   template <typename T>
   friend struct Registration;
 
-  static RegisteredTags& instance();
+  static RegisteredSubstitutions& instance();
 
-  static void addEntry(const std::string& tag, std::unique_ptr<TagProcessor>&& proc);
+  static void addEntry(const std::string& tag, std::unique_ptr<Substitution>&& proc);
 
-  RegisteredTags();
-  static std::unique_ptr<RegisteredTags> s_instance_;
-  std::map<std::string, std::unique_ptr<TagProcessor>> entries_;
+  RegisteredSubstitutions();
+  static std::unique_ptr<RegisteredSubstitutions> s_instance_;
+  std::map<std::string, std::unique_ptr<Substitution>> entries_;
 };
 
 template <typename T>
-RegisteredTags::Registration<T>::Registration(const std::string& tag) {
-  RegisteredTags::addEntry(tag, std::make_unique<T>());
+RegisteredSubstitutions::Registration<T>::Registration() {
+  RegisteredSubstitutions::addEntry(T::NAME, std::make_unique<T>());
 }
 
 /**
- * @brief Attempts to replace the node `!env VARNAME` with the value of VARNAME from the environment
+ * @brief Attempts to replace `$(env VAR)` with the value of VAR from the environment
  */
-struct EnvTag : public TagProcessor {
-  void processNode(YAML::Node node) const override;
+struct EnvSubstitution : public Substitution {
+  inline static const std::string NAME = "env";
+  std::string process(const std::string& contents) const override;
 };
 
 /**
  * @brief Iterate through the node, resolving tags
  * @param[in] node Node to resolve tags for
  */
-void resolveTags(YAML::Node node);
+void resolveSubstitutions(YAML::Node node);
 
 }  // namespace config

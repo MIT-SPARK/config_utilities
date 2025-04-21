@@ -41,7 +41,7 @@
 
 #include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/yaml_utils.h"
-#include "config_utilities/tag_processors.h"
+#include "config_utilities/substitutions.h"
 
 namespace config::internal {
 
@@ -272,7 +272,7 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args, ParserIn
     internal::mergeYamlNodes(node, parsed_node, MergeMode::APPEND);
   }
 
-  resolveTags(node);
+  resolveSubstitutions(node);
   return node;
 }
 

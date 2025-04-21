@@ -50,7 +50,7 @@ add_executable(
   tests/path.cpp
   tests/string_utils.cpp
   tests/subconfigs.cpp
-  tests/tag_processors.cpp
+  tests/substitutions.cpp
   tests/traits.cpp
   tests/update.cpp
   tests/validity_checks.cpp
