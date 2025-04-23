@@ -45,7 +45,7 @@ namespace config::internal {
 enum class MergeMode {
   //! @brief Combine the two trees, recursing into matching sequence entries
   UPDATE,
-  //! @brief Combine the two trees, appending left sequences into the right
+  //! @brief Combine the two trees, appending right sequences into the left
   APPEND,
   //! @brief Combine the two trees, replacing left sequences with the right
   REPLACE
