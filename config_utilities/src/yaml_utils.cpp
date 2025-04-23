@@ -58,7 +58,7 @@ inline std::optional<MergeMode> modeFromTag(const YAML::Node& a) {
   }
 }
 
-inline void mergeLeaves(YAML::Node& a, const YAML::Node& b) {
+inline void mergeLeaves(YAML::Node a, const YAML::Node& b) {
   // If b is invalid, we can't do anything.
   if (b.IsNull() || !b.IsDefined()) {
     return;
@@ -67,7 +67,7 @@ inline void mergeLeaves(YAML::Node& a, const YAML::Node& b) {
   a = YAML::Clone(b);
 }
 
-inline void mergeYamlMaps(YAML::Node& a, const YAML::Node& b, MergeMode mode) {
+inline void mergeYamlMaps(YAML::Node a, const YAML::Node& b, MergeMode mode) {
   const auto tag_mode = modeFromTag(b);
   mode = tag_mode.value_or(mode);
   if (mode == MergeMode::REPLACE) {
@@ -91,8 +91,7 @@ inline void mergeYamlMaps(YAML::Node& a, const YAML::Node& b, MergeMode mode) {
     const auto& key = node.first.Scalar();
     if (a[key]) {
       // Node exists. Merge recursively.
-      YAML::Node a_sub = a[key];  // This node is a ref.
-      mergeYamlNodes(a_sub, node.second, mode);
+      mergeYamlNodes(a[key], node.second, mode);
     } else {
       // Leaf of a, but b continues: insert b
       a[key] = YAML::Clone(node.second);
@@ -100,13 +99,12 @@ inline void mergeYamlMaps(YAML::Node& a, const YAML::Node& b, MergeMode mode) {
   }
 }
 
-inline void updateYamlSequence(YAML::Node& a, const YAML::Node& b, MergeMode mode) {
+inline void updateYamlSequence(YAML::Node a, const YAML::Node& b, MergeMode mode) {
   auto iter_a = a.begin();
   auto iter_b = b.begin();
   while (iter_b != b.end()) {
     if (iter_a != a.end()) {
-      auto a_ref = *iter_a;
-      mergeYamlNodes(a_ref, *iter_b, mode);
+      mergeYamlNodes(*iter_a, *iter_b, mode);
       ++iter_a;
     } else {
       a.push_back(YAML::Clone(*iter_b));
@@ -116,7 +114,7 @@ inline void updateYamlSequence(YAML::Node& a, const YAML::Node& b, MergeMode mod
   }
 }
 
-inline void mergeYamlSequences(YAML::Node& a, const YAML::Node& b, MergeMode mode) {
+inline void mergeYamlSequences(YAML::Node a, const YAML::Node& b, MergeMode mode) {
   const auto tag_mode = modeFromTag(b);
   mode = tag_mode.value_or(mode);
   switch (mode) {
@@ -140,7 +138,7 @@ inline void mergeYamlSequences(YAML::Node& a, const YAML::Node& b, MergeMode mod
 
 }  // namespace
 
-void mergeYamlNodes(YAML::Node& a, const YAML::Node& b, MergeMode mode) {
+void mergeYamlNodes(YAML::Node a, const YAML::Node& b, MergeMode mode) {
   // If either node is a leaf in the config tree, pass merging behavior to helper function
   if (isLeaf(b) || isLeaf(a)) {
     mergeLeaves(a, b);
