@@ -65,7 +65,7 @@ enum class MergeMode {
  * @param b Node to merge from ("right" node and remains constant).
  * @param mode Mode to use when merging
  */
-void mergeYamlNodes(YAML::Node a, const YAML::Node& b, MergeMode mode = MergeMode::UPDATE);
+void mergeYamlNodes(YAML::Node& a, const YAML::Node& b, MergeMode mode = MergeMode::UPDATE);
 
 /**
  * @brief Get a pointer to the final node of the specified namespace if it exists, where each map in the yaml is
