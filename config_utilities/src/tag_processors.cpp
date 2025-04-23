@@ -113,7 +113,7 @@ void EnvTag::processNode(YAML::Node node) const {
   const auto ret = std::getenv(varname.c_str());
   if (!ret) {
     std::stringstream ss;
-    ss << "Failed to get envname from; '" << node << "'";
+    ss << "Failed to get envname from '" << node << "'";
     internal::Logger::logWarning(ss.str());
     return;
   }
