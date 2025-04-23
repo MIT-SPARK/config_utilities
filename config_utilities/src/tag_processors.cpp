@@ -87,8 +87,8 @@ RegisteredTags& RegisteredTags::instance() {
 void RegisteredTags::addEntry(const std::string& tag, std::unique_ptr<TagProcessor>&& proc) {
   auto& curr = instance();
   auto had_prev = curr.entries_.emplace(tag, std::move(proc)).second;
-  if (had_prev) {
-    internal::Logger::logWarning("Registered new processor for existing tag '" + tag + "'");
+  if (!had_prev) {
+    internal::Logger::logWarning("Dropping new processor for existing tag '" + tag + "'");
   }
 }
 
@@ -105,7 +105,7 @@ void EnvTag::processNode(YAML::Node node) const {
     varname = node.as<std::string>();
   } catch (YAML::Exception& e) {
     std::stringstream ss;
-    ss << "Failed to get envname from; '" << node << "'";
+    ss << "Failed to get envname from '" << node << "'";
     internal::Logger::logWarning(ss.str());
     return;
   }

@@ -98,11 +98,11 @@ TEST(YamlUtils, resolveEnvTags) {
     expectEqual(result, expected);
   }
 
-  auto set = std::getenv("SHELL");
+  auto set = std::getenv("HOME");
   if (!set) {
-    FAIL() << "required environment variable 'SHELL' not set";
+    FAIL() << "required environment variable 'HOME' not set";
   } else {
-    const auto node = YAML::Load("root: !env SHELL");
+    const auto node = YAML::Load("root: !env HOME");
     const auto result = doResolve(node);
     const auto expected = YAML::Load("root: " + std::string(set));
     expectEqual(result, expected);
