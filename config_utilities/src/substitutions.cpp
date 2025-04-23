@@ -115,34 +115,16 @@ void RegisteredSubstitutions::addEntry(const std::string& tag, std::unique_ptr<S
   }
 }
 
-void EnvSubstitution::process(YAML::Node node) const {
-  if (!node.IsScalar()) {
-    std::stringstream ss;
-    ss << "Node with !env tag is not scalar: '" << node << "'";
-    internal::Logger::logWarning(ss.str());
-    return;
-  }
-
-  std::string varname;
-  try {
-    varname = node.as<std::string>();
-  } catch (YAML::Exception& e) {
-    std::stringstream ss;
-    ss << "Failed to get envname from '" << node << "'";
-    internal::Logger::logWarning(ss.str());
-    return;
-  }
-
-  const auto ret = std::getenv(varname.c_str());
+std::string EnvSubstitution::process(const std::string& contents) const {
+  const auto ret = std::getenv(contents.c_str());
   if (!ret) {
     std::stringstream ss;
-    ss << "Failed to get envname from '" << node << "'";
+    ss << "Failed to get envname from '" << contents << "'";
     internal::Logger::logWarning(ss.str());
-    return;
+    return contents;
   }
 
-  node = std::string(ret);
-  node.SetTag("");
+  return std::string(ret);
 }
 
 void resolveSubstitutions(YAML::Node node) {
