@@ -33,80 +33,80 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
-#include "config_utilities/test/utils.h"
+#include "config_utilities/tag_processors.h"
 
 #include <gtest/gtest.h>
 
+#include "config_utilities/test/utils.h"
+
 namespace config::test {
+
 namespace {
 
-bool expectEqualImpl(const YAML::Node& a, const YAML::Node& b) {
-  EXPECT_EQ(a.Type(), b.Type());
-  if (a.Type() != b.Type()) {
-    return false;
-  }
-  switch (a.Type()) {
-    case YAML::NodeType::Scalar:
-      EXPECT_EQ(a.Scalar(), b.Scalar());
-      return a.Scalar() == b.Scalar();
-    case YAML::NodeType::Sequence:
-      EXPECT_EQ(a.size(), b.size());
-      if (a.size() != b.size()) {
-        return false;
-      }
-      for (size_t i = 0; i < a.size(); ++i) {
-        EXPECT_TRUE(expectEqualImpl(a[i], b[i]));
-        if (!expectEqualImpl(a[i], b[i])) {
-          return false;
-        }
-      }
-      return true;
-    case YAML::NodeType::Map:
-      EXPECT_EQ(a.size(), b.size());
-      if (a.size() != b.size()) {
-        return false;
-      }
-      for (const auto& kv_pair : a) {
-        const std::string key = kv_pair.first.Scalar();
-        if (!b[key]) {
-          ADD_FAILURE() << "Key " << key << " not found in b.";
-          return false;
-        }
-        EXPECT_TRUE(expectEqualImpl(kv_pair.second, b[key]));
-        if (!expectEqualImpl(kv_pair.second, b[key])) {
-          return false;
-        }
-      }
-      return true;
-    case YAML::NodeType::Null:
-      return true;
-    case YAML::NodeType::Undefined:
-      return true;
-  }
-  return false;
+inline YAML::Node doResolve(const YAML::Node& orig) {
+  auto result = YAML::Clone(orig);
+  resolveTags(result);
+  return result;
 }
 
 }  // namespace
 
-bool expectEqual(const YAML::Node& a, const YAML::Node& b) {
-  const auto equal = expectEqualImpl(a, b);
-  EXPECT_TRUE(equal) << "---\na:\n---\n" << a << "\n---\nb:\n---\n" << b;
-  return equal;
+TEST(YamlUtils, resolveLeftoverTags) {
+  const auto node = YAML::Load(R"""(
+root:
+  children:
+    - {a: !append [4]}
+    - {c: !replace [0]}
+  map_with_tags:
+    !append tagged_key:
+      foo:
+        - a: {b: !replace 2}
+    other:
+      bar: 42
+      foo: 7
+)""");
+
+  auto result = doResolve(node);
+  const auto expected = YAML::Load(R"""(
+root:
+  children:
+    - {a: [4]}
+    - {c: [0]}
+  map_with_tags:
+    tagged_key:
+      foo: [{a: {b: 2}}]
+    other: {bar: 42, foo: 7}
+)""");
+  expectEqual(result, expected);
 }
 
-void TestLogger::logImpl(const internal::Severity severity, const std::string& message) {
-  messages_.emplace_back(severity, message);
-}
+TEST(YamlUtils, resolveEnvTags) {
+  {  // check that we don't try to pass non-scalars to getenv
+    const auto node = YAML::Load("root: !env [1, 2, 3]");
+    const auto result = doResolve(node);
+    const auto expected = YAML::Load("root: [1, 2, 3]");
+    expectEqual(result, expected);
+  }
 
-std::shared_ptr<TestLogger> TestLogger::create() {
-  auto logger = std::make_shared<TestLogger>();
-  internal::Logger::setLogger(logger);
-  return logger;
-}
+  auto unset = std::getenv("/some/random/env/variable");
+  if (unset) {
+    FAIL() << "environment variable '/some/random/env/variable' is set";
+  } else {
+    const auto node = YAML::Load("root: !env /some/random/env/variable");
+    const auto result = doResolve(node);
+    const auto expected = YAML::Load("root: /some/random/env/variable");
+    expectEqual(result, expected);
+  }
 
-void TestLogger::print() const {
-  for (const auto& message : messages_) {
-    std::cout << internal::severityToString(message.first) << ": " << message.second << std::endl;
+  auto set = std::getenv("HOME");
+  if (!set) {
+    FAIL() << "required environment variable 'HOME' not set";
+  } else {
+    const auto node = YAML::Load("root: !env HOME");
+    const auto result = doResolve(node);
+    const auto expected = YAML::Load("root: " + std::string(set));
+    expectEqual(result, expected);
   }
 }
+
 }  // namespace config::test

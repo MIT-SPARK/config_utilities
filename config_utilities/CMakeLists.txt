@@ -39,6 +39,7 @@ add_library(
   src/path.cpp
   src/settings.cpp
   src/string_utils.cpp
+  src/tag_processors.cpp
   src/validation.cpp
   src/visitor.cpp
   src/yaml_parser.cpp
@@ -53,6 +54,9 @@ target_include_directories(
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE 1)
 add_library(config_utilities::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+
+add_executable(composite-configs app/composite_configs.cpp)
+target_link_libraries(composite-configs ${PROJECT_NAME})
 
 if(ENABLE_roscpp)
   target_link_libraries(${PROJECT_NAME} PUBLIC ${roscpp_LIBRARIES})

@@ -33,27 +33,62 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
-#include "config_utilities/internal/config_context.h"
+#pragma once
 
-#include "config_utilities/internal/yaml_utils.h"
+#include <yaml-cpp/yaml.h>
 
-namespace config::internal {
+namespace config {
 
-Context& Context::instance() {
-  static Context s_instance;
-  return s_instance;
+struct TagProcessor {
+  virtual ~TagProcessor() = default;
+
+  /**
+   * @brief Attempt to replace node with corresponding tag
+   * @param[in] node Node to perform substitution on
+   */
+  virtual void processNode(YAML::Node node) const = 0;
+};
+
+class RegisteredTags {
+ public:
+  template <typename T>
+  struct Registration {
+    explicit Registration(const std::string& tag);
+  };
+
+  ~RegisteredTags() = default;
+
+  static const TagProcessor* getEntry(const std::string& tag);
+
+ private:
+  template <typename T>
+  friend struct Registration;
+
+  static RegisteredTags& instance();
+
+  static void addEntry(const std::string& tag, std::unique_ptr<TagProcessor>&& proc);
+
+  RegisteredTags();
+  static std::unique_ptr<RegisteredTags> s_instance_;
+  std::map<std::string, std::unique_ptr<TagProcessor>> entries_;
+};
+
+template <typename T>
+RegisteredTags::Registration<T>::Registration(const std::string& tag) {
+  RegisteredTags::addEntry(tag, std::make_unique<T>());
 }
 
-void Context::update(const YAML::Node& other, const std::string& ns) {
-  auto& context = instance();
-  auto node = YAML::Clone(other);
-  moveDownNamespace(node, ns);
-  // default behavior of context is to act like the ROS1 param server and extend sequences
-  mergeYamlNodes(context.contents_, node, MergeMode::APPEND);
-}
+/**
+ * @brief Attempts to replace the node `!env VARNAME` with the value of VARNAME from the environment
+ */
+struct EnvTag : public TagProcessor {
+  void processNode(YAML::Node node) const override;
+};
 
-void Context::clear() { instance().contents_ = YAML::Node(); }
+/**
+ * @brief Iterate through the node, resolving tags
+ * @param[in] node Node to resolve tags for
+ */
+void resolveTags(YAML::Node node);
 
-YAML::Node Context::toYaml() { return YAML::Clone(instance().contents_); }
-
-}  // namespace config::internal
+}  // namespace config

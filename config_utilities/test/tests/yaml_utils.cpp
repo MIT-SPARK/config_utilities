@@ -42,7 +42,11 @@
 #include "config_utilities/test/utils.h"
 
 namespace config::test {
+
+using internal::MergeMode;
+
 namespace {
+
 inline YAML::Node createData() {
   YAML::Node data;
   data["a"]["b"]["c"] = 1;
@@ -53,9 +57,9 @@ inline YAML::Node createData() {
   return data;
 }
 
-inline YAML::Node doMerge(const YAML::Node& lhs, const YAML::Node& rhs, bool extend_lists = false) {
+inline YAML::Node doMerge(const YAML::Node& lhs, const YAML::Node& rhs, MergeMode mode = MergeMode::UPDATE) {
   auto result = YAML::Clone(lhs);
-  internal::mergeYamlNodes(result, rhs, extend_lists);
+  internal::mergeYamlNodes(result, rhs, mode);
   return result;
 }
 
@@ -102,13 +106,12 @@ other: [3, 4, 5]
 )""");
 
   {  // without extend, lists should override
-    auto result = doMerge(node_a, node_b);
+    auto result = doMerge(node_a, node_b, MergeMode::REPLACE);
     const auto expected = YAML::Load(R"""(
 root:
   a: 1
   b: [4]
   c:
-    foo: [1, 2, 3]
     bar: [7]
   d: 3.0
 other: [3, 4, 5]
@@ -117,7 +120,7 @@ other: [3, 4, 5]
   }
 
   {  // with extend, lists should append
-    auto result = doMerge(node_a, node_b, true);
+    auto result = doMerge(node_a, node_b, MergeMode::APPEND);
     const auto expected = YAML::Load(R"""(
 root:
   a: 1
@@ -217,6 +220,60 @@ TEST(YamlUtils, moveDownNamespace) {
   expected_data["a"]["b"]["c"] = createData();
   internal::moveDownNamespace(data, "a/b/c");
   expectEqual(data, expected_data);
+}
+
+TEST(YamlUtils, mergeWithTags) {
+  // NOTE(nathan) structured to require parsing tags at different levels of recursion
+  const auto node_a = YAML::Load(R"""(
+root:
+  b: [2]
+  c: [1, 4]
+other: [1, 2]
+)""");
+  const auto node_b = YAML::Load(R"""(
+root:
+  b: !append [4]
+  c: !replace [0]
+other: !append [3, 4, 5]
+)""");
+
+  {  // check that tags get parsed corrrectly
+    auto result = doMerge(node_a, node_b);
+    const auto expected = YAML::Load(R"""(
+root:
+  b: [2, 4]
+  c: [0]
+other: [1, 2, 3, 4, 5]
+)""");
+    expectEqual(result, expected);
+  }
+}
+
+TEST(YamlUtils, mergeWithNestedTags) {
+  // NOTE(nathan) structured to require parsing tags at different levels of recursion
+  const auto node_a = YAML::Load(R"""(
+root:
+  children:
+    - {a: [2]}
+    - {c: [1, 4]}
+)""");
+  const auto node_b = YAML::Load(R"""(
+root:
+  children:
+    - {a: !append [4]}
+    - {c: !replace [0]}
+)""");
+
+  {  // check that tags get parsed corrrectly
+    auto result = doMerge(node_a, node_b);
+    const auto expected = YAML::Load(R"""(
+root:
+  children:
+    - {a: [2, 4]}
+    - {c: [0]}
+)""");
+    expectEqual(result, expected);
+  }
 }
 
 }  // namespace config::test

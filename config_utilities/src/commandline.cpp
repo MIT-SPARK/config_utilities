@@ -36,11 +36,12 @@
 #include "config_utilities/parsing/commandline.h"
 
 #include <filesystem>
-#include <sstream>
 #include <regex>
+#include <sstream>
 
 #include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/yaml_utils.h"
+#include "config_utilities/tag_processors.h"
 
 namespace config::internal {
 
@@ -59,6 +60,8 @@ struct CliParser {
     std::string value;
     bool is_file;
   };
+
+  ParserInfo info;
 
   static constexpr auto FILE_OPT = "--config-utilities-file";
   static constexpr auto YAML_OPT = "--config-utilities-yaml";
@@ -143,11 +146,25 @@ void removeSpan(int& argc, char* argv[], const Span& span) {
 CliParser& CliParser::parse(int& argc, char* argv[], bool remove_args) {
   std::vector<Span> spans;
 
+  bool found_separator = false;
   int i = 0;
   while (i < argc) {
     const std::string curr_opt(argv[i]);
     std::string error;
     std::optional<Span> curr_span;
+    if ((curr_opt == "-h" || curr_opt == "--help") && !found_separator) {
+      info.help_present = true;
+      spans.emplace_back(Span{i, 0, curr_opt});
+      ++i;
+      continue;
+    }
+
+    if (curr_opt == "--" && !found_separator) {
+      found_separator = true;
+      spans.emplace_back(Span{i, 0, curr_opt});
+      ++i;
+    }
+
     if (curr_opt == FILE_OPT || curr_opt == YAML_OPT) {
       curr_span = getSpan(argc, argv, i, curr_opt == YAML_OPT, error);
     }
@@ -168,6 +185,10 @@ CliParser& CliParser::parse(int& argc, char* argv[], bool remove_args) {
   }
 
   for (const auto& span : spans) {
+    if (span.key != FILE_OPT && span.key != YAML_OPT) {
+      continue; // skip any spans for single options
+    }
+
     entries.push_back(Entry{span.extractTokens(argc, argv), span.key == FILE_OPT});
   }
 
@@ -229,8 +250,14 @@ YAML::Node nodeFromLiteralEntry(const CliParser::Entry& entry) {
   return node;
 }
 
-YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args) {
+YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args, ParserInfo* info) {
   const auto parser = CliParser().parse(argc, argv, remove_args);
+  if (info) {
+    *info = parser.info;
+    if (info->help_present) {
+      return YAML::Node();
+    }
+  }
 
   YAML::Node node;
   for (const auto& entry : parser.entries) {
@@ -242,9 +269,10 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args) {
     }
 
     // no-op for invalid parsed node
-    internal::mergeYamlNodes(node, parsed_node, true);
+    internal::mergeYamlNodes(node, parsed_node, MergeMode::APPEND);
   }
 
+  resolveTags(node);
   return node;
 }
 

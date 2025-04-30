@@ -45,12 +45,18 @@
 namespace config {
 namespace internal {
 
+struct ParserInfo {
+  bool help_present = false;
+};
+
 /**
  * @brief Parse and collate YAML node from arguments, optionally removing arguments
  * @param argc Number of command line arguments
  * @param argv Command line argument strings
+ * @param remove_args Remove any recognized arguments from argc and argv
+ * @param parser_info Optional information for parser used by composite executable
  */
-YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args);
+YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args, ParserInfo* parser_info = nullptr);
 
 /**
  * @brief Parse and collate YAML node from arguments

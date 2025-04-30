@@ -42,12 +42,30 @@
 
 namespace config::internal {
 
+enum class MergeMode {
+  //! @brief Combine the two trees, recursing into matching sequence entries
+  UPDATE,
+  //! @brief Combine the two trees, appending right sequences into the left
+  APPEND,
+  //! @brief Combine the two trees, replacing left sequences with the right
+  REPLACE
+};
+
 /**
- * @brief Merges node b into a, overwriting values previously defined in a if they can not be
- * merged. Modifies node a, whereas b is const. Sequences can optionally be appended together at the same level of the
- * YAML tree.
+ * @brief Merges node b into a with conflicting keys handled by choice of mode
+ *
+ * Recurses through the YAML "tree" of b, adding all non-conflicting nodes to a. Conflicting nodes (i.e. map keys or
+ * shared indices in sequences that already exist in a) are handled according to the mode selection. For `REPLACE`, any
+ * conflicting node stops the recursion, and the conflicting node is replaced by the value in b. For 'APPEND', any
+ * conflicting sequence node will stop the recursion and cause the entire contents of the node in b to be append to the
+ * node in a. For 'UPDATE', any conflicting map or sequence node recursively calls `mergeYamlNodes` with the children of
+ * the conflicting nodes as the new roots.
+ *
+ * @param a Node to merge into ("left" node and will be changed).
+ * @param b Node to merge from ("right" node and remains constant).
+ * @param mode Mode to use when merging
  */
-void mergeYamlNodes(YAML::Node& a, const YAML::Node& b, bool extend_sequences = false);
+void mergeYamlNodes(YAML::Node& a, const YAML::Node& b, MergeMode mode = MergeMode::UPDATE);
 
 /**
  * @brief Get a pointer to the final node of the specified namespace if it exists, where each map in the yaml is
