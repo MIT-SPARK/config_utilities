@@ -128,6 +128,26 @@ int main(int argc, char** argv) {
 }
 ```
 
+The default ROS-like merging behavior can be controlled by inline tags. The following behaviors are currently available:
+  - `!append`: Matched sequences are appended together (specifically, the right sequence is appended to the left)
+  - `!replace`: Matched keys result in the right key overriding the left
+  - `!merge`: Matched keys (including sequence indices) are recursed into. Any unmatched keys are added
+
+Example behavior:
+```
+# original YAML (left)
+root: {child: {a: 42, c: 0}, numbers: [1, 2, 3], scalar: -1}
+# new YAML to merge (right)
+root: !TAG {child: {a: 12, b: 13}, numbers: [4, 5], other: temp}
+
+# result of merging right to left with !append
+root: {child: {a: 12, c: 0, b: 13}, numbers: [1, 2, 3, 4, 5], scalar: -1, other: temp}
+# result of merging right to left with !replace tag
+root: {child: {a: 12, b: 13}, numbers: [4, 5], scalar: -1, other: temp}
+# result of merging right to left with !merge tag
+root: {child: {a: 12, c: 0, b: 13}, numbers: [4, 5, 3], scalar: -1, other: temp}
+```
+
 # Parse via global context
 
 Usually the command line arguments or parsed YAML are not globally available to every part of an executable.
