@@ -237,7 +237,7 @@ TEST(Commandline, ShortOpt) {
                                             "{c:",
                                             "6.0, a:",
                                             "-7.0}",
-                                            "-h",
+                                            "-y",
                                             "--config-utilities-yaml",
                                             "{c:",
                                             "-h,",
@@ -247,7 +247,7 @@ TEST(Commandline, ShortOpt) {
   const auto node = internal::loadFromArguments(args.argc, args.argv, true);
   const auto expected = YAML::Load(R"yaml({c: '-h', a: 9.0})yaml");
   expectEqual(expected, node);
-  EXPECT_EQ(args.get_cmd(), "some_command -h");
+  EXPECT_EQ(args.get_cmd(), "some_command -y");
 }
 
 TEST(Commandline, EqualOpt) {
