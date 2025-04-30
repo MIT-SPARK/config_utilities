@@ -134,7 +134,7 @@ The default ROS-like merging behavior can be controlled by inline tags. The foll
   - `!merge`: Matched keys (including sequence indices) are recursed into. Any unmatched keys are added
 
 Example behavior:
-```
+```yaml
 # original YAML (left)
 root: {child: {a: 42, c: 0}, numbers: [1, 2, 3], scalar: -1}
 # new YAML to merge (right)
