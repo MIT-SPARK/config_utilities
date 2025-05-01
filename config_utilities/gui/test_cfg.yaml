@@ -1,0 +1,80 @@
+{
+  "type": "config",
+  "name": "MyConfig",
+  "fields":
+    [
+      {
+        "type": "field",
+        "name": "i",
+        "value": 100,
+        "default": 100,
+        "input_info": { "type": "int32", "min": 0, "lower_exclusive": True },
+      },
+      {
+        "type": "field",
+        "name": "distance",
+        "unit": "m",
+        "value": 42,
+        "default": 42,
+        "input_info": { "type": "float64", "min": 0, "max": 100 },
+      },
+      {
+        "type": "field",
+        "name": "b",
+        "value": True,
+        "default": True,
+        "input_info": { "type": "bool" },
+      },
+      {
+        "type": "field",
+        "name": "vec",
+        "value": [1, 2, 3],
+        "default": [1, 2, 3],
+        "input_info": { "type": "yaml" },
+      },
+      {
+        "type": "field",
+        "name": "map",
+        "value": { "a": 1, "b": 2, "c": 3 },
+        "default": { "a": 1, "b": 2, "c": 3 },
+        "input_info": { "type": "yaml" },
+      },
+      {
+        "type": "field",
+        "name": "mat",
+        "value": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+        "default": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+        "input_info": { "type": "yaml" },
+      },
+      {
+        "type": "field",
+        "name": "my_enum",
+        "value": "A",
+        "default": "A",
+        "input_info": { "type": "options", "options": ["A", "B", "C"] },
+      },
+      {
+        "type": "config",
+        "name": "SubConfig",
+        "field_name": "sub_config",
+        "fields":
+          [
+            {
+              "type": "field",
+              "name": "f",
+              "value": 1.1,
+              "default": 1.1,
+              "input_info":
+                { "type": "options", "options": [0, 1.1, 2.2, 3.3] },
+            },
+            {
+              "type": "field",
+              "name": "s",
+              "value": "test",
+              "default": "test",
+              "input_info": { "type": "string" },
+            },
+          ],
+      },
+    ],
+}
