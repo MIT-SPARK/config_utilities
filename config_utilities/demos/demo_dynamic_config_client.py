@@ -67,6 +67,7 @@ class DynamicConfigRosClient:
             return
         self.last_info_received = values
         self.gui.set_config_info(values)
+        print(values)
 
     def reg_cb(self, _):
         # Instead of incremental tracking just update the configs.
