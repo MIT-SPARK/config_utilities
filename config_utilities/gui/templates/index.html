@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- Head -->
+
+<head>
+  <title>Config Utilities Dynamic Configs</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<!-- Scripts -->
+<script src="{{ url_for('static', filename='js/build_fields.js') }}"></script>
+<script src="{{ url_for('static', filename='js/read_config.js') }}"></script>
+
+<!-- Body -->
+
+<body>
+
+  <header>
+    <h1>Config Utilities Dynamic Configs</h1>
+  </header>
+
+  <main>
+    <table id="config-table" class="config-table">
+      <tr>
+        <th>{{ config_name }} </th>
+        <th>Value</th>
+        <th>Default</th>
+      </tr>
+      <script>
+        const configData = {{ config_data | tojson }};
+        buildFields(configData);
+      </script>
+    </table>
+
+
+    <!-- <div style="display: flex;">
+      <form action="/refresh/" method="post" padding="10px"> -->
+    <button name="refreshBtn" type="submit" onclick="readConfig();">Refresh</button>
+    <!-- </form> -->
+
+    <!-- <form action="/submit/" method="post"> -->
+    <button name="submitBtn" type="submit" onclick="readConfig();">Submit</button>
+    <!-- </form> -->
+  </main>
+
+  <!-- <footer>
+    &copy; config_utilities dynamic configs v1.0.0
+  </footer> -->
+
+</body>
