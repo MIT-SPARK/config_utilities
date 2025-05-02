@@ -11,6 +11,7 @@
 <!-- Scripts -->
 <script src="{{ url_for('static', filename='js/build_fields.js') }}"></script>
 <script src="{{ url_for('static', filename='js/read_config.js') }}"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
 <!-- Body -->
 
@@ -36,7 +37,7 @@
 
     <!-- <div style="display: flex;">
       <form action="/refresh/" method="post" padding="10px"> -->
-    <button name="refreshBtn" type="submit" onclick="readConfig();">Refresh</button>
+    <button name="refreshBtn" type="submit" onclick="post('/refresh');">Refresh</button>
     <!-- </form> -->
 
     <!-- <form action="/submit/" method="post"> -->

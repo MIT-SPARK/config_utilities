@@ -10,16 +10,21 @@ function buildFields(data) {
         html = "<tr class='config-row'>";
 
         // Label.
-        html += "<td class='config-label' padding-left='" + (d.indent * 3) + "px'>" + d.name + "</td>";
+        html += "<td class='config-label'>"
+        for (var j = 0; j < d.indent; j++) {
+            html += "&nbsp;&nbsp;&nbsp;&nbsp;";
+        }
+        html += d.name;
+        if ('unit' in d) {
+            html += " [" + d.unit + "]";
+        }
+        html += ":</td>";
 
         // Field.
         html += "<td class='config-field'>";
         html += "<input type='text' action='/' method='post' id='field-" + d.id + "' value='" + d.value + "'></td>";
         // Default.
         html += "<td class='config-default'>" + d.default + "</td>";
-
-        html += "<td>" + d.id + "</td>";
-        html += "<td>" + d.indent + "</td>";
 
         // Finish.
         html += "</tr>";
