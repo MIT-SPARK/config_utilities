@@ -93,7 +93,7 @@ class YamlParser {
    * @param name Name of the param to look up.
    * @param value Value to parse.
    * @param sub_namespace Sub-namespace of the param to look up in the node.
-   * @param error Where to store the error message if conversion fails.
+   * @param error Where to store the error message if conversion fails. If successful, error will be empty.
    * @return true If the value was found and successfully parsed.
    */
   template <typename T>
@@ -107,6 +107,7 @@ class YamlParser {
       // The param is not defined. This is not an error.
       return false;
     }
+    error.clear();
     try {
       fromYamlImpl(value, child_node, error);
     } catch (const std::exception& e) {
@@ -146,7 +147,7 @@ class YamlParser {
    * @param name Name of the param to store.
    * @param value Value to parse.
    * @param sub_namespace Sub-namespace of the param when adding it to the root node.
-   * @param error Where to store the error message if conversion fails.
+   * @param error Where to store the error message if conversion fails. If successful, error will be empty.
    * @return The yaml node the value was successfully parsed. Null-node if conversion failed.
    */
   template <typename T>
@@ -155,8 +156,9 @@ class YamlParser {
                            const std::string& sub_namespace,
                            std::string& error) {
     YAML::Node node;
+    error.clear();
     try {
-      node = toYamlImpl(name, value, error);
+      node = toYamlImpl(value, error);
     } catch (const std::exception& e) {
       error = std::string(e.what());
     }
@@ -165,12 +167,17 @@ class YamlParser {
       return YAML::Node(YAML::NodeType::Null);
     }
 
-    moveDownNamespace(node, sub_namespace);
-    return node;
+    // Fix the namespacing and param name.
+    YAML::Node root_node;
+    root_node[name] = node;
+    moveDownNamespace(root_node, sub_namespace);
+    return root_node;
   }
 
  private:
   // Generic types.
+  // NOTE(lschmid): fromYamlImpl may throw if an conversion error occurs, which will be caught in the public facing
+  // implementations.
   template <typename T,
             typename std::enable_if<!is_int<T>, bool>::type = true,
             typename std::enable_if<!std::is_floating_point<T>::value, bool>::type = true>
@@ -179,9 +186,9 @@ class YamlParser {
   }
 
   template <typename T>
-  static YAML::Node toYamlImpl(const std::string& name, const T& value, std::string& error) {
+  static YAML::Node toYamlImpl(const T& value, std::string& error) {
     YAML::Node node;
-    node[name] = value;
+    node = value;
     return node;
   }
 
@@ -197,11 +204,11 @@ class YamlParser {
   }
 
   template <typename T>
-  static YAML::Node toYamlImpl(const std::string& name, const std::vector<T>& value, std::string& error) {
+  static YAML::Node toYamlImpl(const std::vector<T>& value, std::string& error) {
     YAML::Node node;
-    node[name] = YAML::Node(YAML::NodeType::Sequence);
+    node = YAML::Node(YAML::NodeType::Sequence);
     for (const T& element : value) {
-      node[name].push_back(element);
+      node.push_back(element);
     }
     return node;
   }
@@ -234,11 +241,11 @@ class YamlParser {
   }
 
   template <typename T>
-  static YAML::Node toYamlImpl(const std::string& name, const std::set<T>& value, std::string& error) {
+  static YAML::Node toYamlImpl(const std::set<T>& value, std::string& error) {
     YAML::Node node;
-    node[name] = YAML::Node(YAML::NodeType::Sequence);
+    node = YAML::Node(YAML::NodeType::Sequence);
     for (const T& element : value) {
-      node[name].push_back(element);
+      node.push_back(element);
     }
 
     return node;
@@ -255,11 +262,11 @@ class YamlParser {
   }
 
   template <typename K, typename V>
-  static YAML::Node toYamlImpl(const std::string& name, const std::map<K, V>& value, std::string& error) {
+  static YAML::Node toYamlImpl(const std::map<K, V>& value, std::string& error) {
     YAML::Node node;
-    node[name] = YAML::Node(YAML::NodeType::Map);
+    node = YAML::Node(YAML::NodeType::Map);
     for (const auto& kv_pair : value) {
-      node[name][kv_pair.first] = kv_pair.second;
+      node[kv_pair.first] = kv_pair.second;
     }
     return node;
   }
