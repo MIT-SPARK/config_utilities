@@ -14,7 +14,7 @@ function readConfig() {
     var data = {};
     for (var i = 0; i < rows.length; i++) {
         const row = rows[i];
-        const values = row.getElementsByClassName("config-field");
+        const values = row.getElementsByClassName("config-field-td");
         if (values.length == 0) {
             data[i] = "continue";
             continue;

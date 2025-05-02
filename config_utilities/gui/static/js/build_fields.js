@@ -15,14 +15,25 @@ function buildFields(data) {
             html += "&nbsp;&nbsp;&nbsp;&nbsp;";
         }
         html += d.name;
+
+        // Unit.
         if ('unit' in d) {
             html += " [" + d.unit + "]";
         }
+
+        // Config headers.
+        if (d.type == "config") {
+            html += " [" + d.config_name + "]:</td>";
+            tab.innerHTML += html;
+            continue;
+        }
+
         html += ":</td>";
 
         // Field.
-        html += "<td class='config-field'>";
-        html += "<input type='text' action='/' method='post' id='field-" + d.id + "' value='" + d.value + "'></td>";
+        html += "<td class='config-field-td'>";
+        html += "<input class='config-field' type='text' action='/' method='post' id='field-" + d.id + "' value='" + d.value + "'></td>";
+
         // Default.
         html += "<td class='config-default'>" + d.default + "</td>";
 

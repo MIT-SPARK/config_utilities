@@ -18,10 +18,26 @@
 <body>
 
   <header>
-    <h1>Config Utilities Dynamic Configs</h1>
+    <h1>Config Utilities Dynamic Config GUI</h1>
   </header>
 
-  <main>
+  <!-- Here goes the config selection -->
+  <div class="config-pane">
+    <h2>Select a config</h2>
+    <form action="/select/" method="post">
+      <select name="config_name" id="config_name">
+        {% for config in config_list %}
+        <option value="{{ config }}">{{ config }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit">Select</button>
+    </form>
+
+  </div>
+
+  <!-- The config -->
+  <div class="config-pane">
+
     <table id="config-table" class="config-table">
       <tr>
         <th>{{ config_name }} </th>
@@ -33,18 +49,13 @@
         buildFields(configData);
       </script>
     </table>
+  </div>
 
 
-    <!-- <div style="display: flex;">
-      <form action="/refresh/" method="post" padding="10px"> -->
-    <button name="refreshBtn" type="submit" onclick="post('/refresh');">Refresh</button>
-    <!-- </form> -->
-
-    <!-- <form action="/submit/" method="post"> -->
-    <button name="submitBtn" type="submit" onclick="readConfig();">Submit</button>
-    <!-- </form> -->
-  </main>
-
+  <div class="config-pane">
+    <button name="refreshBtn" class='config-button' type="submit" onclick="post('/refresh');">Refresh</button>
+    <button name="submitBtn" class='config-button' type="submit" onclick="readConfig();">Submit</button>
+  </div>
   <!-- <footer>
     &copy; config_utilities dynamic configs v1.0.0
   </footer> -->
