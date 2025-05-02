@@ -113,7 +113,7 @@ TEST(ExternalRegistry, InvalidFile) {
 
 TEST(ExternalRegistry, DisableLoading) {
   config::test::SettingsGuard settings_guard;
-  config::Settings().allow_external_libraries = false;
+  config::Settings().external_libraries.enabled = false;
 
   const auto guard = config::loadExternalFactories("./test_config_utilities_plugins");
   EXPECT_FALSE(guard);
@@ -124,7 +124,7 @@ TEST(ExternalRegistry, DisableLoading) {
 // globally namespaced to check example compilation
 TEST(ExternalRegistry, ManagedInstance) {
   config::test::SettingsGuard settings_guard;
-  config::Settings().print_external_allocations = true;
+  config::Settings().external_libraries.log_allocation = true;
 
   config::ManagedInstance<config::test::Talker> talker;
   {  // scope where external library is loaded
