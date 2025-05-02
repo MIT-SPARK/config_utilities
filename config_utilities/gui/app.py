@@ -4,9 +4,11 @@ import yaml
 import json
 import argparse
 
-
-
-
+def to_yaml(data):
+    """
+    Convert a dictionary to a YAML string.
+    """
+    return yaml.dump(data, default_flow_style=False).strip()
 
 
 class DynamicConfigGUI:
@@ -31,14 +33,13 @@ class DynamicConfigGUI:
                     field["id"] = f"{prefix_str}{field['name']}"
                     field["indent"] = indent
                     # For now no specialization for non-trivial types.
-                    if field["input_info"]["type"] not in ["int", "float", "string", "bool"]:
-                        field["input_info"]["type"] = "yaml"
-                        field["value"] = yaml.dump(field["value"])
-                        field["default"] = yaml.dump(field["default"])
+                    if field["input_info"]["type"] == "yaml":
+                        field["value"] = to_yaml(field["value"])
+                        field["default"] = to_yaml(field["default"])
                     fields.append(field)
                 elif field["type"] == "config":
                     fields.append( {
-                        "id": f"{prefix_str}{field['name']}",
+                        "id": f"{prefix_str}{field['field_name']}",
                         "name": field["field_name"] ,
                         "indent": indent,
                         "type": "config",
@@ -58,6 +59,7 @@ class DynamicConfigGUI:
         """
         Render the GUI, including the form, selectors, and buttons.
         """
+        print(self.fields)
         return render_template("index.html", config_data=self.fields, config_name=self.config_data["name"])
 
 
@@ -79,15 +81,7 @@ def index():
         # Render the updated GUI
     return gui.render()
 
-
-@app.route('/getconfig', methods = ['POST'])
-def get_config():
-    print("Received POST request")
-    jsdata = request.form['javascript_data']
-    print("Received JavaScript data:", jsdata)
-    return jsdata
-
-@app.route("/refresh/", methods=['POST'])
+@app.route("/refresh", methods=['POST'])
 def refresh():
     """Refresh the form."""
     # This function should be called when the refresh button is clicked.
@@ -95,11 +89,12 @@ def refresh():
     print("Refresh button clicked")
     return gui.render()
 
-@app.route("/submit/", methods=['POST'])
+@app.route("/submit", methods=['POST'])
 def submit():
     """Submit the form."""
-    print(request.form)
-    print("Submit button clicked")
+    data = request.form.to_dict()
+
+    print("Submit button clicked:", data)
     return gui.render()
 
 if __name__ == "__main__":
