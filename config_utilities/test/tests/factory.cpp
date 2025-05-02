@@ -109,9 +109,10 @@ class DerivedWithMoveOnlyParameter : public Base {
   std::string name() const override { return "DerivedWithMoveOnlyParameter"; }
 
   const std::unique_ptr<int> i_;
+
  private:
   inline static const auto registration_ =
-    config::Registration<Base, DerivedWithMoveOnlyParameter, std::unique_ptr<int>>("DerivedWithMoveOnlyParameter");
+      config::Registration<Base, DerivedWithMoveOnlyParameter, std::unique_ptr<int>>("DerivedWithMoveOnlyParameter");
 };
 
 class DerivedWithComplexParameter : public Base {
@@ -120,9 +121,10 @@ class DerivedWithComplexParameter : public Base {
   std::string name() const override { return "DerivedWithComplexParameter"; }
 
   std::shared_ptr<int> i_;
+
  private:
   inline static const auto registration_ =
-    config::Registration<Base, DerivedWithComplexParameter, std::shared_ptr<int>>("DerivedWithComplexParameter");
+      config::Registration<Base, DerivedWithComplexParameter, std::shared_ptr<int>>("DerivedWithComplexParameter");
 };
 
 class DerivedWithMoveOnlyParameterAndConfig : public Base {
@@ -131,8 +133,8 @@ class DerivedWithMoveOnlyParameterAndConfig : public Base {
     float f = 123.f;
   };
 
-  DerivedWithMoveOnlyParameterAndConfig(const Config& config, std::unique_ptr<int> i) :
-    Base(*i), i_(std::move(i)), config_(config) {}
+  DerivedWithMoveOnlyParameterAndConfig(const Config& config, std::unique_ptr<int> i)
+      : Base(*i), i_(std::move(i)), config_(config) {}
   std::string name() const override { return "DerivedWithMoveOnlyParameterAndConfig"; }
 
   const std::unique_ptr<int> i_;
@@ -140,11 +142,11 @@ class DerivedWithMoveOnlyParameterAndConfig : public Base {
 
  private:
   inline static const auto registration_ =
-    config::RegistrationWithConfig<Base, DerivedWithMoveOnlyParameterAndConfig, Config, std::unique_ptr<int>>(
-      "DerivedWithMoveOnlyParameterAndConfig");
+      config::RegistrationWithConfig<Base, DerivedWithMoveOnlyParameterAndConfig, Config, std::unique_ptr<int>>(
+          "DerivedWithMoveOnlyParameterAndConfig");
 };
 
-void declare_config(DerivedWithMoveOnlyParameterAndConfig::Config & config) {
+void declare_config(DerivedWithMoveOnlyParameterAndConfig::Config& config) {
   // Declare the config using the config utilities.
   config::name("DerivedWithMoveOnlyParameterAndConfig");
   config::field(config.f, "f");
@@ -285,7 +287,6 @@ TEST(Factory, createWithConfig) {
   data["i"] = 3;
   data["f"] = 3.14f;
   data["type"] = "DerivedC";
-<<<<<<< HEAD
   {
     // Create DerivedC with config and r-value parameter
     auto base = createFromYaml<Base>(data, 12);
@@ -332,7 +333,7 @@ TEST(Factory, createWithConfig) {
   }
   {
     auto logger = TestLogger::create();
-    Settings().factory_type_param_name = "test_type";
+    Settings().factory.type_param_name = "test_type";
     auto base = createFromYaml<Base>(data, 12);
     EXPECT_FALSE(base);
     EXPECT_EQ(logger->numMessages(), 1);
@@ -370,35 +371,6 @@ TEST(Factory, createWithConfig) {
     EXPECT_FLOAT_EQ(ptr->config_.f, 3.14f);
     EXPECT_EQ(*ptr->i_, 1);
   }
-=======
-
-  std::unique_ptr<Base> base = createFromYaml<Base>(data, 12);
-  EXPECT_TRUE(base);
-  EXPECT_EQ(base->name(), "DerivedC");
-  EXPECT_EQ(dynamic_cast<DerivedC*>(base.get())->config_.f, 3.14f);
-  EXPECT_EQ(base->i_, 12);
-
-  auto logger = TestLogger::create();
-  data["type"] = "NotRegistered";
-  base = createFromYaml<Base>(data, 12);
-  EXPECT_FALSE(base);
-  EXPECT_EQ(logger->numMessages(), 1);
-  std::string msg = logger->messages().back().second;
-  EXPECT_EQ(msg.find("No module of type 'NotRegistered' registered to the factory"), 0);
-
-  Settings().factory.type_param_name = "test_type";
-  base = createFromYaml<Base>(data, 12);
-  EXPECT_FALSE(base);
-  EXPECT_EQ(logger->numMessages(), 2);
-  msg = logger->messages().back().second;
-  EXPECT_EQ(msg, "Could not read the param 'test_type' to deduce the type of the module to create.");
-
-  data["test_type"] = "DerivedD";
-  base = createFromYaml<Base>(data, 12);
-  EXPECT_TRUE(base);
-  EXPECT_EQ(base->name(), "DerivedD");
-  EXPECT_EQ(dynamic_cast<DerivedD*>(base.get())->config_.i, 3);
->>>>>>> refactor settings
 }
 
 TEST(Factory, moduleNameConflicts) {

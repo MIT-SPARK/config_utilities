@@ -35,6 +35,7 @@
 
 #include "config_utilities/internal/yaml_utils.h"
 
+#include <regex>
 #include <sstream>
 
 #include "config_utilities/internal/logger.h"

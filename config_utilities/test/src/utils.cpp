@@ -40,7 +40,7 @@
 namespace config::test {
 namespace {
 
-bool expectEqualImpl(const YAML::Node& a, const YAML::Node& b) {
+bool expectEqualImpl(const YAML::Node& a, const YAML::Node& b, double epsilon = 0.0) {
   EXPECT_EQ(a.Type(), b.Type());
   if (a.Type() != b.Type()) {
     return false;
@@ -96,8 +96,8 @@ bool expectEqualImpl(const YAML::Node& a, const YAML::Node& b) {
 
 }  // namespace
 
-bool expectEqual(const YAML::Node& a, const YAML::Node& b) {
-  const auto equal = expectEqualImpl(a, b);
+bool expectEqual(const YAML::Node& a, const YAML::Node& b, double epsilon) {
+  const auto equal = expectEqualImpl(a, b, epsilon);
   EXPECT_TRUE(equal) << "---\na:\n---\n" << a << "\n---\nb:\n---\n" << b;
   return equal;
 }
