@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(config_utilities VERSION 0.0.1)
+project(config_utilities VERSION 0.1.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,7 +10,8 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(OptionalPackage)
 
 option(BUILD_SHARED_LIBS "Build shared libs" ON)
-option(CONFIG_UTILS_ENABLE_ROS "Export roscpp and build related code" ON)
+option(CONFIG_UTILS_ENABLE_ROS1 "Export roscpp and build related code" OFF)
+option(CONFIG_UTILS_ENABLE_ROS2 "Export rclpp and build related code" ON)
 option(CONFIG_UTILS_ENABLE_EIGEN "Export Eigen and build related code" ON)
 option(CONFIG_UTILS_ENABLE_GLOG "Export glog and build related code" ON)
 option(CONFIG_UTILS_BUILD_TESTS "Build unit tests" ON)
@@ -18,9 +19,15 @@ option(CONFIG_UTILS_BUILD_DEMOS "Build demo executables" ON)
 
 find_package(yaml-cpp REQUIRED)
 find_package(Boost REQUIRED COMPONENTS filesystem system)
-find_optional(roscpp CONFIG_UTILS_ENABLE_ROS)
+find_optional(roscpp CONFIG_UTILS_ENABLE_ROS1)
+find_optional(rclcpp CONFIG_UTILS_ENABLE_ROS2)
 find_optional(Eigen3 CONFIG_UTILS_ENABLE_EIGEN)
 find_optional_pkgcfg(libglog CONFIG_UTILS_ENABLE_GLOG)
+find_package(ament_cmake_core QUIET)
+
+# if(${ament_cmake_core_FOUND})
+#   ament_package(${PROJECT_NAME})
+# endif()
 
 add_library(
   ${PROJECT_NAME}
@@ -68,6 +75,11 @@ if(ENABLE_roscpp)
   target_include_directories(${PROJECT_NAME} PUBLIC ${roscpp_INCLUDE_DIRS})
 endif()
 
+if(ENABLE_rclcpp)
+  target_link_libraries(${PROJECT_NAME} PUBLIC ${rclcpp_LIBRARIES})
+  target_include_directories(${PROJECT_NAME} PUBLIC ${rclcpp_INCLUDE_DIRS})
+endif()
+
 if(ENABLE_Eigen3)
   target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen)
 endif()
@@ -77,7 +89,8 @@ if(ENABLE_libglog)
 endif()
 
 message(STATUS "Eigen features enabled: ${ENABLE_Eigen3}")
-message(STATUS "ROS features enabled:   ${ENABLE_roscpp}")
+message(STATUS "ROS1 features enabled:  ${ENABLE_roscpp}")
+message(STATUS "ROS2 features enabled:  ${ENABLE_rclcpp}")
 message(STATUS "glog features enabled:  ${ENABLE_libglog}")
 
 if(CONFIG_UTILS_BUILD_DEMOS)
