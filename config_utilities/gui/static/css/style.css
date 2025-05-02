@@ -1,25 +1,25 @@
+/* Style Definitions */
+:root {
+  --main_color: #1ca9d4;
+  --negative_color: #ffffff;
+  --radius: 5px;
+  --text_color: #333;
+  --trans_dur: 0.2s;
+}
+
 body {
   font-family: Arial, sans-serif;
   margin: 20px;
-}
-
-h1 {
-  color: #333;
-}
-
-form {
-  margin-top: 20px;
 }
 
 div {
   margin-bottom: 10px;
 }
 
-.config-default {
-
+/* .config-default {
   color: #666;
   border: #666 1px solid;
-}
+} */
 
 /* .config-field {
   border: #000 1px solid;
@@ -29,6 +29,48 @@ div {
   background-color: #ff0000;
 } */
 
+.config-pane {
+  background-color: #f9f9f9;
+  border-radius: var(--radius);
+  border: 1px solid #ddd;
+  padding: 5px;
+}
+
+.config-button {
+  border: 1px solid #999;
+  color: var(--text_color);
+  padding: 10px 20px;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.config-button:hover {
+  background-color: var(--main_color);
+  color: var(--negative_color);
+  border: 1px solid var(--negative_color);
+  transition: all var(--trans_dur) ease;
+}
+
+.config-label {
+  padding-right: 10px;
+}
+
+.config-field-td {
+  padding-right: 10px;
+}
+
+.config-field {
+  padding: 5px;
+  border-radius: var(--radius);
+  background-color: #fff;
+  border: 1px solid #ddd;
+}
+
+.config-field:hover {
+  background-color: #f0f0f0;
+  border: 1px solid var(--main_color);
+  transition: all var(--trans_dur) ease;
+}
 
 
 /* Random stuff */
