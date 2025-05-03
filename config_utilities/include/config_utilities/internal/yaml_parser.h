@@ -181,12 +181,12 @@ class YamlParser {
   template <typename T,
             typename std::enable_if<!is_int<T>, bool>::type = true,
             typename std::enable_if<!std::is_floating_point<T>::value, bool>::type = true>
-  static void fromYamlImpl(T& value, const YAML::Node& node, std::string& error) {
+  static void fromYamlImpl(T& value, const YAML::Node& node, std::string& /* error */) {
     value = node.as<T>();
   }
 
   template <typename T>
-  static YAML::Node toYamlImpl(const T& value, std::string& error) {
+  static YAML::Node toYamlImpl(const T& value, std::string& /* error */) {
     YAML::Node node;
     node = value;
     return node;
@@ -273,7 +273,7 @@ class YamlParser {
 
   // Verify data overflow.
   template <typename T, typename std::enable_if<is_int<T>, bool>::type = true>
-  static bool checkIntRange(const T& value, const YAML::Node& node, std::string& error) {
+  static bool checkIntRange(const YAML::Node& node, std::string& error) {
     // NOTE(lschmid): We assume we don't get integers larger than 64 bit. Also bool, uchar, and string are checked
     // separately.
     const int64_t min = node.as<int64_t>();
@@ -296,7 +296,7 @@ class YamlParser {
   }
 
   template <typename T, typename std::enable_if<std::is_floating_point<T>::value, bool>::type = true>
-  static bool checkFloatRange(const T& value, const YAML::Node& node, std::string& error) {
+  static bool checkFloatRange(const YAML::Node& node, std::string& error) {
     const auto long_value = node.as<long double>();
     if (long_value > static_cast<long double>(std::numeric_limits<T>::max())) {
       std::stringstream ss;
@@ -318,7 +318,7 @@ class YamlParser {
             typename std::enable_if<is_int<T>, bool>::type = true,
             typename std::enable_if<!std::is_floating_point<T>::value, bool>::type = true>
   static void fromYamlImpl(T& value, const YAML::Node& node, std::string& error) {
-    if (!checkIntRange(value, node, error)) {
+    if (!checkIntRange<T>(node, error)) {
       return;
     }
     value = node.as<T>();
@@ -329,7 +329,7 @@ class YamlParser {
             typename std::enable_if<!is_int<T>, bool>::type = true,
             typename std::enable_if<std::is_floating_point<T>::value, bool>::type = true>
   static void fromYamlImpl(T& value, const YAML::Node& node, std::string& error) {
-    if (!checkFloatRange(value, node, error)) {
+    if (!checkFloatRange<T>(node, error)) {
       return;
     }
     value = node.as<T>();

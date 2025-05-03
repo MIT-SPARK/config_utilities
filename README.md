@@ -148,7 +148,7 @@ python3 scripts/run_demo.py factory
 
 The ros demo can be run via:
 ```
-roslaunch config_utilities demo_ros.launch
+ros2 l
 ```
 
 If you are looking for a specific use case that is not in the tutorials or demos, chances are you can find a good example in the `tests/` directory!
