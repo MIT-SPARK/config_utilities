@@ -5,6 +5,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include(OptionalPackage)
@@ -22,11 +27,6 @@ find_optional(rclcpp CONFIG_UTILS_ENABLE_ROS)
 find_optional(Eigen3 CONFIG_UTILS_ENABLE_EIGEN)
 find_optional_pkgcfg(libglog CONFIG_UTILS_ENABLE_GLOG)
 
-# find_package(ament_cmake_core QUIET)
-
-# if(${ament_cmake_core_FOUND})
-#   ament_package(${PROJECT_NAME})
-# endif()
 
 add_library(
   ${PROJECT_NAME}
