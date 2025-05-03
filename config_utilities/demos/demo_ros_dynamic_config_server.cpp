@@ -40,12 +40,11 @@
 #include <iostream>
 #include <string>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include "config_utilities/config.h"                 // Enables declare_config().
 #include "config_utilities/dynamic_config.h"         // Enables DynamicConfig and DynamicConfigServer.
 #include "config_utilities/logging/log_to_stdout.h"  // Log config_utilities messages.
-#include "config_utilities/parsing/ros.h"            // Enable fromRos() and the RosDynamicConfigServer.
 #include "config_utilities/printing.h"               // Enable toString()
 #include "config_utilities/types/eigen_matrix.h"     // Enable parsing and printing of Eigen::Matrix types.
 #include "config_utilities/types/enum.h"             // Enable parsing and printing of enum types.
@@ -122,30 +121,37 @@ class DynamicConfigObject {
   }
 };
 
+class DemoNode : public rclcpp::Node {
+ public:
+  DemoNode() : Node("demo_node") {}
+};
+
 }  // namespace demo
 
 int main(int argc, char** argv) {
-  ros::init(argc, argv, "dynamic_config_server");
-  ros::NodeHandle nh("~");
+  rclcpp::init(argc, argv);
+  auto node = std::make_shared<demo::DemoNode>();
+  rclcpp::spin(node);
+  rclcpp::shutdown();
+  return 0;
 
   // Advertize setting and getting dynamic configs via ros topics.
-  config::RosDynamicConfigServer server(nh);
+  // config::RosDynamicConfigServer server(nh);
 
   // Create dynamic config objects. These will automatically register their config with the server.
   demo::DynamicConfigObject obj("dynamic_object_config", demo::MyConfig());
 
   // Initialize another config with different name and params.
-  nh.setParam("i", 42);
-  nh.setParam("distance", 42.0);
-  nh.setParam("b", false);
-  nh.setParam("vec", std::vector<int>());
-  nh.setParam("map", std::map<std::string, int>({{"ASD", 42}}));
-  demo::DynamicConfigObject obj2("another_config", config::fromRos<demo::MyConfig>(nh));
+  // nh.setParam("i", 42);
+  // nh.setParam("distance", 42.0);
+  // nh.setParam("b", false);
+  // nh.setParam("vec", std::vector<int>());
+  // nh.setParam("map", std::map<std::string, int>({{"ASD", 42}}));
+  // demo::DynamicConfigObject obj2("another_config", config::fromRos<demo::MyConfig>(nh));
 
   // Initialize a subconfig.
   demo::DynamicConfigObject sub_obj("sub_config", demo::SubConfig());
 
   // Spin to keep the node alive.
-  ros::spin();
   return 0;
 }
