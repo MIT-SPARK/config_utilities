@@ -52,29 +52,29 @@ namespace config {
  */
 class RosDynamicConfigServer {
  public:
-  explicit RosDynamicConfigServer(const ros::NodeHandle& nh);
+  RosDynamicConfigServer() = default;
 
  private:
-  struct ConfigReceiver {
-    ConfigReceiver(const DynamicConfigServer::Key& key, RosDynamicConfigServer* server, ros::NodeHandle& nh);
-    const DynamicConfigServer::Key key;
-    RosDynamicConfigServer* const server;
-    ros::Subscriber sub;
-    void callback(const std_msgs::String& msg);
-  };
+  // struct ConfigReceiver {
+  //   ConfigReceiver(const DynamicConfigServer::Key& key, RosDynamicConfigServer* server, ros::NodeHandle& nh);
+  //   const DynamicConfigServer::Key key;
+  //   RosDynamicConfigServer* const server;
+  //   ros::Subscriber sub;
+  //   void callback(const std_msgs::String& msg);
+  // };
 
-  ros::NodeHandle nh_;
-  std::map<DynamicConfigServer::Key, ros::Publisher> value_publishers_;
-  std::map<DynamicConfigServer::Key, ros::Publisher> info_publishers_;
-  std::map<DynamicConfigServer::Key, std::unique_ptr<ConfigReceiver>> subscribers_;
-  ros::Publisher reg_pub_;
-  ros::Publisher dereg_pub_;
-  DynamicConfigServer server_;
+  // ros::NodeHandle nh_;
+  // std::map<DynamicConfigServer::Key, ros::Publisher> value_publishers_;
+  // std::map<DynamicConfigServer::Key, ros::Publisher> info_publishers_;
+  // std::map<DynamicConfigServer::Key, std::unique_ptr<ConfigReceiver>> subscribers_;
+  // ros::Publisher reg_pub_;
+  // ros::Publisher dereg_pub_;
+  // DynamicConfigServer server_;
 
-  void onRegister(const DynamicConfigServer::Key& key);
-  void onDeregister(const DynamicConfigServer::Key& key);
-  void onUpdate(const DynamicConfigServer::Key& key, const YAML::Node& new_values);
-  void onSet(const DynamicConfigServer::Key& key, const YAML::Node& new_values);
+  // void onRegister(const DynamicConfigServer::Key& key);
+  // void onDeregister(const DynamicConfigServer::Key& key);
+  // void onUpdate(const DynamicConfigServer::Key& key, const YAML::Node& new_values);
+  // void onSet(const DynamicConfigServer::Key& key, const YAML::Node& new_values);
 };
 
 }  // namespace config
