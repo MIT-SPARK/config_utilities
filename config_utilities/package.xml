@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>config_utilities</name>
-  <version>0.0.1</version>
+  <version>2.0.0</version>
   <description>Tools for working with C++ config structs.</description>
 
   <author email="lschmid@mit.edu">Lukas Schmid</author>
@@ -15,7 +15,10 @@
   <buildtool_depend>cmake</buildtool_depend>
   <depend>yaml-cpp</depend>
 
+  <!-- TODO(lschmid): Figure this out/optionally make a separate ros pkg? -->
+  <exec_depend>ros2launch</exec_depend>
+
   <export>
-      <build_type>cmake</build_type>
+    <build_type>cmake</build_type>
   </export>
 </package>
