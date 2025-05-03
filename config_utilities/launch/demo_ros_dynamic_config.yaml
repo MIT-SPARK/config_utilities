@@ -1,0 +1,18 @@
+%YAML 1.2
+---
+launch:
+  # A node that contains a config file.
+  - node:
+      pkg: "config_utilities"
+      exec: "demo_ros_dynamic_config_server"
+      name: "sim"
+      namespace: "turtlesim1"
+
+  # A different node (of the same type) that contains a config file.
+  - node:
+      pkg: "config_utilities"
+      exec: "demo_ros_dynamic_config_server"
+      name: "sim"
+      namespace: "turtlesim2"
+
+  # The dynamic config GUI.
