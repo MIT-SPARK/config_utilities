@@ -1,4 +1,0 @@
-python=3.8
-Flask==3.0.3
-Flask-WTF==1.2.1
-

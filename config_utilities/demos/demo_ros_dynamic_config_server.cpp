@@ -129,6 +129,7 @@ class DemoNode : public rclcpp::Node {
 }  // namespace demo
 
 int main(int argc, char** argv) {
+  std::cout << "Starting demo node..." << std::endl;
   rclcpp::init(argc, argv);
   auto node = std::make_shared<demo::DemoNode>();
   rclcpp::spin(node);
