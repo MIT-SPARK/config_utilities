@@ -36,12 +36,12 @@
 #pragma once
 
 #include <fstream>
-#include <map>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/string.hpp>
 
 #include "config_utilities/dynamic_config.h"
 
@@ -52,29 +52,28 @@ namespace config {
  */
 class RosDynamicConfigServer {
  public:
-  RosDynamicConfigServer() = default;
+  explicit RosDynamicConfigServer(rclcpp::Node* node);
 
  private:
-  // struct ConfigReceiver {
-  //   ConfigReceiver(const DynamicConfigServer::Key& key, RosDynamicConfigServer* server, ros::NodeHandle& nh);
-  //   const DynamicConfigServer::Key key;
-  //   RosDynamicConfigServer* const server;
-  //   ros::Subscriber sub;
-  //   void callback(const std_msgs::String& msg);
-  // };
+  // Struct to that manages the exposure of each config
+  struct ConfigReceiver {
+    ConfigReceiver(const DynamicConfigServer::Key& key, RosDynamicConfigServer* server, rclcpp::Node& node);
+    const DynamicConfigServer::Key key;
+    const RosDynamicConfigServer* const server;
+    //   void callback(const std_msgs::String& msg);
+  };
 
-  // ros::NodeHandle nh_;
-  // std::map<DynamicConfigServer::Key, ros::Publisher> value_publishers_;
-  // std::map<DynamicConfigServer::Key, ros::Publisher> info_publishers_;
-  // std::map<DynamicConfigServer::Key, std::unique_ptr<ConfigReceiver>> subscribers_;
-  // ros::Publisher reg_pub_;
-  // ros::Publisher dereg_pub_;
-  // DynamicConfigServer server_;
+  // TODO(lschmid): Figure out if we can use smart pointers here. This should allow nice wrapping in the node.
+  rclcpp::Node* node_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr keys_pub_;
+  std::vector<ConfigReceiver> configs_;
+  DynamicConfigServer server_;
 
-  // void onRegister(const DynamicConfigServer::Key& key);
-  // void onDeregister(const DynamicConfigServer::Key& key);
-  // void onUpdate(const DynamicConfigServer::Key& key, const YAML::Node& new_values);
-  // void onSet(const DynamicConfigServer::Key& key, const YAML::Node& new_values);
+  void onRegister(const DynamicConfigServer::Key& key);
+  void onDeregister(const DynamicConfigServer::Key& key);
+  void onUpdate(const DynamicConfigServer::Key& key, const YAML::Node& new_values);
+  void onSet(const DynamicConfigServer::Key& key, const YAML::Node& new_values);
+  void publishKeys();
 };
 
 }  // namespace config

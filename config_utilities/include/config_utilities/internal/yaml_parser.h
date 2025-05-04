@@ -204,7 +204,7 @@ class YamlParser {
   }
 
   template <typename T>
-  static YAML::Node toYamlImpl(const std::vector<T>& value, std::string& error) {
+  static YAML::Node toYamlImpl(const std::vector<T>& value, std::string& /* error */) {
     YAML::Node node;
     node = YAML::Node(YAML::NodeType::Sequence);
     for (const T& element : value) {
@@ -262,7 +262,7 @@ class YamlParser {
   }
 
   template <typename K, typename V>
-  static YAML::Node toYamlImpl(const std::map<K, V>& value, std::string& error) {
+  static YAML::Node toYamlImpl(const std::map<K, V>& value, std::string& /* error */) {
     YAML::Node node;
     node = YAML::Node(YAML::NodeType::Map);
     for (const auto& kv_pair : value) {

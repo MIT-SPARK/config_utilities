@@ -27,6 +27,11 @@ find_optional(rclcpp CONFIG_UTILS_ENABLE_ROS)
 find_optional(Eigen3 CONFIG_UTILS_ENABLE_EIGEN)
 find_optional_pkgcfg(libglog CONFIG_UTILS_ENABLE_GLOG)
 
+if(ENABLE_rclcpp)
+  find_package(std_msgs REQUIRED)
+  find_package(ament_cmake REQUIRED)
+endif()
+
 
 add_library(
   ${PROJECT_NAME}
@@ -70,8 +75,9 @@ add_executable(composite-configs app/composite_configs.cpp)
 target_link_libraries(composite-configs ${PROJECT_NAME})
 
 if(ENABLE_rclcpp)
-  target_link_libraries(${PROJECT_NAME} PUBLIC ${rclcpp_LIBRARIES})
-  target_include_directories(${PROJECT_NAME} PUBLIC ${rclcpp_INCLUDE_DIRS})
+  # ament_target_dependencies(talker rclcpp std_msgs)
+  target_link_libraries(${PROJECT_NAME} PUBLIC ${rclcpp_LIBRARIES} ${std_msgs_LIBRARIES})
+  target_include_directories(${PROJECT_NAME} PUBLIC ${rclcpp_INCLUDE_DIRS} ${std_msgs_INCLUDE_DIRS})
 endif()
 
 if(ENABLE_Eigen3)

@@ -64,12 +64,12 @@ struct FieldInputInfo {
   static Ptr merge(const FieldInputInfo::Ptr& from, const FieldInputInfo::Ptr& to);
 
   // Utility interface to set int/float constraints.
-  virtual void setMin(YAML::Node /* min */, bool lower_inclusive = true) {}
-  virtual void setMax(YAML::Node /* max */, bool upper_inclusive = true) {}
+  virtual void setMin(YAML::Node /* min */, bool /* lower_inclusive */ = true) {}
+  virtual void setMax(YAML::Node /* max */, bool /* upper_inclusive */ = true) {}
 
  private:
   // Implementation of merging for the same type.
-  virtual void mergeSame(const FieldInputInfo& other) {}
+  virtual void mergeSame(const FieldInputInfo& /* other */) {}
 };
 
 struct IntFieldInputInfo : public FieldInputInfo {

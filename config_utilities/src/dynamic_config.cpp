@@ -49,28 +49,20 @@ std::vector<DynamicConfigServer::Key> DynamicConfigServer::registeredConfigs() c
   return internal::DynamicConfigRegistry::instance().keys();
 }
 
-YAML::Node DynamicConfigServer::getValues(const Key& key) const {
+YAML::Node DynamicConfigServer::get(const Key& key) const {
   const auto config = internal::DynamicConfigRegistry::instance().getConfig(key);
   if (!config) {
     return {};
   }
-  return config->getValues();
+  return config->get();
 }
 
-bool DynamicConfigServer::setValues(const Key& key, const YAML::Node& values) const {
+bool DynamicConfigServer::set(const Key& key, const YAML::Node& values) const {
   const auto config = internal::DynamicConfigRegistry::instance().getConfig(key);
   if (!config) {
     return false;
   }
-  return config->setValues(values);
-}
-
-YAML::Node DynamicConfigServer::getInfo(const Key& key) const {
-  const auto config = internal::DynamicConfigRegistry::instance().getConfig(key);
-  if (!config) {
-    return {};
-  }
-  return config->getInfo();
+  return config->set(values);
 }
 
 void DynamicConfigServer::setHooks(const Hooks& hooks) {

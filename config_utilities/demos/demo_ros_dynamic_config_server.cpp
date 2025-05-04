@@ -42,12 +42,13 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include "config_utilities/config.h"                 // Enables declare_config().
-#include "config_utilities/dynamic_config.h"         // Enables DynamicConfig and DynamicConfigServer.
-#include "config_utilities/logging/log_to_stdout.h"  // Log config_utilities messages.
-#include "config_utilities/printing.h"               // Enable toString()
-#include "config_utilities/types/eigen_matrix.h"     // Enable parsing and printing of Eigen::Matrix types.
-#include "config_utilities/types/enum.h"             // Enable parsing and printing of enum types.
+#include "config_utilities/config.h"                     // Enables declare_config().
+#include "config_utilities/dynamic_config.h"             // Enables DynamicConfig and DynamicConfigServer.
+#include "config_utilities/logging/log_to_stdout.h"      // Log config_utilities messages.
+#include "config_utilities/printing.h"                   // Enable toString()
+#include "config_utilities/ros_dynamic_config_server.h"  // Enable ROS dynamic config server.
+#include "config_utilities/types/eigen_matrix.h"         // Enable parsing and printing of Eigen::Matrix types.
+#include "config_utilities/types/enum.h"                 // Enable parsing and printing of enum types.
 
 namespace demo {
 
@@ -101,14 +102,14 @@ void declare_config(SubConfig& config) {
 
 // Declare an object with a dynamic config.
 template <typename ConfigT>
-class DynamicConfigObject {
+class ObjectWithDynamicConfig {
  public:
-  explicit DynamicConfigObject(const std::string& name, const ConfigT& initial_config)
+  explicit ObjectWithDynamicConfig(const std::string& name, const ConfigT& initial_config = ConfigT())
       : name_(name), config_(name, initial_config) {
     // The above initialization registers the dynamic config with its global identifier name, which we resolve using the
     // nodehandle to get a unique name for every node/object. The config is initialized with the current ROS parameters.
     // The callback is called whenever the config is updated.
-    config_.setCallback(std::bind(&DynamicConfigObject::callback, this));
+    config_.setCallback(std::bind(&ObjectWithDynamicConfig::callback, this));
   }
 
  private:
@@ -117,42 +118,37 @@ class DynamicConfigObject {
 
   void callback() const {
     // Do something with the new config.
-    std::cout << "Received new config for " << name_ << ":\n" << config::toString(config_.get()) << std::endl;
+    // For thread safety, dynamic configs always need to be accessed via the get() method., ideally once per callback.
+    const auto config = config_.get();
+    std::cout << "Received new config for " << name_ << ":\n" << config::toString(config) << std::endl;
   }
 };
 
 class DemoNode : public rclcpp::Node {
  public:
-  DemoNode() : Node("demo_node") {}
+  DemoNode() : Node("demo_node"), obj1_("object_in_the_node"), server_(this) {}
+
+ private:
+  // Dynamic config objects can also be declared in the node.
+  ObjectWithDynamicConfig<MyConfig> obj1_;
+
+  // Anywhere in the node or outside, a dynamic config server can be created which will manage all dynamic configs
+  // throughout the node. In the node is preferred, as lifetime will be managed automatically.
+  config::RosDynamicConfigServer server_;
 };
 
 }  // namespace demo
 
 int main(int argc, char** argv) {
-  std::cout << "Starting demo node..." << std::endl;
   rclcpp::init(argc, argv);
+  // Create some additional objects with a dynamic config.
+  demo::ObjectWithDynamicConfig obj("dynamic_object_config", demo::MyConfig());
+  demo::ObjectWithDynamicConfig other_obj("other_config", demo::SubConfig());
+
+  // Create a ROS node. Dynamic configs can also directly live in the node.
   auto node = std::make_shared<demo::DemoNode>();
+
   rclcpp::spin(node);
   rclcpp::shutdown();
-  return 0;
-
-  // Advertize setting and getting dynamic configs via ros topics.
-  // config::RosDynamicConfigServer server(nh);
-
-  // Create dynamic config objects. These will automatically register their config with the server.
-  demo::DynamicConfigObject obj("dynamic_object_config", demo::MyConfig());
-
-  // Initialize another config with different name and params.
-  // nh.setParam("i", 42);
-  // nh.setParam("distance", 42.0);
-  // nh.setParam("b", false);
-  // nh.setParam("vec", std::vector<int>());
-  // nh.setParam("map", std::map<std::string, int>({{"ASD", 42}}));
-  // demo::DynamicConfigObject obj2("another_config", config::fromRos<demo::MyConfig>(nh));
-
-  // Initialize a subconfig.
-  demo::DynamicConfigObject sub_obj("sub_config", demo::SubConfig());
-
-  // Spin to keep the node alive.
   return 0;
 }
