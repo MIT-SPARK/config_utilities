@@ -81,14 +81,14 @@ We provide a base interface to set dynamic configs via the `DynamicConfigServer`
 config::DynamicConfigServer server;
 
 // Get the values of a dynamic config:
-YAML::Node values = server.getValues("my_config");  
+YAML::Node values = server.get("my_config");  
 
 // Set the values of a dynamic config:
 YAML::Node new_values = ...;
-server.setValues("my_config", new_values);  // Works! 
+server.set("my_config", new_values);  // Works! 
 
 // Note that the new values can also contain only a subset of params:
-server.setValues("my_config", YAML::Load("x: 123"));  // Works! Only sets the x param.
+server.set("my_config", YAML::Load("x: 123"));  // Works! Only sets the x param.
 ```
 
 Similarly to the dynamic configs, also the server allows registering hooks to keep track of which configs are registered and updated:

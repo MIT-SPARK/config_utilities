@@ -203,7 +203,7 @@ struct ExternalRegistry {
                    : std::make_shared<InstanceInfo<T>>(std::move(underlying));
     instance().instances_.push_back(managed_info);
     return ManagedInstance<T>(managed_info);
-  };
+  }
 
  private:
   ExternalRegistry() = default;

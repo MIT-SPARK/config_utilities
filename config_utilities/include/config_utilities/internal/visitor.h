@@ -89,7 +89,6 @@ struct Visitor {
   // Get the data and field info stored in the config.
   template <typename ConfigT>
   static MetaData getInfo(const ConfigT& config,
-                          const bool print_warnings = true,
                           const std::string& name_space = "",
                           const std::string& field_name = "");
 

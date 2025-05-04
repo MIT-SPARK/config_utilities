@@ -83,7 +83,7 @@ TEST(DynamicConfig, SetGet) {
   DynamicConfigServer server;
 
   // Get values.
-  auto values = server.getValues("dyn");
+  auto values = server.get("dyn");
   EXPECT_TRUE(expectEqual(values, DefaultConfig::defaultValues()));
 
   // Set values.
@@ -95,7 +95,7 @@ TEST(DynamicConfig, SetGet) {
         i: 7
   )";
   auto yaml = YAML::Load(yaml_str);
-  server.setValues("dyn", yaml);
+  server.set("dyn", yaml);
 
   // Check actual values.
   auto config = dyn.get();
@@ -105,7 +105,7 @@ TEST(DynamicConfig, SetGet) {
   EXPECT_EQ(config.sub_config.i, 7);
 
   // Check serialized values.
-  values = server.getValues("dyn");
+  values = server.get("dyn");
   EXPECT_EQ(values["i"].as<int>(), 7);
   EXPECT_EQ(values["f"].as<float>(), 7.7f);
   EXPECT_EQ(values["vec"].as<std::vector<int>>(), std::vector<int>({7, 7, 7}));
@@ -113,9 +113,9 @@ TEST(DynamicConfig, SetGet) {
   EXPECT_EQ(values["u8"].as<int>(), 4);  // Default value.
 
   // Check invalid key.
-  values = server.getValues("invalid");
+  values = server.get("invalid");
   EXPECT_TRUE(values.IsNull());
-  server.setValues("invalid", DefaultConfig::defaultValues());
+  server.set("invalid", DefaultConfig::defaultValues());
   EXPECT_EQ(dyn.get().i, 7);
 }
 
@@ -180,12 +180,12 @@ TEST(DynamicConfig, Move) {
 
   // Get/set.
   YAML::Node update = YAML::Load("i: 456");
-  server.setValues("dyn", update);
+  server.set("dyn", update);
   EXPECT_EQ(dyn2.get().i, 456);
   config.i = 456;
   config.f = 2.3f;
   dyn2.set(config);
-  auto values = server.getValues("dyn");
+  auto values = server.get("dyn");
   EXPECT_EQ(values["i"].as<int>(), 456);
   EXPECT_EQ(values["f"].as<float>(), 2.3f);
 
@@ -203,12 +203,12 @@ TEST(DynamicConfig, Move) {
 
   // Get/set.
   update = YAML::Load("i: 789");
-  server.setValues("dyn", update);
+  server.set("dyn", update);
   EXPECT_EQ(dyn3.get().i, 789);
   config.i = 789;
   config.f = 4.5f;
   dyn3.set(config);
-  values = server.getValues("dyn");
+  values = server.get("dyn");
   EXPECT_EQ(values["i"].as<int>(), 789);
   EXPECT_EQ(values["f"].as<float>(), 4.5f);
 }

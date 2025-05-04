@@ -86,10 +86,10 @@ struct DynamicConfigServer {
   std::vector<Key> registeredConfigs() const;
 
   /**
-   * @brief Get the values of a dynamic config.
+   * @brief Get the values and info of a dynamic config.
    * @param key The unique key of the dynamic config.
    */
-  YAML::Node getValues(const Key& key) const;
+  YAML::Node get(const Key& key) const;
 
   /**
    * @brief Set the values of a dynamic config. If the requested values are invalid, no modifications are made.
@@ -97,18 +97,12 @@ struct DynamicConfigServer {
    * @param values The new values to set.
    * @return True if the values were updated, false otherwise.
    */
-  bool setValues(const Key& key, const YAML::Node& values) const;
+  bool set(const Key& key, const YAML::Node& values) const;
 
   /**
    * @brief Set the hooks for the dynamic config server. Setting empty hooks will deregister the current hooks.
    */
   void setHooks(const Hooks& hooks);
-
-  /**
-   * @brief Get the info of a dynamic config.
-   * @param key The unique key of the dynamic config.
-   */
-  YAML::Node getInfo(const Key& key) const;
 
  private:
   size_t hooks_id_ = 0;
@@ -126,9 +120,8 @@ struct DynamicConfigRegistry {
    * @brief Server-side interface to dynamic configs.
    */
   struct ConfigInterface {
-    std::function<YAML::Node()> getValues;
-    std::function<bool(const YAML::Node&)> setValues;
-    std::function<YAML::Node()> getInfo;
+    std::function<YAML::Node()> get;
+    std::function<bool(const YAML::Node&)> set;
   };
 
   // Singleton access.
@@ -255,7 +248,6 @@ struct DynamicConfig {
 
   bool setValues(const YAML::Node& values);
   YAML::Node getValues() const;
-  YAML::Node getInfo() const;
   internal::DynamicConfigRegistry::ConfigInterface getInterface();
   void moveMembers(DynamicConfig&& other);
 };

@@ -15,8 +15,9 @@
   <buildtool_depend>cmake</buildtool_depend>
   <depend>yaml-cpp</depend>
 
-  <!-- TODO(lschmid): Figure this out/optionally make a separate ros pkg? -->
+  <!-- TODO(lschmid): Figure this split out better/optionally make a separate ros pkg? -->
   <exec_depend>ros2launch</exec_depend>
+  <!-- <depend>std_msgs</depend> -->
 
   <export>
     <build_type>ament_cmake</build_type>

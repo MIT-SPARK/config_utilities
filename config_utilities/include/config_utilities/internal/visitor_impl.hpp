@@ -95,10 +95,7 @@ MetaData Visitor::getValues(const ConfigT& config,
 }
 
 template <typename ConfigT>
-MetaData Visitor::getInfo(const ConfigT& config,
-                          const bool print_warnings,
-                          const std::string& name_space,
-                          const std::string& field_name) {
+MetaData Visitor::getInfo(const ConfigT& config, const std::string& name_space, const std::string& field_name) {
   Visitor visitor(Mode::kGetInfo, name_space, field_name);
   // NOTE(lschmid): We know that in mode kGetInfo, the config is not modified.
   ::config::declare_config(const_cast<ConfigT&>(config));
@@ -145,7 +142,7 @@ MetaData Visitor::subVisit(ConfigT& config,
       data = getChecks(config, field_name);
       break;
     case Visitor::Mode::kGetInfo:
-      data = getInfo(config, print_warnings, name_space, field_name);
+      data = getInfo(config, name_space, field_name);
     default:
       break;
   }
@@ -411,7 +408,7 @@ void Visitor::visitBase(ConfigT& config) {
 }
 
 template <typename ConfigT, typename std::enable_if<!is_virtual_config<ConfigT>::value, bool>::type>
-MetaData Visitor::getDefaults(const ConfigT& config) {
+MetaData Visitor::getDefaults(const ConfigT& /* config */) {
   Visitor visitor(Mode::kGetDefaults);
   ConfigT default_config;
   ::config::declare_config(default_config);

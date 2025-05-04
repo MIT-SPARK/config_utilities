@@ -36,74 +36,95 @@
 
 namespace config {
 
-// RosDynamicConfigServer::ConfigReceiver::ConfigReceiver(const DynamicConfigServer::Key& key,
-//                                                        RosDynamicConfigServer* server,
-//                                                        ros::NodeHandle& nh)
-//     : key(key), server(server) {
-//   sub = nh.subscribe(key + "/set", 1, &ConfigReceiver::callback, this);
-// }
+RosDynamicConfigServer::ConfigReceiver::ConfigReceiver(const DynamicConfigServer::Key& key,
+                                                       RosDynamicConfigServer* server,
+                                                       rclcpp::Node& node)
+    : key(key), server(server) {
+  // sub = nh.subscribe(key + "/set", 1, &ConfigReceiver::callback, this);
+}
 
 // void RosDynamicConfigServer::ConfigReceiver::callback(const std_msgs::String& msg) {
 //   const auto values = YAML::Load(msg.data);
 //   server->onSet(key, values);
 // }
 
-// RosDynamicConfigServer::RosDynamicConfigServer(const ros::NodeHandle& nh) : nh_(nh) {
-//   reg_pub_ = nh_.advertise<std_msgs::String>("registered", 1);
-//   dereg_pub_ = nh_.advertise<std_msgs::String>("deregistered", 1);
+RosDynamicConfigServer::RosDynamicConfigServer(rclcpp::Node* node) : node_(node) {
+  const auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
+  keys_pub_ = node_->create_publisher<std_msgs::msg::String>("dynamic_config_keys", qos);
 
-//   DynamicConfigServer::Hooks hooks;
-//   hooks.onRegister = [this](const DynamicConfigServer::Key& key) { onRegister(key); };
-//   hooks.onDeregister = [this](const DynamicConfigServer::Key& key) { onDeregister(key); };
-//   hooks.onUpdate = [this](const DynamicConfigServer::Key& key, const YAML::Node& values) { onUpdate(key, values); };
-//   server_.setHooks(hooks);
-// }
+  // Setup all currently registered configs.
+  for (const auto& key : server_.registeredConfigs()) {
+    onRegister(key);
+  }
 
-// void RosDynamicConfigServer::onRegister(const DynamicConfigServer::Key& key) {
-//   value_publishers_[key] = nh_.advertise<std_msgs::String>(key + "/get", 1, true);
-//   info_publishers_[key] = nh_.advertise<std_msgs::String>(key + "/info", 1, true);
-//   subscribers_[key] = std::make_unique<ConfigReceiver>(key, this, nh_);
-//   std_msgs::String msg;
-//   msg.data = key;
-//   reg_pub_.publish(msg);
+  // Register the hooks for the dynamic config server.
+  DynamicConfigServer::Hooks hooks;
+  hooks.onRegister = [this](const DynamicConfigServer::Key& key) { onRegister(key); };
+  hooks.onDeregister = [this](const DynamicConfigServer::Key& key) { onDeregister(key); };
+  hooks.onUpdate = [this](const DynamicConfigServer::Key& key, const YAML::Node& values) { onUpdate(key, values); };
+  server_.setHooks(hooks);
+}
 
-//   // Latch the current state of the config.
-//   onUpdate(key, server_.getValues(key));
-// }
+void RosDynamicConfigServer::onRegister(const DynamicConfigServer::Key& key) {
+  // value_publishers_[key] = nh_.advertise<std_msgs::String>(key + "/get", 1, true);
+  // info_publishers_[key] = nh_.advertise<std_msgs::String>(key + "/info", 1, true);
+  // subscribers_[key] = std::make_unique<ConfigReceiver>(key, this, nh_);
 
-// void RosDynamicConfigServer::onDeregister(const DynamicConfigServer::Key& key) {
-//   value_publishers_.erase(key);
-//   info_publishers_.erase(key);
-//   subscribers_.erase(key);
-//   std_msgs::String msg;
-//   msg.data = key;
-//   dereg_pub_.publish(msg);
-// }
+  // Update the list of keys.
+  publishKeys();
 
-// void RosDynamicConfigServer::onUpdate(const DynamicConfigServer::Key& key, const YAML::Node& values) {
-//   const auto it = value_publishers_.find(key);
-//   if (it == value_publishers_.end()) {
-//     // Shouldn't happen but better to fail gracefully if people extend this.
-//     internal::Logger::logWarning("Tried to publish to dynamic config '" + key + "' without existing publisher.");
-//     return;
-//   }
+  // Latch the current state of the config.
+  onUpdate(key, server_.get(key));
+}
 
-//   std_msgs::String msg;
-//   msg.data = YAML::Dump(values);
-//   it->second.publish(msg);
+void RosDynamicConfigServer::onDeregister(const DynamicConfigServer::Key& key) {
+  // value_publishers_.erase(key);
+  // info_publishers_.erase(key);
+  // subscribers_.erase(key);
 
-//   // For now also always publish the info. Can consider being smarter about this if this ever is a limitation.
-//   const auto info_it = info_publishers_.find(key);
-//   if (info_it == info_publishers_.end()) {
-//     return;
-//   }
-//   const auto info = server_.getInfo(key);
-//   msg.data = YAML::Dump(info);
-//   info_it->second.publish(msg);
-// }
+  // Update the list of keys.
+  publishKeys();
+}
 
-// void RosDynamicConfigServer::onSet(const DynamicConfigServer::Key& key, const YAML::Node& new_values) {
-//   server_.setValues(key, new_values);
-// }
+void RosDynamicConfigServer::onUpdate(const DynamicConfigServer::Key& key, const YAML::Node& values) {
+  // const auto it = value_publishers_.find(key);
+  // if (it == value_publishers_.end()) {
+  //   // Shouldn't happen but better to fail gracefully if people extend this.
+  //   internal::Logger::logWarning("Tried to publish to dynamic config '" + key + "' without existing publisher.");
+  //   return;
+  // }
+
+  // std_msgs::String msg;
+  // msg.data = YAML::Dump(values);
+  // it->second.publish(msg);
+
+  // // For now also always publish the info. Can consider being smarter about this if this ever is a limitation.
+  // const auto info_it = info_publishers_.find(key);
+  // if (info_it == info_publishers_.end()) {
+  //   return;
+  // }
+  // const auto info = server_.getInfo(key);
+  // msg.data = YAML::Dump(info);
+  // info_it->second.publish(msg);
+}
+
+void RosDynamicConfigServer::onSet(const DynamicConfigServer::Key& key, const YAML::Node& new_values) {
+  server_.set(key, new_values);
+}
+
+void RosDynamicConfigServer::publishKeys() {
+  // Publish the all of keys as yaml list.
+  std_msgs::msg::String msg;
+
+  msg.data = "[";
+  for (const auto& config : configs_) {
+    msg.data += config.key + ", ";
+  }
+  if (configs_.size() > 0) {
+    msg.data = msg.data.substr(0, msg.data.size() - 2);
+  }
+  msg.data += "]";
+  keys_pub_->publish(msg);
+}
 
 }  // namespace config
