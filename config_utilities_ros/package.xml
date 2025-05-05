@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
-<package format="2">
-  <name>config_utilities</name>
+<package format="3">
+  <name>config_utilities_ros</name>
   <version>2.0.0</version>
   <description>Tools for working with C++ config structs.</description>
 
@@ -12,10 +12,17 @@
 
   <license>BSD-3-Clause</license>
 
-  <buildtool_depend>cmake</buildtool_depend>
-  <depend>yaml-cpp</depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>config_utilities</depend>
+
+  <exec_depend>ros2launch</exec_depend>
 
   <export>
-    <build_type>cmake</build_type>
+    <build_type>ament_cmake</build_type>
   </export>
 </package>

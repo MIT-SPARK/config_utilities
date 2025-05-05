@@ -32,7 +32,7 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
-#include "config_utilities/ros_dynamic_config_server.h"
+#include "config_utilities_ros/ros_dynamic_config_server.h"
 
 namespace config {
 
@@ -49,8 +49,8 @@ RosDynamicConfigServer::ConfigReceiver::ConfigReceiver(const DynamicConfigServer
 // }
 
 RosDynamicConfigServer::RosDynamicConfigServer(rclcpp::Node* node) : node_(node) {
-  const auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
-  keys_pub_ = node_->create_publisher<std_msgs::msg::String>("dynamic_config_keys", qos);
+  // const auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
+  // keys_pub_ = node_->create_publisher<std_msgs::msg::String>("dynamic_config_keys", qos);
 
   // Setup all currently registered configs.
   for (const auto& key : server_.registeredConfigs()) {
@@ -70,9 +70,6 @@ void RosDynamicConfigServer::onRegister(const DynamicConfigServer::Key& key) {
   // info_publishers_[key] = nh_.advertise<std_msgs::String>(key + "/info", 1, true);
   // subscribers_[key] = std::make_unique<ConfigReceiver>(key, this, nh_);
 
-  // Update the list of keys.
-  publishKeys();
-
   // Latch the current state of the config.
   onUpdate(key, server_.get(key));
 }
@@ -81,9 +78,6 @@ void RosDynamicConfigServer::onDeregister(const DynamicConfigServer::Key& key) {
   // value_publishers_.erase(key);
   // info_publishers_.erase(key);
   // subscribers_.erase(key);
-
-  // Update the list of keys.
-  publishKeys();
 }
 
 void RosDynamicConfigServer::onUpdate(const DynamicConfigServer::Key& key, const YAML::Node& values) {
@@ -110,21 +104,6 @@ void RosDynamicConfigServer::onUpdate(const DynamicConfigServer::Key& key, const
 
 void RosDynamicConfigServer::onSet(const DynamicConfigServer::Key& key, const YAML::Node& new_values) {
   server_.set(key, new_values);
-}
-
-void RosDynamicConfigServer::publishKeys() {
-  // Publish the all of keys as yaml list.
-  std_msgs::msg::String msg;
-
-  msg.data = "[";
-  for (const auto& config : configs_) {
-    msg.data += config.key + ", ";
-  }
-  if (configs_.size() > 0) {
-    msg.data = msg.data.substr(0, msg.data.size() - 2);
-  }
-  msg.data += "]";
-  keys_pub_->publish(msg);
 }
 
 }  // namespace config

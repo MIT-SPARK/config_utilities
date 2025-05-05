@@ -47,8 +47,8 @@
 namespace config::test {
 
 struct TestConversion {
-  static std::string toIntermediate(int value, std::string& error) { return std::to_string(value); }
-  static void fromIntermediate(const std::string& intermediate, int& value, std::string& error) {
+  static std::string toIntermediate(int value, std::string& /* error */) { return std::to_string(value); }
+  static void fromIntermediate(const std::string& intermediate, int& value, std::string& /* error */) {
     value = std::stoi(intermediate);
   }
 

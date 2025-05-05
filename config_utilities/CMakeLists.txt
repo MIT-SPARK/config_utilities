@@ -15,7 +15,6 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(OptionalPackage)
 
 option(BUILD_SHARED_LIBS "Build shared libs" ON)
-option(CONFIG_UTILS_ENABLE_ROS "Export rclpp and build related code" ON)
 option(CONFIG_UTILS_ENABLE_EIGEN "Export Eigen and build related code" ON)
 option(CONFIG_UTILS_ENABLE_GLOG "Export glog and build related code" ON)
 option(CONFIG_UTILS_BUILD_TESTS "Build unit tests" ON)
@@ -23,15 +22,8 @@ option(CONFIG_UTILS_BUILD_DEMOS "Build demo executables" ON)
 
 find_package(yaml-cpp REQUIRED)
 find_package(Boost REQUIRED COMPONENTS filesystem system)
-find_optional(rclcpp CONFIG_UTILS_ENABLE_ROS)
 find_optional(Eigen3 CONFIG_UTILS_ENABLE_EIGEN)
 find_optional_pkgcfg(libglog CONFIG_UTILS_ENABLE_GLOG)
-
-if(ENABLE_rclcpp)
-  find_package(std_msgs REQUIRED)
-  find_package(ament_cmake REQUIRED)
-endif()
-
 
 add_library(
   ${PROJECT_NAME}
@@ -58,7 +50,6 @@ add_library(
   src/visitor.cpp
   src/yaml_parser.cpp
   src/yaml_utils.cpp
-  $<$<BOOL:${ENABLE_rclcpp}>:src/ros_dynamic_config_server.cpp>
   )
 target_link_libraries(
   ${PROJECT_NAME}
@@ -74,12 +65,6 @@ add_library(config_utilities::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 add_executable(composite-configs app/composite_configs.cpp)
 target_link_libraries(composite-configs ${PROJECT_NAME})
 
-if(ENABLE_rclcpp)
-  # ament_target_dependencies(talker rclcpp std_msgs)
-  target_link_libraries(${PROJECT_NAME} PUBLIC ${rclcpp_LIBRARIES} ${std_msgs_LIBRARIES})
-  target_include_directories(${PROJECT_NAME} PUBLIC ${rclcpp_INCLUDE_DIRS} ${std_msgs_INCLUDE_DIRS})
-endif()
-
 if(ENABLE_Eigen3)
   target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen)
 endif()
@@ -89,7 +74,6 @@ if(ENABLE_libglog)
 endif()
 
 message(STATUS "Eigen features enabled: ${ENABLE_Eigen3}")
-message(STATUS "ROS2 features enabled:  ${ENABLE_rclcpp}")
 message(STATUS "glog features enabled:  ${ENABLE_libglog}")
 
 if(CONFIG_UTILS_BUILD_DEMOS)
