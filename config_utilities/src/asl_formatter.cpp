@@ -39,7 +39,10 @@
 
 namespace config::internal {
 
-std::string AslFormatter::formatErrorsImpl(const MetaData& data, const std::string& what, const Severity severity) {
+std::string AslFormatter::formatErrorsImpl(const MetaData& data,
+                                           const std::string& what,
+                                           const Severity severity,
+                                           bool only_messages) {
   const std::string sev = severityToString(severity) + ": ";
   const auto& settings = Settings::instance().printing;
   is_first_divider_ = true;
@@ -51,12 +54,20 @@ std::string AslFormatter::formatErrorsImpl(const MetaData& data, const std::stri
   }
 
   // Header line.
-  std::string result = what + " '" + resolveConfigName(data) + "':\n" +
-                       internal::printCenter(resolveConfigName(data), settings.width, '=') + "\n";
+  std::string result;
+  if (!only_messages) {
+    result += what + " '" + resolveConfigName(data) + "':\n" +
+              internal::printCenter(resolveConfigName(data), settings.width, '=') + "\n";
+  }
 
   // Format all checks and errors.
   result += formatErrorsRecursive(data, sev, settings.width);
-  return result + std::string(settings.width, '=');
+
+  // Closing line.
+  if (!only_messages) {
+    result += internal::printCenter(resolveConfigName(data), settings.width, '=');
+  }
+  return result;
 }
 
 std::string AslFormatter::formatErrorsRecursive(const MetaData& data, const std::string& sev, const size_t length) {

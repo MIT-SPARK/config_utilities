@@ -37,8 +37,11 @@
 
 namespace config::internal {
 
-std::string Formatter::formatErrors(const MetaData& data, const std::string& what, const Severity severity) {
-  return formatter_->formatErrorsImpl(data, what, severity);
+std::string Formatter::formatErrors(const MetaData& data,
+                                    const std::string& what,
+                                    const Severity severity,
+                                    bool only_messages) {
+  return formatter_->formatErrorsImpl(data, what, severity, only_messages);
 }
 
 std::string Formatter::formatMissing(const MetaData& data, const std::string& what, const Severity severity) {
@@ -55,7 +58,7 @@ void Formatter::setFormatter(Formatter::Ptr formatter) {
   }
 }
 
-std::string Formatter::formatErrorsImpl(const MetaData&, const std::string&, const Severity) {
+std::string Formatter::formatErrorsImpl(const MetaData&, const std::string&, const Severity, bool) {
   return getUnspecifiedString();
 }
 
