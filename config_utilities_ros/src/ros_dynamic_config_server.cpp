@@ -40,9 +40,9 @@ RosDynamicConfigServer::ConfigReceiver::ConfigReceiver(const DynamicConfigServer
                                                        RosDynamicConfigServer* server,
                                                        rclcpp::Node& node) {
   const auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
-  pub = node.create_publisher<std_msgs::msg::String>(key + "/get", qos);
+  pub = node.create_publisher<std_msgs::msg::String>("~/" + key + "/get", qos);
   srv = node.create_service<config_utilities_msgs::srv::SetRequest>(
-      key + "/set",
+      "~/" + key + "/set",
       [&](const std::shared_ptr<config_utilities_msgs::srv::SetRequest::Request> request,
           const std::shared_ptr<config_utilities_msgs::srv::SetRequest::Response> response) {
         response->response.data = server->onSet(key, YAML::Load(request->request.data));
