@@ -241,7 +241,7 @@ class YamlParser {
   }
 
   template <typename T>
-  static YAML::Node toYamlImpl(const std::set<T>& value, std::string& error) {
+  static YAML::Node toYamlImpl(const std::set<T>& value, std::string& /* error */) {
     YAML::Node node;
     node = YAML::Node(YAML::NodeType::Sequence);
     for (const T& element : value) {

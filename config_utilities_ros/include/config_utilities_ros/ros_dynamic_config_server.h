@@ -35,9 +35,7 @@
 
 #pragma once
 
-#include <fstream>
 #include <memory>
-#include <string>
 #include <vector>
 
 #include <rclcpp/rclcpp.hpp>
@@ -65,7 +63,6 @@ class RosDynamicConfigServer {
 
   // TODO(lschmid): Figure out if we can use smart pointers here. This should allow nice wrapping in the node.
   rclcpp::Node* node_;
-  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr keys_pub_;
   std::vector<ConfigReceiver> configs_;
   DynamicConfigServer server_;
 
@@ -73,7 +70,6 @@ class RosDynamicConfigServer {
   void onDeregister(const DynamicConfigServer::Key& key);
   void onUpdate(const DynamicConfigServer::Key& key, const YAML::Node& new_values);
   void onSet(const DynamicConfigServer::Key& key, const YAML::Node& new_values);
-  void publishKeys();
 };
 
 }  // namespace config
