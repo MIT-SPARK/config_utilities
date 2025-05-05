@@ -29,6 +29,8 @@ div {
   background-color: #ff0000;
 } */
 
+
+/* Panes */
 .config-pane {
   background-color: #f9f9f9;
   border-radius: var(--radius);
@@ -36,10 +38,18 @@ div {
   padding: 5px;
 }
 
+.selection-header {
+  padding-right: 10px;
+  font-weight: bold;
+}
+
+/* Buttons */
 .config-button {
   border: 1px solid #999;
   color: var(--text_color);
   padding: 10px 20px;
+  /*horizontal, vertical*/
+  margin-right: 5px;
   border-radius: var(--radius);
   cursor: pointer;
 }
@@ -51,6 +61,14 @@ div {
   transition: all var(--trans_dur) ease;
 }
 
+.button-selected {
+  background-color: var(--main_color);
+  color: var(--negative_color);
+  border: 1px solid var(--negative_color);
+}
+
+
+/* Config Elements */
 .config-label {
   padding-right: 10px;
 }
@@ -73,7 +91,7 @@ div {
 }
 
 
-/* Random stuff */
+/* Backup: Random stuff */
 .form-inline {
   display: flex;
   flex-flow: row wrap;

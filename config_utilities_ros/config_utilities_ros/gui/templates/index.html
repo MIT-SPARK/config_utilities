@@ -10,30 +10,16 @@
 
 <!-- Scripts -->
 <script src="{{ url_for('static', filename='js/build_fields.js') }}"></script>
+<script src="{{ url_for('static', filename='js/selection_panes.js') }}"></script>
 <script src="{{ url_for('static', filename='js/read_config.js') }}"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
 <!-- Body -->
 
 <body>
-
   <header>
     <h1>Config Utilities Dynamic Config GUI</h1>
   </header>
-
-  <!-- Here goes the config selection -->
-  <div class="config-pane">
-    <h2>Select a config</h2>
-    <form action="/select/" method="post">
-      <select name="config_name" id="config_name">
-        {% for config in config_list %}
-        <option value="{{ config }}">{{ config }}</option>
-        {% endfor %}
-      </select>
-      <button type="submit">Select</button>
-    </form>
-
-  </div>
 
   <!-- The config -->
   <div class="config-pane">
@@ -52,10 +38,33 @@
   </div>
 
 
+  <!-- Interaction with the config -->
   <div class="config-pane">
     <button name="refreshBtn" class='config-button' type="submit" onclick="post('/refresh');">Refresh</button>
     <button name="submitBtn" class='config-button' type="submit" onclick="readConfig();">Submit</button>
   </div>
+
+
+  <!-- Config Key selection -->
+  <div class="config-pane" id="key-pane">
+    <span class="selection-header">Config:</span>
+    <script>
+      const availableKeys = {{ available_keys | tojson }};
+      const activeKey = "{{ active_key }}";
+      buildSelectionPane(availableKeys, activeKey, 'key-pane');
+    </script>
+  </div>
+
+  <!-- Config Server selection -->
+  <div class="config-pane" id="server-pane">
+    <span class="selection-header">Server:</span>
+    <script>
+      const availableServers = {{ available_servers | tojson }};
+      const activeServer = "{{ active_server }}";
+      buildSelectionPane(availableServers, activeServer, 'server-pane');
+    </script>
+  </div>
+
   <!-- <footer>
     &copy; config_utilities dynamic configs v1.0.0
   </footer> -->

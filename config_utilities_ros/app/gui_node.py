@@ -5,7 +5,11 @@ from rclpy.node import Node
 
 from std_msgs.msg import String
 from time import sleep
+import signal
+import sys
+from threading import Thread
 from config_utilities_msgs.srv import SetRequest
+from config_utilities_ros.gui import DynamicConfigGUI
 
 
 class RosDynamicConfigGUI(Node):
@@ -15,7 +19,6 @@ class RosDynamicConfigGUI(Node):
         # self.publisher_ = self.create_publisher(String, "topic", 10)
 
         self.available_servers_and_keys = {}  # {server: [keys]}
-        self.server_namespaces = {}  # {server: namespace}
 
         # ROS connection to selected key.
         self.sub = None
@@ -23,17 +26,35 @@ class RosDynamicConfigGUI(Node):
         # TODO(lschmid): Think about whether this should periodically pull or let the user refresh.
         self.configs_timer = self.create_timer(0.2, self.get_available_configs)
 
-        self.setup()
+        # Spin in separate thread to avoid blocking the GUI.
+        self.alive = True  # Bools should be atomic in simple assignments.
 
-    def setup(self):
-        while rclpy.ok():
-            self.get_available_configs()
-            if self.available_servers_and_keys:
-                break
-            sleep(0.1)
+        # Initialize the GUI.
+        self.gui = DynamicConfigGUI()
+
+    def run(self):
+        """
+        Run the GUI.
+        """
+        self.alive = True
+        ros_thread = Thread(target=self._spin, daemon=True)
+        ros_thread.start()
+        self.gui.run(debug=True)
+        self.alive = False
+        ros_thread.join()
+
+    def _spin(self):
+        """
+        Spin the node in a separate thread.
+        """
+        while self.alive:
+            rclpy.spin_once(self)
+            if not rclpy.ok():
+                self.alive = False
 
     def get_available_configs(self):
         # We assume that no other node will use config_utilities messages with the same name.
+        print("Getting available configs...")
         configs = [
             t[0][:-4]
             for t in self.get_service_names_and_types()
@@ -41,27 +62,31 @@ class RosDynamicConfigGUI(Node):
             and t[1][0] == "config_utilities_msgs/srv/SetRequest"
         ]
 
-        # TODO(lschmid): This assumes that node names are unique. Can consider checking for non-uniqueness and including
-        # the namespaces until unique.
-        self.available_servers_and_keys.clear()
-        self.server_namespaces.clear()
+        new_servers = {}
         for config in configs:
             # We assume that no other node will use config_utilities messages with the same name.
-            names = config.split("/")
-            server = names[-2]
-            key = names[-1]
-            self.server_namespaces[server] = "/".join(names[:-2])
-
-            if server not in self.available_servers_and_keys:
+            ind = config.rfind("/")
+            server = config[:ind]
+            key = config[ind + 1 :]
+            if server not in new_servers:
                 self.available_servers_and_keys[server] = [key]
             else:
                 self.available_servers_and_keys[server].append(key)
+        if new_servers != self.available_servers_and_keys:
+            self.gui.set_available_servers_and_keys(self.available_servers_and_keys)
+
+
+def signal_handler(signal, frame):
+    rclpy.shutdown()
+    sys.exit(0)
 
 
 def main(args=None):
     rclpy.init(args=args)
     gui = RosDynamicConfigGUI()
-    rclpy.spin(gui)
+    # TODO(lschmid): Double check signal handling to properly shutdown flask.
+    signal.signal(signal.SIGINT, signal_handler)
+    gui.run()
     rclpy.shutdown()
 
 

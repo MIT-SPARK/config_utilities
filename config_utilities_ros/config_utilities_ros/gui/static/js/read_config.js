@@ -1,11 +1,12 @@
 function post(url, data = {}) {
-    // Post data to the server.
+    // Post data to the server and reload the page.
     $.ajax({
         type: "POST",
         url: url,
         dataType: "json",
         data: data,
     });
+    location.reload(true);
 }
 
 function readConfig() {
