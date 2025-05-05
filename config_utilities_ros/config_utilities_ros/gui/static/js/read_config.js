@@ -6,7 +6,6 @@ function post(url, data = {}) {
         dataType: "json",
         data: data,
     });
-    location.reload(true);
 }
 
 function readConfig() {

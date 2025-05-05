@@ -1,6 +1,7 @@
 import yaml
-from flask import render_template, request, Flask
+from flask import render_template, redirect, request, Flask
 import uuid
+import webbrowser
 
 
 def to_yaml(data):
@@ -36,6 +37,7 @@ class DynamicConfigGUI:
 
         # Callback functions of the GUI.
         self.on_server_key_selecetd = None  # fn(server, key): None
+        self.on_setup_complete = None  # fn(): None
 
         # The GUI is a Flask app, setup end points.
         self._app = Flask(app_name)
@@ -50,11 +52,14 @@ class DynamicConfigGUI:
             "/select", "select", self._select_server_or_key, methods=["POST"]
         )
 
-    def run(self, **kwargs):
+    def run(self, host="localhost", port=5000, debug=False, open_browser=True):
         """
         Run the Flask app.
         """
-        self._app.run(**kwargs)
+        if open_browser:
+            # Open the browser to the GUI.
+            webbrowser.open(f"http://{host}:{port}", new=2)
+        self._app.run(host=host, port=port, debug=debug, threaded=False)
 
     # Interfaces to the GUI for the client.
     def set_config_data(self, data):
@@ -69,10 +74,9 @@ class DynamicConfigGUI:
         """
         Set the available servers for the GUI.
         """
-        print("Got new servers and keys!")
         self._available_servers_and_keys = servers_and_keys
         self._update_server_and_key_selected()
-        return self._render()
+        return redirect("/")
 
     # Implementation of the rendered GUI.
     def _index(self):
@@ -82,7 +86,9 @@ class DynamicConfigGUI:
         if request.method == "POST":
             data = request.form
             print("Form submitted with data:", data)
-
+        if self.on_setup_complete is not None:
+            self.on_setup_complete()
+            self.on_setup_complete = None
         return self._render()
 
     def _refresh(self):
@@ -91,7 +97,7 @@ class DynamicConfigGUI:
         """
         print("Refresh button clicked")
         # TODO: Add refresh logic here.
-        return self._render()
+        return redirect("/")
 
     def _submit(self):
         """
@@ -100,7 +106,7 @@ class DynamicConfigGUI:
         data = request.form.to_dict()
 
         print("Submit button clicked:", data)
-        return self._render()
+        return redirect("/")
 
     def _select_server_or_key(self):
         """
@@ -113,12 +119,11 @@ class DynamicConfigGUI:
         if "key-pane" in data:
             self._active_key = data["key-pane"]
         self._update_server_and_key_selected()
-        print("Active selection:", self._active_server, self._active_key)
 
         # Callback to the client if set.
         if self.on_server_key_selecetd is not None:
             self.on_server_key_selecetd(self._active_server, self._active_key)
-        return self._render()
+        return redirect("/")
 
     # Processing functions.
     def _update_server_and_key_selected(self):
@@ -202,4 +207,4 @@ class DynamicConfigGUI:
 
 if __name__ == "__main__":
     gui = DynamicConfigGUI()
-    gui.run(debug=True)
+    gui.run(debug=True, open_browser=False)

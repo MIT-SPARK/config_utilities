@@ -13,6 +13,12 @@
 <script src="{{ url_for('static', filename='js/selection_panes.js') }}"></script>
 <script src="{{ url_for('static', filename='js/read_config.js') }}"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script>
+  // Reload the page when the AJAX request is complete.
+  $(document).ajaxStop(function () {
+    window.location.reload(false);
+  });
+</script>
 
 <!-- Body -->
 

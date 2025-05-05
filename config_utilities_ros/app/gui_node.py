@@ -7,6 +7,7 @@ from std_msgs.msg import String
 from time import sleep
 import signal
 import sys
+import os
 from threading import Thread
 from config_utilities_msgs.srv import SetRequest
 from config_utilities_ros.gui import DynamicConfigGUI
@@ -23,11 +24,9 @@ class RosDynamicConfigGUI(Node):
         # ROS connection to selected key.
         self.sub = None
         self.srv = None
-        # TODO(lschmid): Think about whether this should periodically pull or let the user refresh.
-        self.configs_timer = self.create_timer(0.2, self.get_available_configs)
 
-        # Spin in separate thread to avoid blocking the GUI.
-        self.alive = True  # Bools should be atomic in simple assignments.
+        # State so the GUI can poll.
+        self.alive = False
 
         # Initialize the GUI.
         self.gui = DynamicConfigGUI()
@@ -36,25 +35,31 @@ class RosDynamicConfigGUI(Node):
         """
         Run the GUI.
         """
-        self.alive = True
+        # self.alive = True
         ros_thread = Thread(target=self._spin, daemon=True)
         ros_thread.start()
+        # TODO(lschmid): Think about whether this should periodically pull or let the user refresh.
+        self.configs_timer = self.create_timer(0.1, self.get_available_configs)
+        self.gui.on_setup_complete = self._setup_complete
         self.gui.run(debug=True)
         self.alive = False
         ros_thread.join()
+
+    def _setup_complete(self):
+        self.alive = True
 
     def _spin(self):
         """
         Spin the node in a separate thread.
         """
-        while self.alive:
-            rclpy.spin_once(self)
-            if not rclpy.ok():
-                self.alive = False
+        rclpy.spin(self)
+
+    def shutdown(self, _, __):
+        rclpy.shutdown()
+        sys.exit(0)
 
     def get_available_configs(self):
         # We assume that no other node will use config_utilities messages with the same name.
-        print("Getting available configs...")
         configs = [
             t[0][:-4]
             for t in self.get_service_names_and_types()
@@ -72,22 +77,16 @@ class RosDynamicConfigGUI(Node):
                 self.available_servers_and_keys[server] = [key]
             else:
                 self.available_servers_and_keys[server].append(key)
-        if new_servers != self.available_servers_and_keys:
+        if new_servers != self.available_servers_and_keys and self.alive:
             self.gui.set_available_servers_and_keys(self.available_servers_and_keys)
-
-
-def signal_handler(signal, frame):
-    rclpy.shutdown()
-    sys.exit(0)
 
 
 def main(args=None):
     rclpy.init(args=args)
     gui = RosDynamicConfigGUI()
-    # TODO(lschmid): Double check signal handling to properly shutdown flask.
-    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGINT, gui.shutdown)
     gui.run()
-    rclpy.shutdown()
+    gui.shutdown()
 
 
 if __name__ == "__main__":
