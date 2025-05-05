@@ -50,6 +50,8 @@ div {
   padding: 10px 20px;
   /*horizontal, vertical*/
   margin-right: 5px;
+  margin-bottom: 2.5px;
+  margin-top: 2.5px;
   border-radius: var(--radius);
   cursor: pointer;
 }

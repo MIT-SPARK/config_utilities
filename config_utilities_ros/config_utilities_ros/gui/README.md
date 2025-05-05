@@ -3,7 +3,7 @@
 ## Deps
 Local:
 ```bash
-pip install Flask livereload
+pip install Flask
 ```
 
 System:
