@@ -57,10 +57,10 @@ YAML::Node DynamicConfigServer::get(const Key& key) const {
   return config->get();
 }
 
-bool DynamicConfigServer::set(const Key& key, const YAML::Node& values) const {
+std::string DynamicConfigServer::set(const Key& key, const YAML::Node& values) const {
   const auto config = internal::DynamicConfigRegistry::instance().getConfig(key);
   if (!config) {
-    return false;
+    return "No config registered with key '" + key + "'.";
   }
   return config->set(values);
 }

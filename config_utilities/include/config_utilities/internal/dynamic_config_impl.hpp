@@ -35,6 +35,9 @@
 
 #include <utility>
 
+#include "config_utilities/internal/formatter.h"
+#include "config_utilities/internal/string_utils.h"
+
 namespace config {
 
 template <typename ConfigT>
@@ -110,22 +113,14 @@ void DynamicConfig<ConfigT>::setCallback(const Callback& callback) {
 }
 
 template <typename ConfigT>
-bool DynamicConfig<ConfigT>::setValues(const YAML::Node& values) {
+std::string DynamicConfig<ConfigT>::setValues(const YAML::Node& values) {
   YAML::Node new_yaml;
   {  // start critical section
     std::lock_guard<std::mutex> lock(mutex_);
     ConfigT new_config = config_;
-    internal::Visitor::setValues(new_config, values);
+    auto meta_data = internal::Visitor::setValues(new_config, values);
     if (!config::isValid(new_config, true)) {
-      return false;
-    }
-
-    // NOTE(lschmid): This is a bit cumbersome, but configs don't have to implement operator==, so we compare
-    // their YAML representation. Can consider making this optional in the future in the global settings?
-    const auto old_yaml = internal::Visitor::getValues(config_).data;
-    new_yaml = internal::Visitor::getValues(new_config).data;
-    if (internal::isEqual(old_yaml, new_yaml)) {
-      return false;
+      return internal::Formatter::formatErrors(meta_data, "", internal::Severity::kError, true);
     }
     config_ = new_config;
   }  // end critical section
@@ -136,11 +131,11 @@ bool DynamicConfig<ConfigT>::setValues(const YAML::Node& values) {
 
   // Also notify other clients that the config has been updated.
   internal::DynamicConfigRegistry::instance().configUpdated(name_, new_yaml);
-  return true;
+  return "";
 }
 
 template <typename ConfigT>
-YAML::Node DynamicConfig<ConfigT>::getValues() const {
+YAML::Node DynamicConfig<ConfigT>::getInfo() const {
   std::lock_guard<std::mutex> lock(mutex_);
   return internal::Visitor::getInfo(config_).serializeFieldInfos();
 }
@@ -148,7 +143,7 @@ YAML::Node DynamicConfig<ConfigT>::getValues() const {
 template <typename ConfigT>
 internal::DynamicConfigRegistry::ConfigInterface DynamicConfig<ConfigT>::getInterface() {
   internal::DynamicConfigRegistry::ConfigInterface interface;
-  interface.get = [this]() { return getValues(); };
+  interface.get = [this]() { return getInfo(); };
   interface.set = [this](const YAML::Node& values) { return setValues(values); };
   return interface;
 }

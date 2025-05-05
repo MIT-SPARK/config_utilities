@@ -38,20 +38,18 @@ namespace config {
 
 RosDynamicConfigServer::ConfigReceiver::ConfigReceiver(const DynamicConfigServer::Key& key,
                                                        RosDynamicConfigServer* server,
-                                                       rclcpp::Node& node)
-    : key(key), server(server) {
-  // sub = nh.subscribe(key + "/set", 1, &ConfigReceiver::callback, this);
+                                                       rclcpp::Node& node) {
+  const auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
+  pub = node.create_publisher<std_msgs::msg::String>(key + "/get", qos);
+  srv = node.create_service<config_utilities_msgs::srv::SetRequest>(
+      key + "/set",
+      [&](const std::shared_ptr<config_utilities_msgs::srv::SetRequest::Request> request,
+          const std::shared_ptr<config_utilities_msgs::srv::SetRequest::Response> response) {
+        response->response.data = server->onSet(key, YAML::Load(request->request.data));
+      });
 }
 
-// void RosDynamicConfigServer::ConfigReceiver::callback(const std_msgs::String& msg) {
-//   const auto values = YAML::Load(msg.data);
-//   server->onSet(key, values);
-// }
-
 RosDynamicConfigServer::RosDynamicConfigServer(rclcpp::Node* node) : node_(node) {
-  // const auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
-  // keys_pub_ = node_->create_publisher<std_msgs::msg::String>("dynamic_config_keys", qos);
-
   // Setup all currently registered configs.
   for (const auto& key : server_.registeredConfigs()) {
     onRegister(key);
@@ -66,44 +64,30 @@ RosDynamicConfigServer::RosDynamicConfigServer(rclcpp::Node* node) : node_(node)
 }
 
 void RosDynamicConfigServer::onRegister(const DynamicConfigServer::Key& key) {
-  // value_publishers_[key] = nh_.advertise<std_msgs::String>(key + "/get", 1, true);
-  // info_publishers_[key] = nh_.advertise<std_msgs::String>(key + "/info", 1, true);
-  // subscribers_[key] = std::make_unique<ConfigReceiver>(key, this, nh_);
+  configs_.emplace(key, ConfigReceiver(key, this, *node_));
 
   // Latch the current state of the config.
   onUpdate(key, server_.get(key));
 }
 
-void RosDynamicConfigServer::onDeregister(const DynamicConfigServer::Key& key) {
-  // value_publishers_.erase(key);
-  // info_publishers_.erase(key);
-  // subscribers_.erase(key);
+void RosDynamicConfigServer::onDeregister(const DynamicConfigServer::Key& key) { configs_.erase(key); }
+
+void RosDynamicConfigServer::onUpdate(const DynamicConfigServer::Key& key, const YAML::Node& data) {
+  const auto it = configs_.find(key);
+  if (it == configs_.end()) {
+    // Shouldn't happen but better to fail gracefully if people extend this.
+    internal::Logger::logWarning("Tried to publish to dynamic config '" + key + "' without existing publisher.");
+    return;
+  }
+
+  // Publish the new config info.
+  std_msgs::msg::String msg;
+  msg.data = YAML::Dump(data);
+  it->second.pub->publish(msg);
 }
 
-void RosDynamicConfigServer::onUpdate(const DynamicConfigServer::Key& key, const YAML::Node& values) {
-  // const auto it = value_publishers_.find(key);
-  // if (it == value_publishers_.end()) {
-  //   // Shouldn't happen but better to fail gracefully if people extend this.
-  //   internal::Logger::logWarning("Tried to publish to dynamic config '" + key + "' without existing publisher.");
-  //   return;
-  // }
-
-  // std_msgs::String msg;
-  // msg.data = YAML::Dump(values);
-  // it->second.publish(msg);
-
-  // // For now also always publish the info. Can consider being smarter about this if this ever is a limitation.
-  // const auto info_it = info_publishers_.find(key);
-  // if (info_it == info_publishers_.end()) {
-  //   return;
-  // }
-  // const auto info = server_.getInfo(key);
-  // msg.data = YAML::Dump(info);
-  // info_it->second.publish(msg);
-}
-
-void RosDynamicConfigServer::onSet(const DynamicConfigServer::Key& key, const YAML::Node& new_values) {
-  server_.set(key, new_values);
+std::string RosDynamicConfigServer::onSet(const DynamicConfigServer::Key& key, const YAML::Node& new_values) {
+  return server_.set(key, new_values);
 }
 
 }  // namespace config

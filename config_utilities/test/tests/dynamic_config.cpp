@@ -127,7 +127,7 @@ TEST(DynamicConfig, Hooks) {
   DynamicConfigServer::Hooks hooks;
   hooks.onRegister = [&logs](const std::string& key) { logs += "register " + key + "; "; };
   hooks.onDeregister = [&logs](const std::string& key) { logs += "deregister " + key + "; "; };
-  hooks.onUpdate = [&logs](const std::string& key, const YAML::Node& new_values) { logs += "update " + key + "; "; };
+  hooks.onUpdate = [&logs](const std::string& key, const YAML::Node&) { logs += "update " + key + "; "; };
   server->setHooks(hooks);
 
   // Register a dynamic config.

@@ -38,10 +38,10 @@
 #include <memory>
 #include <vector>
 
+#include <config_utilities/dynamic_config.h>
+#include <config_utilities_msgs/srv/set_request.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/string.hpp>
-
-#include "config_utilities/dynamic_config.h"
 
 namespace config {
 
@@ -53,23 +53,23 @@ class RosDynamicConfigServer {
   explicit RosDynamicConfigServer(rclcpp::Node* node);
 
  private:
-  // Struct to that manages the exposure of each config
+  // Helper that manages the exposure of each config.
   struct ConfigReceiver {
     ConfigReceiver(const DynamicConfigServer::Key& key, RosDynamicConfigServer* server, rclcpp::Node& node);
-    const DynamicConfigServer::Key key;
-    const RosDynamicConfigServer* const server;
-    //   void callback(const std_msgs::String& msg);
+
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pub;
+    rclcpp::Service<config_utilities_msgs::srv::SetRequest>::SharedPtr srv;
   };
 
   // TODO(lschmid): Figure out if we can use smart pointers here. This should allow nice wrapping in the node.
   rclcpp::Node* node_;
-  std::vector<ConfigReceiver> configs_;
+  std::map<DynamicConfigServer::Key, ConfigReceiver> configs_;
   DynamicConfigServer server_;
 
   void onRegister(const DynamicConfigServer::Key& key);
   void onDeregister(const DynamicConfigServer::Key& key);
-  void onUpdate(const DynamicConfigServer::Key& key, const YAML::Node& new_values);
-  void onSet(const DynamicConfigServer::Key& key, const YAML::Node& new_values);
+  void onUpdate(const DynamicConfigServer::Key& key, const YAML::Node& data);
+  std::string onSet(const DynamicConfigServer::Key& key, const YAML::Node& new_values);
 };
 
 }  // namespace config

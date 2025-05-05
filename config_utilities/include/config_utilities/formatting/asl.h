@@ -55,7 +55,10 @@ class AslFormatter : public Formatter {
   ~AslFormatter() override = default;
 
  protected:
-  std::string formatErrorsImpl(const MetaData& data, const std::string& what, const Severity severity) override;
+  std::string formatErrorsImpl(const MetaData& data,
+                               const std::string& what,
+                               const Severity severity,
+                               bool only_messages) override;
   std::string formatMissingImpl(const MetaData& data, const std::string& what, const Severity severity) override;
   std::string formatConfigImpl(const MetaData& data) override;
   std::string formatConfigsImpl(const std::vector<MetaData>& data) override;
