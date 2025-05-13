@@ -56,7 +56,7 @@ struct ParserContext {
   //! Suffix for any substitution
   std::string suffix = R"""(>)""";
   //! Separator between substitution tag and substitution input
-  std::string separator = R"""(\| *)""";
+  std::string separator = R"""( *\| *)""";
   //! Name-value pairs for use in substitution
   std::map<std::string, std::string> vars;
 
@@ -67,7 +67,7 @@ struct ParserContext {
   operator bool() const { return !error_; }
 
  private:
-  mutable bool error_;
+  mutable bool error_ = false;
 };
 
 struct Substitution {
@@ -114,6 +114,14 @@ RegisteredSubstitutions::Registration<T>::Registration() {
  */
 struct EnvSubstitution : public Substitution {
   inline static const std::string NAME = "env";
+  std::string process(const ParserContext& context, const std::string& contents) const override;
+};
+
+/**
+ * @brief Attempts to replace `$(env VAR)` with the value of VAR from the environment
+ */
+struct VarSubstitution : public Substitution {
+  inline static const std::string NAME = "var";
   std::string process(const ParserContext& context, const std::string& contents) const override;
 };
 

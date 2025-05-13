@@ -33,18 +33,21 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
+#include "config_utilities/substitutions.h"
+
 #include <gtest/gtest.h>
 
-#include "config_utilities/substitutions.h"
 #include "config_utilities/test/utils.h"
 
 namespace config::test {
 
 namespace {
 
-inline YAML::Node doResolve(const YAML::Node& orig) {
+inline YAML::Node doResolve(const YAML::Node& orig, const std::map<std::string, std::string>& args = {}) {
   auto result = YAML::Clone(orig);
-  resolveSubstitutions(result);
+  ParserContext context;
+  context.vars = args;
+  resolveSubstitutions(result, context);
   return result;
 }
 
@@ -81,9 +84,9 @@ root:
 
 TEST(Substitutions, resolveEnv) {
   {  // check that we don't try to pass non-scalars to getenv
-    const auto node = YAML::Load("root: $<env|[1, 2, 3]>");
+    const auto node = YAML::Load("root: $<env | [1, 2, 3]>");
     const auto result = doResolve(node);
-    const auto expected = YAML::Load("root: $<env|[1, 2, 3]>");
+    const auto expected = YAML::Load("root: $<env | [1, 2, 3]>");
     expectEqual(result, expected);
   }
 
@@ -91,9 +94,9 @@ TEST(Substitutions, resolveEnv) {
   if (unset) {
     FAIL() << "environment variable '/some/random/env/variable' is set";
   } else {
-    const auto node = YAML::Load("root: $<env|/some/random/env/variable>");
+    const auto node = YAML::Load("root: $<env | /some/random/env/variable>");
     const auto result = doResolve(node);
-    const auto expected = YAML::Load("root: $<env|/some/random/env/variable>");
+    const auto expected = YAML::Load("root: $<env | /some/random/env/variable>");
     expectEqual(result, expected);
   }
 
@@ -101,7 +104,7 @@ TEST(Substitutions, resolveEnv) {
   if (!set) {
     FAIL() << "required environment variable 'HOME' not set";
   } else {
-    const auto node = YAML::Load("root: $<env|HOME>");
+    const auto node = YAML::Load("root: $<env | HOME>");
     const auto result = doResolve(node);
     const auto expected = YAML::Load("root: " + std::string(set));
     expectEqual(result, expected);
@@ -109,12 +112,11 @@ TEST(Substitutions, resolveEnv) {
 }
 
 TEST(Substitutions, interpolateEnv) {
-  {  // check that we don't try to pass non-scalars to getenv
-    const auto node = YAML::Load("root: $<env|[1, 2, 3]>");
-    const auto result = doResolve(node);
-    const auto expected = YAML::Load("root: $<env|[1, 2, 3]>");
-    expectEqual(result, expected);
-  }
+  std::map<std::string, std::string> args{{"foo", "a"}, {"bar", "b"}};
+  const auto node = YAML::Load("root: other/$<var | foo>/test a/$<var | bar>/c");
+  const auto result = doResolve(node, args);
+  const auto expected = YAML::Load("root: other/a/test a/b/c");
+  expectEqual(result, expected);
 }
 
 }  // namespace config::test

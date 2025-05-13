@@ -46,6 +46,7 @@ namespace config {
 namespace {
 
 static const auto env_reg = RegisteredSubstitutions::Registration<EnvSubstitution>();
+static const auto var_reg = RegisteredSubstitutions::Registration<VarSubstitution>();
 
 class SubsNode {
  public:
@@ -66,12 +67,17 @@ class SubsNode {
   }
 
   std::string apply(const ParserContext& context) const {
+    std::cout << "------------------------" << std::endl;
     std::string result = expression;
+    std::cout << "Current result: '" << result << "'" << std::endl;
     for (const auto& child : info_->children) {
       result += child.apply(context);
+      std::cout << "After child " << child.print() << ": '" << result << "'" << std::endl;
     }
 
     if (tag.empty()) {
+      std::cout << "Empty result: '" << result << "'" << std::endl;
+      std::cout << "========================" << std::endl;
       return result;
     }
 
@@ -82,20 +88,25 @@ class SubsNode {
       return result;
     }
 
-    return parser->process(context, result);
+    const auto processed = parser->process(context, result);
+    std::cout << "Non-empty result: '" << processed << "'" << std::endl;
+    std::cout << "========================" << std::endl;
+    return processed;
   }
 
-  std::string print(int level = 0) const {
+  std::string print() const {
     std::stringstream ss;
-    if (level) {
-      ss << "\n" << std::string(2 * level, ' ');
+    ss << "{type='" << tag << "', expr='" << expression << "', [";
+    auto iter = info_->children.begin();
+    while (iter != info_->children.end()) {
+      ss << iter->print();
+      ++iter;
+      if (iter != info_->children.end()) {
+        ss << ", ";
+      }
     }
 
-    ss << "- tag: '" << tag << "', expr: '" << expression << "'";
-    for (const auto& child : info_->children) {
-      ss << child.print(level + 1);
-    }
-
+    ss << "]}";
     return ss.str();
   }
 
@@ -117,6 +128,9 @@ inline SubsNode parseSubstitutions(const ParserContext& context, YAML::Node node
   SubsNode root;
   auto curr_parent = &root;
   for (std::smatch m; std::regex_search(to_search, m, tag_regex);) {
+    // save any previous text that isn't a substitution
+    curr_parent->addChild().expression = m.prefix();
+
     std::cout << "curr tag: '" << m.str(1) << "', total: '" << m.str() << "'" << std::endl;
     auto& curr_sub = curr_parent->addChild();
     curr_sub.tag = m.str(1);
@@ -137,6 +151,7 @@ inline SubsNode parseSubstitutions(const ParserContext& context, YAML::Node node
     curr_sub.expression = next_close.str(1);
     // no more substitutions, we can continue parsing
     if (next_open.empty()) {
+      to_search = next_close.suffix();
       break;
     }
 
@@ -145,12 +160,16 @@ inline SubsNode parseSubstitutions(const ParserContext& context, YAML::Node node
     // have a new sibling or a new child
     const auto has_child = next_open.position() < next_close.position();
     if (!has_child) {
+      // start search after this substitution closes
+      to_search = next_close.suffix();
       continue;
     }
 
     curr_parent = &curr_sub;
   }
 
+  // save any remaining text that isn't a substitution
+  curr_parent->addChild().expression = to_search;
   return root;
 }
 
@@ -245,6 +264,20 @@ std::string EnvSubstitution::process(const ParserContext& context, const std::st
   }
 
   return std::string(ret);
+}
+
+std::string VarSubstitution::process(const ParserContext& context, const std::string& contents) const {
+  auto iter = context.vars.find(contents);
+  if (iter == context.vars.end()) {
+    std::stringstream ss;
+    ss << "Unknown var '" << contents << "'";
+    internal::Logger::logError(ss.str());
+    context.error();
+    return contents;
+  }
+
+  std::cout << "found match: '" << iter->first << "' -> '" << iter->second << "'" << std::endl;
+  return iter->second;
 }
 
 void resolveSubstitutions(YAML::Node node, const ParserContext& context) {
