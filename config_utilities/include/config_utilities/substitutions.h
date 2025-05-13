@@ -39,6 +39,28 @@
 
 namespace config {
 
+/**
+ * @brief Context for substitution parsing
+ *
+ * Together, the suffix, prefix and separator define the substitution grammar
+ *
+ *   TAG: LETTER (LETTER | DIGIT | "_" | "-")*
+ *
+ *   expression: .* | substitution | (\S* .* substitution .*)*
+ *
+ *   substitution: "prefix" TAG "separator" expression "suffix"
+ */
+struct ParserContext {
+  //! Prefix for any substitution
+  std::string prefix = R"""(\$<)""";
+  //! Suffix for any substitution
+  std::string suffix = R"""(>)""";
+  //! Separator between substitution tag and substitution input
+  std::string separator = R"""(\| *)""";
+  //! Name-value pairs for use in substitution
+  std::map<std::string, std::string> vars;
+};
+
 struct Substitution {
   virtual ~Substitution() = default;
 
@@ -46,7 +68,7 @@ struct Substitution {
    * @brief Process arguments to substitution
    * @param[in] contents Arguments following {{
    */
-  virtual std::string process(const std::string& contents) const = 0;
+  virtual std::string process(const ParserContext& context, const std::string& contents) const = 0;
 };
 
 class RegisteredSubstitutions {
@@ -83,13 +105,13 @@ RegisteredSubstitutions::Registration<T>::Registration() {
  */
 struct EnvSubstitution : public Substitution {
   inline static const std::string NAME = "env";
-  std::string process(const std::string& contents) const override;
+  std::string process(const ParserContext& context, const std::string& contents) const override;
 };
 
 /**
  * @brief Iterate through the node, resolving tags
  * @param[in] node Node to resolve tags for
  */
-void resolveSubstitutions(YAML::Node node);
+void resolveSubstitutions(YAML::Node node, const ParserContext& context = {});
 
 }  // namespace config

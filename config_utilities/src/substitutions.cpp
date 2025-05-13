@@ -36,8 +36,9 @@
 #include "config_utilities/substitutions.h"
 
 #include <cstdlib>
-#include <sstream>
+#include <iostream>
 #include <regex>
+#include <sstream>
 
 #include "config_utilities/internal/logger.h"
 
@@ -46,41 +47,131 @@ namespace {
 
 static const auto env_reg = RegisteredSubstitutions::Registration<EnvSubstitution>();
 
-inline void resolveSubstitution(YAML::Node node) {
-  const auto tag = node.Tag();
-  if (tag == "!append" || tag == "!update" || tag == "!replace") {
-    node.SetTag("");
+class SubsNode {
+ public:
+  std::string tag;
+  std::string expression;
+
+  SubsNode() : info_(new Info()) {}
+
+  SubsNode& addChild() {
+    auto& child = info_->children.emplace_back();
+    child.info_->parent = this;
+    return child;
   }
 
+  operator bool() const {
+    const auto root = tag.empty() && expression.empty();
+    return !(root && info_->children.empty());
+  }
+
+  std::string apply(const ParserContext& context) const {
+    std::string result = expression;
+    for (const auto& child : info_->children) {
+      result += child.apply(context);
+    }
+
+    if (tag.empty()) {
+      return result;
+    }
+
+    auto parser = RegisteredSubstitutions::getEntry(tag);
+    if (!parser) {
+      internal::Logger::logWarning("Unknown substitution '" + tag + "'!");
+      return result;
+    }
+
+    return parser->process(context, result);
+  }
+
+  std::string print(int level = 0) const {
+    std::stringstream ss;
+    if (level) {
+      ss << std::string(2 * level, ' ');
+    }
+
+    ss << "- tag: '" << tag << "', expr: '" << expression << "'\n";
+    for (const auto& child : info_->children) {
+      ss << child.print(level + 1);
+    }
+
+    return ss.str();
+  }
+
+ private:
+  struct Info {
+    const SubsNode* parent = nullptr;
+    std::list<SubsNode> children;
+  };
+
+  std::unique_ptr<Info> info_;
+};
+
+inline SubsNode parseSubstitutions(const ParserContext& context, YAML::Node node) {
+  auto to_search = node.as<std::string>();
+  std::cout << "Parsing '" << to_search << "'" << std::endl;
+  const std::regex tag_regex(context.prefix + R"""(([\w-]*))""" + context.separator);
+  const std::regex suffix_regex(R"""(\s*?(.*?))""" + context.suffix);
+
+  std::smatch test;
+  if (std::regex_search(to_search, test, tag_regex)) {
+    std::cout << "test match: '" << test.str() << "'" << std::endl;
+  } else {
+    std::cout << "no match!" << std::endl;
+  }
+
+  SubsNode root;
+  auto curr_parent = &root;
+  for (std::smatch m; std::regex_search(to_search, m, tag_regex);) {
+    std::cout << "curr tag: '" << m.str(1) << "', total: '" << m.str() << "'" << std::endl;
+    to_search = m.suffix();
+    auto& curr_sub = curr_parent->addChild();
+    curr_sub.tag = m.str(1);
+
+    // search for the next open and close for substitutions if they exist
+    std::smatch next_open;
+    std::regex_search(to_search, next_open, tag_regex);
+    std::smatch next_close;
+    std::regex_search(to_search, next_close, suffix_regex);
+    if (next_open.empty() && next_close.empty()) {
+      internal::Logger::logError("Invalid substitution! Could not find closing '" + context.suffix + "' for '" +
+                                 m.str() + "'");
+      return SubsNode();
+    }
+
+    std::cout << "curr close: '" << next_close.str(1) << "', total: '" << next_close.str() << "'" << std::endl;
+    curr_sub.expression = next_close.str(1);
+    // no more substitutions, we can continue parsing
+    if (next_open.empty()) {
+      break;
+    }
+
+    // compare positions to determine whether the next closing token occurs
+    // before or after the next opening token, which determines whether we
+    // have a new sibling or a new child
+    const auto has_child = next_open.position() < next_close.position();
+    if (!has_child) {
+      continue;
+    }
+
+    curr_parent = &curr_sub;
+  }
+
+  return root;
+}
+
+inline void resolveSubstitution(YAML::Node node, const ParserContext& context) {
   if (!node.IsScalar()) {
     return;
   }
 
-  std::string result;
-
-  bool has_match = false;
-  auto to_search = node.as<std::string>();
-  std::regex regex(R"""($\((\w+) (.+)\))""");
-  for (std::smatch m; std::regex_search(to_search, m, regex);) {
-    const std::string subs_name = m[1];
-    auto parser = RegisteredSubstitutions::getEntry(subs_name);
-    if (!parser) {
-      internal::Logger::logWarning("Unknown substitution '" + subs_name + "'!");
-      continue;
-    }
-
-    result += m.prefix();
-    result += parser->process(m[2]);
-    to_search = m.suffix();
-  }
-
-  // TODO(nathan) handle unmatched suffix
-
-  if (!has_match) {
+  const auto subs = parseSubstitutions(context, node);
+  std::cout << "parsed:\n" << subs.print() << std::endl;
+  if (!subs) {
     return;
   }
 
-  node = result;
+  node = subs.apply(context);
 }
 
 }  // namespace
@@ -115,7 +206,7 @@ void RegisteredSubstitutions::addEntry(const std::string& tag, std::unique_ptr<S
   }
 }
 
-std::string EnvSubstitution::process(const std::string& contents) const {
+std::string EnvSubstitution::process(const ParserContext&, const std::string& contents) const {
   const auto ret = std::getenv(contents.c_str());
   if (!ret) {
     std::stringstream ss;
@@ -127,27 +218,33 @@ std::string EnvSubstitution::process(const std::string& contents) const {
   return std::string(ret);
 }
 
-void resolveSubstitutions(YAML::Node node) {
-  resolveSubstitution(node);
+void resolveSubstitutions(YAML::Node node, const ParserContext& context) {
+  const auto tag = node.Tag();
+  if (tag == "!append" || tag == "!update" || tag == "!replace") {
+    node.SetTag("");
+  }
+
   switch (node.Type()) {
     case YAML::NodeType::Map:
       for (const auto& child : node) {
         // technically keys can have tags...
         // shouldn't need to recurse
-        resolveSubstitution(child.first);
+        resolveSubstitution(child.first, context);
         // dispatch recursion to value
-        resolveSubstitutions(child.second);
+        resolveSubstitutions(child.second, context);
       }
       break;
     case YAML::NodeType::Sequence:
       // dispatch resolution to all children
       for (const auto& child : node) {
-        resolveSubstitutions(child);
+        resolveSubstitutions(child, context);
       }
+      break;
+    case YAML::NodeType::Scalar:
+      resolveSubstitution(node, context);
       break;
     case YAML::NodeType::Undefined:
     case YAML::NodeType::Null:
-    case YAML::NodeType::Scalar:
     default:
       return;
   }

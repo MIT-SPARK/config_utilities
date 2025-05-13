@@ -81,7 +81,7 @@ root:
 
 TEST(Substitutions, resolveEnv) {
   {  // check that we don't try to pass non-scalars to getenv
-    const auto node = YAML::Load("root: !env [1, 2, 3]");
+    const auto node = YAML::Load("root: $<env|[1, 2, 3]>");
     const auto result = doResolve(node);
     const auto expected = YAML::Load("root: [1, 2, 3]");
     expectEqual(result, expected);
@@ -91,9 +91,9 @@ TEST(Substitutions, resolveEnv) {
   if (unset) {
     FAIL() << "environment variable '/some/random/env/variable' is set";
   } else {
-    const auto node = YAML::Load("root: !env /some/random/env/variable");
+    const auto node = YAML::Load("root: $<env|/some/random/env/variable>");
     const auto result = doResolve(node);
-    const auto expected = YAML::Load("root: /some/random/env/variable");
+    const auto expected = YAML::Load("root: $<env|/some/random/env/variable>");
     expectEqual(result, expected);
   }
 
@@ -101,7 +101,7 @@ TEST(Substitutions, resolveEnv) {
   if (!set) {
     FAIL() << "required environment variable 'HOME' not set";
   } else {
-    const auto node = YAML::Load("root: !env HOME");
+    const auto node = YAML::Load("root: $<env|HOME>");
     const auto result = doResolve(node);
     const auto expected = YAML::Load("root: " + std::string(set));
     expectEqual(result, expected);
