@@ -59,6 +59,15 @@ struct ParserContext {
   std::string separator = R"""(\| *)""";
   //! Name-value pairs for use in substitution
   std::map<std::string, std::string> vars;
+
+  //! @brief Flag that an error was encountered in parsing
+  void error() const { error_ = true; }
+
+  //! @brief Return if an error was encountered
+  operator bool() const { return !error_; }
+
+ private:
+  mutable bool error_;
 };
 
 struct Substitution {

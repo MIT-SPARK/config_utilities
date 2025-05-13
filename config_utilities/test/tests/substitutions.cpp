@@ -83,7 +83,7 @@ TEST(Substitutions, resolveEnv) {
   {  // check that we don't try to pass non-scalars to getenv
     const auto node = YAML::Load("root: $<env|[1, 2, 3]>");
     const auto result = doResolve(node);
-    const auto expected = YAML::Load("root: [1, 2, 3]");
+    const auto expected = YAML::Load("root: $<env|[1, 2, 3]>");
     expectEqual(result, expected);
   }
 
@@ -104,6 +104,15 @@ TEST(Substitutions, resolveEnv) {
     const auto node = YAML::Load("root: $<env|HOME>");
     const auto result = doResolve(node);
     const auto expected = YAML::Load("root: " + std::string(set));
+    expectEqual(result, expected);
+  }
+}
+
+TEST(Substitutions, interpolateEnv) {
+  {  // check that we don't try to pass non-scalars to getenv
+    const auto node = YAML::Load("root: $<env|[1, 2, 3]>");
+    const auto result = doResolve(node);
+    const auto expected = YAML::Load("root: $<env|[1, 2, 3]>");
     expectEqual(result, expected);
   }
 }

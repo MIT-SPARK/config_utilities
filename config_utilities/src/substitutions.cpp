@@ -77,7 +77,8 @@ class SubsNode {
 
     auto parser = RegisteredSubstitutions::getEntry(tag);
     if (!parser) {
-      internal::Logger::logWarning("Unknown substitution '" + tag + "'!");
+      internal::Logger::logError("Unknown substitution '" + tag + "'!");
+      context.error();
       return result;
     }
 
@@ -87,10 +88,10 @@ class SubsNode {
   std::string print(int level = 0) const {
     std::stringstream ss;
     if (level) {
-      ss << std::string(2 * level, ' ');
+      ss << "\n" << std::string(2 * level, ' ');
     }
 
-    ss << "- tag: '" << tag << "', expr: '" << expression << "'\n";
+    ss << "- tag: '" << tag << "', expr: '" << expression << "'";
     for (const auto& child : info_->children) {
       ss << child.print(level + 1);
     }
@@ -113,20 +114,13 @@ inline SubsNode parseSubstitutions(const ParserContext& context, YAML::Node node
   const std::regex tag_regex(context.prefix + R"""(([\w-]*))""" + context.separator);
   const std::regex suffix_regex(R"""(\s*?(.*?))""" + context.suffix);
 
-  std::smatch test;
-  if (std::regex_search(to_search, test, tag_regex)) {
-    std::cout << "test match: '" << test.str() << "'" << std::endl;
-  } else {
-    std::cout << "no match!" << std::endl;
-  }
-
   SubsNode root;
   auto curr_parent = &root;
   for (std::smatch m; std::regex_search(to_search, m, tag_regex);) {
     std::cout << "curr tag: '" << m.str(1) << "', total: '" << m.str() << "'" << std::endl;
-    to_search = m.suffix();
     auto& curr_sub = curr_parent->addChild();
     curr_sub.tag = m.str(1);
+    to_search = m.suffix();
 
     // search for the next open and close for substitutions if they exist
     std::smatch next_open;
@@ -167,11 +161,44 @@ inline void resolveSubstitution(YAML::Node node, const ParserContext& context) {
 
   const auto subs = parseSubstitutions(context, node);
   std::cout << "parsed:\n" << subs.print() << std::endl;
+  std::cout << "???????????????????????????????????????" << std::endl;
   if (!subs) {
     return;
   }
 
   node = subs.apply(context);
+}
+
+void doSubstitutions(YAML::Node node, const ParserContext& context) {
+  const auto tag = node.Tag();
+  if (tag == "!append" || tag == "!update" || tag == "!replace") {
+    node.SetTag("");
+  }
+
+  switch (node.Type()) {
+    case YAML::NodeType::Map:
+      for (const auto& child : node) {
+        // technically keys can have tags...
+        // shouldn't need to recurse
+        resolveSubstitution(child.first, context);
+        // dispatch recursion to value
+        doSubstitutions(child.second, context);
+      }
+      break;
+    case YAML::NodeType::Sequence:
+      // dispatch resolution to all children
+      for (const auto& child : node) {
+        doSubstitutions(child, context);
+      }
+      break;
+    case YAML::NodeType::Scalar:
+      resolveSubstitution(node, context);
+      break;
+    case YAML::NodeType::Undefined:
+    case YAML::NodeType::Null:
+    default:
+      return;
+  }
 }
 
 }  // namespace
@@ -206,12 +233,14 @@ void RegisteredSubstitutions::addEntry(const std::string& tag, std::unique_ptr<S
   }
 }
 
-std::string EnvSubstitution::process(const ParserContext&, const std::string& contents) const {
+std::string EnvSubstitution::process(const ParserContext& context, const std::string& contents) const {
   const auto ret = std::getenv(contents.c_str());
   if (!ret) {
     std::stringstream ss;
     ss << "Failed to get envname from '" << contents << "'";
-    internal::Logger::logWarning(ss.str());
+    context.error();
+    internal::Logger::logError(ss.str());
+
     return contents;
   }
 
@@ -219,35 +248,13 @@ std::string EnvSubstitution::process(const ParserContext&, const std::string& co
 }
 
 void resolveSubstitutions(YAML::Node node, const ParserContext& context) {
-  const auto tag = node.Tag();
-  if (tag == "!append" || tag == "!update" || tag == "!replace") {
-    node.SetTag("");
+  auto to_sub = YAML::Clone(node);
+  doSubstitutions(to_sub, context);
+  if (context) {
+    node = to_sub;
   }
 
-  switch (node.Type()) {
-    case YAML::NodeType::Map:
-      for (const auto& child : node) {
-        // technically keys can have tags...
-        // shouldn't need to recurse
-        resolveSubstitution(child.first, context);
-        // dispatch recursion to value
-        resolveSubstitutions(child.second, context);
-      }
-      break;
-    case YAML::NodeType::Sequence:
-      // dispatch resolution to all children
-      for (const auto& child : node) {
-        resolveSubstitutions(child, context);
-      }
-      break;
-    case YAML::NodeType::Scalar:
-      resolveSubstitution(node, context);
-      break;
-    case YAML::NodeType::Undefined:
-    case YAML::NodeType::Null:
-    default:
-      return;
-  }
+  // TODO(nathan) throw exception
 }
 
 }  // namespace config
