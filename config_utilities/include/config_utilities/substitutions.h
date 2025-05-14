@@ -56,7 +56,7 @@ struct ParserContext {
   //! Suffix for any substitution
   std::string suffix = R"""(>)""";
   //! Separator between substitution tag and substitution input
-  std::string separator = R"""( *\| *)""";
+  std::string separator = R"""( *(\|| ) *)""";
   //! Name-value pairs for use in substitution
   std::map<std::string, std::string> vars;
 
@@ -129,6 +129,6 @@ struct VarSubstitution : public Substitution {
  * @brief Iterate through the node, resolving tags
  * @param[in] node Node to resolve tags for
  */
-void resolveSubstitutions(YAML::Node node, const ParserContext& context = {});
+void resolveSubstitutions(YAML::Node node, const ParserContext& context = {}, bool strict = true);
 
 }  // namespace config
