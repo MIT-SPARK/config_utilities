@@ -265,4 +265,24 @@ TEST(Commandline, EqualOpt) {
   EXPECT_EQ(args.get_cmd(), "some_command --some-arg=value}");
 }
 
+TEST(Commandline, VariableOpts) {
+  // Checks that we correctly parse and use variables for substitutions
+  CliArgs cli_args(std::vector<std::string>{"some_command", "-c", "{c: ", "$<var", "c>}", "-v", "c=5"});
+  auto args = cli_args.get();
+  const auto node = internal::loadFromArguments(args.argc, args.argv, true);
+  const auto expected = YAML::Load(R"yaml({c: 5})yaml");
+  expectEqual(expected, node);
+  EXPECT_EQ(args.get_cmd(), "some_command");
+}
+
+TEST(Commandline, InvalidVariable) {
+  // Checks that we reject invalid variables
+  CliArgs cli_args(std::vector<std::string>{"some_command", "-c", "{c: ", "$<var", "c>}", "-v", "c=5", "-v", "c:6"});
+  auto args = cli_args.get();
+  const auto node = internal::loadFromArguments(args.argc, args.argv, true);
+  const auto expected = YAML::Load(R"yaml({c: 5})yaml");
+  expectEqual(expected, node);
+  EXPECT_EQ(args.get_cmd(), "some_command");
+}
+
 }  // namespace config::test

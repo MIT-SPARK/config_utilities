@@ -57,17 +57,28 @@ struct Span {
 
 struct CliParser {
   struct Entry {
+    enum class Type { File, Yaml, Var } type;
     std::string value;
-    bool is_file;
   };
 
   ParserInfo info;
 
-  static constexpr auto FILE_OPT = "--config-utilities-file";
-  static constexpr auto YAML_OPT = "--config-utilities-yaml";
+  struct Opt {
+    const std::string name;
+    Entry::Type type;
+    bool multiple = false;
+    const std::string short_name;
+  };
+
+  const std::vector<Opt> opts{
+      {"config-utilities-file", Entry::Type::File, false, "f"},
+      {"config-utilities-yaml", Entry::Type::Yaml, true, "c"},
+      {"config-utilities-var", Entry::Type::Var, false, "v"},
+  };
 
   CliParser() = default;
   CliParser& parse(int& argc, char* argv[], bool remove_args);
+  std::optional<Opt> matches(const std::string& option);
 
   std::vector<Entry> entries;
 };
@@ -143,6 +154,23 @@ void removeSpan(int& argc, char* argv[], const Span& span) {
   argc -= span.num_tokens + 1;
 }
 
+std::optional<CliParser::Opt> CliParser::matches(const std::string& option) {
+  for (const auto& opt : opts) {
+    std::string flags = "--" + opt.name;
+    if (!opt.short_name.empty()) {
+      flags += "|-" + opt.short_name;
+    }
+
+    std::smatch match;
+    std::regex matcher(flags);
+    if (std::regex_search(option, match, matcher)) {
+      return opt;
+    }
+  }
+
+  return std::nullopt;
+}
+
 CliParser& CliParser::parse(int& argc, char* argv[], bool remove_args) {
   std::vector<Span> spans;
 
@@ -165,8 +193,9 @@ CliParser& CliParser::parse(int& argc, char* argv[], bool remove_args) {
       ++i;
     }
 
-    if (curr_opt == FILE_OPT || curr_opt == YAML_OPT) {
-      curr_span = getSpan(argc, argv, i, curr_opt == YAML_OPT, error);
+    const auto opt_match = matches(curr_opt);
+    if (opt_match) {
+      curr_span = getSpan(argc, argv, i, opt_match->multiple, error);
     }
 
     if (curr_span) {
@@ -185,11 +214,12 @@ CliParser& CliParser::parse(int& argc, char* argv[], bool remove_args) {
   }
 
   for (const auto& span : spans) {
-    if (span.key != FILE_OPT && span.key != YAML_OPT) {
-      continue; // skip any spans for single options
+    const auto opt = matches(span.key);
+    if (!opt) {
+      continue;  // skip any spans for single options
     }
 
-    entries.push_back(Entry{span.extractTokens(argc, argv), span.key == FILE_OPT});
+    entries.push_back(Entry{opt->type, span.extractTokens(argc, argv)});
   }
 
   if (remove_args) {
@@ -250,6 +280,16 @@ YAML::Node nodeFromLiteralEntry(const CliParser::Entry& entry) {
   return node;
 }
 
+void parseEntryVar(const CliParser::Entry& entry, std::map<std::string, std::string>& vars) {
+  auto pos = entry.value.find("=");
+  if (pos == std::string::npos) {
+    Logger::logError("Invalid variable specification '" + entry.value + "'. Must be 'name=value'");
+    return;
+  }
+
+  vars[entry.value.substr(0, pos)] = entry.value.substr(pos + 1);
+}
+
 YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args, ParserInfo* info) {
   const auto parser = CliParser().parse(argc, argv, remove_args);
   if (info) {
@@ -259,20 +299,30 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args, ParserIn
     }
   }
 
+  std::map<std::string, std::string> vars;
+
   YAML::Node node;
   for (const auto& entry : parser.entries) {
     YAML::Node parsed_node;
-    if (entry.is_file) {
-      parsed_node = nodeFromFileEntry(entry);
-    } else {
-      parsed_node = nodeFromLiteralEntry(entry);
+    switch (entry.type) {
+      case CliParser::Entry::Type::File:
+        parsed_node = nodeFromFileEntry(entry);
+        break;
+      case CliParser::Entry::Type::Yaml:
+        parsed_node = nodeFromLiteralEntry(entry);
+        break;
+      case CliParser::Entry::Type::Var:
+        parseEntryVar(entry, vars);
+        break;
     }
 
     // no-op for invalid parsed node
     internal::mergeYamlNodes(node, parsed_node, MergeMode::APPEND);
   }
 
-  resolveSubstitutions(node);
+  ParserContext context;
+  context.vars = vars;
+  resolveSubstitutions(node, context);
   return node;
 }
 
