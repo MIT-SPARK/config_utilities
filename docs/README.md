@@ -29,20 +29,27 @@ The following tutorials will guide you through functionalities of `config_utilit
     - [Creating objects with individual configs](Factories.md#creating-objects-with-individual-configs)
     - [Delayed object creation with virtual configs](Factories.md#delayed-object-creation-with-virtual-configs)
 
-6. [**Advanced features**](Advanced.md)
+6. [**Compositing data sources**](Compositing.md)
+    - [Compositing](Compositing.md#compositing)
+    - [How compositing works](Compositing.md#how-compositing-works)
+    - [Controlling compositing behavior](Compositing.md#controlling-compositing-behavior)
+    - [Substitutions](Compositing.md#substitutions)
+
+7. [**Advanced features**](Advanced.md)
     - [Adding custom types](Advanced.md#adding-custom-types)
     - [Adding custom conversions](Advanced.md#adding-custom-conversions)
     - [Adding custom checks](Advanced.md#adding-custom-checks)
     - [Adding custom loggers](Advanced.md#adding-custom-loggers)
     - [Adding custom formatters](Advanced.md#adding-custom-formatters)
     - [Adding custom parsers](Advanced.md#adding-custom-parsers)
+    - [Adding custom substitutions](Advanced.md#adding-custom-substitutions)
 
-7. [**External Plugins**](External.md)
+8. [**External Plugins**](External.md)
     - [Loading an external library](External.md#loading-an-external-library)
     - [Managed instances](External.md#managed-instances)
     - [Debugging](External.md#debugging)
 
-8. [**Varia**](Varia.md)
+9. [**Varia**](Varia.md)
     - [Settings](Varia.md#settings)
     - [Globals](Varia.md#globals)
 

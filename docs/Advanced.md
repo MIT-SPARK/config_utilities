@@ -112,3 +112,43 @@ Formatters work exactly like the loggers above. To implement your custom formatt
 
 ## Adding custom parsers
 `config_utilities` uses [yaml-cpp](https://github.com/jbeder/yaml-cpp/tree/master) as internal data representation. To parse configs from other sources of data, convert them to yaml compatible data structures. An example of this is given in `parsing/ros.h`.
+
+## Adding custom substitutions
+
+To define a custom substitution, you need to first implement a parser (see [here](../config_utilities/include/config_utilities/substitution_parsers.h) for examples).
+
+This may look like
+```cpp
+#include <config_utilities/substitutions.h>
+
+struct CustomSubstitution : public Substitution {
+  inline static const std::string NAME = "custom";
+
+  std::string process(const ParserContext& context, const std::string& contents) const override {
+    if (contents == "what is the meaning of life?") {
+      return "42";
+    }
+
+    if (contents == "invalid") {
+      context.error();
+    }
+
+    return contents;
+  }
+};
+
+// ideally this lives in a source file
+static const auto custom_reg = RegisteredSubstitutions::Registration<CustomSubstitution>();
+```
+that would result in the following substitutions
+```yaml
+test: $<custom | what is the meaning of life>
+# maps to
+test: 42
+
+test: $<custom | something else>
+# maps to
+test: something else
+
+test: $<custom | invalid>  # will error out in strict parsing mode
+```
