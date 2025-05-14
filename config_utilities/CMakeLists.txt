@@ -40,6 +40,7 @@ add_library(
   src/settings.cpp
   src/string_utils.cpp
   src/substitutions.cpp
+  src/substitution_parsers.cpp
   src/validation.cpp
   src/visitor.cpp
   src/yaml_parser.cpp

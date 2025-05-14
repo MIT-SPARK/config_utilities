@@ -35,16 +35,12 @@
 
 #include "config_utilities/substitutions.h"
 
-#include <cstdlib>
 #include <regex>
 
 #include "config_utilities/internal/logger.h"
 
 namespace config {
 namespace {
-
-static const auto env_reg = RegisteredSubstitutions::Registration<EnvSubstitution>();
-static const auto var_reg = RegisteredSubstitutions::Registration<VarSubstitution>();
 
 class SubsNode {
  public:
@@ -287,28 +283,6 @@ void RegisteredSubstitutions::addEntry(const std::string& tag, std::unique_ptr<S
   if (!had_prev) {
     internal::Logger::logWarning("Dropping new processor for existing tag '" + tag + "'");
   }
-}
-
-std::string EnvSubstitution::process(const ParserContext& context, const std::string& contents) const {
-  const auto ret = std::getenv(contents.c_str());
-  if (!ret) {
-    context.error();
-    internal::Logger::logError("Failed to get envname from '" + contents + "'");
-    return contents;
-  }
-
-  return std::string(ret);
-}
-
-std::string VarSubstitution::process(const ParserContext& context, const std::string& contents) const {
-  auto iter = context.vars.find(contents);
-  if (iter == context.vars.end()) {
-    internal::Logger::logError("Unknown var '" + contents + "'");
-    context.error();
-    return contents;
-  }
-
-  return iter->second;
 }
 
 void resolveSubstitutions(YAML::Node node, const ParserContext& context, bool strict) {

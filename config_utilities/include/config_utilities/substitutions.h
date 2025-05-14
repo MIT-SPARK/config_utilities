@@ -35,6 +35,10 @@
 
 #pragma once
 
+#include <map>
+#include <memory>
+#include <string>
+
 #include <yaml-cpp/yaml.h>
 
 namespace config {
@@ -108,22 +112,6 @@ template <typename T>
 RegisteredSubstitutions::Registration<T>::Registration() {
   RegisteredSubstitutions::addEntry(T::NAME, std::make_unique<T>());
 }
-
-/**
- * @brief Attempts to replace `$(env VAR)` with the value of VAR from the environment
- */
-struct EnvSubstitution : public Substitution {
-  inline static const std::string NAME = "env";
-  std::string process(const ParserContext& context, const std::string& contents) const override;
-};
-
-/**
- * @brief Attempts to replace `$(env VAR)` with the value of VAR from the environment
- */
-struct VarSubstitution : public Substitution {
-  inline static const std::string NAME = "var";
-  std::string process(const ParserContext& context, const std::string& contents) const override;
-};
 
 /**
  * @brief Iterate through the node, resolving tags
