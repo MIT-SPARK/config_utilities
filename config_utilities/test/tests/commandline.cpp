@@ -303,4 +303,14 @@ TEST(Commandline, InvalidVariable) {
   EXPECT_EQ(args.get_cmd(), "some_command");
 }
 
+TEST(Commandline, SeparatorCorrect) {
+  // Checks that we stop processing options after a separator
+  CliArgs cli_args(std::vector<std::string>{"some_command", "-c", "{c: ", "$<var", "c>}", "-v", "c=5", "--", "-v", "c=6"});
+  auto args = cli_args.get();
+  const auto node = internal::loadFromArguments(args.argc, args.argv, true);
+  const auto expected = YAML::Load(R"yaml({c: 5})yaml");
+  expectEqual(expected, node);
+  EXPECT_EQ(args.get_cmd(), "some_command -v c=6");
+}
+
 }  // namespace config::test

@@ -216,8 +216,7 @@ CliParser& CliParser::parse(int& argc, char* argv[], bool remove_args) {
     if (curr_opt == "--" && !found_separator) {
       found_separator = true;
       spans.emplace_back(Span{i, 0, curr_opt});
-      ++i;
-      continue;
+      break;
     }
 
     const auto opt_match = matches(curr_opt);
