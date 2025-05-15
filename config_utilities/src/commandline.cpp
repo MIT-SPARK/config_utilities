@@ -156,9 +156,9 @@ void removeSpan(int& argc, char* argv[], const Span& span) {
 
 std::optional<CliParser::Opt> CliParser::matches(const std::string& option) {
   for (const auto& opt : opts) {
-    std::string flags = "--" + opt.name;
+    std::string flags = "^--" + opt.name + "$";
     if (!opt.short_name.empty()) {
-      flags += "|-" + opt.short_name;
+      flags += "|^-" + opt.short_name + "$";
     }
 
     std::smatch match;
@@ -172,12 +172,21 @@ std::optional<CliParser::Opt> CliParser::matches(const std::string& option) {
 }
 
 CliParser& CliParser::parse(int& argc, char* argv[], bool remove_args) {
-  std::vector<Span> spans;
+  const std::regex flag_regex(R"regex(^-{1,2}[\w-]+(=.+)?$)regex");
 
-  bool found_separator = false;
   int i = 0;
+  bool found_separator = false;
+  std::vector<Span> spans;
   while (i < argc) {
     const std::string curr_opt(argv[i]);
+
+    std::smatch m;
+    const bool is_flag = std::regex_match(curr_opt, m, flag_regex);
+    if (!is_flag) {
+      ++i; // skip non-flags from parsing
+      continue;
+    }
+
     std::string error;
     std::optional<Span> curr_span;
     if ((curr_opt == "-h" || curr_opt == "--help") && !found_separator) {
@@ -191,6 +200,7 @@ CliParser& CliParser::parse(int& argc, char* argv[], bool remove_args) {
       found_separator = true;
       spans.emplace_back(Span{i, 0, curr_opt});
       ++i;
+      continue;
     }
 
     const auto opt_match = matches(curr_opt);
