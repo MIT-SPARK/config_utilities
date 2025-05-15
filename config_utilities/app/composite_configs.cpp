@@ -31,6 +31,64 @@ See https://github.com/MIT-SPARK/config_utilities/blob/main/docs/Parsing.md#pars
 for more information.
 )""";
 
+namespace {
+
+inline bool isContainer(YAML::Node node) {
+  return node.Type() == YAML::NodeType::Sequence || node.Type() == YAML::NodeType::Map;
+}
+
+inline bool isComplexNode(YAML::Node node) {
+  switch (node.Type()) {
+    case YAML::NodeType::Sequence:
+      for (const auto& child : node) {
+        if (isContainer(child)) {
+          return true;
+        }
+      }
+      return false;
+    case YAML::NodeType::Map:
+      for (const auto& child : node) {
+        if (isContainer(child.second)) {
+          return true;
+        }
+      }
+      return false;
+    case YAML::NodeType::Null:
+    case YAML::NodeType::Undefined:
+    case YAML::NodeType::Scalar:
+    default:
+      return false;
+  }
+}
+
+inline void forceBlockForNonLeaves(YAML::Node node) {
+  switch (node.Type()) {
+    case YAML::NodeType::Sequence:
+      if (isComplexNode(node)) {
+        node.SetStyle(YAML::EmitterStyle::Block);
+      }
+      for (const auto& child : node) {
+        forceBlockForNonLeaves(child);
+      }
+      break;
+    case YAML::NodeType::Map:
+      if (isComplexNode(node)) {
+        node.SetStyle(YAML::EmitterStyle::Block);
+      }
+      for (const auto& child : node) {
+        forceBlockForNonLeaves(child.second);
+      }
+      break;
+    case YAML::NodeType::Null:
+    case YAML::NodeType::Undefined:
+    case YAML::NodeType::Scalar:
+    default:
+      return;
+  }
+}
+
+}  // namespace
+
 int main(int argc, char* argv[]) {
   config::internal::ParserInfo info;
   auto result = config::internal::loadFromArguments(argc, argv, false, &info);
@@ -39,6 +97,9 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
+  forceBlockForNonLeaves(result);
+
+  YAML::Emitter emit;
   switch (result.Type()) {
     case YAML::NodeType::Null:
     case YAML::NodeType::Undefined:
@@ -47,7 +108,8 @@ int main(int argc, char* argv[]) {
     case YAML::NodeType::Scalar:
     case YAML::NodeType::Sequence:
     case YAML::NodeType::Map:
-      std::cout << result << std::endl;
+      emit << result;
+      std::cout << std::string(emit.c_str()) << std::endl;
       break;
   }
 
