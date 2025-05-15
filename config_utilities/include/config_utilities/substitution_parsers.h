@@ -35,60 +35,24 @@
 
 #pragma once
 
-#include <yaml-cpp/yaml.h>
+#include "config_utilities/substitutions.h"
 
 namespace config {
 
-struct TagProcessor {
-  virtual ~TagProcessor() = default;
-
-  /**
-   * @brief Attempt to replace node with corresponding tag
-   * @param[in] node Node to perform substitution on
-   */
-  virtual void processNode(YAML::Node node) const = 0;
-};
-
-class RegisteredTags {
- public:
-  template <typename T>
-  struct Registration {
-    explicit Registration(const std::string& tag);
-  };
-
-  ~RegisteredTags() = default;
-
-  static const TagProcessor* getEntry(const std::string& tag);
-
- private:
-  template <typename T>
-  friend struct Registration;
-
-  static RegisteredTags& instance();
-
-  static void addEntry(const std::string& tag, std::unique_ptr<TagProcessor>&& proc);
-
-  RegisteredTags();
-  static std::unique_ptr<RegisteredTags> s_instance_;
-  std::map<std::string, std::unique_ptr<TagProcessor>> entries_;
-};
-
-template <typename T>
-RegisteredTags::Registration<T>::Registration(const std::string& tag) {
-  RegisteredTags::addEntry(tag, std::make_unique<T>());
-}
-
 /**
- * @brief Attempts to replace the node `!env VARNAME` with the value of VARNAME from the environment
+ * @brief Attempts to replace `$(env VAR)` with the value of VAR from the environment
  */
-struct EnvTag : public TagProcessor {
-  void processNode(YAML::Node node) const override;
+struct EnvSubstitution : public Substitution {
+  inline static const std::string NAME = "env";
+  std::string process(const ParserContext& context, const std::string& contents) const override;
 };
 
 /**
- * @brief Iterate through the node, resolving tags
- * @param[in] node Node to resolve tags for
+ * @brief Attempts to replace `$(env VAR)` with the value of VAR from the environment
  */
-void resolveTags(YAML::Node node);
+struct VarSubstitution : public Substitution {
+  inline static const std::string NAME = "var";
+  std::string process(const ParserContext& context, const std::string& contents) const override;
+};
 
 }  // namespace config

@@ -33,7 +33,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
-#include "config_utilities/tag_processors.h"
+#include "config_utilities/substitutions.h"
 
 #include <gtest/gtest.h>
 
@@ -43,15 +43,19 @@ namespace config::test {
 
 namespace {
 
-inline YAML::Node doResolve(const YAML::Node& orig) {
+inline YAML::Node doResolve(const YAML::Node& orig,
+                            const std::map<std::string, std::string>& args = {},
+                            bool strict = true) {
   auto result = YAML::Clone(orig);
-  resolveTags(result);
+  ParserContext context;
+  context.vars = args;
+  resolveSubstitutions(result, context, strict);
   return result;
 }
 
 }  // namespace
 
-TEST(YamlUtils, resolveLeftoverTags) {
+TEST(Substitutions, clearLeftoverTags) {
   const auto node = YAML::Load(R"""(
 root:
   children:
@@ -80,31 +84,60 @@ root:
   expectEqual(result, expected);
 }
 
-TEST(YamlUtils, resolveEnvTags) {
+TEST(Substitutions, resolveEnv) {
   {  // check that we don't try to pass non-scalars to getenv
-    const auto node = YAML::Load("root: !env [1, 2, 3]");
-    const auto result = doResolve(node);
-    const auto expected = YAML::Load("root: [1, 2, 3]");
-    expectEqual(result, expected);
+    const auto node = YAML::Load("root: $<env | [1, 2, 3]>");
+    const auto result = doResolve(node, {}, false);
+    const auto expected = YAML::Load("root: $<env | [1, 2, 3]>");
   }
 
   auto unset = std::getenv("/some/random/env/variable");
   if (unset) {
     FAIL() << "environment variable '/some/random/env/variable' is set";
   } else {
-    const auto node = YAML::Load("root: !env /some/random/env/variable");
-    const auto result = doResolve(node);
-    const auto expected = YAML::Load("root: /some/random/env/variable");
-    expectEqual(result, expected);
+    try {
+      const auto node = YAML::Load("root: $<env | /some/random/env/variable>");
+      const auto result = doResolve(node);
+      FAIL();
+    } catch (const std::runtime_error& e) {
+      std::string msg(e.what());
+      EXPECT_NE(msg.find("Invalid substitution in node"), std::string::npos);
+    }
   }
 
   auto set = std::getenv("HOME");
   if (!set) {
     FAIL() << "required environment variable 'HOME' not set";
   } else {
-    const auto node = YAML::Load("root: !env HOME");
+    const auto node = YAML::Load("root: $<env | HOME>");
     const auto result = doResolve(node);
     const auto expected = YAML::Load("root: " + std::string(set));
+    expectEqual(result, expected);
+  }
+}
+
+TEST(Substitutions, interpolateFlatSubstitutions) {
+  std::map<std::string, std::string> args{{"foo", "a"}, {"bar", "b"}};
+  const auto node = YAML::Load("root: other/$<var | foo>/test a/$<var | bar>/c");
+  const auto result = doResolve(node, args);
+  const auto expected = YAML::Load("root: other/a/test a/b/c");
+  expectEqual(result, expected);
+}
+
+TEST(Substitutions, nestedSubstitutions) {
+  {  // nested subs without terminal suffixes and prefixes
+    std::map<std::string, std::string> args{{"foo", "a"}, {"bar", "b"}, {"a", "foo"}};
+    const auto node = YAML::Load("root: other/$<var | $<var | foo>>/test a/$<var | bar>/c");
+    const auto result = doResolve(node, args);
+    const auto expected = YAML::Load("root: other/foo/test a/b/c");
+    expectEqual(result, expected);
+  }
+
+  {  // nested subs with terminal suffixes and prefixes
+    std::map<std::string, std::string> args{{"foo", "a"}, {"bar", "b"}, {"baa", "foo"}};
+    const auto node = YAML::Load("root: \"other/$<var b$<var foo>a>/test\na/$<var $<var $<var bar>aa>>/c\"");
+    const auto result = doResolve(node, args);
+    const auto expected = YAML::Load("root: \"other/foo/test\na/a/c\"");
     expectEqual(result, expected);
   }
 }

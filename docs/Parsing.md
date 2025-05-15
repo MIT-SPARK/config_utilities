@@ -9,7 +9,7 @@ This tutorial explains how to create configs and other objects from source data.
 
 ## Parse from yaml
 
-To support parsing from yaml nodes and files, the `parsing/yaml.h` header needs to be included. Note that [yaml-cpp](https://github.com/jbeder/yaml-cpp) is already an internal dependecy of `config_utilities`, so no additional dependencies are required. `config_utilities` expects yaml files of the format:
+To support parsing from yaml nodes and files, the `parsing/yaml.h` header needs to be included. Note that [yaml-cpp](https://github.com/jbeder/yaml-cpp) is already an internal dependency of `config_utilities`, so no additional dependencies are required. `config_utilities` expects yaml files of the format:
 ```yaml
 namespace:
   field_name: field_value
@@ -94,9 +94,11 @@ std::unique_ptr<MyBase> object = createFromRosWithNamespace<MyBase>(nh, ns);
 ## Parse from the command line
 
 It is also possible to use the same interfaces as in the yaml or ROS case but via aggregate YAML read from the command line. To use it, include `parsing/command_line.h`.
-`config_utilities` supports parsing two command line flags:
+`config_utilities` supports parsing the following command line flags:
   - `--config-utilities-file SOME_FILE_PATH`: Specify a file to load YAML from.
   - `--config-utilities-yaml SOME_ARBITRARY_YAML`: Specify YAML directly from the command line.
+  - `--config-utilities-var KEY=VALUE`: Specify a new variable for the substitution context.
+  - `--disable-substitutions/--no-disable-substitutions`: Turn off resolving substitutions
 
 > **✅ Supports**<br>
 > Note that the `--config-utilities-file` flag allows for a namespace (i.e., `some/custom/ns`) to apply to the file globally. This is specified as `--config-utilities-file SOME_FILE@some/custom/ns`.
@@ -104,6 +106,7 @@ It is also possible to use the same interfaces as in the yaml or ROS case but vi
 Both command line flags can be specified as many times as needed.
 When aggregating the YAML from the command line, the various flags are merged left to right (where conflicting keys from the last specified flag take precedence) and any sequences are appended together.
 For those familiar with how the ROS parameter server works, this is the same behavior.
+See [here](Compositing.md#controlling-compositing-behavior) for an in-depth discussion of options as to how to control this behavior.
 Please also note that the `--config-utilities-yaml` currently accepts multiple space-delimited tokens (because the ROS2 launch file infrastructure does not currently correctly handle escaped substitutions), so
 ```
 some_command --config-utilities-yaml '{my: {cool: config}}' --config-utilities-file some_file.yaml
@@ -128,27 +131,6 @@ int main(int argc, char** argv) {
 }
 ```
 
-The default ROS-like merging behavior can be overriden by inline tags. The following behaviors are currently available:
-  - `!append`: Matched sequences are appended together (specifically, the right sequence is appended to the left)
-  - `!replace`: Matched keys result in the right key overriding the left
-  - `!merge`: Matched keys (including sequence indices) are recursed into. Any unmatched keys are added
-
-These merging behaviors apply to all children below the tag (until another tag is present).
-
-Example behavior:
-```yaml
-# original YAML (left)
-root: {child: {a: 42, c: 0}, numbers: [1, 2, 3], scalar: -1}
-# new YAML to merge (right)
-root: !TAG {child: {a: 12, b: 13}, numbers: [4, 5], other: temp}
-
-# result of merging right into left with !append in place of !TAG
-root: {child: {a: 12, c: 0, b: 13}, numbers: [1, 2, 3, 4, 5], scalar: -1, other: temp}
-# result of merging right into left with !replace in place of !TAG
-root: {child: {a: 12, b: 13}, numbers: [4, 5], scalar: -1, other: temp}
-# result of merging right into left with !merge in place of !TAG
-root: {child: {a: 12, c: 0, b: 13}, numbers: [4, 5, 3], scalar: -1, other: temp}
-```
 
 # Parse via global context
 
