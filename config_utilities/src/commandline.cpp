@@ -57,7 +57,7 @@ struct Span {
 
 struct CliParser {
   struct Entry {
-    enum class Type { File, Yaml, Var } type;
+    enum class Type { File, Yaml, Var, Flag } type;
     std::string value;
   };
 
@@ -66,14 +66,18 @@ struct CliParser {
   struct Opt {
     const std::string name;
     Entry::Type type;
-    bool multiple = false;
+    int nargs = 1;
     const std::string short_name;
+
+    bool matches(const std::string& option) const;
+    std::string getFlagToken(const std::string& option) const;
   };
 
   const std::vector<Opt> opts{
-      {"config-utilities-file", Entry::Type::File, false, "f"},
-      {"config-utilities-yaml", Entry::Type::Yaml, true, "c"},
-      {"config-utilities-var", Entry::Type::Var, false, "v"},
+      {"config-utilities-file", Entry::Type::File, 1, "f"},
+      {"config-utilities-yaml", Entry::Type::Yaml, -1, "c"},
+      {"config-utilities-var", Entry::Type::Var, 1, "v"},
+      {"disable-substitutions", Entry::Type::Flag, 0, "d"},
   };
 
   CliParser() = default;
@@ -100,7 +104,13 @@ std::string Span::extractTokens(int argc, char* argv[]) const {
   return ss.str();
 }
 
-std::optional<Span> getSpan(int argc, char* argv[], int pos, bool parse_all, std::string& error) {
+bool checkIfFlag(const std::string& opt) {
+  std::regex flag_regex(R"regex(^-{1,2}[\w-]+(=.+)?$)regex");
+  std::smatch m;
+  return std::regex_match(opt, m, flag_regex);
+}
+
+std::optional<Span> getSpan(int argc, char* argv[], int pos, int nargs, std::string& error) {
   // a flag is one of:
   //   -some-option_name
   //   --some_0ption-name
@@ -115,19 +125,18 @@ std::optional<Span> getSpan(int argc, char* argv[], int pos, bool parse_all, std
   // "{a: --some_value=value}"
   // you should escape it when passing the argument, i.e.,
   // --config-utilities-yaml '{a: --some_value=value}'
-  std::regex flag_regex(R"regex(^-{1,2}[\w-]+(=.+)?$)regex");
+  if (nargs == 0) {
+    return Span{pos, 0, argv[pos]};
+  }
 
   int index = pos + 1;
   while (index < argc) {
     const std::string curr_opt = argv[index];
-
-    std::smatch m;
-    const bool is_flag = std::regex_match(curr_opt, m, flag_regex);
-    if (is_flag) {
+    if (checkIfFlag(curr_opt)) {
       break;  // stop parsing the span
     }
 
-    if (!parse_all) {
+    if (nargs == 1) {
       return Span{pos, 1, argv[pos]};
     }
 
@@ -135,7 +144,7 @@ std::optional<Span> getSpan(int argc, char* argv[], int pos, bool parse_all, std
   }
 
   if (index == pos + 1) {
-    error = parse_all ? "at least one value required!" : "missing required value!";
+    error = nargs < 0 ? "at least one value required!" : "missing required value!";
     return std::nullopt;
   }
 
@@ -154,16 +163,29 @@ void removeSpan(int& argc, char* argv[], const Span& span) {
   argc -= span.num_tokens + 1;
 }
 
+bool CliParser::Opt::matches(const std::string& option) const {
+  std::string flags = "^--" + name + "$";
+  if (!short_name.empty()) {
+    flags += "|^-" + short_name + "$";
+  }
+
+  if (type == Entry::Type::Flag) {
+    flags += "|^--no-" + name + "$";
+  }
+
+  std::smatch match;
+  const std::regex matcher(flags);
+  return std::regex_match(option, match, matcher);
+}
+
+std::string CliParser::Opt::getFlagToken(const std::string& option) const {
+  const auto is_true = option == "--" + name || (!short_name.empty() && option == "-" + short_name);
+  return name + "=" + (is_true ? "true" : "false");
+}
+
 std::optional<CliParser::Opt> CliParser::matches(const std::string& option) {
   for (const auto& opt : opts) {
-    std::string flags = "^--" + opt.name + "$";
-    if (!opt.short_name.empty()) {
-      flags += "|^-" + opt.short_name + "$";
-    }
-
-    std::smatch match;
-    std::regex matcher(flags);
-    if (std::regex_search(option, match, matcher)) {
+    if (opt.matches(option)) {
       return opt;
     }
   }
@@ -172,18 +194,13 @@ std::optional<CliParser::Opt> CliParser::matches(const std::string& option) {
 }
 
 CliParser& CliParser::parse(int& argc, char* argv[], bool remove_args) {
-  const std::regex flag_regex(R"regex(^-{1,2}[\w-]+(=.+)?$)regex");
-
   int i = 0;
   bool found_separator = false;
   std::vector<Span> spans;
   while (i < argc) {
     const std::string curr_opt(argv[i]);
-
-    std::smatch m;
-    const bool is_flag = std::regex_match(curr_opt, m, flag_regex);
-    if (!is_flag) {
-      ++i; // skip non-flags from parsing
+    if (!checkIfFlag(curr_opt)) {
+      ++i;  // skip non-flags from parsing
       continue;
     }
 
@@ -205,12 +222,12 @@ CliParser& CliParser::parse(int& argc, char* argv[], bool remove_args) {
 
     const auto opt_match = matches(curr_opt);
     if (opt_match) {
-      curr_span = getSpan(argc, argv, i, opt_match->multiple, error);
+      curr_span = getSpan(argc, argv, i, opt_match->nargs, error);
     }
 
     if (curr_span) {
       spans.emplace_back(*curr_span);
-      i += curr_span->num_tokens;
+      i += curr_span->num_tokens + 1;
       continue;
     }
 
@@ -229,7 +246,15 @@ CliParser& CliParser::parse(int& argc, char* argv[], bool remove_args) {
       continue;  // skip any spans for single options
     }
 
-    entries.push_back(Entry{opt->type, span.extractTokens(argc, argv)});
+    switch (opt->type) {
+      case Entry::Type::File:
+      case Entry::Type::Yaml:
+      case Entry::Type::Var:
+        entries.push_back(Entry{opt->type, span.extractTokens(argc, argv)});
+        break;
+      case Entry::Type::Flag:
+        entries.push_back(Entry{opt->type, opt->getFlagToken(span.key)});
+    }
   }
 
   if (remove_args) {
@@ -300,6 +325,20 @@ void parseEntryVar(const CliParser::Entry& entry, std::map<std::string, std::str
   vars[entry.value.substr(0, pos)] = entry.value.substr(pos + 1);
 }
 
+void updateContextFromFlag(const CliParser::Entry& entry, ParserContext& context) {
+  auto pos = entry.value.find("=");
+  if (pos == std::string::npos) {
+    Logger::logError("Invalid flag '" + entry.value + "'");
+    return;
+  }
+
+  const auto name = entry.value.substr(0, pos);
+  const bool value = entry.value.substr(pos + 1) == "true";
+  if (name == "disable-substitutions") {
+    context.allow_substitutions = !value;
+  }
+}
+
 YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args, ParserInfo* info) {
   const auto parser = CliParser().parse(argc, argv, remove_args);
   if (info) {
@@ -309,7 +348,7 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args, ParserIn
     }
   }
 
-  std::map<std::string, std::string> vars;
+  ParserContext context;
 
   YAML::Node node;
   for (const auto& entry : parser.entries) {
@@ -322,7 +361,10 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args, ParserIn
         parsed_node = nodeFromLiteralEntry(entry);
         break;
       case CliParser::Entry::Type::Var:
-        parseEntryVar(entry, vars);
+        parseEntryVar(entry, context.vars);
+        break;
+      case CliParser::Entry::Type::Flag:
+        updateContextFromFlag(entry, context);
         break;
     }
 
@@ -330,8 +372,6 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args, ParserIn
     internal::mergeYamlNodes(node, parsed_node, MergeMode::APPEND);
   }
 
-  ParserContext context;
-  context.vars = vars;
   resolveSubstitutions(node, context);
   return node;
 }

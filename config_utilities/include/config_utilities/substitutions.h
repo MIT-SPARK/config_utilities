@@ -61,6 +61,8 @@ struct ParserContext {
   std::string suffix = R"""(>)""";
   //! Separator between substitution tag and substitution input
   std::string separator = R"""( *(\|| ) *)""";
+  //! Whether or not substitutions are allowed
+  bool allow_substitutions = true;
   //! Name-value pairs for use in substitution
   std::map<std::string, std::string> vars;
 

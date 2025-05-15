@@ -208,6 +208,10 @@ inline SubsNode parseSubstitutions(const ParserContext& context, const std::stri
 }
 
 inline void resolveSubstitution(YAML::Node node, const ParserContext& context) {
+  if (!context.allow_substitutions) {
+    return;
+  }
+
   if (!node.IsScalar()) {
     return;
   }

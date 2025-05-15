@@ -252,12 +252,8 @@ TEST(Commandline, ShortOpt) {
 
 TEST(Commandline, EqualOpt) {
   // Check that short options still break parsing
-  CliArgs cli_args(std::vector<std::string>{"some_command",
-                                            "--config-utilities-yaml",
-                                            "{c:",
-                                            "6.0, a:",
-                                            "-7.0}",
-                                            "--some-arg=value}"});
+  CliArgs cli_args(std::vector<std::string>{
+      "some_command", "--config-utilities-yaml", "{c:", "6.0, a:", "-7.0}", "--some-arg=value}"});
   auto args = cli_args.get();
   const auto node = internal::loadFromArguments(args.argc, args.argv, true);
   const auto expected = YAML::Load(R"yaml({c: 6.0, a: -7.0})yaml");
@@ -273,6 +269,28 @@ TEST(Commandline, VariableOpts) {
   const auto expected = YAML::Load(R"yaml({c: 5})yaml");
   expectEqual(expected, node);
   EXPECT_EQ(args.get_cmd(), "some_command");
+}
+
+TEST(Commandline, VariableOptsNoSubs) {
+  {  // Checks that we can turn off substitutions
+    CliArgs cli_args(
+        std::vector<std::string>{"some_command", "-c", "{c: ", "$<var", "c>}", "-v", "c=5", "--disable-substitutions"});
+    auto args = cli_args.get();
+    const auto node = internal::loadFromArguments(args.argc, args.argv, true);
+    const auto expected = YAML::Load(R"yaml({c: $<var c>})yaml");
+    expectEqual(expected, node);
+    EXPECT_EQ(args.get_cmd(), "some_command");
+  }
+
+  {  // Checks that we can turn substitutions back on
+    CliArgs cli_args(std::vector<std::string>{
+        "some_command", "-c", "{c: ", "$<var", "c>}", "-v", "c=5", "-d", "--no-disable-substitutions"});
+    auto args = cli_args.get();
+    const auto node = internal::loadFromArguments(args.argc, args.argv, true);
+    const auto expected = YAML::Load(R"yaml({c: 5})yaml");
+    expectEqual(expected, node);
+    EXPECT_EQ(args.get_cmd(), "some_command");
+  }
 }
 
 TEST(Commandline, InvalidVariable) {
