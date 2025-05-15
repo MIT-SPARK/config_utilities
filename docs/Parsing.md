@@ -94,10 +94,11 @@ std::unique_ptr<MyBase> object = createFromRosWithNamespace<MyBase>(nh, ns);
 ## Parse from the command line
 
 It is also possible to use the same interfaces as in the yaml or ROS case but via aggregate YAML read from the command line. To use it, include `parsing/command_line.h`.
-`config_utilities` supports parsing two command line flags:
+`config_utilities` supports parsing the following command line flags:
   - `--config-utilities-file SOME_FILE_PATH`: Specify a file to load YAML from.
   - `--config-utilities-yaml SOME_ARBITRARY_YAML`: Specify YAML directly from the command line.
   - `--config-utilities-var KEY=VALUE`: Specify a new variable for the substitution context.
+  - `--disable-substitutions/--no-disable-substitutions`: Turn off resolving substitutions
 
 > **✅ Supports**<br>
 > Note that the `--config-utilities-file` flag allows for a namespace (i.e., `some/custom/ns`) to apply to the file globally. This is specified as `--config-utilities-file SOME_FILE@some/custom/ns`.

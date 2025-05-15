@@ -19,6 +19,8 @@ Options:
                               '{a: {b: FILE_CONTENTS}}'. Can be specified multiple times.
   -v/--config-utilities-var: Takes a KEY=VALUE pair to add to the substitution context. Can be specified
                              multiple times.
+  -d/--disable-substitutions: Turn off substitutions resolution
+  --no-disable-substitutions: Turn substitution resolution on (currently on by default)
 
 Example:
 > echo "{a: 42, bar: hello}" > /tmp/test_in.yaml
