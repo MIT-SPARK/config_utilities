@@ -4,11 +4,8 @@ import rclpy
 from rclpy.node import Node
 
 from std_msgs.msg import String
-from time import sleep
 import signal
 import sys
-import os
-from threading import Thread
 from config_utilities_msgs.srv import SetRequest
 from config_utilities_ros.gui import DynamicConfigGUI
 
@@ -16,49 +13,27 @@ from config_utilities_ros.gui import DynamicConfigGUI
 class RosDynamicConfigGUI(Node):
 
     def __init__(self):
-        super().__init__("minimal_publisher")
+        super().__init__("ros_dynamic_config_gui")
         # self.publisher_ = self.create_publisher(String, "topic", 10)
 
-        self.available_servers_and_keys = {}  # {server: [keys]}
+        # Caching of connected config state.
+        self._current_server = None
+        self._current_key = None
+        self._srv = None
 
-        # ROS connection to selected key.
-        self.sub = None
-        self.srv = None
-
-        # State so the GUI can poll.
-        self.alive = False
-
-        # Initialize the GUI.
+        # Initialize the GUI and set the callback functions.
         self.gui = DynamicConfigGUI()
+        self.gui.get_available_servers_and_keys_fn = self.get_available_servers_and_keys
+        self.gui.set_request_fn = self.set_request
 
     def run(self):
         """
         Run the GUI.
         """
-        # self.alive = True
-        ros_thread = Thread(target=self._spin, daemon=True)
-        ros_thread.start()
-        # TODO(lschmid): Think about whether this should periodically pull or let the user refresh.
-        self.configs_timer = self.create_timer(0.1, self.get_available_configs)
-        self.gui.on_setup_complete = self._setup_complete
-        self.gui.run(debug=True)
-        self.alive = False
-        ros_thread.join()
+        # TODO(lschmid): For now let the GUI handle all interactions. In the future cnosider also supporting pushing to the GUI, e.g. when multiple clients are connected or configs are updated.
+        self.gui.run(debug=True, open_browser=True)
 
-    def _setup_complete(self):
-        self.alive = True
-
-    def _spin(self):
-        """
-        Spin the node in a separate thread.
-        """
-        rclpy.spin(self)
-
-    def shutdown(self, _, __):
-        rclpy.shutdown()
-        sys.exit(0)
-
-    def get_available_configs(self):
+    def get_available_servers_and_keys(self):
         # We assume that no other node will use config_utilities messages with the same name.
         configs = [
             t[0][:-4]
@@ -67,18 +42,39 @@ class RosDynamicConfigGUI(Node):
             and t[1][0] == "config_utilities_msgs/srv/SetRequest"
         ]
 
-        new_servers = {}
+        servers = {}
         for config in configs:
             # We assume that no other node will use config_utilities messages with the same name.
             ind = config.rfind("/")
             server = config[:ind]
             key = config[ind + 1 :]
-            if server not in new_servers:
-                self.available_servers_and_keys[server] = [key]
+            if server not in servers:
+                servers[server] = [key]
             else:
-                self.available_servers_and_keys[server].append(key)
-        if new_servers != self.available_servers_and_keys and self.alive:
-            self.gui.set_available_servers_and_keys(self.available_servers_and_keys)
+                servers[server].append(key)
+        return servers
+
+    def set_request(self, server, key, data):
+        """
+        Set the request for the given server and key.
+        """
+        # Connect to the ROS service.
+        if self._current_server != server or self._current_key != key:
+            srv_name = f"{server}/{key}/set"
+            self._srv = self.create_client(SetRequest, srv_name)
+            if not self._srv.wait_for_service(timeout_sec=1.0):
+                return {"error": f"Service '{srv_name}' not available!"}
+            self._current_server = server
+            self._current_key = key
+
+        # Send the request.
+        request = SetRequest.Request()
+        request.data = data
+        return self._srv.call(request)
+
+    def shutdown(self, _, __):
+        rclpy.shutdown()
+        sys.exit(0)
 
 
 def main(args=None):

@@ -71,6 +71,14 @@
     </script>
   </div>
 
+  <!-- Message Pane -->
+  {% if message %}
+  <div class="config-pane" id="message-pane">
+    <span id="message-text">{{ message }}</span>
+  </div>
+  {% endif %}
+
+
   <!-- <footer>
     &copy; config_utilities dynamic configs v1.0.0
   </footer> -->
