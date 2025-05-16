@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
-import rclpy
-from rclpy.node import Node
-
-from std_msgs.msg import String
 import signal
 import sys
+import yaml
+from threading import Thread
+
+import rclpy
+from rclpy.node import Node
 from config_utilities_msgs.srv import SetRequest
 from config_utilities_ros.gui import DynamicConfigGUI
 
@@ -14,7 +15,6 @@ class RosDynamicConfigGUI(Node):
 
     def __init__(self):
         super().__init__("ros_dynamic_config_gui")
-        # self.publisher_ = self.create_publisher(String, "topic", 10)
 
         # Caching of connected config state.
         self._current_server = None
@@ -30,8 +30,11 @@ class RosDynamicConfigGUI(Node):
         """
         Run the GUI.
         """
+        ros_thread = Thread(target=self._spin, daemon=True)
+        ros_thread.start()
         # TODO(lschmid): For now let the GUI handle all interactions. In the future cnosider also supporting pushing to the GUI, e.g. when multiple clients are connected or configs are updated.
         self.gui.run(debug=True, open_browser=True)
+        ros_thread.join()
 
     def get_available_servers_and_keys(self):
         # We assume that no other node will use config_utilities messages with the same name.
@@ -63,14 +66,24 @@ class RosDynamicConfigGUI(Node):
             srv_name = f"{server}/{key}/set"
             self._srv = self.create_client(SetRequest, srv_name)
             if not self._srv.wait_for_service(timeout_sec=1.0):
-                return {"error": f"Service '{srv_name}' not available!"}
+                return {"error": f"Service '{srv_name}' not available."}
             self._current_server = server
             self._current_key = key
 
         # Send the request.
         request = SetRequest.Request()
-        request.data = data
-        return self._srv.call(request)
+        request.data = yaml.dump(data)
+        result = self._srv.call(request)
+        if not result:
+            return {"error": f"Service call to '{srv_name}' failed."}
+
+        return yaml.safe_load(result.data)
+
+    def _spin(self):
+        """
+        Spin the node in a separate thread.
+        """
+        rclpy.spin(self)
 
     def shutdown(self, _, __):
         rclpy.shutdown()

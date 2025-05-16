@@ -13,16 +13,10 @@ def to_yaml(data):
 
 class DynamicConfigGUI:
     def __init__(self, app_name=__name__):
-        # TMP
-        with open(
-            "/home/lukas/khronos_ws/src/config_utilities/config_utilities_ros/config_utilities_ros/gui/test_cfg.yaml",
-            "r",
-        ) as f:
-            self._config_data = yaml.safe_load(f)
         self.message = ""
-
-        # For field building.
-        self._fields = self._parse_fields(self._config_data)
+        self.error = ""
+        self._config_data = {}
+        self._fields = None
         self._available_servers_and_keys = {}  # {server: [keys]}
         self._active_server = None
         self._available_keys = []
@@ -37,8 +31,6 @@ class DynamicConfigGUI:
         # The GUI is a Flask app, setup end points.
         self._app = Flask(app_name)
         self._app.secret_key = uuid.uuid4().hex
-        # self._app.config["TEMPLATES_AUTO_RELOAD"] = True
-        # self._app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
         self._app.jinja_env.auto_reload = True
         self._app.add_url_rule("/", "index", self._index, methods=["GET", "POST"])
         self._app.add_url_rule("/refresh", "refresh", self._refresh, methods=["POST"])
@@ -63,13 +55,14 @@ class DynamicConfigGUI:
         """
         Render the index page of the GUI.
         """
+        # If required, initialize.
+        if not self._is_setup:
+            return self._setup()
+
         # if request.method == "POST":
         #     data = request.form
         #     print("Form submitted with data:", data)
 
-        # IF required, initialize the GUI.
-        if not self._is_setup:
-            return self._setup()
         return self._render()
 
     def _refresh(self):
@@ -83,6 +76,7 @@ class DynamicConfigGUI:
         self._update_server_and_key_selected()
 
         # Update the content of the selection.
+        self._config_data = {}
         self._request_update()
         return redirect("/")
 
@@ -106,6 +100,7 @@ class DynamicConfigGUI:
         if "key-pane" in data:
             self._active_key = data["key-pane"]
         self._update_server_and_key_selected()
+        self._request_update()
         return redirect("/")
 
     # Processing functions.
@@ -113,9 +108,18 @@ class DynamicConfigGUI:
         """
         Get the data from the server.
         """
-        result = self.set_request_fn(self._active_server, self._active_key, data)
-        self.message = result
-        print("Set request result:", result)
+        if self._active_server is None or self._active_key is None:
+            return
+
+        # Get the new data from the server.
+        self._config_data = self.set_request_fn(
+            self._active_server, self._active_key, data
+        )
+        self.error = self._config_data.get("error", "")
+        self._parse_fields()
+
+        # TMP
+        self.message = to_yaml(self._config_data)
 
     def _setup(self):
         """
@@ -136,13 +140,17 @@ class DynamicConfigGUI:
         """
         # Selection logic for the server.
         if self._active_server not in self._available_servers_and_keys:
+            # If the server is no longer available, reset the server and key.
             self._active_server = None
             self._active_key = None
         if self._active_server is None and len(self._available_servers_and_keys) > 0:
+            # If no server is selected, select the first available server.
             self._active_server = list(self._available_servers_and_keys.keys())[0]
 
         # Selection logic for the key.
-        self._available_keys = self._available_servers_and_keys[self._active_server]
+        self._available_keys = self._available_servers_and_keys.get(
+            self._active_server, []
+        )
         if self._active_key not in self._available_keys:
             self._active_key = None
         if self._active_key is None:
@@ -165,22 +173,21 @@ class DynamicConfigGUI:
         return render_template(
             "index.html",
             config_data=self._fields,
-            config_name=self._config_data["name"],
+            config_name=self._config_data.get("name", ""),
             available_servers=list(self._available_servers_and_keys.keys()),
             available_keys=self._available_keys,
             active_server=self._active_server,
             active_key=self._active_key,
             message=self.message,
+            error_message=self.error,
         )
 
-    def _parse_fields(self, config_data):
+    def _parse_fields(self):
         """
         Parse the fields from the YAML input into rows for the GUI.
         """
 
-        # This function should parse the fields from the YAML file and return them.
-        # For now, we will just return a placeholder.
-        def parse(config, indent, prefix):
+        def parse_rec(config, indent, prefix):
             fields = []
             prefix_str = "".join([f"{p}/" for p in prefix])
             for field in config["fields"]:
@@ -204,13 +211,13 @@ class DynamicConfigGUI:
                     )
                     # Parse all fields in the config.
                     fields.extend(
-                        parse(field, indent + 1, prefix + [field["field_name"]])
+                        parse_rec(field, indent + 1, prefix + [field["field_name"]])
                     )
                 else:
                     raise ValueError(f"Unknown field type: {field['type']}")
             return fields
 
-        return parse(config_data, 0, [])
+        self._fields = parse_rec(self._config_data, 0, [])
 
 
 if __name__ == "__main__":

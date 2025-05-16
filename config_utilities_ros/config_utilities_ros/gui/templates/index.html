@@ -28,8 +28,8 @@
   </header>
 
   <!-- The config -->
+  {% if config_name %}
   <div class="config-pane">
-
     <table id="config-table" class="config-table">
       <tr>
         <th>{{ config_name }} </th>
@@ -42,6 +42,7 @@
       </script>
     </table>
   </div>
+  {% endif %}
 
 
   <!-- Interaction with the config -->
@@ -71,9 +72,20 @@
     </script>
   </div>
 
+  <!-- Error Pane -->
+  {% if error_message %}
+  <div class="config-pane" id="error-pane"
+    style="color: #b71c1c; background: #ffebee; border: 1px solid #b71c1c; padding: 10px; margin-top: 10px; display: flex; align-items: center;">
+    <span style="font-size: 1.5em; margin-right: 10px;">&#9888;</span>
+    <span id="error-text">{{ error_message }}</span>
+  </div>
+  {% endif %}
+
   <!-- Message Pane -->
   {% if message %}
   <div class="config-pane" id="message-pane">
+    <span class="selection-header">Messages:</span>
+    <br>
     <span id="message-text">{{ message }}</span>
   </div>
   {% endif %}

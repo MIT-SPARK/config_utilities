@@ -114,16 +114,28 @@ void DynamicConfig<ConfigT>::setCallback(const Callback& callback) {
 
 template <typename ConfigT>
 std::string DynamicConfig<ConfigT>::setValues(const YAML::Node& values) {
-  YAML::Node new_yaml;
+  if (values.Type() != YAML::NodeType::Map || values.size() == 0) {
+    return "";
+  }
+
+  YAML::Node old_yaml, new_yaml;
   {  // start critical section
     std::lock_guard<std::mutex> lock(mutex_);
     ConfigT new_config = config_;
-    auto meta_data = internal::Visitor::setValues(new_config, values);
+    const auto meta_data = internal::Visitor::setValues(new_config, values);
     if (!config::isValid(new_config, true)) {
       return internal::Formatter::formatErrors(meta_data, "", internal::Severity::kError, true);
     }
+    old_yaml = internal::Visitor::getValues(config_).data;
     config_ = new_config;
+    new_yaml = internal::Visitor::getValues(config_).data;
   }  // end critical section
+
+  // Check if the config was actually changed.
+  // TODO(lschmid): This is not beautiful, think about better ways to get good behavior.
+  if (internal::isEqual(old_yaml, new_yaml)) {
+    return "";
+  }
 
   if (callback_) {
     callback_();
