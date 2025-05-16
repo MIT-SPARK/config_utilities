@@ -1,3 +1,5 @@
-std_msgs/String request
+# Requested data by the client as YAML string data.
+string data
 ---
-std_msgs/String response
+# Response from the server as YAML string data. 
+string data

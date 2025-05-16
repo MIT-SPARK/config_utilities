@@ -38,15 +38,18 @@ namespace config {
 
 RosDynamicConfigServer::ConfigReceiver::ConfigReceiver(const DynamicConfigServer::Key& key,
                                                        RosDynamicConfigServer* server,
-                                                       rclcpp::Node& node) {
+                                                       rclcpp::Node* node)
+    : key(key), server(server) {
   const auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
-  pub = node.create_publisher<std_msgs::msg::String>("~/" + key + "/get", qos);
-  srv = node.create_service<config_utilities_msgs::srv::SetRequest>(
+  pub = node->create_publisher<std_msgs::msg::String>("~/" + key + "/get", qos);
+  srv = node->create_service<Srv>(
       "~/" + key + "/set",
-      [&](const std::shared_ptr<config_utilities_msgs::srv::SetRequest::Request> request,
-          const std::shared_ptr<config_utilities_msgs::srv::SetRequest::Response> response) {
-        response->response.data = server->onSet(key, YAML::Load(request->request.data));
-      });
+      std::bind(&ConfigReceiver::handle_service, this, std::placeholders::_1, std::placeholders::_2));
+}
+
+void RosDynamicConfigServer::ConfigReceiver::handle_service(const std::shared_ptr<Srv::Request> request,
+                                                            std::shared_ptr<Srv::Response> response) {
+  response->data = YAML::Dump(server->onSet(key, YAML::Load(request->data)));
 }
 
 RosDynamicConfigServer::RosDynamicConfigServer(rclcpp::Node* node) : node_(node) {
@@ -64,7 +67,7 @@ RosDynamicConfigServer::RosDynamicConfigServer(rclcpp::Node* node) : node_(node)
 }
 
 void RosDynamicConfigServer::onRegister(const DynamicConfigServer::Key& key) {
-  configs_.emplace(key, ConfigReceiver(key, this, *node_));
+  configs_.emplace(key, std::make_unique<ConfigReceiver>(key, this, node_));
 
   // Latch the current state of the config.
   onUpdate(key, server_.get(key));
@@ -83,11 +86,16 @@ void RosDynamicConfigServer::onUpdate(const DynamicConfigServer::Key& key, const
   // Publish the new config info.
   std_msgs::msg::String msg;
   msg.data = YAML::Dump(data);
-  it->second.pub->publish(msg);
+  it->second->pub->publish(msg);
 }
 
-std::string RosDynamicConfigServer::onSet(const DynamicConfigServer::Key& key, const YAML::Node& new_values) {
-  return server_.set(key, new_values);
+YAML::Node RosDynamicConfigServer::onSet(const DynamicConfigServer::Key& key, const YAML::Node& new_values) {
+  auto error = server_.set(key, new_values);
+  auto values = server_.get(key);
+  if (!error.empty()) {
+    values["error"] = error;
+  }
+  return values;
 }
 
 }  // namespace config
