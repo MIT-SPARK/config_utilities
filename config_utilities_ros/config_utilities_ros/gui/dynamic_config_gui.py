@@ -19,6 +19,7 @@ class DynamicConfigGUI:
             "r",
         ) as f:
             self._config_data = yaml.safe_load(f)
+        self.message = ""
 
         # For field building.
         self._fields = self._parse_fields(self._config_data)
@@ -27,23 +28,17 @@ class DynamicConfigGUI:
         self._available_keys = []
         self._active_key = None
         self._previously_selected_keys = {}  # {server: key}
+        self._is_setup = False
 
-        # TMP
-        self._available_servers_and_keys = {
-            "Server1": ["Key1", "Key2"],
-            "Server2": ["Key3"],
-        }
-        self._update_server_and_key_selected()
-
-        # Callback functions of the GUI.
-        self.on_server_key_selecetd = None  # fn(server, key): None
-        self.on_setup_complete = None  # fn(): None
+        # Callback functions to be made available to the GUI.
+        self.get_available_servers_and_keys_fn = None  # fn(): {servers: [keys]}
+        self.set_request_fn = None  # fn(server, key, data): response
 
         # The GUI is a Flask app, setup end points.
         self._app = Flask(app_name)
         self._app.secret_key = uuid.uuid4().hex
-        self._app.config["TEMPLATES_AUTO_RELOAD"] = True
-        self._app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
+        # self._app.config["TEMPLATES_AUTO_RELOAD"] = True
+        # self._app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
         self._app.jinja_env.auto_reload = True
         self._app.add_url_rule("/", "index", self._index, methods=["GET", "POST"])
         self._app.add_url_rule("/refresh", "refresh", self._refresh, methods=["POST"])
@@ -52,43 +47,29 @@ class DynamicConfigGUI:
             "/select", "select", self._select_server_or_key, methods=["POST"]
         )
 
-    def run(self, host="localhost", port=5000, debug=False, open_browser=True):
+    # TMP: make default for open_browser true
+    def run(self, host="localhost", port=5000, debug=False, open_browser=False):
         """
         Run the Flask app.
         """
+        self._is_setup = False
         if open_browser:
             # Open the browser to the GUI.
             webbrowser.open(f"http://{host}:{port}", new=2)
         self._app.run(host=host, port=port, debug=debug, threaded=False)
-
-    # Interfaces to the GUI for the client.
-    def set_config_data(self, data):
-        """
-        Set the configuration data for the GUI.
-        """
-        self._config_data = data
-        self._fields = self._parse_fields(data)
-        return self._render()
-
-    def set_available_servers_and_keys(self, servers_and_keys):
-        """
-        Set the available servers for the GUI.
-        """
-        self._available_servers_and_keys = servers_and_keys
-        self._update_server_and_key_selected()
-        return redirect("/")
 
     # Implementation of the rendered GUI.
     def _index(self):
         """
         Render the index page of the GUI.
         """
-        if request.method == "POST":
-            data = request.form
-            print("Form submitted with data:", data)
-        if self.on_setup_complete is not None:
-            self.on_setup_complete()
-            self.on_setup_complete = None
+        # if request.method == "POST":
+        #     data = request.form
+        #     print("Form submitted with data:", data)
+
+        # IF required, initialize the GUI.
+        if not self._is_setup:
+            return self._setup()
         return self._render()
 
     def _refresh(self):
@@ -96,7 +77,13 @@ class DynamicConfigGUI:
         Refresh the GUI.
         """
         print("Refresh button clicked")
-        # TODO: Add refresh logic here.
+
+        # Update the available servers and keys.
+        self._available_servers_and_keys = self.get_available_servers_and_keys_fn()
+        self._update_server_and_key_selected()
+
+        # Update the content of the selection.
+        self._request_update()
         return redirect("/")
 
     def _submit(self):
@@ -110,7 +97,7 @@ class DynamicConfigGUI:
 
     def _select_server_or_key(self):
         """
-        Select a server or key.
+        A server or key is elected in the GUI.
         """
         # Update the active server and key based on the selection.
         data = request.form.to_dict()
@@ -119,14 +106,34 @@ class DynamicConfigGUI:
         if "key-pane" in data:
             self._active_key = data["key-pane"]
         self._update_server_and_key_selected()
-
-        # Callback to the client if set.
-        if self.on_server_key_selecetd is not None:
-            self.on_server_key_selecetd(self._active_server, self._active_key)
         return redirect("/")
 
     # Processing functions.
+    def _request_update(self, data={}):
+        """
+        Get the data from the server.
+        """
+        result = self.set_request_fn(self._active_server, self._active_key, data)
+        self.message = result
+        print("Set request result:", result)
+
+    def _setup(self):
+        """
+        Setup the GUI.
+        """
+        # Verify that all required functions are set.
+        if self.get_available_servers_and_keys_fn is None:
+            raise ValueError("No function to get available servers and keys set.")
+        if self.set_request_fn is None:
+            raise ValueError("No function to set the request set.")
+        self._is_setup = True
+        # Initialize the GUI.
+        return self._refresh()
+
     def _update_server_and_key_selected(self):
+        """
+        Selection logic to validate the selected server and key.
+        """
         # Selection logic for the server.
         if self._active_server not in self._available_servers_and_keys:
             self._active_server = None
@@ -163,6 +170,7 @@ class DynamicConfigGUI:
             available_keys=self._available_keys,
             active_server=self._active_server,
             active_key=self._active_key,
+            message=self.message,
         )
 
     def _parse_fields(self, config_data):
