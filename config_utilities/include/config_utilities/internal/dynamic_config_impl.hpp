@@ -117,24 +117,28 @@ std::string DynamicConfig<ConfigT>::setValues(const YAML::Node& values) {
   if (values.Type() != YAML::NodeType::Map || values.size() == 0) {
     return "";
   }
-
   YAML::Node old_yaml, new_yaml;
+  std::string error;
   {  // start critical section
     std::lock_guard<std::mutex> lock(mutex_);
     ConfigT new_config = config_;
-    const auto meta_data = internal::Visitor::setValues(new_config, values);
-    if (!config::isValid(new_config, true)) {
+    auto meta_data = internal::Visitor::setValues(new_config, values);
+    meta_data.checks = std::move(internal::Visitor::getChecks(new_config).checks);
+
+    if (!internal::hasNoInvalidChecks(meta_data)) {
       return internal::Formatter::formatErrors(meta_data, "", internal::Severity::kError, true);
     }
+
     old_yaml = internal::Visitor::getValues(config_).data;
     config_ = new_config;
     new_yaml = internal::Visitor::getValues(config_).data;
+    error = internal::Formatter::formatErrors(meta_data, "", internal::Severity::kWarning, true);
   }  // end critical section
 
   // Check if the config was actually changed.
   // TODO(lschmid): This is not beautiful, think about better ways to get good behavior.
   if (internal::isEqual(old_yaml, new_yaml)) {
-    return "";
+    return error;
   }
 
   if (callback_) {
@@ -143,7 +147,7 @@ std::string DynamicConfig<ConfigT>::setValues(const YAML::Node& values) {
 
   // Also notify other clients that the config has been updated.
   internal::DynamicConfigRegistry::instance().configUpdated(name_, new_yaml);
-  return "";
+  return error;
 }
 
 template <typename ConfigT>

@@ -11,7 +11,7 @@
 <!-- Scripts -->
 <script src="{{ url_for('static', filename='js/build_fields.js') }}"></script>
 <script src="{{ url_for('static', filename='js/selection_panes.js') }}"></script>
-<script src="{{ url_for('static', filename='js/read_config.js') }}"></script>
+<script src="{{ url_for('static', filename='js/config_table.js') }}"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script>
   // Reload the page when the AJAX request is complete.
@@ -29,6 +29,9 @@
 
   <!-- The config -->
   {% if config_name %}
+  <script>
+
+  </script>
   <div class="config-pane">
     <table id="config-table" class="config-table">
       <tr>
@@ -72,12 +75,27 @@
     </script>
   </div>
 
+  <!-- Warning Pane -->
+  {% if warning_message %}
+  <div class="config-pane" id="warning-pane"
+    style="color: #ff9800; background: #fff3e0; border: 1px solid #ff9800; padding: 10px; display: block;">
+    {% for warning in warning_message %}
+    <div style="margin-bottom: 0px; margin-top: 0px;">
+      <span style="font-size: 1.2em; margin-right: 10px;">&#9888;</span> {{ warning }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   <!-- Error Pane -->
   {% if error_message %}
   <div class="config-pane" id="error-pane"
-    style="color: #b71c1c; background: #ffebee; border: 1px solid #b71c1c; padding: 10px; margin-top: 10px; display: flex; align-items: center;">
-    <span style="font-size: 1.5em; margin-right: 10px;">&#9888;</span>
-    <span id="error-text">{{ error_message }}</span>
+    style="color: #b71c1c; background: #ffebee; border: 1px solid #b71c1c; padding: 10px; display: block;">
+    {% for error in error_message %}
+    <div style="margin-bottom: 0px; margin-top: 0px;">
+      <span style="font-size: 1.2em; margin-right: 10px;">&#9888;</span> {{ error }}
+    </div>
+    {% endfor %}
   </div>
   {% endif %}
 
