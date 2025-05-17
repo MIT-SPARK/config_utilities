@@ -29,9 +29,6 @@
 
   <!-- The config -->
   {% if config_name %}
-  <script>
-
-  </script>
   <div class="config-pane">
     <table id="config-table" class="config-table">
       <tr>
@@ -75,18 +72,6 @@
     </script>
   </div>
 
-  <!-- Warning Pane -->
-  {% if warning_message %}
-  <div class="config-pane" id="warning-pane"
-    style="color: #ff9800; background: #fff3e0; border: 1px solid #ff9800; padding: 10px; display: block;">
-    {% for warning in warning_message %}
-    <div style="margin-bottom: 0px; margin-top: 0px;">
-      <span style="font-size: 1.2em; margin-right: 10px;">&#9888;</span> {{ warning }}
-    </div>
-    {% endfor %}
-  </div>
-  {% endif %}
-
   <!-- Error Pane -->
   {% if error_message %}
   <div class="config-pane" id="error-pane"
@@ -99,11 +84,22 @@
   </div>
   {% endif %}
 
+  <!-- Warning Pane -->
+  {% if warning_message %}
+  <div class="config-pane" id="warning-pane"
+    style="color: #ff9800; background: #fff3e0; border: 1px solid #ff9800; padding: 10px; display: block;">
+    {% for warning in warning_message %}
+    <div style="margin-bottom: 0px; margin-top: 0px;">
+      <span style="font-size: 1.2em; margin-right: 10px;">&#9888;</span> {{ warning }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   <!-- Message Pane -->
   {% if message %}
   <div class="config-pane" id="message-pane">
-    <span class="selection-header">Messages:</span>
-    <br>
+    <div class="selection-header" display="block">Messages:</div>
     <span id="message-text">{{ message }}</span>
   </div>
   {% endif %}
