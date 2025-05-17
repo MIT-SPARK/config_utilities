@@ -61,10 +61,6 @@ class DynamicConfigGUI:
         if not self._is_setup:
             return self._setup()
 
-        # if request.method == "POST":
-        #     data = request.form
-        #     print("Form submitted with data:", data)
-
         return self._render()
 
     def _refresh(self):
@@ -87,6 +83,18 @@ class DynamicConfigGUI:
         Submit the form.
         """
         data = request.form.to_dict()
+
+        # Parse the yaml fields.
+        for field in self._fields:
+            if field["type"] == "field":
+                field_name = field["id"]
+                if field_name in data:
+                    # Convert the YAML string to a dictionary.
+                    try:
+                        data[field_name] = yaml.safe_load(data[field_name])
+                    except yaml.YAMLError as e:
+                        pass
+
         self._request_update(data)
         return redirect("/")
 
