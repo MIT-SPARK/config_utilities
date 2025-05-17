@@ -109,6 +109,8 @@ function buildFields(data) {
             html += " colspan='3'";
         }
         html += ">";
+
+        // Indent.
         for (var j = 0; j < d.indent; j++) {
             html += "&nbsp;&nbsp;&nbsp;&nbsp;";
         }
