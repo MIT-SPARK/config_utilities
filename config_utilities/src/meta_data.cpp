@@ -116,7 +116,6 @@ YAML::Node MetaData::serializeFieldInfos() const {
     result["field_name"] = field_name;
   }
   if (is_virtual_config) {
-    result["is_virtual"] = true;
     result["available_types"] = available_types;
   }
   if (array_config_index >= 0) {

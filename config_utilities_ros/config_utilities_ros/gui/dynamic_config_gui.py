@@ -217,6 +217,8 @@ class DynamicConfigGUI:
                         "indent": indent,
                         "type": "config",
                     }
+                    if "available_types" in field:
+                        conf_data["available_types"] = field["available_types"]
                     if "array_index" in field:
                         conf_data["array_index"] = field["array_index"]
                         conf_data["id"] += f"/{field['array_index']}"

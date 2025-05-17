@@ -118,7 +118,11 @@ function buildSubconfig(data) {
 
 
     // Config headers.
-    html += " [" + data.config_name + "]:</td>";
+    html += " [";
+    if ("available_types" in data) {
+        html += "Virtual Config: ";
+    }
+    html += data.config_name + "]:</td>";
     return html;
 }
 
