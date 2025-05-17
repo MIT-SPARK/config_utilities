@@ -2,6 +2,7 @@ import yaml
 from flask import render_template, redirect, request, Flask
 import uuid
 import webbrowser
+import re
 
 
 def to_yaml(data):
@@ -14,7 +15,8 @@ def to_yaml(data):
 class DynamicConfigGUI:
     def __init__(self, app_name=__name__):
         self.message = ""
-        self.error = ""
+        self.errors = []
+        self.warnings = []
         self._config_data = {}
         self._fields = None
         self._available_servers_and_keys = {}  # {server: [keys]}
@@ -85,8 +87,7 @@ class DynamicConfigGUI:
         Submit the form.
         """
         data = request.form.to_dict()
-
-        print("Submit button clicked:", data)
+        self._request_update(data)
         return redirect("/")
 
     def _select_server_or_key(self):
@@ -115,11 +116,11 @@ class DynamicConfigGUI:
         self._config_data = self.set_request_fn(
             self._active_server, self._active_key, data
         )
-        self.error = self._config_data.get("error", "")
         self._parse_fields()
+        self._parse_errors()
 
         # TMP
-        self.message = to_yaml(self._config_data)
+        self.message = to_yaml(self._fields)
 
     def _setup(self):
         """
@@ -179,7 +180,8 @@ class DynamicConfigGUI:
             active_server=self._active_server,
             active_key=self._active_key,
             message=self.message,
-            error_message=self.error,
+            error_message=self.errors,
+            warning_message=self.warnings,
         )
 
     def _parse_fields(self):
@@ -218,6 +220,26 @@ class DynamicConfigGUI:
             return fields
 
         self._fields = parse_rec(self._config_data, 0, [])
+
+    def _parse_errors(self):
+        """
+        Parse the error and warning messages from the config data.
+        """
+        self.errors = []
+        self.warnings = []
+        if "error" not in self._config_data:
+            return
+
+        data = self._config_data["error"]
+        parts = re.split(r"(Warning: |Error: )", data)
+        # parts will be like ['', 'Error: ', 'some error', 'Warning: ', 'some warning']
+        for i in range(1, len(parts), 2):
+            label = parts[i]
+            value = parts[i + 1].strip() if i + 1 < len(parts) else ""
+            if label == "Error: ":
+                self.errors.append(label + value)
+            elif label == "Warning: ":
+                self.warnings.append(label + value)
 
 
 if __name__ == "__main__":

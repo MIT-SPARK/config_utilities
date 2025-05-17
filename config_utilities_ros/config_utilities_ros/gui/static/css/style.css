@@ -1,41 +1,39 @@
-/* Style Definitions */
+/* Settings */
 :root {
-  --main_color: #1ca9d4;
+  --main_color: royalblue;
   --negative_color: #ffffff;
   --radius: 5px;
   --text_color: #333;
-  --trans_dur: 0.2s;
+  --trans_dur: 0.3s;
 }
 
+/* General */
 body {
-  font-family: Arial, sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
   margin: 20px;
+  text-align: center;
 }
 
 div {
   margin-bottom: 10px;
 }
 
-/* .config-default {
-  color: #666;
-  border: #666 1px solid;
-} */
-
-/* .config-field {
-  border: #000 1px solid;
-}
-
-.config-field:hover {
-  background-color: #ff0000;
-} */
-
 
 /* Panes */
+
 .config-pane {
   background-color: #f9f9f9;
   border-radius: var(--radius);
   border: 1px solid #ddd;
   padding: 5px;
+  padding-left: 10px;
+  padding-right: 10px;
+  display: inline-block;
+  width: 100%;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: left;
 }
 
 .selection-header {
@@ -43,12 +41,12 @@ div {
   font-weight: bold;
 }
 
+
 /* Buttons */
 .config-button {
   border: 1px solid #999;
   color: var(--text_color);
   padding: 10px 20px;
-  /*horizontal, vertical*/
   margin-right: 5px;
   margin-bottom: 2.5px;
   margin-top: 2.5px;
@@ -69,6 +67,29 @@ div {
   border: 1px solid var(--negative_color);
 }
 
+/* Config Table */
+.config-table {
+  border-collapse: collapse;
+}
+
+.config-table th,
+.config-table td {
+  position: relative;
+  /* white-space: nowrap; */
+  /* overflow: hidden; */
+  /* text-overflow: ellipsis; */
+}
+
+.resizer {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 10px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 1;
+}
 
 /* Config Elements */
 .config-label {
@@ -84,6 +105,9 @@ div {
   border-radius: var(--radius);
   background-color: #fff;
   border: 1px solid #ddd;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
 }
 
 .config-field:hover {
@@ -92,48 +116,8 @@ div {
   transition: all var(--trans_dur) ease;
 }
 
-
-/* Backup: Random stuff */
-.form-inline {
-  display: flex;
-  flex-flow: row wrap;
-  align-items: center;
-}
-
-/* Add some margins for each label */
-.form-inline label {
-  margin: 5px 10px 5px 0;
-}
-
-/* Style the input fields */
-.form-inline input {
-  vertical-align: middle;
-  margin: 5px 10px 5px 0;
-  padding: 10px;
-  background-color: #fff;
-  border: 1px solid #ddd;
-}
-
-/* Style the submit button */
-.form-inline button {
-  padding: 10px 20px;
-  background-color: dodgerblue;
-  border: 1px solid #ddd;
-  color: white;
-}
-
-.form-inline button:hover {
-  background-color: royalblue;
-}
-
-/* Add responsiveness - display the form controls vertically instead of horizontally on screens that are less than 800px wide */
-@media (max-width: 800px) {
-  .form-inline input {
-    margin: 10px 0;
-  }
-
-  .form-inline {
-    flex-direction: column;
-    align-items: stretch;
-  }
+.config-field:focus {
+  background-color: #f8f8f8;
+  border: 1px solid var(--main_color);
+  transition: all var(--trans_dur) ease;
 }

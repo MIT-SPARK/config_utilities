@@ -61,7 +61,7 @@ std::string AslFormatter::formatErrorsImpl(const MetaData& data,
   }
 
   // Format all checks and errors.
-  result += formatErrorsRecursive(data, sev, settings.width);
+  result += formatErrorsRecursive(data, sev, only_messages ? size_t(-1) : settings.width);
 
   // Closing line.
   if (!only_messages) {
