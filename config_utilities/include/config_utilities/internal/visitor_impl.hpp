@@ -252,7 +252,7 @@ void Visitor::visitField(ConfigT& config, const std::string& field_name, const s
   MetaData& new_data = data.sub_configs.emplace_back(Visitor::subVisit(config, false, field_name, name_space));
 
   // Aggregate data.
-  if (visitor.mode == Visitor::Mode::kGet) {
+  if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetInfo) {
     // When getting data add the new data also to the parent data node. This is automatically using the correct
     // namespace.
     mergeYamlNodes(data.data, new_data.data);
@@ -285,12 +285,16 @@ void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_
     }
   }
 
-  if (visitor.mode == Visitor::Mode::kGet) {
+  if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetInfo) {
     const std::string name_space = joinNamespace(visitor.name_space, field_name);
     YAML::Node array_node(YAML::NodeType::Sequence);
     size_t index = 0;
     for (const auto& sub_config : config) {
-      visitor.data.sub_configs.emplace_back(getValues(sub_config, false, name_space, field_name));
+      if (visitor.mode == Visitor::Mode::kGetInfo) {
+        visitor.data.sub_configs.emplace_back(getInfo(sub_config, name_space, field_name));
+      } else {
+        visitor.data.sub_configs.emplace_back(getValues(sub_config, false, name_space, field_name));
+      }
       MetaData& new_data = visitor.data.sub_configs.back();
       array_node.push_back(YAML::Clone(lookupNamespace(new_data.data, name_space)));
       new_data.array_config_index = index++;
@@ -357,11 +361,15 @@ void Visitor::visitField(OrderedMap<K, ConfigT>& config, const std::string& fiel
     }
   }
 
-  if (visitor.mode == Visitor::Mode::kGet) {
+  if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetInfo) {
     const std::string name_space = joinNamespace(visitor.name_space, field_name);
     YAML::Node map_node(YAML::NodeType::Map);
     for (auto&& [key, sub_config] : config) {
-      visitor.data.sub_configs.emplace_back(getValues(sub_config, false, name_space, field_name));
+      if (visitor.mode == Visitor::Mode::kGetInfo) {
+        visitor.data.sub_configs.emplace_back(getInfo(sub_config, name_space, field_name));
+      } else {
+        visitor.data.sub_configs.emplace_back(getValues(sub_config, false, name_space, field_name));
+      }
       MetaData& new_data = visitor.data.sub_configs.back();
       map_node[key] = YAML::Clone(lookupNamespace(new_data.data, name_space));
       new_data.map_config_key = YAML::Node(key).as<std::string>();

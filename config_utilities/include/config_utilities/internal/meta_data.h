@@ -116,6 +116,9 @@ struct MetaData {
   // Whether the data stored belongs to a virtual config.
   bool is_virtual_config = false;
 
+  // If the config is a virtual config, the own input info stores the available types.
+  std::vector<std::string> available_types;
+
   // If this config is part of an array config, this is the index of the array.
   int array_config_index = -1;
 

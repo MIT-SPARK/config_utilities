@@ -96,21 +96,48 @@ function buildField(field) {
     return html + ">";
 }
 
+function buildSubconfig(data) {
+    // Label.
+    html = "<td class='config-label' colspan='3'>";
+
+    // Indent.
+    for (var j = 0; j < data.indent; j++) {
+        html += "&nbsp;&nbsp;&nbsp;&nbsp;";
+    }
+    html += data.name;
+
+    // Arrays.
+    if ("array_index" in data) {
+        html += "[" + data.array_index + "]";
+    }
+
+    // Maps.
+    if ("map_config_key" in data) {
+        html += "[<input type='text' class='subconfig-field' id='field-" + data.id + "-key' value='" + data.map_config_key + "'size='" + data.map_config_key.length + "' oninput='this.size = this.value.length'></input>]";
+    }
+
+
+    // Config headers.
+    html += " [" + data.config_name + "]:</td>";
+    return html;
+}
+
 function buildFields(data) {
-    var tab = document.getElementById("config-table");
+    const tab = document.getElementById("config-table");
 
     for (var i = 0; i < data.length; i++) {
         var d = data[i];
         html = "<tr class='config-row'>";
 
-        // Label.
-        html += "<td class='config-label'"
+        // Sub-config rows.
         if (d.type == "config") {
-            html += " colspan='3'";
+            html += buildSubconfig(d) + "</tr>";
+            tab.innerHTML += html;
+            continue;
         }
-        html += ">";
 
-        // Indent.
+        // Label.
+        html += "<td class='config-label'>"
         for (var j = 0; j < d.indent; j++) {
             html += "&nbsp;&nbsp;&nbsp;&nbsp;";
         }
@@ -120,14 +147,6 @@ function buildFields(data) {
         if ('unit' in d) {
             html += " [" + d.unit + "]";
         }
-
-        // Config headers.
-        if (d.type == "config") {
-            html += " [" + d.config_name + "]:</td>";
-            tab.innerHTML += html;
-            continue;
-        }
-
         html += ":</td>";
 
         // Field.

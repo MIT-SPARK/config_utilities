@@ -123,16 +123,17 @@ std::string DynamicConfig<ConfigT>::setValues(const YAML::Node& values) {
     std::lock_guard<std::mutex> lock(mutex_);
     ConfigT new_config = config_;
     auto meta_data = internal::Visitor::setValues(new_config, values);
+    error = internal::Formatter::formatErrors(meta_data, "", internal::Severity::kWarning, true);
+    meta_data.errors.clear();
     meta_data.checks = std::move(internal::Visitor::getChecks(new_config).checks);
 
     if (!internal::hasNoInvalidChecks(meta_data)) {
-      return internal::Formatter::formatErrors(meta_data, "", internal::Severity::kError, true);
+      return internal::Formatter::formatErrors(meta_data, "", internal::Severity::kError, true) + error;
     }
 
     old_yaml = internal::Visitor::getValues(config_).data;
     config_ = new_config;
     new_yaml = internal::Visitor::getValues(config_).data;
-    error = internal::Formatter::formatErrors(meta_data, "", internal::Severity::kWarning, true);
   }  // end critical section
 
   // Check if the config was actually changed.

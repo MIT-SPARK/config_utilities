@@ -67,8 +67,6 @@ class DynamicConfigGUI:
         """
         Refresh the GUI.
         """
-        print("Refresh button clicked")
-
         # Update the available servers and keys.
         self._available_servers_and_keys = self.get_available_servers_and_keys_fn()
         self._update_server_and_key_selected()
@@ -202,27 +200,35 @@ class DynamicConfigGUI:
             prefix_str = "".join([f"{p}/" for p in prefix])
             for field in config["fields"]:
                 if field["type"] == "field":
+                    # Data for each field (leaves of the config).
                     field["id"] = f"{prefix_str}{field['name']}"
                     field["indent"] = indent
-                    # For now no specialization for non-trivial types.
                     if field["input_info"]["type"] == "yaml":
                         field["value"] = to_yaml(field["value"])
                         field["default"] = to_yaml(field["default"])
                     fields.append(field)
                 elif field["type"] == "config":
-                    fields.append(
-                        {
-                            "id": f"{prefix_str}{field['field_name']}",
-                            "name": field["field_name"],
-                            "config_name": field["name"],
-                            "indent": indent,
-                            "type": "config",
-                        }
-                    )
+                    # Sub configs.
+                    new_prefix = prefix + [field["field_name"]]
+                    conf_data = {
+                        "id": f"{prefix_str}{field['field_name']}",
+                        "name": field["field_name"],
+                        "config_name": field["name"],
+                        "indent": indent,
+                        "type": "config",
+                    }
+                    if "array_index" in field:
+                        conf_data["array_index"] = field["array_index"]
+                        conf_data["id"] += f"/{field['array_index']}"
+                        new_prefix.append(field["array_index"])
+                    if "map_config_key" in field:
+                        conf_data["map_config_key"] = field["map_config_key"]
+                        conf_data["id"] += f"/{field['map_config_key']}"
+                        new_prefix.append(field["map_config_key"])
+                    fields.append(conf_data)
+
                     # Parse all fields in the config.
-                    fields.extend(
-                        parse_rec(field, indent + 1, prefix + [field["field_name"]])
-                    )
+                    fields.extend(parse_rec(field, indent + 1, new_prefix))
                 else:
                     raise ValueError(f"Unknown field type: {field['type']}")
             return fields
