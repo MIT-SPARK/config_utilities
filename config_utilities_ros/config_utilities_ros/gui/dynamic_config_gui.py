@@ -12,6 +12,13 @@ def to_yaml(data):
     return yaml.dump(data, default_flow_style=True).strip()
 
 
+def from_yaml(data):
+    """
+    Convert a YAML string to a dictionary for deserialization from the flask app.
+    """
+    return yaml.safe_load(data)
+
+
 class DynamicConfigGUI:
     def __init__(self, app_name=__name__):
         self.message = ""
@@ -80,20 +87,12 @@ class DynamicConfigGUI:
         """
         Submit the form.
         """
-        data = request.form.to_dict()
-
-        # Parse the yaml fields.
-        for field in self._fields:
-            if field["type"] == "field":
-                field_name = field["id"]
-                if field_name in data:
-                    # Convert the YAML string to a dictionary.
-                    try:
-                        data[field_name] = yaml.safe_load(data[field_name])
-                    except yaml.YAMLError as e:
-                        pass
-
-        self._request_update(data)
+        raw_data = request.form.to_dict()
+        self.errors.clear()
+        data = self._parse_form_data(raw_data)
+        self.message = data
+        if not self.errors:
+            self._request_update(data)
         return redirect("/")
 
     def _select_server_or_key(self):
@@ -124,9 +123,6 @@ class DynamicConfigGUI:
         )
         self._parse_fields()
         self._parse_errors()
-
-        # TMP
-        self.message = to_yaml(self._fields)
 
     def _setup(self):
         """
@@ -236,6 +232,58 @@ class DynamicConfigGUI:
             return fields
 
         self._fields = parse_rec(self._config_data, 0, [])
+
+    def _parse_form_data(self, data):
+        """
+        Reverse parsing the read form data into yaml to send to the client.
+        """
+
+        def parse_rec(config, prefix, values):
+            prefix_str = "".join([f"{p}/" for p in prefix])
+            for field in config["fields"]:
+                if field["type"] == "field":
+                    # Data for each field (leaves of the config).
+                    id = f"{prefix_str}{field['name']}"
+                    val = data[id]
+                    if field["input_info"]["type"] == "yaml":
+                        val = from_yaml(val)
+                    values[field["name"]] = val
+                elif field["type"] == "config":
+                    # Sub configs.
+                    new_prefix = prefix + [field["field_name"]]
+                    if "available_types" in field:
+                        pass
+                        # conf_data["available_types"] = field["available_types"]
+                    if "array_index" in field:
+                        # NOTE(lschmid): This assumes that the arrays arrive and are sent ordered.
+                        idx = field["array_index"]
+                        new_prefix.append(idx)
+                        if idx == 0:
+                            values[field["field_name"]] = []
+                        values[field["field_name"]].append(
+                            parse_rec(field, new_prefix, {})
+                        )
+                    elif "map_config_key" in field:
+                        key = field["map_config_key"]
+                        name = field["field_name"]
+                        new_prefix.append(key)  # Keep the old key to look up IDs.
+                        new_key = data[f"{prefix_str}{name}/{key}-key"]
+                        if new_key == "":
+                            self.errors.append(
+                                f"Error: map key for '{'.'.join(prefix + [name])}' is empty."
+                            )
+                            continue
+                        if name not in values:
+                            values[name] = {}
+                        values[name][new_key] = parse_rec(field, new_prefix, {})
+                    else:
+                        # Parse all fields in a regular config.
+                        values[field["field_name"]] = parse_rec(field, new_prefix, {})
+                else:
+                    raise ValueError(f"Unknown field type: {field['type']}")
+            return values
+
+        return parse_rec(self._config_data, [], {})
 
     def _parse_errors(self):
         """

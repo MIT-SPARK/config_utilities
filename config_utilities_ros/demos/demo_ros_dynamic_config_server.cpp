@@ -55,7 +55,6 @@ namespace demo {
 
 // A sub-config for later use.
 struct SubConfig {
-  uint8_t uint = 5;
   std::string s = "test";
 };
 
@@ -63,7 +62,6 @@ struct SubConfig {
 void declare_config(SubConfig& config) {
   using namespace config;
   name("SubConfig");
-  field(config.uint, "uint");
   field(config.s, "s");
   checkIsOneOf(config.s, {"test", "only", "limited", "strings", "allowed"}, "s");
 }
@@ -116,6 +114,7 @@ struct MyConfig {
   int i = 100;
   double distance = 42;
   bool b = true;
+  uint8_t uint = 5;
   std::vector<int> vec = {1, 2, 3};
   std::map<std::string, int> map = {{"a", 1}, {"b", 2}, {"c", 3}};
   Eigen::Matrix<double, 3, 3> mat = Eigen::Matrix<double, 3, 3>::Identity();
@@ -137,6 +136,7 @@ void declare_config(MyConfig& config) {
   field(config.i, "i");
   field(config.distance, "distance", "m");
   field(config.b, "b");
+  field(config.uint, "uint");
   field(config.vec, "vec");
   field(config.map, "map");
   field(config.mat, "mat");
@@ -220,6 +220,10 @@ int main(int argc, char** argv) {
 
   // Create a ROS node. Dynamic configs can also directly live in the node.
   auto node = std::make_shared<demo::DemoNode>();
+
+  // TMP
+  // auto data = config::internal::Visitor::getValues(demo::MyConfig()).data;
+  // RCLCPP_INFO_STREAM(node->get_logger(), data);
 
   // Alternative to the server living in the node, it could also be created here. Note that only one server should be
   // created per node.

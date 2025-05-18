@@ -6,6 +6,7 @@ import yaml
 from threading import Thread
 
 import rclpy
+import rclpy.logging
 from rclpy.node import Node
 from config_utilities_msgs.srv import SetRequest
 from config_utilities_ros.gui import DynamicConfigGUI

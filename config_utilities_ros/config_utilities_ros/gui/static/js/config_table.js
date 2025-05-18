@@ -15,13 +15,20 @@ function readConfig() {
     for (var i = 0; i < rows.length; i++) {
         const row = rows[i];
         const values = row.getElementsByClassName("config-field-td");
-        if (values.length == 0) {
-            data[i] = "continue";
+        if (values.length == 1) {
+            // Regular field.
+            const field = values[0].children[0];
+            const id = field.id.substring(field.id.indexOf("-") + 1)
+            data[id] = field.value;
             continue;
         }
-        const field = values[0].children[0];
-        var id = field.id.split("-")[1];
-        data[id] = field.value;
+        const subconfigs = row.children[0].getElementsByClassName("subconfig-field");
+        if (subconfigs.length == 1) {
+            // Get map keys for mapped configs.
+            const field = subconfigs[0];
+            const id = field.id.substring(field.id.indexOf("-") + 1)
+            data[id] = field.value
+        }
     }
     post("/submit", data);
 }
