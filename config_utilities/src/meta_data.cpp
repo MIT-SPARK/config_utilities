@@ -36,6 +36,7 @@
 #include "config_utilities/internal/meta_data.h"
 
 #include "config_utilities/internal/string_utils.h"
+#include "config_utilities/settings.h"
 
 namespace config::internal {
 
@@ -117,6 +118,7 @@ YAML::Node MetaData::serializeFieldInfos() const {
   }
   if (is_virtual_config) {
     result["available_types"] = available_types;
+    result["virtual_type"] = data[field_name][Settings::instance().factory.type_param_name];
   }
   if (array_config_index >= 0) {
     result["array_index"] = array_config_index;

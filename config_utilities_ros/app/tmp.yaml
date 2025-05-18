@@ -25,6 +25,12 @@ fields:
     input_info:
       type: bool
   - type: field
+    name: uint
+    value: 5
+    default: 5
+    input_info:
+      type: uint8
+  - type: field
     name: vec
     value:
       - 1
@@ -87,12 +93,6 @@ fields:
     field_name: sub_config
     fields:
       - type: field
-        name: uint
-        value: 5
-        default: 5
-        input_info:
-          type: uint8
-      - type: field
         name: s
         value: test
         default: test
@@ -107,8 +107,10 @@ fields:
   - type: config
     name: StringModule
     field_name: first_module
-    is_virtual: true
-    available_types: []
+    available_types:
+      - IntModule
+      - StringModule
+    virtual_type: StringModule
     fields:
       - type: field
         name: s
@@ -119,65 +121,85 @@ fields:
   - type: config
     name: SubConfig
     field_name: sub_config_map
-    map_config_key: mapped_subconfig_a
+    map_config_key: a
     fields:
-      - type: field
-        name: uint
-        value: 5
-        default: 5
       - type: field
         name: s
         value: test
         default: test
+        input_info:
+          type: options
+          options:
+            - test
+            - only
+            - limited
+            - strings
+            - allowed
   - type: config
     name: SubConfig
     field_name: sub_config_map
-    map_config_key: mapped_subconfig_b
+    map_config_key: b
     fields:
-      - type: field
-        name: uint
-        value: 5
-        default: 5
       - type: field
         name: s
         value: test
         default: test
+        input_info:
+          type: options
+          options:
+            - test
+            - only
+            - limited
+            - strings
+            - allowed
   - type: config
     name: SubConfig
     field_name: sub_config_vec
     array_index: 0
     fields:
       - type: field
-        name: uint
-        value: 5
-        default: 5
-      - type: field
         name: s
         value: test
         default: test
+        input_info:
+          type: options
+          options:
+            - test
+            - only
+            - limited
+            - strings
+            - allowed
   - type: config
     name: SubConfig
     field_name: sub_config_vec
     array_index: 1
     fields:
       - type: field
-        name: uint
-        value: 5
-        default: 5
-      - type: field
         name: s
         value: test
         default: test
+        input_info:
+          type: options
+          options:
+            - test
+            - only
+            - limited
+            - strings
+            - allowed
   - type: config
     name: SubConfig
     field_name: sub_config_vec
     array_index: 2
     fields:
       - type: field
-        name: uint
-        value: 5
-        default: 5
-      - type: field
         name: s
         value: test
-        default: test'
+        default: test
+        input_info:
+          type: options
+          options:
+            - test
+            - only
+            - limited
+            - strings
+            - allowed

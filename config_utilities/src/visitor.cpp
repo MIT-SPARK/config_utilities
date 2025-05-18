@@ -37,6 +37,7 @@
 
 #include <stdexcept>
 
+#include "config_utilities/factory.h"
 #include "config_utilities/internal/yaml_utils.h"
 #include "config_utilities/settings.h"
 
@@ -80,7 +81,10 @@ void Visitor::visitCheck(const CheckBase& check) {
   }
 }
 
-std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set, bool is_optional, const std::string& type) {
+std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set,
+                                                      bool is_optional,
+                                                      const std::string& type,
+                                                      const std::string& base_type) {
   Visitor& visitor = Visitor::instance();
   visitor.data.is_virtual_config = true;
 
@@ -103,6 +107,10 @@ std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set, bool is_optio
           YamlParser::toYaml(Settings::instance().factory.type_param_name, type, visitor.name_space, error);
       mergeYamlNodes(visitor.data.data, type_node);
     }
+  }
+
+  if (visitor.mode == internal::Visitor::Mode::kGetInfo) {
+    visitor.data.available_types = ModuleRegistry::getRegisteredConfigTypes(base_type);
   }
 
   if (visitor.mode == Visitor::Mode::kSet) {
