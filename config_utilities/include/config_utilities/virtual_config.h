@@ -204,7 +204,8 @@ struct is_virtual_config<VirtualConfig<T, Opt>> : std::true_type {};
 // Declare the Virtual Config a config, so it can be handled like any other object.
 template <typename BaseT, bool Opt>
 void declare_config(VirtualConfig<BaseT, Opt>& config) {
-  auto data = internal::Visitor::visitVirtualConfig(config.isSet(), config.optional_, config.getType());
+  auto data = internal::Visitor::visitVirtualConfig(
+      config.isSet(), config.optional_, config.getType(), internal::typeName<BaseT>());
 
   // underlying derived type is not required if the config is optional, or if the config has been
   // initialized to a derived type already (i.e., config_ is already populated)

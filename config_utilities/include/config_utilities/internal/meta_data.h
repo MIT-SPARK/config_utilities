@@ -169,6 +169,7 @@ struct MetaData {
     sub_configs = other.sub_configs;
     array_config_index = other.array_config_index;
     map_config_key = other.map_config_key;
+    available_types = other.available_types;
   }
 };
 

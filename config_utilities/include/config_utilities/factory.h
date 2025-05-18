@@ -275,6 +275,21 @@ class ModuleRegistry {
     return iter == registry.end() ? "" : iter->second;
   }
 
+  static std::vector<std::string> getRegisteredConfigTypes(const std::string& actual_base) {
+    const auto key = ModuleInfo::fromTypes<ConfigWrapper>(false, actual_base);
+    const auto& registry = instance().type_registry;
+    const auto iter = registry.find(key);
+    if (iter == registry.end()) {
+      return {};
+    }
+
+    std::vector<std::string> result;
+    for (const auto& [type, _] : iter->second) {
+      result.push_back(type);
+    }
+    return result;
+  }
+
   static bool hasModule(const ModuleInfo& key, const std::string& type);
   static void removeModule(const ModuleInfo& key, const std::string& type);
   static std::string getAllRegistered();

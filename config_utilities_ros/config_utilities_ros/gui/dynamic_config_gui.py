@@ -4,6 +4,8 @@ import uuid
 import webbrowser
 import re
 
+FACTORY_TYPE_PAPRAM_NAME = "type"
+
 
 def to_yaml(data):
     """
