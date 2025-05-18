@@ -113,11 +113,11 @@ function buildSubconfig(data) {
 
     // Maps.
     if ("map_config_key" in data) {
-        html += "[<input type='text' class='subconfig-field' id='field-" + data.id + "-key' value='" + data.map_config_key + "'size='" + data.map_config_key.length + "' oninput='this.size = this.value.length'></input>]";
+        html += "[<input type='text' class='subconfig-field' id='field-" + data.id + "-key' value='" + data.map_config_key + "'size='" + data.map_config_key.length + "' oninput='this.size = this.value.length' required></input>]";
     }
 
 
-    // Config headers.
+    // Config types and virtual configs.
     html += " [";
     if ("available_types" in data) {
         html += "Virtual Config: ";
