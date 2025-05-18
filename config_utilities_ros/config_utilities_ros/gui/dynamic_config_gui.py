@@ -92,7 +92,7 @@ class DynamicConfigGUI:
         raw_data = request.form.to_dict()
         self.errors.clear()
         data = self._parse_form_data(raw_data)
-        self.message = data
+        self.message = raw_data
         if not self.errors:
             self._request_update(data)
         return redirect("/")
@@ -253,8 +253,11 @@ class DynamicConfigGUI:
                 elif field["type"] == "config":
                     # Sub configs.
                     new_prefix = prefix + [field["field_name"]]
+                    val = {}
                     if "available_types" in field:
-                        pass
+                        val[FACTORY_TYPE_PAPRAM_NAME] = data[
+                            f"{prefix_str}{field['field_name']}-type"
+                        ]
                         # conf_data["available_types"] = field["available_types"]
                     if "array_index" in field:
                         # NOTE(lschmid): This assumes that the arrays arrive and are sent ordered.
@@ -263,7 +266,7 @@ class DynamicConfigGUI:
                         if idx == 0:
                             values[field["field_name"]] = []
                         values[field["field_name"]].append(
-                            parse_rec(field, new_prefix, {})
+                            parse_rec(field, new_prefix, val)
                         )
                     elif "map_config_key" in field:
                         key = field["map_config_key"]
@@ -277,10 +280,10 @@ class DynamicConfigGUI:
                             continue
                         if name not in values:
                             values[name] = {}
-                        values[name][new_key] = parse_rec(field, new_prefix, {})
+                        values[name][new_key] = parse_rec(field, new_prefix, val)
                     else:
                         # Parse all fields in a regular config.
-                        values[field["field_name"]] = parse_rec(field, new_prefix, {})
+                        values[field["field_name"]] = parse_rec(field, new_prefix, val)
                 else:
                     raise ValueError(f"Unknown field type: {field['type']}")
             return values

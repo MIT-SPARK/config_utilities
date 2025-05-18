@@ -23,13 +23,28 @@ function readConfig() {
             continue;
         }
         const subconfigs = row.children[0].getElementsByClassName("subconfig-field");
-        if (subconfigs.length == 1) {
-            // Get map keys for mapped configs.
-            const field = subconfigs[0];
-            const id = field.id.substring(field.id.indexOf("-") + 1)
-            data[id] = field.value
+        if (subconfigs.length >= 1) {
+            // Get map keys for mapped configs and virtual config types.
+            for (var j = 0; j < subconfigs.length; j++) {
+                const field = subconfigs[j];
+                const id = field.id.substring(field.id.indexOf("-") + 1)
+                data[id] = field.value
+            }
         }
     }
+    post("/submit", data);
+}
+
+function onVirtualConfigChange(element) {
+    // Update the config name and type based on the selected virtual config.
+    // const id = element.id.substring(element.id.indexOf("-") + 1);
+    // const name = element.options[element.selectedIndex].text;
+    // field.value = name;
+    // field.width = element.value.length;
+
+    data = {};
+    data["test"] = "virtual config selected"
+    // data[id] = element.value;
     post("/submit", data);
 }
 

@@ -113,16 +113,29 @@ function buildSubconfig(data) {
 
     // Maps.
     if ("map_config_key" in data) {
-        html += "[<input type='text' class='subconfig-field' id='field-" + data.id + "-key' value='" + data.map_config_key + "'size='" + data.map_config_key.length + "' oninput='this.size = this.value.length' required></input>]";
+        html += "[<input type='text' class='subconfig-field' id='field-" + data.id + "-key' value='" + data.map_config_key + "'size='" + data.map_config_key.length + "' oninput='this.size = this.value.length;' required></input>]";
     }
-
 
     // Config types and virtual configs.
-    html += " [";
     if ("available_types" in data) {
-        html += "Virtual Config: ";
+        html += " [<select class='subconfig-field' id='field-" + data.id + "-type' width'" + data.config_name.length + "'>";
+        //  onchange='onVirtualConfigChange(this);'
+        for (var i = 0; i < data.available_types.length; i++) {
+            var d = data.available_types[i];
+            html += "<option value='" + d + "'";
+            if (d == data.config_name) {
+                html += " selected";
+            }
+            html += ">" + d + "</option>";
+        }
+        html += "</select>]";
+    } else {
+        html += " [" + data.config_name + "]:</td>";
     }
-    html += data.config_name + "]:</td>";
+
+
+
+
     return html;
 }
 

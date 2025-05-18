@@ -71,6 +71,31 @@ div {
   border: 1px solid var(--negative_color);
 }
 
+.inline-square-button {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  line-height: 28px;
+  text-align: center;
+  vertical-align: middle;
+  border: 1px solid #999;
+  border-radius: 4px;
+  background: #fff;
+  color: var(--main_color);
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  margin: 0 2px;
+  transition: all var(--trans_dur) ease;
+  user-select: none;
+}
+
+.inline-square-button:hover {
+  background: var(--main_color);
+  color: var(--negative_color);
+  border: 1px solid var(--main_color);
+}
+
 
 /* Config Table */
 .config-table {
