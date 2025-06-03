@@ -110,7 +110,6 @@ fields:
     available_types:
       - IntModule
       - StringModule
-    virtual_type: StringModule
     fields:
       - type: field
         name: s
@@ -202,4 +201,4 @@ fields:
             - only
             - limited
             - strings
-            - allowed
+            - allowed')

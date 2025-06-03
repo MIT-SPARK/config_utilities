@@ -8,7 +8,7 @@ function post(url, data = {}) {
     });
 }
 
-function readConfig() {
+function readConfigData() {
     const tab = document.getElementById("config-table");
     const rows = tab.getElementsByClassName("config-row");
     var data = {};
@@ -32,20 +32,28 @@ function readConfig() {
             }
         }
     }
-    post("/submit", data);
+    return data;
+}
+
+function onAddDelete(id, action) {
+    // First update the config data, then execute addition or deletion.
+    var conf_data = readConfigData();
+    conf_data["_id"] = id;
+    conf_data["_action"] = action;
+
+    post("/add_delete", conf_data);
 }
 
 function onVirtualConfigChange(element) {
-    // Update the config name and type based on the selected virtual config.
-    // const id = element.id.substring(element.id.indexOf("-") + 1);
-    // const name = element.options[element.selectedIndex].text;
-    // field.value = name;
-    // field.width = element.value.length;
+    // TODO(lschmid): This does currently not trigger.
 
-    data = {};
-    data["test"] = "virtual config selected"
-    // data[id] = element.value;
-    post("/submit", data);
+    // Update the config name and type based on the selected virtual config.
+    const id = element.id.substring(element.id.indexOf("-") + 1);
+    const value = element.options[element.selectedIndex].text;
+    field.value = value;
+    field.width = element.value.length;
+
+    post("/submit", { id: id, value: value });
 }
 
 // Function to make table columns resizable

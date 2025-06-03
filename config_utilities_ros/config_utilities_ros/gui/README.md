@@ -24,6 +24,13 @@ Known limitations that we can (easily) fix in the future.
   - As a result will not automatically update to changes in the ecosystem that the GUI did not cause itself.
   - Can easily be fixed by pressing refresh, bnut requires the user to do so
 - [ ] In the future find better update logic than having to refresh the page every time, but didn't find a better solution.
-- [ ] Optionally add better support for vectors and maps in the GUI, not too bad though right now.
+
 - [ ] Currently vectors of (virtual) configs don't show up if they're empty, would be great to have these to be able to add more entires from the GUI.
 - [ ] Paramter verification on the GUI side (although implemented) does not quite seem to work.
+
+### Feature Ideas:
+
+- [ ] Optionally add better support for vectors and maps in the GUI, not too bad though right now.
+- [ ] Add pure YAML interface as alternative option (gui settings).
+- [ ] Could config save/loads
+- [ ] Figure out desired behavior for changing virtual configs and adding new configs, i.e. should it automatically update? (and make the hook work)

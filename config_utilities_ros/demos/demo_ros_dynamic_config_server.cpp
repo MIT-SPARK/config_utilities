@@ -63,7 +63,7 @@ void declare_config(SubConfig& config) {
   using namespace config;
   name("SubConfig");
   field(config.s, "s");
-  checkIsOneOf(config.s, {"test", "only", "limited", "strings", "allowed"}, "s");
+  // checkIsOneOf(config.s, {"test", "only", "limited", "strings", "allowed"}, "s");
 }
 
 // Some virtual configs that can be used to create a config struct that is not known at compile time.
@@ -133,23 +133,23 @@ struct MyConfig {
 void declare_config(MyConfig& config) {
   using namespace config;
   name("MyConfig");
-  field(config.i, "i");
-  field(config.distance, "distance", "m");
-  field(config.b, "b");
-  field(config.uint, "uint");
-  field(config.vec, "vec");
-  field(config.map, "map");
-  field(config.mat, "mat");
-  enum_field(config.my_enum, "my_enum", {"A", "B", "C"});
-  field(config.sub_config, "sub_config");
-  field(config.first_module, "first_module");
-  config.first_module.setOptional(true);
-  field(config.modules, "modules");
+  // field(config.i, "i");
+  // field(config.distance, "distance", "m");
+  // field(config.b, "b");
+  // field(config.uint, "uint");
+  // field(config.vec, "vec");
+  // field(config.map, "map");
+  // field(config.mat, "mat");
+  // enum_field(config.my_enum, "my_enum", {"A", "B", "C"});
+  // field(config.sub_config, "sub_config");
+  // field(config.first_module, "first_module");
+  // config.first_module.setOptional(true);
+  // field(config.modules, "modules");
   field(config.sub_config_map, "sub_config_map");
   field(config.sub_config_vec, "sub_config_vec");
 
-  check(config.i, CheckMode::GT, 0, "i");
-  checkInRange(config.distance, 0.0, 100.0, "distance");
+  // check(config.i, CheckMode::GT, 0, "i");
+  // checkInRange(config.distance, 0.0, 100.0, "distance");
 }
 
 // Declare an object with a dynamic config.

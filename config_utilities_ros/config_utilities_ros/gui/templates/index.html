@@ -48,7 +48,8 @@
   <!-- Interaction with the config -->
   <div class="config-pane">
     <button name="refreshBtn" class='config-button' type="submit" onclick="post('/refresh');">Refresh</button>
-    <button name="submitBtn" class='config-button' type="submit" onclick="readConfig();">Submit</button>
+    <button name="submitBtn" class='config-button' type="submit"
+      onclick="post('/submit', readConfigData());">Submit</button>
   </div>
 
 

@@ -18,7 +18,7 @@ function buildField(field) {
         if (field.value) {
             html += " checked";
         }
-        html += " type='checkbox' style='width: auto;'";
+        html += " type='checkbox' style='width: auto;' onchange='this.value = this.checked;'";
     } else if (info.type == "options") {
         html += ">";
         for (var i = 0; i < info.options.length; i++) {
@@ -106,14 +106,20 @@ function buildSubconfig(data) {
     }
     html += data.name;
 
+    addable = false;
+    deleteable = false;
     // Arrays.
     if ("array_index" in data) {
         html += "[" + data.array_index + "]";
+        addable = true;
+        deleteable = true;
     }
 
     // Maps.
     if ("map_config_key" in data) {
         html += "[<input type='text' class='subconfig-field' id='field-" + data.id + "-key' value='" + data.map_config_key + "'size='" + data.map_config_key.length + "' oninput='this.size = this.value.length;' required></input>]";
+        addable = true;
+        deleteable = true;
     }
 
     // Config types and virtual configs.
@@ -128,15 +134,27 @@ function buildSubconfig(data) {
             }
             html += ">" + d + "</option>";
         }
-        html += "</select>]";
+        html += "</select>]:";
+        deleteable = true;
     } else {
-        html += " [" + data.config_name + "]:</td>";
+        html += " [" + data.config_name + "]:";
+    }
+
+    // Add and delete options.
+    if (addable) {
+        html += "<button class='config-button config-button-inline' type='submit' onclick=\"onAddDelete('" + data.id + "', 'add');\">+</button>"
+    }
+    if (deleteable) {
+        html += "<button class='config-button config-button-inline' type='submit' onclick=\"onAddDelete('" + data.id + "', 'delete');\"";
+        if (addable) {
+            html += " style='margin-left: 3px;'";
+        }
+        html += ">-</button>"
     }
 
 
 
-
-    return html;
+    return html + "</td>";
 }
 
 function buildFields(data) {

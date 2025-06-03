@@ -1,125 +1,139 @@
-[
-    {default: 100, id: i, indent: 0, input_info: {lower_exclusive: true, min: 0, type: int32
-        }, name: i, type: field, value: 100
-    },
-    {default: 42, id: distance, indent: 0, input_info: { max: 100, min: 0, type: float64
-        }, name: distance, type: field, unit: m, value: 42
-    },
-    {default: true, id: b, indent: 0, input_info: {type: bool
-        }, name: b, type: field, value: true
-    },
-    {default: '[
-            1,
-            2,
-            3
-        ]', id: vec, indent: 0, input_info: {type: yaml
-        }, name: vec, type: field, value: '[
-            1,
-            2,
-            3
-        ]'
-    },
-    {default: '{a: 1, b: 2, c: 3
-        }', id: map, indent: 0, input_info: {type: yaml
-        }, name: map, type: field, value: '{a: 1, b: 2, c: 3
-        }'
-    },
-    {default: '[
-            [
-                1,
-                0,
-                0
-            ],
-            [
-                0,
-                1,
-                0
-            ],
-            [
-                0,
-                0,
-                1
+{
+    "type": "config",
+    "name": "MyConfig",
+    "fields": [
+        {
+            "type": "config",
+            "name": "SubConfig",
+            "field_name": "sub_config_map",
+            "map_config_key": "a",
+            "fields": [
+                {
+                    "type": "field",
+                    "name": "s",
+                    "value": "test",
+                    "default": "test",
+                    "input_info": {
+                        "type": "string"
+                    },
+                    "id": "sub_config_map/a-copy-copy-copy/s",
+                    "indent": 1
+                }
             ]
-        ]', id: mat, indent: 0, input_info: {type: yaml
-        }, name: mat, type: field, value: '[
-            [
-                1,
-                0,
-                0
-            ],
-            [
-                0,
-                1,
-                0
-            ],
-            [
-                0,
-                0,
-                1
+        },
+        {
+            "type": "config",
+            "name": "SubConfig",
+            "field_name": "sub_config_map",
+            "map_config_key": "a-copy",
+            "fields": [
+                {
+                    "type": "field",
+                    "name": "s",
+                    "value": "test",
+                    "default": "test",
+                    "input_info": {
+                        "type": "string"
+                    },
+                    "id": "sub_config_map/a-copy-copy-copy/s",
+                    "indent": 1
+                }
             ]
-        ]'
-    },
-    {default: A, id: my_enum, indent: 0, input_info: {options: [A, B, C
-            ], type: options
-        }, name: my_enum, type: field, value: A
-    },
-    {config_name: SubConfig, id: sub_config, indent: 0, name: sub_config, type: config
-    },
-    {default: 5, id: sub_config/uint, indent: 1, input_info: {type: uint8
-        }, name: uint, type: field, value: 5
-    },
-    {default: test, id: sub_config/s, indent: 1, input_info: {options: [test, only, limited, strings, allowed
-            ], type: options
-        }, name: s, type: field, value: test
-    },
-    {config_name: StringModule, id: first_module, indent: 0, name: first_module, type: config
-    },
-    {default: hibidi, id: first_module/s, indent: 1, input_info: {type: string
-        }, name: s, type: field, value: hibidi
-    },
-    {config_name: SubConfig, id: sub_config_map/a, indent: 0, map_config_key: a, name: sub_config_map, type: config
-    },
-    {default: 5, id: sub_config_map/uint, indent: 1, input_info: {type: uint8
-        }, name: uint, type: field, value: 5
-    },
-    {default: test, id: sub_config_map/s, indent: 1, input_info: {options: [test, only, limited, strings, allowed
-            ], type: options
-        }, name: s, type: field, value: test
-    },
-    {config_name: SubConfig, id: sub_config_map/b, indent: 0, map_config_key: b, name: sub_config_map, type: config
-    },
-    {default: 5, id: sub_config_map/uint, indent: 1, input_info: {type: uint8
-        }, name: uint, type: field, value: 5
-    },
-    {default: test, id: sub_config_map/s, indent: 1, input_info: { options: [test, only, limited, strings, allowed
-            ], type: options
-        }, name: s, type: field, value: test
-    },
-    {array_index: 0, config_name: SubConfig, id: sub_config_vec/0, indent: 0, name: sub_config_vec, type: config
-    },
-    {default: 5, id: sub_config_vec/uint, indent: 1, input_info: {type: uint8
-        }, name: uint, type: field, value: 5
-    },
-    {default: test, id: sub_config_vec/s, indent: 1, input_info: {options: [test, only, limited, strings, allowed
-            ], type: options
-        }, name: s, type: field, value: test
-    },
-    {array_index: 1, config_name: SubConfig, id: sub_config_vec/1, indent: 0, name: sub_config_vec, type: config
-    },
-    {default: 5, id: sub_config_vec/uint, indent: 1, input_info: { type: uint8
-        }, name: uint, type: field, value: 5
-    },
-    {default: test, id: sub_config_vec/s, indent: 1, input_info: {options: [test, only, limited, strings, allowed
-            ], type: options
-        }, name: s, type: field, value: test
-    },
-    {array_index: 2, config_name: SubConfig, id: sub_config_vec/2, indent: 0, name: sub_config_vec, type: config
-    },
-    {default: 5, id: sub_config_vec/uint, indent: 1, input_info: {type: uint8
-        }, name: uint, type: field, value: 5
-    },
-    {default: test, id: sub_config_vec/s, indent: 1, input_info: {options: [test, only, limited, strings, allowed
-            ], type: options
-        }, name: s, type: field, value: test
-    }
-]
+        },
+        {
+            "type": "config",
+            "name": "SubConfig",
+            "field_name": "sub_config_map",
+            "map_config_key": "a-copy-copy",
+            "fields": [
+                {
+                    "type": "field",
+                    "name": "s",
+                    "value": "test",
+                    "default": "test",
+                    "input_info": {
+                        "type": "string"
+                    },
+                    "id": "sub_config_map/a-copy-copy-copy/s",
+                    "indent": 1
+                }
+            ]
+        },
+        {
+            "type": "config",
+            "name": "SubConfig",
+            "field_name": "sub_config_map",
+            "map_config_key": "a-copy-copy-copy",
+            "fields": [
+                {
+                    "type": "field",
+                    "name": "s",
+                    "value": "test",
+                    "default": "test",
+                    "input_info": {
+                        "type": "string"
+                    },
+                    "id": "sub_config_map/a-copy-copy-copy/s",
+                    "indent": 1
+                }
+            ]
+        },
+        {
+            "type": "config",
+            "name": "SubConfig",
+            "field_name": "sub_config_vec",
+            "array_index": 0,
+            "fields": [
+                {
+                    "type": "field",
+                    "name": "s",
+                    "value": "test",
+                    "default": "test",
+                    "input_info": {
+                        "type": "string"
+                    },
+                    "id": "sub_config_vec/0/s",
+                    "indent": 1
+                }
+            ]
+        },
+        {
+            "type": "config",
+            "name": "SubConfig",
+            "field_name": "sub_config_vec",
+            "array_index": 1,
+            "fields": [
+                {
+                    "type": "field",
+                    "name": "s",
+                    "value": "test",
+                    "default": "test",
+                    "input_info": {
+                        "type": "string"
+                    },
+                    "id": "sub_config_vec/1/s",
+                    "indent": 1
+                }
+            ]
+        },
+        {
+            "type": "config",
+            "name": "SubConfig",
+            "field_name": "sub_config_vec",
+            "array_index": 2,
+            "fields": [
+                {
+                    "type": "field",
+                    "name": "s",
+                    "value": "test",
+                    "default": "test",
+                    "input_info": {
+                        "type": "string"
+                    },
+                    "id": "sub_config_vec/2/s",
+                    "indent": 1
+                }
+            ]
+        }
+    ]
+}
