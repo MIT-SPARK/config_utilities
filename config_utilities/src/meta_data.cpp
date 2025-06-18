@@ -121,7 +121,7 @@ YAML::Node MetaData::serializeFieldInfos() const {
     if (data[field_name]) {
       result["name"] = data[field_name][Settings::instance().factory.type_param_name];
     } else {
-      result["name"] = "<NotSet>";  // Reserved token for virtual configs that are not set.
+      result["name"] = "Uninitialized Virtual Config";  // Reserved token for virtual configs that are not set.
     }
   }
   if (array_config_index >= 0) {

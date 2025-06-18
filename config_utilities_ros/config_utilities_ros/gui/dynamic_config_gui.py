@@ -8,6 +8,7 @@ import copy
 
 FACTORY_TYPE_PAPRAM_NAME = "type"
 NS_SEP = "/"
+UNINITIALIZED_VIRTUAL_CONFIG_NAME = "Uninitialized Virtual Config" # Reserved token for empty virtual configs.
 
 
 def to_yaml(data):
@@ -108,7 +109,7 @@ class DynamicConfigGUI:
         """
         self.errors.clear()
         raw_data = request.form.to_dict()
-        self.message = raw_data
+        self.message = [] #raw_data 
         data, _ = self._parse_form_data(raw_data)
         if not self.errors:
             self._request_update(data)
@@ -320,20 +321,28 @@ class DynamicConfigGUI:
                         "indent": indent,
                         "type": "config",
                     }
+                    has_subfields = True
                     if "available_types" in field:
+                        # Virtual configs
                         conf_data["available_types"] = field["available_types"]
+                        if field["name"] == "Uninitialized Virtual Config":
+                            # Special case for the not set config.
+                            has_subfields = False
                     if "array_index" in field:
+                        # Array configs
                         conf_data["array_index"] = field["array_index"]
                         conf_data["id"] += f"{NS_SEP}{field['array_index']}"
                         new_prefix.append(field["array_index"])
                     if "map_config_key" in field:
+                        # Map configs
                         conf_data["map_config_key"] = field["map_config_key"]
                         conf_data["id"] += f"{NS_SEP}{field['map_config_key']}"
                         new_prefix.append(field["map_config_key"])
                     fields.append(conf_data)
 
                     # Parse all fields in the config.
-                    fields.extend(parse_rec(field, indent + 1, new_prefix))
+                    if has_subfields:
+                        fields.extend(parse_rec(field, indent + 1, new_prefix))
                 else:
                     raise ValueError(f"Unknown field type: {field['type']}")
             return fields
@@ -368,10 +377,17 @@ class DynamicConfigGUI:
                     # Sub configs.
                     new_prefix = prefix + [field["field_name"]]
                     val = {}
+                    has_subfields = True
                     if "available_types" in field:
-                        val[FACTORY_TYPE_PAPRAM_NAME] = data[
-                            f"{prefix_str}{field['field_name']}-type"
-                        ]
+                        # Virtual configs
+                        type_name = data[
+                                f"{prefix_str}{field['field_name']}-type"
+                            ]
+                        if type_name != UNINITIALIZED_VIRTUAL_CONFIG_NAME:
+                            val[FACTORY_TYPE_PAPRAM_NAME] = type_name
+                        if field['name'] == UNINITIALIZED_VIRTUAL_CONFIG_NAME:
+                            # Special case for the not set config.
+                            has_subfields = False
                     if "array_index" in field:
                         # NOTE(lschmid): This assumes that the arrays arrive and are sent ordered.
                         idx = field["array_index"]
@@ -400,7 +416,8 @@ class DynamicConfigGUI:
                         field["map_config_key"] = new_key
                     else:
                         # Parse all fields in a regular config.
-                        values[field["field_name"]] = parse_rec(field, new_prefix, val)
+                        self.message.append(f"\nParsing config: {field['field_name']}, has_subfields: {has_subfields}")
+                        values[field["field_name"]] = parse_rec(field, new_prefix, val) if has_subfields else val
                 else:
                     raise ValueError(f"Unknown field type: {field['type']}")
             return values

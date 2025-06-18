@@ -90,6 +90,7 @@ void RosDynamicConfigServer::onUpdate(const DynamicConfigServer::Key& key, const
 }
 
 YAML::Node RosDynamicConfigServer::onSet(const DynamicConfigServer::Key& key, const YAML::Node& new_values) {
+  // TMP
   RCLCPP_INFO_STREAM(node_->get_logger(), "Received request for " << key << ": " << new_values);
 
   auto error = server_.set(key, new_values);

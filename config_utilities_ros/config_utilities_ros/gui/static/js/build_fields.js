@@ -135,7 +135,6 @@ function buildSubconfig(data) {
             html += ">" + d + "</option>";
         }
         html += "</select>]:";
-        deleteable = true;
     } else {
         html += " [" + data.config_name + "]:";
     }

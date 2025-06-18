@@ -111,6 +111,9 @@ std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set,
 
   if (visitor.mode == internal::Visitor::Mode::kGetInfo) {
     visitor.data.available_types = ModuleRegistry::getRegisteredConfigTypes(base_type);
+    if (is_optional) {
+      visitor.data.available_types.push_back("Uninitialized Virtual Config");
+    }
   }
 
   if (visitor.mode == Visitor::Mode::kSet) {
