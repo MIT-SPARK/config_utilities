@@ -50,7 +50,8 @@ namespace config {
  * class.
  *
  * @tparam BaseT The base class of the object that should be created from the config.
- * @tparam BaseT Whether or not the virtual config is optional when constructed (useful for maps and vectors of configs)
+ * @tparam OptionalByDefault Whether or not the virtual config is optional when constructed (useful for maps and vectors
+ * of configs)
  */
 template <class BaseT, bool OptionalByDefault = false>
 class VirtualConfig {

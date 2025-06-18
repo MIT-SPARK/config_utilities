@@ -6,6 +6,25 @@
             "type": "config",
             "name": "SubConfig",
             "field_name": "sub_config_map",
+            "map_config_key": 123456,
+            "fields": [
+                {
+                    "type": "field",
+                    "name": "s",
+                    "value": "zxcv",
+                    "default": "test",
+                    "input_info": {
+                        "type": "string"
+                    },
+                    "id": "sub_config_map/123456/s",
+                    "indent": 1
+                }
+            ]
+        },
+        {
+            "type": "config",
+            "name": "SubConfig",
+            "field_name": "sub_config_map",
             "map_config_key": "a",
             "fields": [
                 {
@@ -16,7 +35,7 @@
                     "input_info": {
                         "type": "string"
                     },
-                    "id": "sub_config_map/a-copy-copy-copy/s",
+                    "id": "sub_config_map/a/s",
                     "indent": 1
                 }
             ]
@@ -35,7 +54,7 @@
                     "input_info": {
                         "type": "string"
                     },
-                    "id": "sub_config_map/a-copy-copy-copy/s",
+                    "id": "sub_config_map/a-copy/s",
                     "indent": 1
                 }
             ]
@@ -44,17 +63,17 @@
             "type": "config",
             "name": "SubConfig",
             "field_name": "sub_config_map",
-            "map_config_key": "a-copy-copy",
+            "map_config_key": "b",
             "fields": [
                 {
                     "type": "field",
                     "name": "s",
-                    "value": "test",
+                    "value": "qwe",
                     "default": "test",
                     "input_info": {
                         "type": "string"
                     },
-                    "id": "sub_config_map/a-copy-copy-copy/s",
+                    "id": "sub_config_map/b/s",
                     "indent": 1
                 }
             ]
@@ -63,17 +82,36 @@
             "type": "config",
             "name": "SubConfig",
             "field_name": "sub_config_map",
-            "map_config_key": "a-copy-copy-copy",
+            "map_config_key": "c",
             "fields": [
                 {
                     "type": "field",
                     "name": "s",
-                    "value": "test",
+                    "value": "yui",
                     "default": "test",
                     "input_info": {
                         "type": "string"
                     },
-                    "id": "sub_config_map/a-copy-copy-copy/s",
+                    "id": "sub_config_map/c/s",
+                    "indent": 1
+                }
+            ]
+        },
+        {
+            "type": "config",
+            "name": "SubConfig",
+            "field_name": "sub_config_map",
+            "map_config_key": "d",
+            "fields": [
+                {
+                    "type": "field",
+                    "name": "s",
+                    "value": "asdgf",
+                    "default": "test",
+                    "input_info": {
+                        "type": "string"
+                    },
+                    "id": "sub_config_map/d/s",
                     "indent": 1
                 }
             ]

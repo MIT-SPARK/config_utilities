@@ -40,6 +40,7 @@
 #include <iostream>
 #include <string>
 
+#include <glog/logging.h>
 #include <rclcpp/rclcpp.hpp>
 
 #include "config_utilities/config.h"                         // Enables declare_config().
@@ -120,7 +121,7 @@ struct MyConfig {
   Eigen::Matrix<double, 3, 3> mat = Eigen::Matrix<double, 3, 3>::Identity();
   enum class MyEnum { kA, kB, kC } my_enum = MyEnum::kA;
   SubConfig sub_config;
-  config::VirtualConfig<BaseModule> first_module{StringModule::Config()};
+  config::VirtualConfig<BaseModule, true> first_module;  //{StringModule::Config()};
 
   // For testing.
   std::map<std::string, SubConfig> sub_config_map = {{"a", SubConfig()}, {"b", SubConfig()}};
@@ -133,23 +134,22 @@ struct MyConfig {
 void declare_config(MyConfig& config) {
   using namespace config;
   name("MyConfig");
-  // field(config.i, "i");
-  // field(config.distance, "distance", "m");
-  // field(config.b, "b");
-  // field(config.uint, "uint");
-  // field(config.vec, "vec");
-  // field(config.map, "map");
-  // field(config.mat, "mat");
-  // enum_field(config.my_enum, "my_enum", {"A", "B", "C"});
-  // field(config.sub_config, "sub_config");
-  // field(config.first_module, "first_module");
-  // config.first_module.setOptional(true);
-  // field(config.modules, "modules");
+  field(config.i, "i");
+  field(config.distance, "distance", "m");
+  field(config.b, "b");
+  field(config.uint, "uint");
+  field(config.vec, "vec");
+  field(config.map, "map");
+  field(config.mat, "mat");
+  enum_field(config.my_enum, "my_enum", {"A", "B", "C"});
+  field(config.sub_config, "sub_config");
+  field(config.first_module, "first_module");
+  field(config.modules, "modules");
   field(config.sub_config_map, "sub_config_map");
   field(config.sub_config_vec, "sub_config_vec");
 
-  // check(config.i, CheckMode::GT, 0, "i");
-  // checkInRange(config.distance, 0.0, 100.0, "distance");
+  check(config.i, CheckMode::GT, 0, "i");
+  checkInRange(config.distance, 0.0, 100.0, "distance");
 }
 
 // Declare an object with a dynamic config.
@@ -210,6 +210,7 @@ class DemoNode : public rclcpp::Node {
 
 int main(int argc, char** argv) {
   rclcpp::init(argc, argv);
+  google::InstallFailureSignalHandler();
 
   // Create some objects with a dynamic config.
   demo::ObjectWithDynamicConfig obj("dynamic_config_object");
@@ -220,10 +221,6 @@ int main(int argc, char** argv) {
 
   // Create a ROS node. Dynamic configs can also directly live in the node.
   auto node = std::make_shared<demo::DemoNode>();
-
-  // TMP
-  // auto data = config::internal::Visitor::getValues(demo::MyConfig()).data;
-  // RCLCPP_INFO_STREAM(node->get_logger(), data);
 
   // Alternative to the server living in the node, it could also be created here. Note that only one server should be
   // created per node.

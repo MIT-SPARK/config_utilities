@@ -118,7 +118,11 @@ YAML::Node MetaData::serializeFieldInfos() const {
   }
   if (is_virtual_config) {
     result["available_types"] = available_types;
-    result["name"] = data[field_name][Settings::instance().factory.type_param_name];
+    if (data[field_name]) {
+      result["name"] = data[field_name][Settings::instance().factory.type_param_name];
+    } else {
+      result["name"] = "<NotSet>";  // Reserved token for virtual configs that are not set.
+    }
   }
   if (array_config_index >= 0) {
     result["array_index"] = array_config_index;

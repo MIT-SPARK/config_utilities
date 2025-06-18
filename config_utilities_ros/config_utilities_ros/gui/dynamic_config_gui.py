@@ -109,7 +109,7 @@ class DynamicConfigGUI:
         self.errors.clear()
         raw_data = request.form.to_dict()
         self.message = raw_data
-        data = self._parse_form_data(raw_data)
+        data, _ = self._parse_form_data(raw_data)
         if not self.errors:
             self._request_update(data)
         return redirect("/")
@@ -133,9 +133,8 @@ class DynamicConfigGUI:
         action = data.pop("_action")
         field_id = data.pop("_id")
 
-        # TODO(lschmid): Currently discards data in the form that has not been submitted before. Fix this in the future for better user experience.
-        # NOTE(lschmid): This will require a fair bit of renaming handling of the fields.
-        # self._parse_form_data(data)
+        # TODO(lschmid): In the future first apply all unsaved changes to the config data for a better user experience. This will require updaintg the namespace of the field to delete or add, too.
+        # _, changed_keys = self._parse_form_data(data)
 
         # Find the parent container and final index of the ns.
         ns = field_id.split(NS_SEP)
@@ -347,6 +346,8 @@ class DynamicConfigGUI:
         :param data: The data from the config table in the GUI.
         """
 
+        changed_keys = {}
+
         def parse_rec(config, prefix, values):
             prefix_str = "".join([f"{p}{NS_SEP}" for p in prefix])
             for field in config["fields"]:
@@ -390,6 +391,9 @@ class DynamicConfigGUI:
                                 f"Error: map key for '{'.'.join(prefix + [name])}' is empty."
                             )
                             continue
+                        if new_key != key:
+                            ns = prefix_str + name + NS_SEP
+                            changed_keys[f"{ns}{key}"] = f"{ns}{new_key}"
                         if name not in values:
                             values[name] = {}
                         values[name][new_key] = parse_rec(field, new_prefix, val)
@@ -401,7 +405,7 @@ class DynamicConfigGUI:
                     raise ValueError(f"Unknown field type: {field['type']}")
             return values
 
-        return parse_rec(self._config_data, [], {})
+        return parse_rec(self._config_data, [], {}), changed_keys
 
     def _parse_errors(self):
         """
