@@ -5,120 +5,6 @@
         {
             "type": "config",
             "name": "SubConfig",
-            "field_name": "sub_config_map",
-            "map_config_key": 123456,
-            "fields": [
-                {
-                    "type": "field",
-                    "name": "s",
-                    "value": "zxcv",
-                    "default": "test",
-                    "input_info": {
-                        "type": "string"
-                    },
-                    "id": "sub_config_map/123456/s",
-                    "indent": 1
-                }
-            ]
-        },
-        {
-            "type": "config",
-            "name": "SubConfig",
-            "field_name": "sub_config_map",
-            "map_config_key": "a",
-            "fields": [
-                {
-                    "type": "field",
-                    "name": "s",
-                    "value": "test",
-                    "default": "test",
-                    "input_info": {
-                        "type": "string"
-                    },
-                    "id": "sub_config_map/a/s",
-                    "indent": 1
-                }
-            ]
-        },
-        {
-            "type": "config",
-            "name": "SubConfig",
-            "field_name": "sub_config_map",
-            "map_config_key": "a-copy",
-            "fields": [
-                {
-                    "type": "field",
-                    "name": "s",
-                    "value": "test",
-                    "default": "test",
-                    "input_info": {
-                        "type": "string"
-                    },
-                    "id": "sub_config_map/a-copy/s",
-                    "indent": 1
-                }
-            ]
-        },
-        {
-            "type": "config",
-            "name": "SubConfig",
-            "field_name": "sub_config_map",
-            "map_config_key": "b",
-            "fields": [
-                {
-                    "type": "field",
-                    "name": "s",
-                    "value": "qwe",
-                    "default": "test",
-                    "input_info": {
-                        "type": "string"
-                    },
-                    "id": "sub_config_map/b/s",
-                    "indent": 1
-                }
-            ]
-        },
-        {
-            "type": "config",
-            "name": "SubConfig",
-            "field_name": "sub_config_map",
-            "map_config_key": "c",
-            "fields": [
-                {
-                    "type": "field",
-                    "name": "s",
-                    "value": "yui",
-                    "default": "test",
-                    "input_info": {
-                        "type": "string"
-                    },
-                    "id": "sub_config_map/c/s",
-                    "indent": 1
-                }
-            ]
-        },
-        {
-            "type": "config",
-            "name": "SubConfig",
-            "field_name": "sub_config_map",
-            "map_config_key": "d",
-            "fields": [
-                {
-                    "type": "field",
-                    "name": "s",
-                    "value": "asdgf",
-                    "default": "test",
-                    "input_info": {
-                        "type": "string"
-                    },
-                    "id": "sub_config_map/d/s",
-                    "indent": 1
-                }
-            ]
-        },
-        {
-            "type": "config",
-            "name": "SubConfig",
             "field_name": "sub_config_vec",
             "array_index": 0,
             "fields": [
@@ -169,6 +55,80 @@
                         "type": "string"
                     },
                     "id": "sub_config_vec/2/s",
+                    "indent": 1
+                }
+            ]
+        },
+        {
+            "type": "config",
+            "name": "SubConfig",
+            "field_name": "sub_config_map",
+            "map_config_key": "a",
+            "fields": [
+                {
+                    "type": "field",
+                    "name": "s",
+                    "value": "test",
+                    "default": "test",
+                    "input_info": {
+                        "type": "string"
+                    },
+                    "id": "sub_config_map/a/s",
+                    "indent": 1
+                }
+            ]
+        },
+        {
+            "type": "config",
+            "name": "SubConfig",
+            "field_name": "sub_config_map",
+            "map_config_key": "b",
+            "fields": [
+                {
+                    "type": "field",
+                    "name": "s",
+                    "value": "test",
+                    "default": "test",
+                    "input_info": {
+                        "type": "string"
+                    },
+                    "id": "sub_config_map/b/s",
+                    "indent": 1
+                }
+            ]
+        },
+        {
+            "type": "config",
+            "name": "Uninitialized Virtual Config",
+            "field_name": "module_map",
+            "available_types": [
+                "IntModule",
+                "StringModule",
+                "Uninitialized Virtual Config"
+            ],
+            "map_config_key": "empty_mod",
+            "fields": None
+        },
+        {
+            "type": "config",
+            "name": "IntModule",
+            "field_name": "module_map",
+            "available_types": [
+                "IntModule",
+                "StringModule",
+                "Uninitialized Virtual Config"
+            ],
+            "map_config_key": "int_mod",
+            "fields": [
+                {
+                    "type": "field",
+                    "name": "i",
+                    "value": 0,
+                    "default": 0,
+                    "input_info": {
+                        "type": "int32"
+                    },
+                    "id": "module_map/int_mod/i",
                     "indent": 1
                 }
             ]

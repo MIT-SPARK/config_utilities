@@ -115,8 +115,9 @@ class DynamicConfigGUI:
         """
         self.errors.clear()
         raw_data = request.form.to_dict()
-        self.message = [] #raw_data 
+        self.message = self._config_data
         data, _ = self._parse_form_data(raw_data)
+        # self.message = data
         if not self.errors:
             self._request_update(data)
         return redirect("/")
@@ -386,8 +387,14 @@ class DynamicConfigGUI:
                     has_subfields = True
                     if "available_types" in field:
                         # Virtual configs
+                        # Fix naming if arrays or maps are used.
+                        id = f"{prefix_str}{field['field_name']}"
+                        if "array_index" in field:
+                            id += f"{NS_SEP}{field['array_index']}"
+                        elif "map_config_key" in field:
+                            id += f"{NS_SEP}{field['map_config_key']}"
                         val[FACTORY_TYPE_PAPRAM_NAME] = data[
-                                f"{prefix_str}{field['field_name']}-type"
+                                f"{id}-type"
                             ]
                         if field['name'] == UNINITIALIZED_VIRTUAL_CONFIG_NAME:
                             # Special case for the not set config.
@@ -398,9 +405,10 @@ class DynamicConfigGUI:
                         new_prefix.append(idx)
                         if idx == 0:
                             values[field["field_name"]] = []
-                        values[field["field_name"]].append(
-                            parse_rec(field, new_prefix, val)
-                        )
+                        if has_subfields:
+                            values[field["field_name"]].append(
+                                parse_rec(field, new_prefix, val)
+                            )
                     elif "map_config_key" in field:
                         key = field["map_config_key"]
                         name = field["field_name"]
@@ -416,11 +424,11 @@ class DynamicConfigGUI:
                             changed_keys[f"{ns}{key}"] = f"{ns}{new_key}"
                         if name not in values:
                             values[name] = {}
-                        values[name][new_key] = parse_rec(field, new_prefix, val)
+                        if has_subfields:
+                            values[name][new_key] = parse_rec(field, new_prefix, val)
                         field["map_config_key"] = new_key
-                    else:
+                    elif has_subfields:
                         # Parse all fields in a regular config.
-                        self.message.append(f"\nParsing config: {field['field_name']}, has_subfields: {has_subfields}")
                         values[field["field_name"]] = parse_rec(field, new_prefix, val) if has_subfields else val
                 else:
                     raise ValueError(f"Unknown field type: {field['type']}")

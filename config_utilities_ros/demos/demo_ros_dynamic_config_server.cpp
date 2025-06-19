@@ -34,7 +34,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * This demo shows how to use config_utilities with ROS.
+ * This demo shows how to use dynamic configs, using a ROS dynamic config server and client.
  */
 
 #include <iostream>
@@ -112,44 +112,48 @@ void declare_config(StringModule::Config& config) {
 
 // Defining the config with sub and virtual configs.
 struct MyConfig {
-  int i = 100;
-  double distance = 42;
-  bool b = true;
-  uint8_t uint = 5;
-  std::vector<int> vec = {1, 2, 3};
-  std::map<std::string, int> map = {{"a", 1}, {"b", 2}, {"c", 3}};
-  Eigen::Matrix<double, 3, 3> mat = Eigen::Matrix<double, 3, 3>::Identity();
-  enum class MyEnum { kA, kB, kC } my_enum = MyEnum::kA;
-  SubConfig sub_config;
-  config::VirtualConfig<BaseModule, true> first_module;  //{StringModule::Config()};
+  using VirtualModule = config::VirtualConfig<BaseModule, true>;
+  // int i = 100;
+  // double distance = 42;
+  // bool b = true;
+  // uint8_t uint = 5;
+  // std::vector<int> vec = {1, 2, 3};
+  // std::map<std::string, int> map = {{"a", 1}, {"b", 2}, {"c", 3}};
+  // Eigen::Matrix<double, 3, 3> mat = Eigen::Matrix<double, 3, 3>::Identity();
+  // enum class MyEnum { kA, kB, kC } my_enum = MyEnum::kA;
+  // SubConfig sub_config;
+  // VirtualModule virtual_module;
 
   // For testing.
-  std::map<std::string, SubConfig> sub_config_map = {{"a", SubConfig()}, {"b", SubConfig()}};
   std::vector<SubConfig> sub_config_vec = {SubConfig(), SubConfig(), SubConfig()};
-  std::vector<config::VirtualConfig<BaseModule>> modules;
-  std::map<std::string, config::VirtualConfig<BaseModule>> module_map;
+  std::map<std::string, SubConfig> sub_config_map = {{"a", SubConfig()}, {"b", SubConfig()}};
+  std::vector<VirtualModule> modules;
+  std::map<std::string, VirtualModule> module_map{{"str_mod", VirtualModule(StringModule::Config())},
+                                                  {"int_mod", VirtualModule(IntModule::Config())}};
+  // {"empty_mod", VirtualModule()}
 };
 
 // All config properties are specified within declare_config.
 void declare_config(MyConfig& config) {
   using namespace config;
   name("MyConfig");
-  field(config.i, "i");
-  field(config.distance, "distance", "m");
-  field(config.b, "b");
-  field(config.uint, "uint");
-  field(config.vec, "vec");
-  field(config.map, "map");
-  field(config.mat, "mat");
-  enum_field(config.my_enum, "my_enum", {"A", "B", "C"});
-  field(config.sub_config, "sub_config");
-  field(config.first_module, "first_module");
-  field(config.modules, "modules");
-  field(config.sub_config_map, "sub_config_map");
+  // field(config.i, "i");
+  // field(config.distance, "distance", "m");
+  // field(config.b, "b");
+  // field(config.uint, "uint");
+  // field(config.vec, "vec");
+  // field(config.map, "map");
+  // field(config.mat, "mat");
+  // enum_field(config.my_enum, "my_enum", {"A", "B", "C"});
+  // field(config.sub_config, "sub_config");
+  // field(config.virtual_module, "virtual_module");
   field(config.sub_config_vec, "sub_config_vec");
+  field(config.sub_config_map, "sub_config_map");
+  field(config.modules, "modules");
+  field(config.module_map, "module_map");
 
-  check(config.i, CheckMode::GT, 0, "i");
-  checkInRange(config.distance, 0.0, 100.0, "distance");
+  // check(config.i, CheckMode::GT, 0, "i");
+  // checkInRange(config.distance, 0.0, 100.0, "distance");
 }
 
 // Declare an object with a dynamic config.
@@ -171,9 +175,10 @@ class ObjectWithDynamicConfig {
   void createAndPrintModules(const MyConfig& config) {
     // Create all modules from the config.
     modules_.clear();
-    if (config.first_module) {
-      modules_.emplace_back(config.first_module.create());
-    }
+    // TMP
+    // if (config.virtual_module) {
+    //   modules_.emplace_back(config.virtual_module.create());
+    // }
     for (const auto& module : config.modules) {
       modules_.emplace_back(module.create());
     }
@@ -214,10 +219,10 @@ int main(int argc, char** argv) {
 
   // Create some objects with a dynamic config.
   demo::ObjectWithDynamicConfig obj("dynamic_config_object");
-  demo::ObjectWithDynamicConfig other_obj("other_object");
+  // demo::ObjectWithDynamicConfig other_obj("other_object");
 
   // All standalone dynamic configs will equally be registered.
-  config::DynamicConfig<demo::SubConfig> config("standalone_config");
+  // config::DynamicConfig<demo::SubConfig> config("standalone_config");
 
   // Create a ROS node. Dynamic configs can also directly live in the node.
   auto node = std::make_shared<demo::DemoNode>();
