@@ -43,6 +43,10 @@
 #include "config_utilities/factory.h"
 #include "config_utilities/traits.h"
 
+namespace config::internal {
+inline static const std::string kUninitializedVirtualConfigType = "Uninitialized Virtual Config";
+}
+
 namespace config {
 
 /**
@@ -63,6 +67,8 @@ class VirtualConfig {
   VirtualConfig(const VirtualConfig& other) {
     if (other.config_) {
       config_ = other.config_->clone();
+    } else {
+      config_.reset();
     }
     optional_ = other.optional_;
   }
@@ -75,6 +81,8 @@ class VirtualConfig {
   VirtualConfig& operator=(const VirtualConfig& other) {
     if (other.config_) {
       config_ = other.config_->clone();
+    } else {
+      config_.reset();
     }
     optional_ = other.optional_;
     return *this;
@@ -216,7 +224,12 @@ void declare_config(VirtualConfig<BaseT, Opt>& config) {
   if (data) {
     std::string type;
     if (internal::getType(*data, type, type_required)) {
-      config.config_ = internal::ConfigFactory<BaseT>::create(type);
+      if (type == internal::kUninitializedVirtualConfigType) {
+        // Reserved token to delete the virtual config in dynamic configs.
+        config.config_.reset();
+      } else {
+        config.config_ = internal::ConfigFactory<BaseT>::create(type);
+      }
     } else if (type_required) {
       std::stringstream ss;
       ss << "Could not get type for '" << internal::ModuleInfo::fromTypes<BaseT>().typeInfo() << "'";
