@@ -44,16 +44,10 @@ function onAddDelete(id, action) {
     post("/add_delete", conf_data);
 }
 
-function onVirtualConfigChange(element) {
-    // TODO(lschmid): This does currently not trigger.
-
-    // Update the config name and type based on the selected virtual config.
-    const id = element.id.substring(element.id.indexOf("-") + 1);
-    const value = element.options[element.selectedIndex].text;
-    field.value = value;
-    field.width = element.value.length;
-
-    post("/submit", { id: id, value: value });
+function onVirtualConfigChange(id) {
+    // element = document.getElementById(id);
+    // const value = element.options[element.selectedIndex].text;
+    // post("/msg", { "id": id, value: value });
 }
 
 // Function to make table columns resizable

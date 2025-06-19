@@ -63,6 +63,7 @@ class DynamicConfigGUI:
         self._app.add_url_rule(
             "/add_delete", "add_delete", self._add_delete_field, methods=["POST"]
         )
+        self._app.add_url_rule("/msg", "msg", self._msg, methods=["POST"])
 
     def run(self, host="localhost", port=5000, debug=False, open_browser=True):
         """
@@ -73,6 +74,11 @@ class DynamicConfigGUI:
             # Open the browser to the GUI.
             webbrowser.open(f"http://{host}:{port}", new=2)
         self._app.run(host=host, port=port, debug=debug, threaded=False)
+
+    # Debug.
+    def _msg(self):
+        self.message = request.form.to_dict()
+        return redirect("/")
 
     # Implementation of the rendered GUI.
     def _index(self):
@@ -380,11 +386,9 @@ class DynamicConfigGUI:
                     has_subfields = True
                     if "available_types" in field:
                         # Virtual configs
-                        type_name = data[
+                        val[FACTORY_TYPE_PAPRAM_NAME] = data[
                                 f"{prefix_str}{field['field_name']}-type"
                             ]
-                        if type_name != UNINITIALIZED_VIRTUAL_CONFIG_NAME:
-                            val[FACTORY_TYPE_PAPRAM_NAME] = type_name
                         if field['name'] == UNINITIALIZED_VIRTUAL_CONFIG_NAME:
                             # Special case for the not set config.
                             has_subfields = False
