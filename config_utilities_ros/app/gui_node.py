@@ -4,7 +4,7 @@ import signal
 import sys
 import yaml
 from threading import Thread
-
+import argparse
 import rclpy
 import rclpy.logging
 from rclpy.node import Node
@@ -14,7 +14,7 @@ from config_utilities_ros.gui import DynamicConfigGUI
 
 class RosDynamicConfigGUI(Node):
 
-    def __init__(self):
+    def __init__(self, args=None):
         super().__init__("ros_dynamic_config_gui")
 
         # Caching of connected config state.
@@ -91,11 +91,22 @@ class RosDynamicConfigGUI(Node):
         sys.exit(0)
 
 
-def main(args=None):
-    rclpy.init(args=args)
+def main():
+    parser = argparse.ArgumentParser(description="ROS Dynamic Config GUI Node")
+    parser.add_argument( "--host", type=str, default="localhost",
+                         help="Host to connect to (default: localhost)")
+    parser.add_argument("--port", type=int, default=5000,
+                            help="Port to connect to (default: 5000)")
+    parser.add_argument("--debug", action="store_true",
+                            help="Run the GUI in debug mode (default: False)")
+    parser.add_argument("--no_browser", action="store_false",
+                            help="Do not open the GUI in a browser window(default: False)")
+    args = parser.parse_args()
+    
+    rclpy.init()
     gui = RosDynamicConfigGUI()
     signal.signal(signal.SIGINT, gui.shutdown)
-    gui.run()
+    gui.run(host=args.host, port=args.port, debug=args.debug, open_browser=args.no_browser)
     gui.shutdown()
 
 

@@ -115,9 +115,7 @@ class DynamicConfigGUI:
         """
         self.errors.clear()
         raw_data = request.form.to_dict()
-        self.message = self._config_data
         data, _ = self._parse_form_data(raw_data)
-        # self.message = data
         if not self.errors:
             self._request_update(data)
         return redirect("/")
@@ -221,7 +219,6 @@ class DynamicConfigGUI:
 
         # Apply the changes from the config to the fields.
         self._parse_fields(replace_yaml=False)
-        self.message = self._config_data
         return redirect("/")
 
     # Processing functions.
@@ -236,6 +233,7 @@ class DynamicConfigGUI:
         self._config_data = self.set_request_fn(
             self._active_server, self._active_key, data
         )
+        
         self._parse_fields(replace_yaml=True)
         self._parse_errors()
 
@@ -438,7 +436,7 @@ class DynamicConfigGUI:
 
     def _parse_errors(self):
         """
-        Parse the error and warning messages from the config data.
+        Parse the error and warning messages from the received config data.
         """
         self.errors = []
         self.warnings = []
@@ -458,4 +456,4 @@ class DynamicConfigGUI:
 
 if __name__ == "__main__":
     gui = DynamicConfigGUI()
-    gui.run(debug=True, open_browser=False)
+    gui.run(debug=True, open_browser=True)

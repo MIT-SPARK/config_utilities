@@ -125,7 +125,7 @@ function buildSubconfig(data) {
     // Config types and virtual configs.
     if ("available_types" in data) {
         id = "field-" + data.id + "-type"
-        html += " [<select class='subconfig-field' id='" + id + "' width='" + data.config_name.length + "' onchange=\"onVirtualConfigChange('" + id + "');\">";
+        html += " [<select class='subconfig-field virtual-config-type' id='" + id + "' width='" + data.config_name.length + "' onchange=\"onVirtualConfigChange('" + id + "');\">";
         for (var i = 0; i < data.available_types.length; i++) {
             var d = data.available_types[i];
             html += "<option value='" + d + "'";

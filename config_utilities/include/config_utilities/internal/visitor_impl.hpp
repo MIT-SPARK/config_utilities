@@ -299,6 +299,8 @@ void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_
       array_node.push_back(YAML::Clone(lookupNamespace(new_data.data, name_space)));
       new_data.array_config_index = index++;
     }
+
+    // TODO(lschmid): Add info for empty vectors for getInfo.
     moveDownNamespace(array_node, name_space);
     mergeYamlNodes(visitor.data.data, array_node);
   }
@@ -373,6 +375,12 @@ void Visitor::visitField(OrderedMap<K, ConfigT>& config, const std::string& fiel
       MetaData& new_data = visitor.data.sub_configs.back();
       map_node[key] = YAML::Clone(lookupNamespace(new_data.data, name_space));
       new_data.map_config_key = YAML::Node(key).as<std::string>();
+    }
+
+    if (visitor.mode == Visitor::Mode::kGetInfo && config.empty()) {
+      // When getting info for empty maps still show them.
+      // TODO(lschmid): Implement.
+      map_node = YAML::Node("TEEEEEEEEEEEST");
     }
 
     moveDownNamespace(map_node, name_space);

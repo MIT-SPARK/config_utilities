@@ -9,12 +9,12 @@ launch:
       output: "screen"
 
   # A different node (of the same type) that contains a config file.
-  #     - node:
-  #           pkg: "config_utilities_ros"
-  #           exec: "demo_ros_dynamic_config_server"
-  #           name: "node2_with_dynamic_configs"
-  #           namespace: "some_ns"
-  #           output: "screen"
+  - node:
+      pkg: "config_utilities_ros"
+      exec: "demo_ros_dynamic_config_server"
+      name: "node2_with_dynamic_configs"
+      namespace: "some_ns"
+      output: "screen"
 
   # The dynamic config GUI.
   - node:

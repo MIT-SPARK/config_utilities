@@ -64,7 +64,6 @@ void declare_config(SubConfig& config) {
   using namespace config;
   name("SubConfig");
   field(config.s, "s");
-  // checkIsOneOf(config.s, {"test", "only", "limited", "strings", "allowed"}, "s");
 }
 
 // Some virtual configs that can be used to create a config struct that is not known at compile time.
@@ -113,47 +112,49 @@ void declare_config(StringModule::Config& config) {
 // Defining the config with sub and virtual configs.
 struct MyConfig {
   using VirtualModule = config::VirtualConfig<BaseModule, true>;
-  // int i = 100;
-  // double distance = 42;
-  // bool b = true;
-  // uint8_t uint = 5;
-  // std::vector<int> vec = {1, 2, 3};
-  // std::map<std::string, int> map = {{"a", 1}, {"b", 2}, {"c", 3}};
-  // Eigen::Matrix<double, 3, 3> mat = Eigen::Matrix<double, 3, 3>::Identity();
-  // enum class MyEnum { kA, kB, kC } my_enum = MyEnum::kA;
-  // SubConfig sub_config;
-  // VirtualModule virtual_module;
+  int i = 100;
+  double distance = 42;
+  bool b = true;
+  uint8_t uint = 5;
+  std::string str = "hello";
+  std::vector<int> vec = {1, 2, 3};
+  std::map<std::string, int> map = {{"a", 1}, {"b", 2}, {"c", 3}};
+  Eigen::Matrix<double, 3, 3> mat = Eigen::Matrix<double, 3, 3>::Identity();
+  enum class MyEnum { kA, kB, kC } my_enum = MyEnum::kA;
+  SubConfig sub_config;
+  VirtualModule virtual_module;
 
   // For testing.
   std::vector<SubConfig> sub_config_vec = {SubConfig(), SubConfig(), SubConfig()};
   std::map<std::string, SubConfig> sub_config_map = {{"a", SubConfig()}, {"b", SubConfig()}};
   std::vector<VirtualModule> modules;
-  std::map<std::string, VirtualModule> module_map{{"str_mod", VirtualModule(StringModule::Config())},
-                                                  {"int_mod", VirtualModule(IntModule::Config())}};
-  // {"empty_mod", VirtualModule()}
+  std::map<std::string, VirtualModule> module_map = {{"str_mod", VirtualModule(StringModule::Config())},
+                                                     {"int_mod", VirtualModule(IntModule::Config())}};
 };
 
 // All config properties are specified within declare_config.
 void declare_config(MyConfig& config) {
   using namespace config;
   name("MyConfig");
-  // field(config.i, "i");
-  // field(config.distance, "distance", "m");
-  // field(config.b, "b");
-  // field(config.uint, "uint");
-  // field(config.vec, "vec");
-  // field(config.map, "map");
-  // field(config.mat, "mat");
-  // enum_field(config.my_enum, "my_enum", {"A", "B", "C"});
-  // field(config.sub_config, "sub_config");
-  // field(config.virtual_module, "virtual_module");
+  field(config.i, "i");
+  field(config.distance, "distance", "m");
+  field(config.b, "b");
+  field(config.uint, "uint");
+  field(config.str, "str");
+  field(config.vec, "vec");
+  field(config.map, "map");
+  field(config.mat, "mat");
+  enum_field(config.my_enum, "my_enum", {"A", "B", "C"});
+  field(config.sub_config, "sub_config");
+  field(config.virtual_module, "virtual_module");
   field(config.sub_config_vec, "sub_config_vec");
   field(config.sub_config_map, "sub_config_map");
   field(config.modules, "modules");
   field(config.module_map, "module_map");
 
-  // check(config.i, CheckMode::GT, 0, "i");
-  // checkInRange(config.distance, 0.0, 100.0, "distance");
+  check(config.i, CheckMode::GT, 0, "i");
+  checkInRange(config.distance, 0.0, 100.0, "distance");
+  checkIsOneOf(config.str, {"test", "only", "limited", "strings", "allowed"}, "s");
 }
 
 // Declare an object with a dynamic config.
@@ -175,10 +176,9 @@ class ObjectWithDynamicConfig {
   void createAndPrintModules(const MyConfig& config) {
     // Create all modules from the config.
     modules_.clear();
-    // TMP
-    // if (config.virtual_module) {
-    //   modules_.emplace_back(config.virtual_module.create());
-    // }
+    if (config.virtual_module) {
+      modules_.emplace_back(config.virtual_module.create());
+    }
     for (const auto& module : config.modules) {
       modules_.emplace_back(module.create());
     }
