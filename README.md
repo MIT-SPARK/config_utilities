@@ -2,7 +2,7 @@
 
 
 # config_utilities
-`config_utilities` is a minimal but powerful C++ library, providing tools to parse, verify, and print C++ config structs and configurable objects.
+`config_utilities` is a minimal but powerful C++ library, providing tools for automated modular software configuration. Parse, verify, and print C++ config structs and run-time configuration of object-oriented modular systems.
 
 ## Table of contents
 - [Credits](#credits)
