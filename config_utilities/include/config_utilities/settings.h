@@ -69,6 +69,8 @@ struct Settings {
   // @brief If true integrate subconfig fields into the main config, if false print them separately.
   bool inline_subconfig_field_names = true;
 
+  bool print_warnings = false;
+
   // @brief If true, store all validated configs for global printing.
   bool store_valid_configs = true;
 

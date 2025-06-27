@@ -40,6 +40,7 @@ add_executable(
   tests/config_arrays.cpp
   tests/config_maps.cpp
   tests/conversions.cpp
+  tests/dynamic_config.cpp
   tests/enums.cpp
   tests/external_registry.cpp
   tests/factory.cpp
