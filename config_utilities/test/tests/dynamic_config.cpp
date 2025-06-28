@@ -118,6 +118,190 @@ TEST(DynamicConfig, SetGet) {
   EXPECT_EQ(dyn.get().i, 7);
 }
 
+TEST(DynamicConfig, getInfo) {
+  DynamicConfig<DefaultConfig> dyn("dyn");
+  DynamicConfigServer server;
+
+  // Get values.
+  auto info = server.getInfo("dyn");
+
+  const std::string expected_info = R"(
+type: config
+name: DefaultConfig
+fields:
+  - type: field
+    name: i
+    unit: m
+    value: 1
+    default: 1
+    input_info:
+      type: int32
+      min: 0
+      lower_exclusive: true
+  - type: field
+    name: f
+    unit: s
+    value: 2.0999999
+    default: 2.0999999
+    input_info:
+      type: float32
+      min: 0
+  - type: field
+    name: d
+    unit: m/s
+    value: 3.2000000000000002
+    default: 3.2000000000000002
+    input_info:
+      type: float64
+      min: 0
+      max: 4
+      upper_exclusive: true
+  - type: field
+    name: b
+    value: true
+    default: true
+    input_info:
+      type: bool
+  - type: field
+    name: u8
+    value: 4
+    default: 4
+    input_info:
+      type: uint8
+      max: 5
+  - type: field
+    name: s
+    value: test string
+    default: test string
+    input_info:
+      type: string
+  - type: field
+    name: vec
+    unit: frames
+    value:
+      - 1
+      - 2
+      - 3
+    default:
+      - 1
+      - 2
+      - 3
+    input_info:
+      type: yaml
+  - type: field
+    name: map
+    value:
+      a: 1
+      b: 2
+      c: 3
+    default:
+      a: 1
+      b: 2
+      c: 3
+    input_info:
+      type: yaml
+  - type: field
+    name: set
+    value:
+      - 1.10000002
+      - 2.20000005
+      - 3.29999995
+    default:
+      - 1.10000002
+      - 2.20000005
+      - 3.29999995
+    input_info:
+      type: yaml
+  - type: field
+    name: mat
+    value:
+      -
+        - 1
+        - 0
+        - 0
+      -
+        - 0
+        - 1
+        - 0
+      -
+        - 0
+        - 0
+        - 1
+    default:
+      -
+        - 1
+        - 0
+        - 0
+      -
+        - 0
+        - 1
+        - 0
+      -
+        - 0
+        - 0
+        - 1
+    input_info:
+      type: yaml
+  - type: field
+    name: my_enum
+    value: A
+    default: A
+    input_info:
+      type: options
+      options:
+        - A
+        - B
+        - C
+  - type: field
+    name: my_strange_enum
+    value: X
+    default: X
+    input_info:
+      type: options
+      options:
+        - Z
+        - X
+        - Y
+  - type: config
+    name: SubConfig
+    field_name: sub_config
+    fields:
+      - type: field
+        name: i
+        value: 1
+        default: 1
+        input_info:
+          type: int32
+          min: 0
+          lower_exclusive: true
+      - type: config
+        name: SubSubConfig
+        field_name: sub_sub_config
+        fields:
+          - type: field
+            name: i
+            value: 1
+            default: 1
+            input_info:
+              type: int32
+              min: 0
+              lower_exclusive: true
+  - type: config
+    name: SubSubConfig
+    field_name: sub_sub_config
+    fields:
+      - type: field
+        name: i
+        value: 1
+        default: 1
+        input_info:
+          type: int32
+          min: 0
+          lower_exclusive: true
+)";
+  EXPECT_TRUE(expectEqual(info, YAML::Load(expected_info)));
+}
+
 TEST(DynamicConfig, Hooks) {
   auto server = std::make_unique<DynamicConfigServer>();
   std::string logs;
