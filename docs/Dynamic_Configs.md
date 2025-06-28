@@ -69,7 +69,7 @@ config::DynamicConfig<MyConfig> dynamic_config("my_config");
 // Register a callback:
 dynamic_config.setCallback([&dynamic_config](){
   std::cout << "Got new config values: " << config::toString(dynamic_config) << std::endl;
-};)
+});
 ```
 
 ## Setting Dynamic Configs
