@@ -1,5 +1,4 @@
-![CMake: Build](https://github.com/MIT-SPARK/config_utilities/actions/workflows/cmake_build.yml/badge.svg) ![ROS Noetic: Build](https://github.com/MIT-SPARK/config_utilities/actions/workflows/catkin_build.yml/badge.svg)
-
+![CMake: Build](https://github.com/MIT-SPARK/config_utilities/actions/workflows/cmake_build.yml/badge.svg)
 
 # config_utilities
 `config_utilities` is a minimal but powerful C++ library, providing tools for automated modular software configuration. Parse, verify, and print C++ config structs and run-time configuration of object-oriented modular systems.
@@ -113,14 +112,14 @@ Among many other, the key features of `config_utilities` include:
 
 ## Installation
 
-This package is compatible with `catkin` and `catkin_simple`. Just clone it into your workspace and you should be all set!
+This package is compatible with `ROS2`/`colcon`. Just clone it into your workspace and you should be all set!
 ```bash
-cd ~/catkin_ws/src
+cd ~/my_ws/src
 git clone git@github.com:MIT-SPARK/config_utilities.git
-catkin build config_utilities
+colcon build config_utilities_ros
 ```
 
-If you want to build and install without catkin/ROS, that is easy, too! Just clone this repository and build via CMake:
+If you want to build and install without colcon/ROS, that is easy, too! Just clone this repository and build via CMake:
 ```bash
 git clone git@github.com:MIT-SPARK/config_utilities.git
 cd config_utilities/config_utilities
@@ -146,9 +145,9 @@ python3 scripts/run_demo.py factory
 > **ℹ️ Note**<br>
 > If you're building via cmake, you can point `run_demo.py` to the build directory with `-b/--build_path`.
 
-The ros demo can be run via:
+The ros demo for dynamic config updates can be run via:
 ```
-ros2 l
+ros2 launch config_utilities_ros demo_ros_dynamic_config.yaml
 ```
 
 If you are looking for a specific use case that is not in the tutorials or demos, chances are you can find a good example in the `tests/` directory!

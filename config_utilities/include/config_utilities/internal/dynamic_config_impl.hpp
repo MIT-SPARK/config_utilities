@@ -152,6 +152,12 @@ std::string DynamicConfig<ConfigT>::setValues(const YAML::Node& values) {
 }
 
 template <typename ConfigT>
+YAML::Node DynamicConfig<ConfigT>::getValues() const {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return internal::Visitor::getValues(config_).data;
+}
+
+template <typename ConfigT>
 YAML::Node DynamicConfig<ConfigT>::getInfo() const {
   std::lock_guard<std::mutex> lock(mutex_);
   return internal::Visitor::getInfo(config_).serializeFieldInfos();
@@ -160,7 +166,9 @@ YAML::Node DynamicConfig<ConfigT>::getInfo() const {
 template <typename ConfigT>
 internal::DynamicConfigRegistry::ConfigInterface DynamicConfig<ConfigT>::getInterface() {
   internal::DynamicConfigRegistry::ConfigInterface interface;
-  interface.get = [this]() { return getInfo(); };
+
+  interface.get = [this]() { return getValues(); };
+  interface.getInfo = [this]() { return getInfo(); };
   interface.set = [this](const YAML::Node& values) { return setValues(values); };
   return interface;
 }

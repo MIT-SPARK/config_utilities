@@ -79,7 +79,6 @@ TEST(DynamicConfig, CheckRegistered) {
 
 TEST(DynamicConfig, SetGet) {
   DynamicConfig<DefaultConfig> dyn("dyn");
-
   DynamicConfigServer server;
 
   // Get values.

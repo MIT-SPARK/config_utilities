@@ -86,10 +86,16 @@ struct DynamicConfigServer {
   std::vector<Key> registeredConfigs() const;
 
   /**
-   * @brief Get the values and info of a dynamic config.
+   * @brief Get the values of a dynamic config.
    * @param key The unique key of the dynamic config.
    */
   YAML::Node get(const Key& key) const;
+
+  /**
+   * @brief Get the values and type info of a dynamic config.
+   * @param key The unique key of the dynamic config.
+   */
+  YAML::Node getInfo(const Key& key) const;
 
   /**
    * @brief Set the values of a dynamic config. If the requested values are invalid, no modifications are made.
@@ -121,6 +127,7 @@ struct DynamicConfigRegistry {
    */
   struct ConfigInterface {
     std::function<YAML::Node()> get;
+    std::function<YAML::Node()> getInfo;
     std::function<std::string(const YAML::Node&)> set;
   };
 
@@ -247,6 +254,7 @@ struct DynamicConfig {
   const bool is_registered_;
 
   std::string setValues(const YAML::Node& values);
+  YAML::Node getValues() const;
   YAML::Node getInfo() const;
   internal::DynamicConfigRegistry::ConfigInterface getInterface();
   void moveMembers(DynamicConfig&& other);

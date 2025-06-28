@@ -57,6 +57,14 @@ YAML::Node DynamicConfigServer::get(const Key& key) const {
   return config->get();
 }
 
+YAML::Node DynamicConfigServer::getInfo(const Key& key) const {
+  const auto config = internal::DynamicConfigRegistry::instance().getConfig(key);
+  if (!config) {
+    return {};
+  }
+  return config->getInfo();
+}
+
 std::string DynamicConfigServer::set(const Key& key, const YAML::Node& values) const {
   const auto config = internal::DynamicConfigRegistry::instance().getConfig(key);
   if (!config) {

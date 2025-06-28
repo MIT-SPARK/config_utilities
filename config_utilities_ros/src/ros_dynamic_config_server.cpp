@@ -70,7 +70,7 @@ void RosDynamicConfigServer::onRegister(const DynamicConfigServer::Key& key) {
   configs_.emplace(key, std::make_unique<ConfigReceiver>(key, this, node_));
 
   // Latch the current state of the config.
-  onUpdate(key, server_.get(key));
+  onUpdate(key, server_.getInfo(key));
 }
 
 void RosDynamicConfigServer::onDeregister(const DynamicConfigServer::Key& key) { configs_.erase(key); }
@@ -91,11 +91,11 @@ void RosDynamicConfigServer::onUpdate(const DynamicConfigServer::Key& key, const
 
 YAML::Node RosDynamicConfigServer::onSet(const DynamicConfigServer::Key& key, const YAML::Node& new_values) {
   auto error = server_.set(key, new_values);
-  auto values = server_.get(key);
+  auto info = server_.getInfo(key);
   if (!error.empty()) {
-    values["error"] = error;
+    info["error"] = error;
   }
-  return values;
+  return info;
 }
 
 }  // namespace config

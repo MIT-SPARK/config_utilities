@@ -65,7 +65,7 @@ std::string AslFormatter::formatErrorsImpl(const MetaData& data,
 
   // Closing line.
   if (!only_messages) {
-    result += internal::printCenter(resolveConfigName(data), settings.width, '=');
+    result += std::string(settings.width, '=');
   }
   return result;
 }
@@ -195,8 +195,9 @@ std::string AslFormatter::formatErrorsInternal(const MetaData& data, const std::
 }
 
 std::string AslFormatter::formatConfigImpl(const MetaData& data) {
-  return internal::printCenter(resolveConfigName(data), Settings::instance().printing.width, '=') + "\n" +
-         toStringInternal(data, 0) + std::string(Settings::instance().printing.width, '=');
+  const auto& settings = Settings::instance().printing;
+  return internal::printCenter(resolveConfigName(data), settings.width, '=') + "\n" + toStringInternal(data, 0) +
+         std::string(settings.width, '=');
 }
 
 std::string AslFormatter::formatConfigsImpl(const std::vector<MetaData>& data) {
