@@ -34,7 +34,7 @@ struct MyConversion {
   static IntermediateType toIntermediate(MyType value, std::string& error);
   static void fromIntermediate(const IntermediateType& intermediate, MyType& value, std::string& error);
 
-  // Optionally provide more field info. Must have exaxctly this signature.
+  // Optionally provide more field info. Must have exactly this signature.
   static config::internal::FieldInputInfo::Ptr getFieldInputInfo();
 };
 ```
