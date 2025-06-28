@@ -78,6 +78,9 @@ We provide a base interface to set dynamic configs via the `DynamicConfigServer`
 ```c++
 #include <config_utilities/dynamic_config.h>
 
+config::DynamicConfig<MyConfig> dynamic_config("my_config"); // key: my_config
+
+// Servers can be created anywhere in the process to interface with all existing dynamic configs.
 config::DynamicConfigServer server;
 
 // Get the values of a dynamic config:
@@ -106,17 +109,13 @@ To see further functionalities and use cases see the demo and source code.
 
 ## Custom Dynamic Config Servers
 Custom servers or client can easily be implemented by building on top of the provided `DynamicConfigServer`. 
-An example of this is given in the `RosDynamicConfigServer` in `config_utilities/parsing/ros.h`, which advertizes all config get/set interfaces via ROS topics.
+An example of this is given in the `RosDynamicConfigServer` in `config_utilities_ros`, which advertizes all config get/set interfaces via ROS2 topics.
 This can be used to, for example, modify the C++ configs using a python GUI, as demonstrated in our `demo_dynamic_config`. Give it a try:
 
 ```bash
  # Required for the GUI:
-pip install customtkinter  
+pip install flask webbrowser  
 
 # Run the demo:
-roslaunch config_utilities demo_dynamic_config.launch 
+ros2 launch config_utilities_ros demo_ros_dynamic_config.yaml
 ```
-
-> **ℹ️ Note**<br>
-We further provide an initial implementation of a field-based GUI. However, this is still experimental and we recommend using the `Plain YAML` editor. 
-To try it and get some inspiration how the config info from the server can be used, click `Settings` in te GUI and pick the `Type Info (Experimental)` UI Method in the demo.
