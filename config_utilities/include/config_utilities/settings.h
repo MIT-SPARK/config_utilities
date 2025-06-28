@@ -49,47 +49,67 @@ struct Settings {
   // Singleton access to the global settings.
   static Settings& instance();
 
-  /* Printing Settings. */
-  // TODO(lschmid): These should probably be moved into a config or so for different formatters.
-  // @brief Width of the 'toString()' output of configs.
-  unsigned int print_width = 80u;
+  /**
+   * @brief Settings for how and what of configs is printed.
+   */
+  struct Printing {
+    //! @brief Width of the 'toString()' output of configs.
+    unsigned int width = 80u;
 
-  // @brief Indent after which values are printed.
-  unsigned int print_indent = 30u;
+    //! @brief Indent after which values are printed aftert the field name.
+    unsigned indent = 30u;
 
-  // @brief Indent for nested configs.
-  unsigned int subconfig_indent = 3u;
+    //! @brief Indent for nested configs.
+    unsigned int subconfig_indent = 3u;
 
-  // @brief If true, indicate which values are identical to the default.
-  bool indicate_default_values = true;
+    //! @brief If true, indicate which values are identical to the default.
+    bool show_defaults = true;
 
-  // @brief If true, also display the unit of each parameter where provided.
-  bool indicate_units = true;
+    //! @brief If true, also display the unit of each parameter where provided.
+    bool show_units = true;
 
-  // @brief If true integrate subconfig fields into the main config, if false print them separately.
-  bool inline_subconfig_field_names = true;
+    //! @brief If true integrate subconfig fields into the main config, if false print them as individual configs.
+    bool inline_subconfigs = true;
 
-  // @brief If true, store all validated configs for global printing.
-  bool store_valid_configs = true;
+    //! @brief If true, attempts to print floats and float-like fields with default stream precision.
+    bool reformat_floats = true;
 
-  // @brief If true, attempts to print floats and float-like fields with default stream precision
-  bool reformat_floats = true;
+    //! @brief If true, prints fields that had no value present when being parsed.
+    // TODO(lschmid): I think the implementation of was_parsed is actually also empty if parsing fails in some cases,
+    // could double check if that's inportant.
+    bool show_missing = false;
 
-  // @brief If true, prints fields that had no value present when being parsed
-  bool print_missing = false;
+    //! @brief If true, print the type of subconfigs in the output.
+    bool show_subconfig_types = true;
 
-  /* Factory settings */
-  // @brief The factory will look for this param to deduce the type of the object to be created.
-  std::string factory_type_param_name = "type";
+    //! @brief If true, indicate that a field is a virtual field in the output.
+    bool show_virtual_configs = true;
 
-  //! @brief Whether or not loading external libraries are enabled
-  bool allow_external_libraries = true;
+    //! @brief If true show the enumeration info of failed checks in the output.
+    bool show_num_checks = true;
+  } printing;
 
-  //! @brief Whether or not loading and unloading libraries should be verbose
-  bool verbose_external_load = true;
+  /**
+   * @brief Settings for factory type registration and object creation
+   */
+  struct Factory {
+    //! @brief The factory will look for this param to deduce the type of the object to be created.
+    std::string type_param_name = "type";
+  } factory;
 
-  //! @brief Log any factory creation from an external library (for debugging purposes)
-  bool print_external_allocations = false;
+  /**
+   * @brief Settings to load external libraries and their modules into the factories.
+   */
+  struct ExternalLibraries {
+    //! @brief Whether or not loading external libraries are enabled
+    bool enabled = true;
+
+    //! @brief Whether or not loading and unloading libraries should be verbose
+    bool verbose_load = true;
+
+    //! @brief Log any factory creation from an external library (for debugging purposes)
+    bool log_allocation = false;
+  } external_libraries;
 
   //! @brief Control whether config_utilities is initialized to log to stdout/stderr by default
   bool disable_default_stdout_logger = false;
@@ -110,6 +130,12 @@ struct Settings {
   Settings& operator=(const Settings& other) = default;
   static Settings instance_;
 };
+
+// Define global settings as configs so they can be set/get with any interface.
+void declare_config(Settings& config);
+void declare_config(Settings::Printing& config);
+void declare_config(Settings::Factory& config);
+void declare_config(Settings::ExternalLibraries& config);
 
 }  // namespace internal
 

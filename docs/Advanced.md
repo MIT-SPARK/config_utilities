@@ -26,11 +26,16 @@ struct convert<MyType> {
 ## Adding custom conversions
 To implement custom field conversions, you can create a conversion struct. The struct must implement two static conversion functions `toIntermediate` and `fromIntermediate`, where intermediate is a yaml-castable type. Examples of this are given in `types/conversions.h`.
 
+Conversions can also optionally implement a `getFieldInputInfo()` function to return additional field info constraints when getting config infos. If this function is not implemented, no additional field info will be issued.
+
 ```c++
 struct MyConversion {
   // If conversion fails, set 'error' to the failure message.
   static IntermediateType toIntermediate(MyType value, std::string& error);
   static void fromIntermediate(const IntermediateType& intermediate, MyType& value, std::string& error);
+
+  // Optionally provide more field info. Must have exactly this signature.
+  static config::internal::FieldInputInfo::Ptr getFieldInputInfo();
 };
 ```
 
@@ -111,7 +116,7 @@ class MyLogger : public Logger {
 Formatters work exactly like the loggers above. To implement your custom formatter, inherit from `Formatter` and implement the virtual functions. An example is given in `formatters/asl.h`.
 
 ## Adding custom parsers
-`config_utilities` uses [yaml-cpp](https://github.com/jbeder/yaml-cpp/tree/master) as internal data representation. To parse configs from other sources of data, convert them to yaml compatible data structures. An example of this is given in `parsing/ros.h`.
+`config_utilities` uses [yaml-cpp](https://github.com/jbeder/yaml-cpp/tree/master) as internal data representation. To parse configs from other sources of data, convert them to yaml compatible data structures. 
 
 ## Adding custom substitutions
 

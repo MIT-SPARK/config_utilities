@@ -109,7 +109,7 @@ ExternalRegistry::~ExternalRegistry() {
 }
 
 void ExternalRegistry::unload(const std::filesystem::path& library_path) {
-  if (Settings::instance().verbose_external_load) {
+  if (Settings::instance().external_libraries.verbose_load) {
     // NOTE(nathan) this is separate from the logger becuase there is no guarantee that it will be visible to the user
     // if it is through the logger
     std::cerr << "[WARNING] Unloading external library: " << library_path << std::endl;
@@ -147,12 +147,12 @@ struct RegistryLock {
 };
 
 LibraryGuard ExternalRegistry::load(const std::filesystem::path& library_path) {
-  if (!Settings::instance().allow_external_libraries) {
+  if (!Settings::instance().external_libraries.enabled) {
     Logger::logError("External library loading is disallowed! Not loading " + library_path.string());
     return {};
   }
 
-  if (Settings::instance().verbose_external_load) {
+  if (Settings::instance().external_libraries.verbose_load) {
     Logger::logInfo("Loading external library '" + library_path.string() + "'.");
   }
 
@@ -215,7 +215,7 @@ void ExternalRegistry::logAllocation(const RegistryEntry& entry, void* pointer) 
 ExternalRegistry& ExternalRegistry::instance() {
   if (!s_instance_) {
     s_instance_.reset(new ExternalRegistry());
-    if (Settings::instance().print_external_allocations) {
+    if (Settings::instance().external_libraries.log_allocation) {
       ModuleRegistry::setCreationCallback([](const auto& info, const auto& type, void* pointer) {
         ExternalRegistry::logAllocation({info, type}, pointer);
       });

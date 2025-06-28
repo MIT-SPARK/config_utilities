@@ -3,7 +3,6 @@ This tutorial explains how to create configs and other objects from source data.
 
 **Contents:**
 - [Parse from yaml](#parse-from-yaml)
-- [Parse from ROS](#parse-from-ros)
 - [Parse from the command line](#parse-from-the-command-line)
 - [Parse via global context](#parse-via-global-context)
 
@@ -64,31 +63,6 @@ std::unique_ptr<MyBase> object = createFromYaml<MyBase>(node);
 std::unique_ptr<MyBase> object = createFromYamlWithNamespace<MyBase>(node, ns);
 std::unique_ptr<MyBase> object = createFromYamlFile<MyBase>(file_name);
 std::unique_ptr<MyBase> object = createFromYamlFileWithNamespace<MyBase>(file_name, ns);
-```
-
-## Parse from ROS
-
-Parsing parameters from ros supports the same interfaces as in the yaml case, but reading from the ros parameter server. To use it, simply include `parsing/ros.h`. This pulls in a dependency on `ros/node_handle.h`. `config_utilities` expects params to follow the format `namespace/field_name: field_value`:
-
-```c++
-ros::NodeHandle nh("~");
-
-MyConfig config = fromRos<MyConfig>(nh);
-
-// Identically, these also work:
-std::vector<MyConfig> configs = fromRos<std::vector<MyConfig>>(nh);
-VirtualConfig<MyBase> virtual_config = fromRos<VirtualConfig<MyBase>>(nh);
-
-// A namespaced version is also available. These two statements are identical:
-MyConfig config = fromRos<MyConfig>(nh, "a/b/c");
-MyConfig config = fromRos<MyConfig>(ros::NodeHandle(nh, "a/b/c"));
-```
-
-To use [factory creation with configs](Factories.md#creating-objects-with-individual-configs) from ros data, use:
-
-```c++
-std::unique_ptr<MyBase> object = createFromRosMyBase>(nh);
-std::unique_ptr<MyBase> object = createFromRosWithNamespace<MyBase>(nh, ns);
 ```
 
 ## Parse from the command line

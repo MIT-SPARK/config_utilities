@@ -109,9 +109,10 @@ class DerivedWithMoveOnlyParameter : public Base {
   std::string name() const override { return "DerivedWithMoveOnlyParameter"; }
 
   const std::unique_ptr<int> i_;
+
  private:
   inline static const auto registration_ =
-    config::Registration<Base, DerivedWithMoveOnlyParameter, std::unique_ptr<int>>("DerivedWithMoveOnlyParameter");
+      config::Registration<Base, DerivedWithMoveOnlyParameter, std::unique_ptr<int>>("DerivedWithMoveOnlyParameter");
 };
 
 class DerivedWithComplexParameter : public Base {
@@ -120,9 +121,10 @@ class DerivedWithComplexParameter : public Base {
   std::string name() const override { return "DerivedWithComplexParameter"; }
 
   std::shared_ptr<int> i_;
+
  private:
   inline static const auto registration_ =
-    config::Registration<Base, DerivedWithComplexParameter, std::shared_ptr<int>>("DerivedWithComplexParameter");
+      config::Registration<Base, DerivedWithComplexParameter, std::shared_ptr<int>>("DerivedWithComplexParameter");
 };
 
 class DerivedWithMoveOnlyParameterAndConfig : public Base {
@@ -131,8 +133,8 @@ class DerivedWithMoveOnlyParameterAndConfig : public Base {
     float f = 123.f;
   };
 
-  DerivedWithMoveOnlyParameterAndConfig(const Config& config, std::unique_ptr<int> i) :
-    Base(*i), i_(std::move(i)), config_(config) {}
+  DerivedWithMoveOnlyParameterAndConfig(const Config& config, std::unique_ptr<int> i)
+      : Base(*i), i_(std::move(i)), config_(config) {}
   std::string name() const override { return "DerivedWithMoveOnlyParameterAndConfig"; }
 
   const std::unique_ptr<int> i_;
@@ -140,11 +142,11 @@ class DerivedWithMoveOnlyParameterAndConfig : public Base {
 
  private:
   inline static const auto registration_ =
-    config::RegistrationWithConfig<Base, DerivedWithMoveOnlyParameterAndConfig, Config, std::unique_ptr<int>>(
-      "DerivedWithMoveOnlyParameterAndConfig");
+      config::RegistrationWithConfig<Base, DerivedWithMoveOnlyParameterAndConfig, Config, std::unique_ptr<int>>(
+          "DerivedWithMoveOnlyParameterAndConfig");
 };
 
-void declare_config(DerivedWithMoveOnlyParameterAndConfig::Config & config) {
+void declare_config(DerivedWithMoveOnlyParameterAndConfig::Config& config) {
   // Declare the config using the config utilities.
   config::name("DerivedWithMoveOnlyParameterAndConfig");
   config::field(config.f, "f");
@@ -331,7 +333,7 @@ TEST(Factory, createWithConfig) {
   }
   {
     auto logger = TestLogger::create();
-    Settings().factory_type_param_name = "test_type";
+    Settings().factory.type_param_name = "test_type";
     auto base = createFromYaml<Base>(data, 12);
     EXPECT_FALSE(base);
     EXPECT_EQ(logger->numMessages(), 1);
@@ -501,9 +503,8 @@ Config[config::test::Talker]():
 
 )""";
 
-  Settings().print_width = 40;
+  Settings().printing.width = 40;
   const std::string modules = internal::ModuleRegistry::getAllRegistered();
-  std::cout << modules << std::endl;
   EXPECT_EQ(modules, expected);
   Settings().restoreDefaults();
 }

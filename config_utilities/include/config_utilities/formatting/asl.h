@@ -55,7 +55,10 @@ class AslFormatter : public Formatter {
   ~AslFormatter() override = default;
 
  protected:
-  std::string formatErrorsImpl(const MetaData& data, const std::string& what, const Severity severity) override;
+  std::string formatErrorsImpl(const MetaData& data,
+                               const std::string& what,
+                               const Severity severity,
+                               bool only_messages) override;
   std::string formatMissingImpl(const MetaData& data, const std::string& what, const Severity severity) override;
   std::string formatConfigImpl(const MetaData& data) override;
   std::string formatConfigsImpl(const std::vector<MetaData>& data) override;
@@ -78,17 +81,6 @@ class AslFormatter : public Formatter {
   std::string formatField(const FieldInfo& info, size_t indent) const;
   std::string formatSubconfig(const MetaData& data, size_t indent) const;
   std::string resolveConfigName(const MetaData& data) const;
-
-  // Formatting options, currently not exposed in global settings but work if want changed.
-  // TODO(lschmid): Global formatting options should probably be a config of the formatter.
-  // If true add subconfig types after the fieldname.
-  constexpr static bool indicate_subconfig_types_ = true;
-  // If true label subconfigs as default if all their values are default.
-  constexpr static bool indicate_subconfig_default_ = true;
-  // If true indicate that a config is a virtual config in the config name.
-  constexpr static bool indicate_virtual_configs_ = true;
-  // If true indicate the number of a check and total number of checks in failed checks.
-  constexpr static bool indicate_num_checks_ = true;
 
   // Variables.
   std::string name_prefix_;

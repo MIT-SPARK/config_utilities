@@ -37,6 +37,7 @@
 
 #include <memory>
 
+#include "config_utilities/config.h"
 #include "config_utilities/factory.h"
 #include "config_utilities/internal/formatter.h"
 #include "config_utilities/internal/logger.h"
@@ -67,6 +68,40 @@ void Settings::setFormatter(const std::string& name) {
   if (new_formatter) {
     Formatter::setFormatter(std::move(new_formatter));
   }
+}
+
+void declare_config(Settings& config) {
+  name("Settings");
+  field(config.printing, "printing");
+  field(config.factory, "factory");
+  field(config.external_libraries, "external_libraries");
+}
+
+void declare_config(Settings::Printing& config) {
+  name("Printing");
+  field(config.width, "width");
+  field(config.indent, "indent");
+  field(config.subconfig_indent, "subconfig_indent");
+  field(config.show_defaults, "show_defaults");
+  field(config.show_units, "show_units");
+  field(config.inline_subconfigs, "inline_subconfigs");
+  field(config.reformat_floats, "reformat_floats");
+  field(config.show_missing, "show_missing");
+  field(config.show_subconfig_types, "show_subconfig_types");
+  field(config.show_virtual_configs, "show_virtual_configs");
+  field(config.show_num_checks, "show_num_checks");
+}
+
+void declare_config(Settings::Factory& config) {
+  name("Factory");
+  field(config.type_param_name, "type_param_name");
+}
+
+void declare_config(Settings::ExternalLibraries& config) {
+  name("ExternalLibraries");
+  field(config.enabled, "enabled");
+  field(config.verbose_load, "verbose_load");
+  field(config.log_allocation, "log_allocation");
 }
 
 }  // namespace config::internal
