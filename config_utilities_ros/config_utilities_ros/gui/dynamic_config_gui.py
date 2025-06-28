@@ -3,8 +3,9 @@ from flask import render_template, redirect, request, Flask
 import uuid
 import webbrowser
 import re
-import json
 import copy
+import logging
+
 
 FACTORY_TYPE_PAPRAM_NAME = "type"
 NS_SEP = "/"
@@ -70,12 +71,15 @@ class DynamicConfigGUI:
         Run the Flask app.
         """
         self._is_setup = False
+        if not debug:
+            log = logging.getLogger('werkzeug')
+            log.setLevel(logging.ERROR)
         if open_browser:
             # Open the browser to the GUI.
             webbrowser.open(f"http://{host}:{port}", new=2)
         self._app.run(host=host, port=port, debug=debug, threaded=False)
 
-    # Debug.
+    # Messaging route for debugging.
     def _msg(self):
         self.message = request.form.to_dict()
         return redirect("/")
@@ -234,6 +238,7 @@ class DynamicConfigGUI:
             self._active_server, self._active_key, data
         )
         
+        # Parse the config data into fields for the GUI.
         self._parse_fields(replace_yaml=True)
         self._parse_errors()
 
@@ -375,7 +380,13 @@ class DynamicConfigGUI:
                         continue
                     val = data[id]
                     if field["input_info"]["type"] == "yaml":
-                        val = from_yaml(val)
+                        try:
+                            val = from_yaml(val)
+                        except Exception as e:
+                            self.errors.append(
+                                f"Error parsing YAML for field '{'.'.join(prefix + [field['name']])}': {e}"
+                            )
+                            continue
                     values[field["name"]] = val
                     field["value"] = val
                 elif field["type"] == "config":
@@ -425,7 +436,7 @@ class DynamicConfigGUI:
                         if has_subfields:
                             values[name][new_key] = parse_rec(field, new_prefix, val)
                         field["map_config_key"] = new_key
-                    elif has_subfields:
+                    else:
                         # Parse all fields in a regular config.
                         values[field["field_name"]] = parse_rec(field, new_prefix, val) if has_subfields else val
                 else:

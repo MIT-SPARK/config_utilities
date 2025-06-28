@@ -5,12 +5,12 @@
 ## Dependencies
 Local:
 ```bash
-pip install Flask
+pip install Flask webbrowser
 ```
 
 System:
 ```
-sudo apt install python3-flask
+sudo apt install python3-flask python3-webbrowse
 ```
 
 # Known Limitations
@@ -27,6 +27,7 @@ Known limitations that we can (easily) fix in the future.
 
 - [ ] Currently vectors and maps of configs don't show up if they're empty, would be great to have these to be able to add more entires from the GUI.
 - [ ] Paramter verification on the GUI side (although implemented) does not quite seem to work.
+- [ ] YAML parsing errors on the GUI side break the successfully parsed yaml values (why???)
 
 ### Feature Ideas:
 

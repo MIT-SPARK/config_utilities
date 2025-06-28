@@ -4,9 +4,7 @@ import signal
 import sys
 import yaml
 from threading import Thread
-import argparse
 import rclpy
-import rclpy.logging
 from rclpy.node import Node
 from config_utilities_msgs.srv import SetRequest
 from config_utilities_ros.gui import DynamicConfigGUI
@@ -33,8 +31,8 @@ class RosDynamicConfigGUI(Node):
         """
         ros_thread = Thread(target=self._spin, daemon=True)
         ros_thread.start()
-        # TODO(lschmid): For now let the GUI handle all interactions. In the future cnosider also supporting pushing to the GUI, e.g. when multiple clients are connected or configs are updated.
-        self.gui.run(debug=True, open_browser=True)
+        # TODO(lschmid): For now let the GUI handle all interactions. In the future consider also supporting pushing to the GUI, e.g. when multiple clients are connected or configs are updated.
+        self.gui.run()
         ros_thread.join()
 
     def get_available_servers_and_keys(self):
@@ -91,22 +89,13 @@ class RosDynamicConfigGUI(Node):
         sys.exit(0)
 
 
-def main():
-    parser = argparse.ArgumentParser(description="ROS Dynamic Config GUI Node")
-    parser.add_argument( "--host", type=str, default="localhost",
-                         help="Host to connect to (default: localhost)")
-    parser.add_argument("--port", type=int, default=5000,
-                            help="Port to connect to (default: 5000)")
-    parser.add_argument("--debug", action="store_true",
-                            help="Run the GUI in debug mode (default: False)")
-    parser.add_argument("--no_browser", action="store_false",
-                            help="Do not open the GUI in a browser window(default: False)")
-    args = parser.parse_args()
-    
+def main():  
     rclpy.init()
     gui = RosDynamicConfigGUI()
     signal.signal(signal.SIGINT, gui.shutdown)
-    gui.run(host=args.host, port=args.port, debug=args.debug, open_browser=args.no_browser)
+
+    # TODO(lschmid): Expose GUI args in the future.
+    gui.run()
     gui.shutdown()
 
 

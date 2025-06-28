@@ -116,7 +116,7 @@ struct MyConfig {
   double distance = 42;
   bool b = true;
   uint8_t uint = 5;
-  std::string str = "hello";
+  std::string str = "only";
   std::vector<int> vec = {1, 2, 3};
   std::map<std::string, int> map = {{"a", 1}, {"b", 2}, {"c", 3}};
   Eigen::Matrix<double, 3, 3> mat = Eigen::Matrix<double, 3, 3>::Identity();
@@ -154,7 +154,7 @@ void declare_config(MyConfig& config) {
 
   check(config.i, CheckMode::GT, 0, "i");
   checkInRange(config.distance, 0.0, 100.0, "distance");
-  checkIsOneOf(config.str, {"test", "only", "limited", "strings", "allowed"}, "s");
+  checkIsOneOf(config.str, {"only", "limited", "strings", "allowed"}, "s");
 }
 
 // Declare an object with a dynamic config.
@@ -180,6 +180,9 @@ class ObjectWithDynamicConfig {
       modules_.emplace_back(config.virtual_module.create());
     }
     for (const auto& module : config.modules) {
+      modules_.emplace_back(module.create());
+    }
+    for (const auto& [name, module] : config.module_map) {
       modules_.emplace_back(module.create());
     }
 
@@ -219,12 +222,12 @@ int main(int argc, char** argv) {
 
   // Create some objects with a dynamic config.
   demo::ObjectWithDynamicConfig obj("dynamic_config_object");
-  // demo::ObjectWithDynamicConfig other_obj("other_object");
+  demo::ObjectWithDynamicConfig other_obj("other_object");
 
   // All standalone dynamic configs will equally be registered.
-  // config::DynamicConfig<demo::SubConfig> config("standalone_config");
+  config::DynamicConfig<demo::SubConfig> config("standalone_config");
 
-  // Create a ROS node. Dynamic configs can also directly live in the node.
+  // Create a ROS node. Dynamic configs as well as the server can also directly live in the node.
   auto node = std::make_shared<demo::DemoNode>();
 
   // Alternative to the server living in the node, it could also be created here. Note that only one server should be
