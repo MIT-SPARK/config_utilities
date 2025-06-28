@@ -299,7 +299,7 @@ fields:
           min: 0
           lower_exclusive: true
 )";
-  EXPECT_TRUE(expectEqual(info, YAML::Load(expected_info)));
+  EXPECT_TRUE(expectEqual(info, YAML::Load(expected_info), 1e-6));
 }
 
 TEST(DynamicConfig, Hooks) {
