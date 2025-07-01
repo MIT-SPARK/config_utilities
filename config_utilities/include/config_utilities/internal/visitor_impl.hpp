@@ -379,8 +379,7 @@ void Visitor::visitField(OrderedMap<K, ConfigT>& config, const std::string& fiel
 
     if (visitor.mode == Visitor::Mode::kGetInfo && config.empty()) {
       // When getting info for empty maps still show them.
-      // TODO(lschmid): Implement.
-      map_node = YAML::Node("TEEEEEEEEEEEST");
+      // TODO(lschmid): Implement, currently empty maps will not show up in the info.
     }
 
     moveDownNamespace(map_node, name_space);

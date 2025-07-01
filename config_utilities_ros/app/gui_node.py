@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 import signal
-import sys
 import yaml
 from threading import Thread
 import rclpy
+import sys
 from rclpy.node import Node
 from config_utilities_msgs.srv import SetRequest
 from config_utilities_ros.gui import DynamicConfigGUI
@@ -21,19 +21,20 @@ class RosDynamicConfigGUI(Node):
         self._srv = None
 
         # Initialize the GUI and set the callback functions.
-        self.gui = DynamicConfigGUI()
-        self.gui.get_available_servers_and_keys_fn = self.get_available_servers_and_keys
-        self.gui.set_request_fn = self.set_request
+        self._gui = DynamicConfigGUI()
+        self._gui.get_available_servers_and_keys_fn = self.get_available_servers_and_keys
+        self._gui.set_request_fn = self.set_request
+        self._spin_thread = None
 
     def run(self):
         """
         Run the GUI.
         """
-        ros_thread = Thread(target=self._spin, daemon=True)
-        ros_thread.start()
+        self._spin_thread = Thread(target=self._spin, daemon=True)
+        self._spin_thread.start()
         # TODO(lschmid): For now let the GUI handle all interactions. In the future consider also supporting pushing to the GUI, e.g. when multiple clients are connected or configs are updated.
-        self.gui.run()
-        ros_thread.join()
+        self._gui.run()
+        self.shutdown()
 
     def get_available_servers_and_keys(self):
         # We assume that no other node will use config_utilities messages with the same name.
@@ -84,15 +85,17 @@ class RosDynamicConfigGUI(Node):
         """
         rclpy.spin(self)
 
-    def shutdown(self, _, __):
+    def shutdown(self):
         rclpy.shutdown()
+        if self._spin_thread and self._spin_thread.is_alive():
+            self._spin_thread.join()
         sys.exit(0)
+        
 
-
-def main():  
+def main():
     rclpy.init()
     gui = RosDynamicConfigGUI()
-    signal.signal(signal.SIGINT, gui.shutdown)
+    signal.signal(signal.SIGINT, lambda sig, frame: gui.shutdown())
 
     # TODO(lschmid): Expose GUI args in the future.
     gui.run()

@@ -63,4 +63,5 @@ add_dependencies(test_${PROJECT_NAME} copy_test_resources)
 target_include_directories(test_${PROJECT_NAME} PRIVATE include)
 target_link_libraries(test_${PROJECT_NAME} PRIVATE ${PROJECT_NAME}
                                                    GTest::gtest_main)
+target_compile_options(test_${PROJECT_NAME} PRIVATE -Wno-unused-but-set-variable)
 gtest_add_tests(TARGET test_${PROJECT_NAME})

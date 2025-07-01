@@ -5,12 +5,12 @@
 ## Dependencies
 Local:
 ```bash
-pip install Flask webbrowser
+pip install Flask
 ```
 
 System:
 ```
-sudo apt install python3-flask python3-webbrowse
+sudo apt install python3-flask
 ```
 
 # Known Limitations
