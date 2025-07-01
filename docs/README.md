@@ -49,16 +49,13 @@ The following tutorials will guide you through functionalities of `config_utilit
     - [Managed instances](External.md#managed-instances)
     - [Debugging](External.md#debugging)
 
-<<<<<<< HEAD
-=======
-8. [**Dynamic Configs**](Dynamic_Configs.md)
+9. [**Dynamic Configs**](Dynamic_Configs.md)
     - [Declaring a dynamic config](Dynamix_Configs.md#declaring-a-dynamic-config)
     - [Dynamic Config Callbacks](Dynamix_Configs.md#dynamic-config-callbacks)
     - [Setting Dynamic Configs](Dynamix_Configs.md#setting-dynamic-configs)
     - [Custom Dynamic Config Servers](Dynamix_Configs.md#custom-dynamic-config-servers)
 
->>>>>>> 2d2b1e1 (update docs)
-9. [**Varia**](Varia.md)
+10. [**Varia**](Varia.md)
     - [Settings](Varia.md#settings)
 
 
@@ -73,15 +70,14 @@ python3 scripts/run_demo.py factory
 > **ℹ️ Note**<br>
 > If you're building via cmake, you can point `run_demo.py` to the build directory with `-b/--build_path`.
 
-The ros demos can be run via:
+The ros2 demos can be run via:
 ```bash
-roslaunch config_utilities demo_ros.launch
-roslaunch config_utilities demo_dynamic_config.launch
+ros2 launch config_utilities_ros demo_ros_dynamic_config.yaml
 ```
 
-Note that for the `dynamic config demo` customtkinter is required to run the GUI:
+Note that for the `dynamic config ros demo` Flask is required to run the GUI:
 ```bash
-pip install customtkinter
+pip install Flask
 ```
 
 > **ℹ️ Note**<br>

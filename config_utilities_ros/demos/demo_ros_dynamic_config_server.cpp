@@ -231,10 +231,9 @@ int main(int argc, char** argv) {
   auto node = std::make_shared<demo::DemoNode>();
 
   // Alternative to the server living in the node, it could also be created here. Note that only one server should be
-  // created per node.
-  if (false) {
-    config::RosDynamicConfigServer server(node.get());
-  }
+  // created per node, and embedding the server in the node is preferred as it will automatically manage the lifetime of
+  // the server. Thus this is commented out.
+  /* config::RosDynamicConfigServer server(node.get()); */
 
   rclcpp::spin(node);
   rclcpp::shutdown();
