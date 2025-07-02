@@ -210,4 +210,13 @@ bool updateFromYaml(ConfigT& config, const YAML::Node& node, const std::string& 
   return updateFields(config, node, true, name_space);
 }
 
+/**
+ * @brief Load global settings for `config_utilities` from YAML
+ * @param node YAML node containing settings
+ * @param name_space Namespace to load the settings from
+ */
+inline void setConfigSettingsFromYAML(const YAML::Node& node, const std::string& name_space = "") {
+  internal::Visitor::setValues(Settings(), internal::lookupNamespace(node, name_space), true);
+}
+
 }  // namespace config

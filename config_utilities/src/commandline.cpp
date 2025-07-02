@@ -42,8 +42,10 @@
 #include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/yaml_utils.h"
 #include "config_utilities/substitutions.h"
+#include "config_utilities/update.h"
 
-namespace config::internal {
+namespace config {
+namespace internal {
 
 namespace fs = std::filesystem;
 
@@ -385,4 +387,16 @@ YAML::Node loadFromArguments(const std::vector<std::string>& _args) {
   return loadFromArguments(argc, argv.data(), false);
 }
 
-}  // namespace config::internal
+}  // namespace internal
+
+void setConfigSettingsFromCLI(int argc, char* argv[], const std::string& name_space) {
+  auto node = internal::loadFromArguments(argc, argv, false);
+  internal::Visitor::setValues(Settings(), internal::lookupNamespace(node, name_space), true);
+}
+
+void setConfigSettingsFromCLI(const std::vector<std::string>& argv, const std::string& name_space) {
+  auto node = internal::loadFromArguments(argv);
+  internal::Visitor::setValues(Settings(), internal::lookupNamespace(node, name_space), true);
+}
+
+}  // namespace config
