@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import signal
 import yaml
 from threading import Thread
@@ -26,14 +27,14 @@ class RosDynamicConfigGUI(Node):
         self._gui.set_request_fn = self.set_request
         self._spin_thread = None
 
-    def run(self):
+    def run(self, **kwargs):
         """
         Run the GUI.
         """
         self._spin_thread = Thread(target=self._spin, daemon=True)
         self._spin_thread.start()
         # TODO(lschmid): For now let the GUI handle all interactions. In the future consider also supporting pushing to the GUI, e.g. when multiple clients are connected or configs are updated.
-        self._gui.run()
+        self._gui.run(**kwargs)
         self.shutdown()
 
     def get_available_servers_and_keys(self):
@@ -97,8 +98,14 @@ def main():
     gui = RosDynamicConfigGUI()
     signal.signal(signal.SIGINT, lambda sig, frame: gui.shutdown())
 
+    parser = argparse.ArgumentParser(
+        description="Webserver hosting dynamic configuration GUI."
+    )
+    parser.add_argument("--debug", "-d", action="store_true")
+    args, _ = parser.parse_known_args()
+
     # TODO(lschmid): Expose GUI args in the future.
-    gui.run()
+    gui.run(debug=args.debug)
     gui.shutdown()
 
 

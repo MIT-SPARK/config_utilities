@@ -49,8 +49,9 @@ function buildField(field) {
             new_max = 2147483647;
         }
         if (info.type == "int64") {
-            new_min = -9223372036854775808n;
-            new_max = 9223372036854775807n;
+            // we want to make sure we don't overflow when converting back to an int
+            new_min = Math.max(Number.MIN_SAFE_INTEGER, -9223372036854775808);
+            new_max = Math.min(Number.MAX_SAFE_INTEGER, 9223372036854775807);
         }
         if (info.type == "uint8") {
             new_min = 0;
@@ -66,7 +67,8 @@ function buildField(field) {
         }
         if (info.type == "uint64") {
             new_min = 0;
-            new_max = 18446744073709551615n;
+            // we want to make sure we don't overflow when converting back to an int
+            new_max = Math.min(Number.MAX_SAFE_INTEGER, 18446744073709551615);
         }
         if ("min" in info) {
             new_min = Math.max(new_min, info.min);
