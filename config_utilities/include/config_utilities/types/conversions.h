@@ -48,7 +48,7 @@ namespace config {
  * disallows non-ascii characters.
  */
 struct CharConversion {
-  static std::string toIntermediate(char value, std::string& error);
+  static std::string toIntermediate(char value, std::string& /* error */);
   static void fromIntermediate(const std::string& intermediate, char& value, std::string& error);
 };
 
@@ -58,10 +58,10 @@ struct CharConversion {
  * otherwise it returns the originally specified value.
  */
 struct ThreadNumConversion {
-  static int toIntermediate(int value, std::string& error);
+  static int toIntermediate(int value, std::string& /* error */);
 
   template <typename T>
-  static void fromIntermediate(int intermediate, T& value, std::string& error) {
+  static void fromIntermediate(int intermediate, T& value, std::string& /* error */) {
     value = ThreadNumConversion::getNumThreads(intermediate);
   }
 

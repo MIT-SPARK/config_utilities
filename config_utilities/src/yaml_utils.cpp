@@ -35,6 +35,8 @@
 
 #include "config_utilities/internal/yaml_utils.h"
 
+#include <optional>
+#include <regex>
 #include <sstream>
 
 #include "config_utilities/internal/logger.h"
@@ -250,6 +252,67 @@ std::vector<std::pair<YAML::Node, YAML::Node>> getNodeMap(const YAML::Node& node
   }
 
   return result;
+}
+
+std::string scalarToString(const YAML::Node& data, bool reformat_float) {
+  std::stringstream orig;
+  orig << data;
+  if (!reformat_float) {
+    return orig.str();
+  }
+
+  const std::regex float_detector("[+-]?[0-9]*[.][0-9]+");
+  if (!std::regex_search(orig.str(), float_detector)) {
+    return orig.str();  // no reason to reformat if no decimal points
+  }
+
+  double value;
+  try {
+    value = data.as<double>();
+  } catch (const std::exception&) {
+    return orig.str();  // value is some sort of string that can't be parsed as a float
+  }
+
+  // this should have default ostream precision for formatting float
+  std::stringstream ss;
+  ss << value;
+  return ss.str();
+}
+
+std::string yamlToString(const YAML::Node& data, bool reformat_float) {
+  switch (data.Type()) {
+    case YAML::NodeType::Scalar: {
+      // scalars require special handling for float precision
+      return scalarToString(data, reformat_float);
+    }
+    case YAML::NodeType::Sequence: {
+      std::string result = "[";
+      for (size_t i = 0; i < data.size(); ++i) {
+        result += yamlToString(data[i], reformat_float);
+        if (i < data.size() - 1) {
+          result += ", ";
+        }
+      }
+      result += "]";
+      return result;
+    }
+    case YAML::NodeType::Map: {
+      std::string result = "{";
+      bool has_data = false;
+      for (const auto& kv_pair : data) {
+        has_data = true;
+        result +=
+            yamlToString(kv_pair.first, reformat_float) + ": " + yamlToString(kv_pair.second, reformat_float) + ", ";
+      }
+      if (has_data) {
+        result = result.substr(0, result.length() - 2);
+      }
+      result += "}";
+      return result;
+    }
+    default:
+      return kInvalidField;
+  }
 }
 
 }  // namespace config::internal

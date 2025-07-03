@@ -65,7 +65,7 @@ std::vector<std::string> convertArguments() {
  * @param data YAML node to read type from
  * @param type Type value to filll
  * @param required Whether or not the type field is required
- * @param param_name Field in YAML node to read (empty string defaults to Settings().factory_type_param_name)
+ * @param param_name Field in YAML node to read (empty string defaults to Settings().factory.type_param_name)
  */
 bool getType(const YAML::Node& data, std::string& type, bool required = true, const std::string& param_name = "");
 
@@ -273,6 +273,21 @@ class ModuleRegistry {
     auto& registry = instance().config_registry;
     auto iter = registry.find(ConfigPair::fromTypes<BaseT, ConfigT>());
     return iter == registry.end() ? "" : iter->second;
+  }
+
+  static std::vector<std::string> getRegisteredConfigTypes(const std::string& actual_base) {
+    const auto key = ModuleInfo::fromTypes<ConfigWrapper>(false, actual_base);
+    const auto& registry = instance().type_registry;
+    const auto iter = registry.find(key);
+    if (iter == registry.end()) {
+      return {};
+    }
+
+    std::vector<std::string> result;
+    for (const auto& [type, _] : iter->second) {
+      result.push_back(type);
+    }
+    return result;
   }
 
   static bool hasModule(const ModuleInfo& key, const std::string& type);

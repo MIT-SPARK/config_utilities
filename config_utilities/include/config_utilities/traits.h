@@ -52,6 +52,13 @@ struct is_config_impl<T, std::void_t<decltype(declare_config(std::declval<T&>())
 template <typename T>
 struct is_virtual_config : std::false_type {};
 
+// Check whether conversions implement input info.
+template <typename T, typename = void>
+struct conversion_has_input_info_impl : std::false_type {};
+
+template <typename T>
+struct conversion_has_input_info_impl<T, std::void_t<decltype(T::getFieldInputInfo)>> : std::true_type {};
+
 // ODR workaround
 template <class T>
 constexpr T static_const{};
@@ -72,8 +79,16 @@ constexpr bool isConfig() {
 }
 
 template <class T>
-constexpr bool isConfig(const T& config) {
+constexpr bool isConfig(const T& /* config */) {
   return internal::is_config_impl<T>::value;
+}
+
+/**
+ * @brief Check whether a conversion implements input information.
+ */
+template <class Conversion>
+constexpr bool hasFieldInputInfo() {
+  return internal::conversion_has_input_info_impl<Conversion>::value;
 }
 
 }  // namespace config

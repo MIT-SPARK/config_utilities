@@ -61,7 +61,8 @@ class Formatter {
   // Format all errors in the meta data into the display string.
   static std::string formatErrors(const MetaData& data,
                                   const std::string& what = "",
-                                  const Severity severity = Severity::kWarning);
+                                  const Severity severity = Severity::kWarning,
+                                  bool only_messages = false);
 
   // Format all missing fields in the meta data into the display string.
   static std::string formatMissing(const MetaData& data,
@@ -78,7 +79,10 @@ class Formatter {
   static void setFormatter(Formatter::Ptr formatter);
 
  protected:
-  virtual std::string formatErrorsImpl(const MetaData& data, const std::string& what, const Severity severity);
+  virtual std::string formatErrorsImpl(const MetaData& data,
+                                       const std::string& what,
+                                       const Severity severity,
+                                       bool only_messages);
   virtual std::string formatMissingImpl(const MetaData& data, const std::string& what, const Severity severity);
   virtual std::string formatConfigImpl(const MetaData& data);
   virtual std::string formatConfigsImpl(const std::vector<MetaData>& data);

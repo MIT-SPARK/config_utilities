@@ -187,4 +187,19 @@ std::unique_ptr<BaseT> createFromCLIWithNamespace(const std::vector<std::string>
   return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(ns_node, std::move(args)...);
 }
 
+/**
+ * @brief Create a derived type object based on collated YAML data specified via the command line
+ * @param argv Vector of command line arguments
+ * @param name_space Optional namespace to use for parsing settings
+ */
+void setConfigSettingsFromCLI(const std::vector<std::string>& argv, const std::string& name_space = "");
+
+/**
+ * @brief Create a derived type object based on collated YAML data specified via the command line
+ * @param argc Command line argument count
+ * @param argv Command line arguments
+ * @param name_space Optional namespace to use for parsing settings
+ */
+void setConfigSettingsFromCLI(int argc, char* argv[], const std::string& name_space);
+
 }  // namespace config

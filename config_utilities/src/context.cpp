@@ -37,6 +37,8 @@
 
 #include "config_utilities/internal/config_context.h"
 #include "config_utilities/parsing/commandline.h"
+#include "config_utilities/update.h"
+#include "config_utilities/settings.h"
 
 namespace config {
 
@@ -50,5 +52,10 @@ void pushToContext(const YAML::Node& node, const std::string& ns) { internal::Co
 void clearContext() { internal::Context::clear(); }
 
 YAML::Node contextToYaml() { return internal::Context::toYaml(); }
+
+void setConfigSettingsFromContext(const std::string& name_space) {
+  const auto node = internal::Context::toYaml();
+  internal::Visitor::setValues(Settings(), internal::lookupNamespace(node, name_space), true);
+}
 
 }  // namespace config

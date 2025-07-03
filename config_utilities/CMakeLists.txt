@@ -1,16 +1,20 @@
-cmake_minimum_required(VERSION 3.14)
-project(config_utilities VERSION 0.0.1)
+cmake_minimum_required(VERSION 3.22.1)
+project(config_utilities VERSION 2.0.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include(OptionalPackage)
 
 option(BUILD_SHARED_LIBS "Build shared libs" ON)
-option(CONFIG_UTILS_ENABLE_ROS "Export roscpp and build related code" ON)
 option(CONFIG_UTILS_ENABLE_EIGEN "Export Eigen and build related code" ON)
 option(CONFIG_UTILS_ENABLE_GLOG "Export glog and build related code" ON)
 option(CONFIG_UTILS_BUILD_TESTS "Build unit tests" ON)
@@ -18,7 +22,6 @@ option(CONFIG_UTILS_BUILD_DEMOS "Build demo executables" ON)
 
 find_package(yaml-cpp REQUIRED)
 find_package(Boost REQUIRED COMPONENTS filesystem system)
-find_optional(roscpp CONFIG_UTILS_ENABLE_ROS)
 find_optional(Eigen3 CONFIG_UTILS_ENABLE_EIGEN)
 find_optional_pkgcfg(libglog CONFIG_UTILS_ENABLE_GLOG)
 
@@ -29,11 +32,13 @@ add_library(
   src/config_context.cpp # global singleton
   src/context.cpp # parsing
   src/conversions.cpp
+  src/dynamic_config.cpp
   src/external_registry.cpp
   src/factory.cpp
   src/formatter.cpp
-  src/logger.cpp
+  src/field_input_info.cpp
   src/log_to_stdout.cpp
+  src/logger.cpp
   src/meta_data.cpp
   src/namespacing.cpp
   src/path.cpp
@@ -44,7 +49,8 @@ add_library(
   src/validation.cpp
   src/visitor.cpp
   src/yaml_parser.cpp
-  src/yaml_utils.cpp)
+  src/yaml_utils.cpp
+  )
 target_link_libraries(
   ${PROJECT_NAME}
   PUBLIC yaml-cpp
@@ -59,11 +65,6 @@ add_library(config_utilities::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 add_executable(composite-configs app/composite_configs.cpp)
 target_link_libraries(composite-configs ${PROJECT_NAME})
 
-if(ENABLE_roscpp)
-  target_link_libraries(${PROJECT_NAME} PUBLIC ${roscpp_LIBRARIES})
-  target_include_directories(${PROJECT_NAME} PUBLIC ${roscpp_INCLUDE_DIRS})
-endif()
-
 if(ENABLE_Eigen3)
   target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen)
 endif()
@@ -73,7 +74,6 @@ if(ENABLE_libglog)
 endif()
 
 message(STATUS "Eigen features enabled: ${ENABLE_Eigen3}")
-message(STATUS "ROS features enabled:   ${ENABLE_roscpp}")
 message(STATUS "glog features enabled:  ${ENABLE_libglog}")
 
 if(CONFIG_UTILS_BUILD_DEMOS)

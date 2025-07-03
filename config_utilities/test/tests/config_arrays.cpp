@@ -405,7 +405,7 @@ TEST(ConfigArrays, PrintArrayConfigs) {
   configs.emplace_back("a", 1.0f);
   configs.emplace_back("b", 2.0f);
   configs.emplace_back("c", 3.0f);
-  Settings().print_indent = 20;
+  Settings().printing.indent = 20;
 
   internal::Formatter::setFormatter(std::make_unique<internal::AslFormatter>());
 

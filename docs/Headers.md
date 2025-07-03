@@ -9,7 +9,10 @@ The following directories and files exist:
 │                       # All core functionalities are in the unnamed include and depend only on yaml-cpp and C++.
 ├── config_utilities.h    # Collection of all core headers for easy use.
 ├── config.h              # To define configs using 'declare_config()'.
+├── dynamic_config.h      # Allows wrapping configs as dynamic configs, and updating them via servers and clients.
+├── external_registry.h   # Enables the creation of modules from c++ packages outside the project (i.e. not linked against).
 ├── factory.h             # Enables automatic object creation via 'create()'.
+├── getters.h             # String-based getters for configs.
 ├── globals.h             # Functionality to print all global configs.
 ├── printing.h            # Defines 'toString()' and 'operator<<' for configs.
 ├── settings.h            # Enables setting global properties via 'Settings()'
@@ -25,11 +28,9 @@ The following directories and files exist:
 │
 ├── logging             # Sepcify an output logger to log warnings and errors to.
 │   ├── log_to_glog.h     # Log to glog. Dependes on 'google/logging'.
-│   ├── log_to_ros.h      # Log to roslog. Depends on 'ros/console'.
 │   └── log_to_stdout.h   # Log to stdout console (Default).
 │
 ├── parsing             # Specify input parsers to get configs or create objects from source data.
-│   ├── ros.h             # Tools to create configs and objects from ROS parameter server. Depends on 'ros/nodehandle'
 │   └── yaml.h            # Tools to create/save configs and objects from/to yaml nodes or files. Depends on 'yaml-cpp'.
 │
 └── types               # Support for various types that need special conversions.

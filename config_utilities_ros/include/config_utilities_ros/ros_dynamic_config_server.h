@@ -35,45 +35,45 @@
 
 #pragma once
 
-#include <ros/console.h>
+#include <memory>
+#include <vector>
 
-#include "config_utilities/factory.h"
-#include "config_utilities/internal/logger.h"
+#include <config_utilities/dynamic_config.h>
+#include <config_utilities_msgs/srv/set_config.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/string.hpp>
 
-namespace config::internal {
+namespace config {
 
 /**
- * @brief Implements logging to roslog. This file pulls in ros as a dependency, but its not required if this file is
- * not included in the project.
+ * @brief Dynamic config server that allows to set and get configs via ROS topics.
  */
-class RosLogger : public Logger {
+class RosDynamicConfigServer {
  public:
-  RosLogger() = default;
-  virtual ~RosLogger() = default;
+  explicit RosDynamicConfigServer(rclcpp::Node* node);
 
- protected:
-  void logImpl(const Severity severity, const std::string& message) override {
-    switch (severity) {
-      case Severity::kInfo:
-        ROS_INFO_STREAM(message);
-        break;
-
-      case Severity::kWarning:
-        ROS_WARN_STREAM(message);
-        break;
-
-      case Severity::kError:
-        ROS_ERROR_STREAM(message);
-        break;
-
-      case Severity::kFatal:
-        ROS_FATAL_STREAM(message);
-    }
-  }
+  using Srv = config_utilities_msgs::srv::SetConfig;
 
  private:
-  // Factory registration to allow setting of formatters via Settings::setLogger().
-  inline static const auto registration_ = Registration<Logger, RosLogger>("ros");
+  // Helper that manages the exposure of each config.
+  struct ConfigReceiver {
+    ConfigReceiver(const DynamicConfigServer::Key& key, RosDynamicConfigServer* server, rclcpp::Node* node);
+    const DynamicConfigServer::Key key;
+    RosDynamicConfigServer* const server;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pub;
+    rclcpp::Service<Srv>::SharedPtr srv;
+    void handle_service(const std::shared_ptr<Srv::Request> request, std::shared_ptr<Srv::Response> response);
+  };
+
+  // TODO(lschmid): Figure out if we can use smart pointers here. This should allow nice wrapping in the node.
+  rclcpp::Node* node_;
+  std::map<DynamicConfigServer::Key, std::unique_ptr<ConfigReceiver>> configs_;
+  DynamicConfigServer server_;
+
+  void onRegister(const DynamicConfigServer::Key& key);
+  void onDeregister(const DynamicConfigServer::Key& key);
+  void onUpdate(const DynamicConfigServer::Key& key, const YAML::Node& data);
+  YAML::Node onSet(const DynamicConfigServer::Key& key, const YAML::Node& new_values);
 };
 
-}  // namespace config::internal
+}  // namespace config

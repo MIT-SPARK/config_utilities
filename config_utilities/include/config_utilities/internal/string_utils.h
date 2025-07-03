@@ -40,8 +40,6 @@
 #include <typeinfo>
 #include <vector>
 
-#include "config_utilities/internal/meta_data.h"
-
 // clang-format off
 #ifdef __GNUG__
 #include <cstdlib>
@@ -90,15 +88,6 @@ std::string joinNamespace(const std::string& namespace_1,
                           const std::string& delimiter = "/");
 
 /**
- * @brief Formatting of YAML nodes to strings. Most config types can be neatly represented as low-depth yaml nodes, or
- * should otherwise probably be wrapped in a separate confi struct.
- * @param data The data to be formatted.
- * @param reformat_float Whether to try and print floats with default stream precision
- * @returns The formatted string.
- */
-std::string dataToString(const YAML::Node& data, bool reformat_float = false);
-
-/**
  * @brief Find all occurences of a substring in a string.
  * @param text The text to be searched.
  * @param substring The substring to be searched for.
@@ -107,7 +96,7 @@ std::string dataToString(const YAML::Node& data, bool reformat_float = false);
 std::vector<size_t> findAllSubstrings(const std::string& text, const std::string& substring);
 
 /**
- * @brief Get a human readable type name of a type if cmopiled with GCC, otherwise default to the mangled typename.
+ * @brief Get a human readable type name of a type if compiled with GCC, otherwise default to the mangled typename.
  * @tparam T The type to get the name of.
  */
 template <typename T>
