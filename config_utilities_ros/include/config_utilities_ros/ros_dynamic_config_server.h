@@ -39,7 +39,7 @@
 #include <vector>
 
 #include <config_utilities/dynamic_config.h>
-#include <config_utilities_msgs/srv/set_request.hpp>
+#include <config_utilities_msgs/srv/set_config.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/string.hpp>
 
@@ -52,7 +52,7 @@ class RosDynamicConfigServer {
  public:
   explicit RosDynamicConfigServer(rclcpp::Node* node);
 
-  using Srv = config_utilities_msgs::srv::SetRequest;
+  using Srv = config_utilities_msgs::srv::SetConfig;
 
  private:
   // Helper that manages the exposure of each config.

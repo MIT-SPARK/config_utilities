@@ -6,7 +6,7 @@ from threading import Thread
 import rclpy
 import sys
 from rclpy.node import Node
-from config_utilities_msgs.srv import SetRequest
+from config_utilities_msgs.srv import SetConfig
 from config_utilities_ros.gui import DynamicConfigGUI
 
 
@@ -42,7 +42,7 @@ class RosDynamicConfigGUI(Node):
             t[0][:-4]
             for t in self.get_service_names_and_types()
             if t[0].endswith("/set")
-            and t[1][0] == "config_utilities_msgs/srv/SetRequest"
+            and t[1][0] == "config_utilities_msgs/srv/SetConfig"
         ]
 
         servers = {}
@@ -64,14 +64,14 @@ class RosDynamicConfigGUI(Node):
         # Connect to the ROS service.
         if self._current_server != server or self._current_key != key:
             srv_name = f"{server}/{key}/set"
-            self._srv = self.create_client(SetRequest, srv_name)
+            self._srv = self.create_client(SetConfig, srv_name)
             if not self._srv.wait_for_service(timeout_sec=1.0):
                 return {"error": f"Service '{srv_name}' not available."}
             self._current_server = server
             self._current_key = key
 
         # Send the request.
-        request = SetRequest.Request()
+        request = SetConfig.Request()
         request.data = yaml.dump(data)
         result = self._srv.call(request)
         if not result:
@@ -90,7 +90,7 @@ class RosDynamicConfigGUI(Node):
         if self._spin_thread and self._spin_thread.is_alive():
             self._spin_thread.join()
         sys.exit(0)
-        
+
 
 def main():
     rclpy.init()

@@ -10,9 +10,8 @@ find_package(std_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-  "srv/SetRequest.srv"
-  DEPENDENCIES std_msgs 
+  "srv/SetConfig.srv"
+  DEPENDENCIES std_msgs
 )
-
 
 ament_package()
