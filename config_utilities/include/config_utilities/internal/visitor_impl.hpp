@@ -188,26 +188,16 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
 }
 
 // Visits a non-config field with conversion.
-template <typename Conversion, typename T, typename std::enable_if<!isConfig<T>(), bool>::type>
+template <typename Conversion, typename T>
 void Visitor::visitField(T& field, const std::string& field_name, const std::string& unit) {
   auto& visitor = Visitor::instance();
-
-  // record the field that we visited without storing the value
-  // kGet and kGetDefaults will populate the value field
-  auto& info = visitor.data.field_infos.emplace_back();
-  info.name = field_name;
-  info.unit = unit;
 
   if (visitor.mode == Visitor::Mode::kSet) {
     std::string error;
     auto intermediate = Conversion::toIntermediate(field, error);
     error.clear();  // We don't care about setting up the intermediate just to get data.
 
-    info.was_parsed = YamlParser::fromYaml(visitor.data.data, field_name, intermediate, visitor.name_space, error);
-    if (!error.empty()) {
-      visitor.data.errors.emplace_back(new Warning(field_name, error));
-      error.clear();
-    }
+    Visitor::visitField(intermediate, field_name, unit);
 
     Conversion::fromIntermediate(intermediate, field, error);
     if (!error.empty()) {
@@ -218,23 +208,17 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
   if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetDefaults ||
       visitor.mode == Visitor::Mode::kGetInfo) {
     std::string error;
-    const auto intermediate = Conversion::toIntermediate(field, error);
+    auto intermediate = Conversion::toIntermediate(field, error);
     if (!error.empty()) {
       visitor.data.errors.emplace_back(new Warning(field_name, error));
       error.clear();
     }
-    YAML::Node node = YamlParser::toYaml(field_name, intermediate, visitor.name_space, error);
-    mergeYamlNodes(visitor.data.data, node);
-    // This stores a reference to the node in the data.
-    info.value = lookupNamespace(node, joinNamespace(visitor.name_space, field_name));
-    if (!error.empty()) {
-      visitor.data.errors.emplace_back(new Warning(field_name, error));
-    }
+
+    Visitor::visitField(intermediate, field_name, unit);
 
     // Get type information if requested.
     if (visitor.mode == Visitor::Mode::kGetInfo) {
-      auto input_info = Visitor::getFieldInputInfo<Conversion>();
-      info.input_info = FieldInputInfo::merge(input_info, info.input_info);
+      Visitor::getFieldInputInfo<Conversion, T>(field_name);
     }
   }
 }
@@ -470,14 +454,41 @@ void Visitor::getDefaultValues(const ConfigT& config, MetaData& data) {
   }
 }
 
-template <typename Conversion, typename std::enable_if<!hasFieldInputInfo<Conversion>(), bool>::type>
-FieldInputInfo::Ptr Visitor::getFieldInputInfo() {
-  return nullptr;
+// intentional no-op
+template <typename Conversion,
+          typename ConfigT,
+          typename std::enable_if<!hasFieldInputInfo<Conversion>() || isConfig<ConfigT>(), bool>::type>
+void Visitor::getFieldInputInfo(const std::string& field_name) {
+  static_assert(!isConfig<ConfigT>() || !hasFieldInputInfo<Conversion>(),
+                "Config types (with declare_config) cannot have field input information!");
+
+  if (isConfig<ConfigT>()) {
+    return;  // don't touch field info fields
+  }
+
+  auto& visitor = Visitor::instance();
+  if (visitor.data.field_infos.empty()) {
+    visitor.data.errors.emplace_back(
+        new Warning(field_name, "Invalid parsing state! Field info should already exist!"));
+  } else {
+    visitor.data.field_infos.back().input_info.reset();  // clear field input info for underlying intermediate type
+  }
 }
 
-template <typename Conversion, typename std::enable_if<hasFieldInputInfo<Conversion>(), bool>::type>
-FieldInputInfo::Ptr Visitor::getFieldInputInfo() {
-  return Conversion::getFieldInputInfo();
+template <typename Conversion,
+          typename ConfigT,
+          typename std::enable_if<hasFieldInputInfo<Conversion>() && !isConfig<ConfigT>(), bool>::type>
+void Visitor::getFieldInputInfo(const std::string& field_name) {
+  auto input_info = Conversion::getFieldInputInfo();
+
+  auto& visitor = Visitor::instance();
+  if (visitor.data.field_infos.empty()) {
+    visitor.data.errors.emplace_back(
+        new Warning(field_name, "Invalid parsing state! Field info should already exist!"));
+  } else {
+    auto& info = visitor.data.field_infos.back();
+    info.input_info = FieldInputInfo::merge(input_info, info.input_info);
+  }
 }
 
 }  // namespace config::internal

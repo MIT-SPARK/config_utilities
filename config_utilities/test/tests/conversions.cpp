@@ -83,6 +83,47 @@ struct TestConversionStruct {
   int test = 0;
 };
 
+struct IntermediateConfigConversionStruct {
+  struct Input {
+    int a = 4;
+    int b = 5;
+    int value() const { return a + b; }
+  };
+
+  struct Resolved {
+    std::vector<int> inputs;
+  };
+
+  struct Conversion {
+    static std::vector<Input> toIntermediate(const std::vector<int>& value, std::string& /* error */) {
+      std::vector<Input> to_return;
+      for (const auto total : value) {
+        to_return.push_back(Input{total, 0});
+      }
+
+      return to_return;
+    }
+
+    static void fromIntermediate(const std::vector<Input>& intermediate,
+                                 std::vector<int>& value,
+                                 std::string& /*error*/) {
+      value.clear();
+      for (const auto& input : intermediate) {
+        value.push_back(input.value());
+      }
+    }
+  };
+};
+
+void declare_config(IntermediateConfigConversionStruct::Input& config) {
+  field(config.a, "a");
+  field(config.b, "b");
+}
+
+void declare_config(IntermediateConfigConversionStruct::Resolved& config) {
+  field<IntermediateConfigConversionStruct::Conversion>(config.inputs, "inputs");
+}
+
 void declare_config(ConversionStruct& conf) {
   field<ThreadNumConversion>(conf.num_threads, "num_threads");
   field<CharConversion>(conf.some_character, "some_character");
@@ -204,6 +245,15 @@ TEST(Conversions, FieldInputInfo) {
   EXPECT_EQ(data.field_infos.size(), 2);
   EXPECT_FALSE(data.field_infos[0].input_info);
   EXPECT_FALSE(data.field_infos[1].input_info);
+}
+
+TEST(Conversions, ConversionDeclareConfigDispatch) {
+  const std::string yaml_string = "inputs: [{a: 0, b: 1}, {a: 1, b: 1}, {a: 1, b: 2}, {a: 0, b: 4}]";
+  const auto node = YAML::Load(yaml_string);
+
+  std::vector<int> expected{1, 2, 3, 4};
+  const auto result = fromYaml<IntermediateConfigConversionStruct::Resolved>(node);
+  EXPECT_EQ(result.inputs, expected);
 }
 
 }  // namespace config::test
