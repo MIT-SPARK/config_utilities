@@ -252,7 +252,7 @@ void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_
   }
 
   if (visitor.mode == Visitor::Mode::kSet) {
-    const auto array_ns = visitor.name_space.empty() ? field_name : visitor.name_space + "/" + field_name;
+    const auto array_ns = joinNamespace(visitor.name_space, field_name);
     const auto subnode = lookupNamespace(visitor.data.data, array_ns);
     if (!subnode) {
       return;  // don't override the field if not present
@@ -330,7 +330,7 @@ void Visitor::visitField(OrderedMap<K, ConfigT>& config, const std::string& fiel
   }
 
   if (visitor.mode == Visitor::Mode::kSet) {
-    const auto map_ns = visitor.name_space.empty() ? field_name : visitor.name_space + "/" + field_name;
+    const auto map_ns = joinNamespace(visitor.name_space, field_name);
     const auto subnode = lookupNamespace(visitor.data.data, map_ns);
     if (!subnode) {
       return;  // don't override the field if not present
