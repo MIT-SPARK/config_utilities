@@ -258,17 +258,34 @@ TEST(FieldInputInfo, GetNestedVirtualInfo) {
   const auto reg_a = RegistrationGuard<Base, DerivedA, DerivedA::Config>("FieldA");
   const auto reg_b = RegistrationGuard<Base, DerivedB, DerivedB::Config>("FieldB");
 
-  config::VirtualConfig<Base> test;
-  const auto data = internal::Visitor::getInfo(test);
-  auto info = data.serializeFieldInfos();
-  const std::string expected = R"(
+  {  // uninitialized config
+    config::VirtualConfig<Base> test;
+    const auto data = internal::Visitor::getInfo(test);
+    auto info = data.serializeFieldInfos();
+    const std::string expected = R"(
 type: config
 name: Uninitialized Virtual Config
 available_types: [FieldA, FieldB]
 fields: []
 )";
 
-  expectEqual(info, YAML::Load(expected), 1e-6);
+    expectEqual(info, YAML::Load(expected), 1e-6);
+  }
+
+  {  // init config
+    config::VirtualConfig<Base> test{DerivedA::Config{}};
+    const auto data = internal::Visitor::getInfo(test);
+    auto info = data.serializeFieldInfos();
+    const std::string expected = R"(
+type: config
+name: FieldA
+available_types: [FieldA, FieldB]
+fields:
+  - {type: field, name: b, value: 1, default: 1, input_info: {type: float32}}
+)";
+
+    expectEqual(info, YAML::Load(expected), 1e-6);
+  }
 }
 
 }  // namespace config::test

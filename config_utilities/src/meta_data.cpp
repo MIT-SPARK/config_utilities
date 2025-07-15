@@ -118,8 +118,9 @@ YAML::Node MetaData::serializeFieldInfos() const {
   }
   if (is_virtual_config) {
     result["available_types"] = available_types;
-    if (data[field_name]) {
-      result["name"] = data[field_name][Settings::instance().factory.type_param_name];
+    const auto type_name = Settings::instance().factory.type_param_name;
+    if (data[type_name]) {
+      result["name"] = data[type_name];
     } else {
       result["name"] = "Uninitialized Virtual Config";  // Reserved token for virtual configs that are not set.
     }
