@@ -269,6 +269,13 @@ class ModuleRegistry {
   }
 
   template <typename BaseT, typename ConfigT>
+  static void removeConfig() {
+    const auto key = ConfigPair::fromTypes<BaseT, ConfigT>();
+    auto& registry = instance().config_registry;
+    registry.erase(key);
+  }
+
+  template <typename BaseT, typename ConfigT>
   static std::string getType() {
     auto& registry = instance().config_registry;
     auto iter = registry.find(ConfigPair::fromTypes<BaseT, ConfigT>());
@@ -362,6 +369,11 @@ struct ConfigFactory {
     }
   }
 
+  template <typename ConfigT>
+  static void removeEntry() {
+    ModuleRegistry::removeConfig<BaseT, ConfigT>();
+  }
+
   // Create the config.
   static std::unique_ptr<ConfigWrapper> create(const std::string& type) {
     const auto factory = ModuleRegistry::getModule<ConfigWrapper>(type, registration_info, false, typeName<BaseT>());
@@ -384,6 +396,11 @@ struct ObjectFactory {
   static void addEntry(const std::string& type) {
     const Constructor method = [](Args... args) -> BaseT* { return new DerivedT(std::move(args)...); };
     ModuleRegistry::addModule<BaseT, DerivedT, Args...>(type, method);
+  }
+
+  static void removeEntry(const std::string& type) {
+    const auto key = ModuleInfo::fromTypes<BaseT, Args...>();
+    ModuleRegistry::removeModule(key, type);
   }
 
   static std::unique_ptr<BaseT> create(const std::string& type, Args... args) {
@@ -413,6 +430,11 @@ struct ObjectWithConfigFactory {
     };
 
     ModuleRegistry::addModule<BaseT, DerivedT, const YAML::Node&, Args...>(type, method, true);
+  }
+
+  static void removeEntry(const std::string& type) {
+    const auto key = ModuleInfo::fromTypes<BaseT, Args...>();
+    ModuleRegistry::removeModule(key, type);
   }
 
   static std::unique_ptr<BaseT> create(const YAML::Node& data, Args... args) {

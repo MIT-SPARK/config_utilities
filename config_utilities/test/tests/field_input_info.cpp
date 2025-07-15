@@ -33,13 +33,44 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
+#include <config_utilities/config.h>
 #include <config_utilities/internal/visitor.h>
+#include <config_utilities/virtual_config.h>
 #include <gtest/gtest.h>
 
 #include "config_utilities/test/default_config.h"
 #include "config_utilities/test/utils.h"
 
 namespace config::test {
+namespace {
+
+struct Base {};
+
+struct DerivedA : Base {
+  struct Config {
+    float a = 1.0;
+  } const config;
+  explicit DerivedA(const Config& config) : config(config) {}
+};
+
+struct DerivedB : Base {
+  struct Config {
+    int b = 2;
+  } const config;
+  explicit DerivedB(const Config& config) : config(config) {}
+};
+
+void declare_config(DerivedA::Config& config) {
+  name("DerivedA::Config");
+  field(config.a, "b");
+}
+
+void declare_config(DerivedB::Config& config) {
+  name("DerivedB::Config");
+  field(config.b, "b");
+}
+
+}  // namespace
 
 TEST(FieldInputInfo, GetInfo) {
   DefaultConfig config;
@@ -220,6 +251,23 @@ fields:
           lower_exclusive: true
 )";
   // Epect near equal for floating point values.
+  expectEqual(info, YAML::Load(expected), 1e-6);
+}
+
+TEST(FieldInputInfo, GetNestedVirtualInfo) {
+  const auto reg_a = RegistrationGuard<Base, DerivedA, DerivedA::Config>("FieldA");
+  const auto reg_b = RegistrationGuard<Base, DerivedB, DerivedB::Config>("FieldB");
+
+  config::VirtualConfig<Base> test;
+  const auto data = internal::Visitor::getInfo(test);
+  auto info = data.serializeFieldInfos();
+  const std::string expected = R"(
+type: config
+name: Uninitialized Virtual Config
+available_types: [FieldA, FieldB]
+fields: []
+)";
+
   expectEqual(info, YAML::Load(expected), 1e-6);
 }
 

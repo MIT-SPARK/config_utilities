@@ -130,7 +130,7 @@ YAML::Node MetaData::serializeFieldInfos() const {
   if (map_config_key) {
     result["map_config_key"] = map_config_key.value();
   }
-  YAML::Node fields;
+  YAML::Node fields(YAML::NodeType::Sequence);
 
   // Parse the direct fields.
   for (const FieldInfo& info : field_infos) {
