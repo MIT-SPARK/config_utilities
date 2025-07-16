@@ -249,6 +249,12 @@ class ModuleRegistry {
     };
   }
 
+  template <typename BaseT, typename... Args>
+  static void removeModule(const std::string& type, bool skip_first_arg = false, const std::string& actual_base = "") {
+    const auto key = ModuleInfo::fromTypes<BaseT, Args...>(skip_first_arg, actual_base);
+    removeModule(key, type);
+  }
+
   template <typename BaseT, typename ConfigT>
   static void registerConfig(const std::string& type) {
     // NOTE(lschmid): This is not forbidden behavior, but is not recommended so for now simply warn the user.
@@ -369,9 +375,10 @@ struct ConfigFactory {
     }
   }
 
-  template <typename ConfigT>
-  static void removeEntry() {
-    ModuleRegistry::removeConfig<BaseT, ConfigT>();
+  template <typename DerivedConfigT>
+  static void removeEntry(const std::string& type) {
+    ModuleRegistry::removeModule<ConfigWrapper>(type, false, typeName<BaseT>());
+    ModuleRegistry::removeConfig<BaseT, DerivedConfigT>();
   }
 
   // Create the config.
@@ -398,10 +405,7 @@ struct ObjectFactory {
     ModuleRegistry::addModule<BaseT, DerivedT, Args...>(type, method);
   }
 
-  static void removeEntry(const std::string& type) {
-    const auto key = ModuleInfo::fromTypes<BaseT, Args...>();
-    ModuleRegistry::removeModule(key, type);
-  }
+  static void removeEntry(const std::string& type) { ModuleRegistry::removeModule<BaseT, Args...>(type); }
 
   static std::unique_ptr<BaseT> create(const std::string& type, Args... args) {
     const auto factory = ModuleRegistry::getModule<BaseT, Args...>(type, registration_info);
@@ -433,8 +437,7 @@ struct ObjectWithConfigFactory {
   }
 
   static void removeEntry(const std::string& type) {
-    const auto key = ModuleInfo::fromTypes<BaseT, Args...>();
-    ModuleRegistry::removeModule(key, type);
+    ModuleRegistry::removeModule<BaseT, const YAML::Node&, Args...>(type, true);
   }
 
   static std::unique_ptr<BaseT> create(const YAML::Node& data, Args... args) {

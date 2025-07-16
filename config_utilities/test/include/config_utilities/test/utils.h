@@ -89,7 +89,7 @@ struct RegistrationGuard {
   }
 
   ~RegistrationGuard() {
-    internal::ConfigFactory<BaseT>::template removeEntry<ConfigT>();
+    internal::ConfigFactory<BaseT>::template removeEntry<ConfigT>(type);
     internal::ObjectWithConfigFactory<BaseT, Args...>::removeEntry(type);
   }
 
