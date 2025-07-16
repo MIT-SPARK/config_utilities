@@ -9,7 +9,9 @@ import logging
 
 FACTORY_TYPE_PAPRAM_NAME = "type"
 NS_SEP = "/"
-UNINITIALIZED_VIRTUAL_CONFIG_NAME = "Uninitialized Virtual Config" # Reserved token for empty virtual configs.
+UNINITIALIZED_VIRTUAL_CONFIG_NAME = (
+    "Uninitialized Virtual Config"  # Reserved token for empty virtual configs.
+)
 
 
 def to_yaml(data):
@@ -34,9 +36,7 @@ class DynamicConfigGUI:
         self.warnings = []
 
         # Config data containers
-        self._config_data = (
-            {}
-        )  # The underlying config data, this is the data that is received from the server.
+        self._config_data = {}  # The underlying config data, this is the data that is received from the server.
         self._fields = None  # The linearized fields to render in the GUI.
 
         # Server and key containers.
@@ -72,7 +72,7 @@ class DynamicConfigGUI:
         """
         self._is_setup = False
         if not debug:
-            log = logging.getLogger('werkzeug')
+            log = logging.getLogger("werkzeug")
             log.setLevel(logging.ERROR)
         if open_browser:
             # Open the browser to the GUI.
@@ -402,10 +402,8 @@ class DynamicConfigGUI:
                             id += f"{NS_SEP}{field['array_index']}"
                         elif "map_config_key" in field:
                             id += f"{NS_SEP}{field['map_config_key']}"
-                        val[FACTORY_TYPE_PAPRAM_NAME] = data[
-                                f"{id}-type"
-                            ]
-                        if field['name'] == UNINITIALIZED_VIRTUAL_CONFIG_NAME:
+                        val[FACTORY_TYPE_PAPRAM_NAME] = data[f"{id}-type"]
+                        if field["name"] == UNINITIALIZED_VIRTUAL_CONFIG_NAME:
                             # Special case for the not set config.
                             has_subfields = False
                     if "array_index" in field:
@@ -438,7 +436,9 @@ class DynamicConfigGUI:
                         field["map_config_key"] = new_key
                     else:
                         # Parse all fields in a regular config.
-                        values[field["field_name"]] = parse_rec(field, new_prefix, val) if has_subfields else val
+                        values[field["field_name"]] = (
+                            parse_rec(field, new_prefix, val) if has_subfields else val
+                        )
                 else:
                     raise ValueError(f"Unknown field type: {field['type']}")
             return values
