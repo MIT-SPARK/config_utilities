@@ -33,13 +33,62 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
+#include <config_utilities/config.h>
 #include <config_utilities/internal/visitor.h>
+#include <config_utilities/virtual_config.h>
 #include <gtest/gtest.h>
 
 #include "config_utilities/test/default_config.h"
 #include "config_utilities/test/utils.h"
 
 namespace config::test {
+namespace {
+
+struct Base {};
+
+struct BaseImpl : Base {
+  struct Config {
+    float a = 1.0;
+  } const config;
+  explicit BaseImpl(const Config& config) : config(config) {}
+};
+
+struct Parent {};
+
+struct ParentImpl : Parent {
+  struct Config {
+    config::VirtualConfig<Base> base;
+    std::string other = "";
+  } const config;
+  explicit ParentImpl(const Config& config) : config(config) {}
+};
+
+struct MixedConfig {
+  VirtualConfig<Base> base;
+  VirtualConfig<Parent> parent;
+  std::string foo = "bar";
+};
+
+void declare_config(BaseImpl::Config& config) {
+  name("Impl::Config");
+  field(config.a, "a");
+}
+
+void declare_config(ParentImpl::Config& config) {
+  name("ParentImpl::Config");
+  field(config.base, "base");
+  field(config.other, "other");
+}
+
+void declare_config(MixedConfig& config) {
+  name("MixedConfig");
+  field(config.base, "base");
+  config.parent.setOptional();
+  field(config.parent, "parent");
+  field(config.foo, "foo");
+}
+
+}  // namespace
 
 TEST(FieldInputInfo, GetInfo) {
   DefaultConfig config;
@@ -220,6 +269,160 @@ fields:
           lower_exclusive: true
 )";
   // Epect near equal for floating point values.
+  expectEqual(info, YAML::Load(expected), 1e-6);
+}
+
+TEST(FieldInputInfo, GetVirtualInfo) {
+  const auto reg_a = RegistrationGuard<Base, BaseImpl, BaseImpl::Config>("BaseImpl");
+
+  {  // uninitialized config
+    config::VirtualConfig<Base> test;
+    const auto data = internal::Visitor::getInfo(test);
+    auto info = data.serializeFieldInfos();
+    const std::string expected = R"(
+type: config
+name: Uninitialized Virtual Config
+available_types: [BaseImpl]
+fields: []
+)";
+
+    expectEqual(info, YAML::Load(expected), 1e-6);
+  }
+
+  {  // init config
+    config::VirtualConfig<Base> test{BaseImpl::Config{}};
+    const auto data = internal::Visitor::getInfo(test);
+    auto info = data.serializeFieldInfos();
+    const std::string expected = R"(
+type: config
+name: BaseImpl
+available_types: [BaseImpl]
+fields:
+  - {type: field, name: a, value: 1, default: 1, input_info: {type: float32}}
+)";
+
+    expectEqual(info, YAML::Load(expected), 1e-6);
+  }
+}
+
+TEST(FieldInputInfo, GetNestedVirtualInfo) {
+  const auto reg_a = RegistrationGuard<Base, BaseImpl, BaseImpl::Config>("BaseImpl");
+  const auto reg_b = RegistrationGuard<Parent, ParentImpl, ParentImpl::Config>("ParentImpl");
+
+  {  // init parent config
+    config::VirtualConfig<Parent> test{ParentImpl::Config{}};
+    const auto data = internal::Visitor::getInfo(test);
+    auto info = data.serializeFieldInfos();
+    const std::string expected = R"(
+type: config
+name: ParentImpl
+available_types: [ParentImpl]
+fields:
+  - {type: field, name: other, value: '', default: '', input_info: {type: string}}
+  - {type: config, name: Uninitialized Virtual Config, field_name: base, available_types: [BaseImpl], fields: []}
+)";
+
+    expectEqual(info, YAML::Load(expected), 1e-6);
+  }
+
+  {  // init parent config
+    config::VirtualConfig<Parent> test{ParentImpl::Config{config::VirtualConfig<Base>{BaseImpl::Config{}}, "hello"}};
+    const auto data = internal::Visitor::getInfo(test);
+    auto info = data.serializeFieldInfos();
+    const std::string expected = R"(
+type: config
+name: ParentImpl
+available_types: [ParentImpl]
+fields:
+  - {type: field, name: other, value: hello, default: '', input_info: {type: string}}
+  - type: config
+    name: BaseImpl
+    field_name: base
+    available_types: [BaseImpl]
+    fields:
+      - {type: field, name: a, value: 1, default: 1, input_info: {type: float32}}
+)";
+
+    expectEqual(info, YAML::Load(expected), 1e-6);
+  }
+}
+
+TEST(FieldInputInfo, GetVirtualSubconfig) {
+  const auto reg_a = RegistrationGuard<Base, BaseImpl, BaseImpl::Config>("BaseImpl");
+  const auto reg_b = RegistrationGuard<Parent, ParentImpl, ParentImpl::Config>("ParentImpl");
+
+  {  // init parent config
+    config::VirtualConfig<Parent> test{ParentImpl::Config{}};
+    const auto data = internal::Visitor::getInfo(test);
+    auto info = data.serializeFieldInfos();
+    const std::string expected = R"(
+type: config
+name: ParentImpl
+available_types: [ParentImpl]
+fields:
+  - {type: field, name: other, value: '', default: '', input_info: {type: string}}
+  - {type: config, name: Uninitialized Virtual Config, field_name: base, available_types: [BaseImpl], fields: []}
+)";
+
+    expectEqual(info, YAML::Load(expected), 1e-6);
+  }
+
+  {  // init parent config
+    config::VirtualConfig<Parent> test{ParentImpl::Config{config::VirtualConfig<Base>{BaseImpl::Config{}}, "hello"}};
+    const auto data = internal::Visitor::getInfo(test);
+    auto info = data.serializeFieldInfos();
+    const std::string expected = R"(
+type: config
+name: ParentImpl
+available_types: [ParentImpl]
+fields:
+  - {type: field, name: other, value: hello, default: '', input_info: {type: string}}
+  - type: config
+    name: BaseImpl
+    field_name: base
+    available_types: [BaseImpl]
+    fields:
+      - {type: field, name: a, value: 1, default: 1, input_info: {type: float32}}
+)";
+
+    expectEqual(info, YAML::Load(expected), 1e-6);
+  }
+}
+
+TEST(FieldInputInfo, GetConfigWithVirtuals) {
+  const auto reg_a = RegistrationGuard<Base, BaseImpl, BaseImpl::Config>("BaseImpl");
+  const auto reg_b = RegistrationGuard<Parent, ParentImpl, ParentImpl::Config>("ParentImpl");
+
+  MixedConfig test{VirtualConfig<Base>{BaseImpl::Config{}},
+                   VirtualConfig<Parent>{ParentImpl::Config{VirtualConfig<Base>{BaseImpl::Config{5}}, "bar"}},
+                   "test"};
+  const auto data = internal::Visitor::getInfo(test);
+  auto info = data.serializeFieldInfos();
+  const std::string expected = R"(
+type: config
+name: MixedConfig
+fields:
+  - {type: field, name: foo, value: test, default: bar, input_info: {type: string}}
+  - type: config
+    name: BaseImpl
+    field_name: base
+    available_types: [BaseImpl]
+    fields:
+      - {type: field, name: a, value: 1, default: 1, input_info: {type: float32}}
+  - type: config
+    name: ParentImpl
+    field_name: parent
+    available_types: [ParentImpl, Uninitialized Virtual Config]
+    fields:
+      - {type: field, name: other, value: 'bar', default: '', input_info: {type: string}}
+      - type: config
+        name: BaseImpl
+        field_name: base
+        available_types: [BaseImpl]
+        fields:
+          - {type: field, name: a, value: 5, default: 1, input_info: {type: float32}}
+)";
+
   expectEqual(info, YAML::Load(expected), 1e-6);
 }
 

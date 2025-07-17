@@ -81,4 +81,19 @@ class TestLogger : public internal::Logger {
   inline static const auto registration_ = Registration<internal::Logger, TestLogger>("test_logger");
 };
 
+template <class BaseT, class DerivedT, class ConfigT, typename... Args>
+struct RegistrationGuard {
+  explicit RegistrationGuard(const std::string& type) : type(type) {
+    internal::ConfigFactory<BaseT>::template addEntry<ConfigT>(type);
+    internal::ObjectWithConfigFactory<BaseT, Args...>::template addEntry<DerivedT, ConfigT>(type);
+  }
+
+  ~RegistrationGuard() {
+    internal::ConfigFactory<BaseT>::template removeEntry<ConfigT>(type);
+    internal::ObjectWithConfigFactory<BaseT, Args...>::removeEntry(type);
+  }
+
+  std::string type;
+};
+
 }  // namespace config::test

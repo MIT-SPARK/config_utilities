@@ -151,7 +151,7 @@ struct MetaData {
   void performOnAll(const std::function<void(const MetaData&)>& func) const;
 
   // Utility function to get field info.
-  YAML::Node serializeFieldInfos() const;
+  YAML::Node serializeFieldInfos(const std::string& ns = "") const;
 
  private:
   void copyValues(const MetaData& other) {

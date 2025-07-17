@@ -249,6 +249,12 @@ class ModuleRegistry {
     };
   }
 
+  template <typename BaseT, typename... Args>
+  static void removeModule(const std::string& type, bool skip_first_arg = false, const std::string& actual_base = "") {
+    const auto key = ModuleInfo::fromTypes<BaseT, Args...>(skip_first_arg, actual_base);
+    removeModule(key, type);
+  }
+
   template <typename BaseT, typename ConfigT>
   static void registerConfig(const std::string& type) {
     // NOTE(lschmid): This is not forbidden behavior, but is not recommended so for now simply warn the user.
@@ -266,6 +272,13 @@ class ModuleRegistry {
                       "'. Defining different type identifiers for the same derived module is not recommended.");
       iter->second = type;
     }
+  }
+
+  template <typename BaseT, typename ConfigT>
+  static void removeConfig() {
+    const auto key = ConfigPair::fromTypes<BaseT, ConfigT>();
+    auto& registry = instance().config_registry;
+    registry.erase(key);
   }
 
   template <typename BaseT, typename ConfigT>
@@ -362,6 +375,12 @@ struct ConfigFactory {
     }
   }
 
+  template <typename DerivedConfigT>
+  static void removeEntry(const std::string& type) {
+    ModuleRegistry::removeModule<ConfigWrapper>(type, false, typeName<BaseT>());
+    ModuleRegistry::removeConfig<BaseT, DerivedConfigT>();
+  }
+
   // Create the config.
   static std::unique_ptr<ConfigWrapper> create(const std::string& type) {
     const auto factory = ModuleRegistry::getModule<ConfigWrapper>(type, registration_info, false, typeName<BaseT>());
@@ -385,6 +404,8 @@ struct ObjectFactory {
     const Constructor method = [](Args... args) -> BaseT* { return new DerivedT(std::move(args)...); };
     ModuleRegistry::addModule<BaseT, DerivedT, Args...>(type, method);
   }
+
+  static void removeEntry(const std::string& type) { ModuleRegistry::removeModule<BaseT, Args...>(type); }
 
   static std::unique_ptr<BaseT> create(const std::string& type, Args... args) {
     const auto factory = ModuleRegistry::getModule<BaseT, Args...>(type, registration_info);
@@ -413,6 +434,10 @@ struct ObjectWithConfigFactory {
     };
 
     ModuleRegistry::addModule<BaseT, DerivedT, const YAML::Node&, Args...>(type, method, true);
+  }
+
+  static void removeEntry(const std::string& type) {
+    ModuleRegistry::removeModule<BaseT, const YAML::Node&, Args...>(type, true);
   }
 
   static std::unique_ptr<BaseT> create(const YAML::Node& data, Args... args) {

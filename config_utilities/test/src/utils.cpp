@@ -63,7 +63,6 @@ bool expectEqualImpl(const YAML::Node& a, const YAML::Node& b, double epsilon = 
         return false;
       }
       for (size_t i = 0; i < a.size(); ++i) {
-        EXPECT_TRUE(expectEqualImpl(a[i], b[i], epsilon));
         if (!expectEqualImpl(a[i], b[i], epsilon)) {
           return false;
         }
@@ -80,7 +79,6 @@ bool expectEqualImpl(const YAML::Node& a, const YAML::Node& b, double epsilon = 
           ADD_FAILURE() << "Key '" << key << "' not found in b.";
           return false;
         }
-        EXPECT_TRUE(expectEqualImpl(kv_pair.second, b[key], epsilon));
         if (!expectEqualImpl(kv_pair.second, b[key], epsilon)) {
           return false;
         }
