@@ -37,6 +37,7 @@
 
 #include <stdexcept>
 
+#include "config_utilities/factory.h"
 #include "config_utilities/internal/yaml_utils.h"
 #include "config_utilities/settings.h"
 
@@ -75,15 +76,17 @@ void Visitor::visitName(const std::string& name) {
 
 void Visitor::visitCheck(const CheckBase& check) {
   Visitor& visitor = Visitor::instance();
-  if (visitor.mode != Visitor::Mode::kCheck) {
-    return;
+  if (visitor.mode == Visitor::Mode::kCheck || visitor.mode == Visitor::Mode::kGetInfo) {
+    visitor.data.checks.emplace_back(check.clone());
   }
-  visitor.data.checks.emplace_back(check.clone());
 }
 
-std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set, bool is_optional, const std::string& type) {
+std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set,
+                                                      bool is_optional,
+                                                      const std::string& type,
+                                                      const std::string& base_type) {
   Visitor& visitor = Visitor::instance();
-  visitor.data.is_virtual_config = true;
+  visitor.data.virtual_config_type = type;
 
   // Treat the validity of virtual configs as checks.
   if (visitor.mode == Visitor::Mode::kCheck) {
@@ -96,13 +99,18 @@ std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set, bool is_optio
     }
   }
 
-  if (visitor.mode == Visitor::Mode::kGet) {
-    if (is_set) {
-      // Also write the type param back to file.
-      std::string error;
-      YAML::Node type_node =
-          YamlParser::toYaml(Settings::instance().factory_type_param_name, type, visitor.name_space, error);
-      mergeYamlNodes(visitor.data.data, type_node);
+  if (is_set && (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetInfo)) {
+    // Also write the type param back to file.
+    std::string error;
+    YAML::Node type_node =
+        YamlParser::toYaml(Settings::instance().factory.type_param_name, type, visitor.name_space, error);
+    mergeYamlNodes(visitor.data.data, type_node);
+  }
+
+  if (visitor.mode == internal::Visitor::Mode::kGetInfo) {
+    visitor.data.available_types = ModuleRegistry::getRegisteredConfigTypes(base_type);
+    if (is_optional) {
+      visitor.data.available_types.push_back(kUninitializedVirtualConfigType);
     }
   }
 

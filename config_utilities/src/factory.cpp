@@ -128,7 +128,7 @@ bool operator<(const ConfigPair& lhs, const ConfigPair& rhs) {
 }
 
 std::string ModuleRegistry::getAllRegistered() {
-  const auto width = Settings::instance().print_width;
+  const auto width = Settings::instance().printing.width;
   const auto& registry = instance().type_registry;
   std::stringstream ss;
   ss << banner("Registered Objects", width) << showWithFilter(registry, &isPlainObject) << "\n";
@@ -233,7 +233,7 @@ bool getTypeImpl(const YAML::Node& data, std::string& type, const std::string& k
 }
 
 bool getType(const YAML::Node& data, std::string& type, bool required, const std::string& param_name) {
-  const std::string key = param_name.empty() ? Settings::instance().factory_type_param_name : param_name;
+  const std::string key = param_name.empty() ? Settings::instance().factory.type_param_name : param_name;
   const auto success = getTypeImpl(data, type, key);
   if (!success && required) {
     Logger::logError("Could not read the param '" + key + "' to deduce the type of the module to create.");

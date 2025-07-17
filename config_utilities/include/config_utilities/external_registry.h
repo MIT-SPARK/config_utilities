@@ -66,7 +66,7 @@ struct InstanceInfo : InstanceInfoBase {
   explicit InstanceInfo(std::unique_ptr<T>&& instance) : instance(std::move(instance)) {}
 
   void cleanup() override { instance.reset(); }
-  virtual View view() const { return {instance.get()}; }
+  virtual View view() const { return {instance.get(), {}}; }
   virtual bool valid() const { return instance != nullptr; }
   operator bool() const { return valid(); }
 
@@ -203,7 +203,7 @@ struct ExternalRegistry {
                    : std::make_shared<InstanceInfo<T>>(std::move(underlying));
     instance().instances_.push_back(managed_info);
     return ManagedInstance<T>(managed_info);
-  };
+  }
 
  private:
   ExternalRegistry() = default;

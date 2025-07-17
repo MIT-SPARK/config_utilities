@@ -50,7 +50,8 @@ namespace config {
  * class.
  *
  * @tparam BaseT The base class of the object that should be created from the config.
- * @tparam BaseT Whether or not the virtual config is optional when constructed (useful for maps and vectors of configs)
+ * @tparam OptionalByDefault Whether or not the virtual config is optional when constructed (useful for maps and vectors
+ * of configs)
  */
 template <class BaseT, bool OptionalByDefault = false>
 class VirtualConfig {
@@ -62,6 +63,8 @@ class VirtualConfig {
   VirtualConfig(const VirtualConfig& other) {
     if (other.config_) {
       config_ = other.config_->clone();
+    } else {
+      config_.reset();
     }
     optional_ = other.optional_;
   }
@@ -74,6 +77,8 @@ class VirtualConfig {
   VirtualConfig& operator=(const VirtualConfig& other) {
     if (other.config_) {
       config_ = other.config_->clone();
+    } else {
+      config_.reset();
     }
     optional_ = other.optional_;
     return *this;
@@ -143,7 +148,7 @@ class VirtualConfig {
   /**
    * @brief Get the string-identifier-type of the config stored in the virtual config.
    */
-  std::string getType() const { return config_ ? config_->type : "Uninitialized"; }
+  std::string getType() const { return config_ ? config_->type : internal::kUninitializedVirtualConfigType; }
 
   /**
    * @brief Get the underlying config that this holds, if set
@@ -204,7 +209,8 @@ struct is_virtual_config<VirtualConfig<T, Opt>> : std::true_type {};
 // Declare the Virtual Config a config, so it can be handled like any other object.
 template <typename BaseT, bool Opt>
 void declare_config(VirtualConfig<BaseT, Opt>& config) {
-  auto data = internal::Visitor::visitVirtualConfig(config.isSet(), config.optional_, config.getType());
+  auto data = internal::Visitor::visitVirtualConfig(
+      config.isSet(), config.optional_, config.getType(), internal::typeName<BaseT>());
 
   // underlying derived type is not required if the config is optional, or if the config has been
   // initialized to a derived type already (i.e., config_ is already populated)
@@ -214,7 +220,12 @@ void declare_config(VirtualConfig<BaseT, Opt>& config) {
   if (data) {
     std::string type;
     if (internal::getType(*data, type, type_required)) {
-      config.config_ = internal::ConfigFactory<BaseT>::create(type);
+      if (type == internal::kUninitializedVirtualConfigType) {
+        // Reserved token to delete the virtual config in dynamic configs.
+        config.config_.reset();
+      } else {
+        config.config_ = internal::ConfigFactory<BaseT>::create(type);
+      }
     } else if (type_required) {
       std::stringstream ss;
       ss << "Could not get type for '" << internal::ModuleInfo::fromTypes<BaseT>().typeInfo() << "'";

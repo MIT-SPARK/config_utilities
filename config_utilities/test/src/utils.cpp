@@ -40,13 +40,21 @@
 namespace config::test {
 namespace {
 
-bool expectEqualImpl(const YAML::Node& a, const YAML::Node& b) {
+bool expectEqualImpl(const YAML::Node& a, const YAML::Node& b, double epsilon = 0.0) {
   EXPECT_EQ(a.Type(), b.Type());
   if (a.Type() != b.Type()) {
     return false;
   }
   switch (a.Type()) {
     case YAML::NodeType::Scalar:
+      if (epsilon > 0.0) {
+        // Attempt double conversion and comparison.
+        double a_val, b_val;
+        if (YAML::convert<double>::decode(a, a_val) && YAML::convert<double>::decode(b, b_val)) {
+          EXPECT_NEAR(a_val, b_val, epsilon);
+          return std::abs(a_val - b_val) <= epsilon;
+        }
+      }
       EXPECT_EQ(a.Scalar(), b.Scalar());
       return a.Scalar() == b.Scalar();
     case YAML::NodeType::Sequence:
@@ -55,8 +63,7 @@ bool expectEqualImpl(const YAML::Node& a, const YAML::Node& b) {
         return false;
       }
       for (size_t i = 0; i < a.size(); ++i) {
-        EXPECT_TRUE(expectEqualImpl(a[i], b[i]));
-        if (!expectEqualImpl(a[i], b[i])) {
+        if (!expectEqualImpl(a[i], b[i], epsilon)) {
           return false;
         }
       }
@@ -69,11 +76,10 @@ bool expectEqualImpl(const YAML::Node& a, const YAML::Node& b) {
       for (const auto& kv_pair : a) {
         const std::string key = kv_pair.first.Scalar();
         if (!b[key]) {
-          ADD_FAILURE() << "Key " << key << " not found in b.";
+          ADD_FAILURE() << "Key '" << key << "' not found in b.";
           return false;
         }
-        EXPECT_TRUE(expectEqualImpl(kv_pair.second, b[key]));
-        if (!expectEqualImpl(kv_pair.second, b[key])) {
+        if (!expectEqualImpl(kv_pair.second, b[key], epsilon)) {
           return false;
         }
       }
@@ -88,8 +94,8 @@ bool expectEqualImpl(const YAML::Node& a, const YAML::Node& b) {
 
 }  // namespace
 
-bool expectEqual(const YAML::Node& a, const YAML::Node& b) {
-  const auto equal = expectEqualImpl(a, b);
+bool expectEqual(const YAML::Node& a, const YAML::Node& b, double epsilon) {
+  const auto equal = expectEqualImpl(a, b, epsilon);
   EXPECT_TRUE(equal) << "---\na:\n---\n" << a << "\n---\nb:\n---\n" << b;
   return equal;
 }
@@ -109,4 +115,5 @@ void TestLogger::print() const {
     std::cout << internal::severityToString(message.first) << ": " << message.second << std::endl;
   }
 }
+
 }  // namespace config::test

@@ -232,7 +232,7 @@ int main(int argc, char** argv) {
   std::cout << "\n\n----- Creating objects from file -----\n\n" << std::endl;
 
   // Optionally specify the name of the type-identifying param. Default is 'type'.
-  config::Settings().factory_type_param_name = "type";
+  config::Settings().factory.type_param_name = "type";
 
   // Create an object of type and with config as specified in a file.
   object = config::createFromYamlFile<demo::Base>(my_root_path + "factory.yaml", 123);

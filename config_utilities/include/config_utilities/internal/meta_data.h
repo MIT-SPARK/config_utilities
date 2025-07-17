@@ -45,27 +45,40 @@
 #include <yaml-cpp/yaml.h>
 
 #include "config_utilities/internal/checks.h"
+#include "config_utilities/internal/field_input_info.h"
 
 namespace config::internal {
+
+// Reserved token for virtual configs that are not set.
+inline const std::string kUninitializedVirtualConfigType = "Uninitialized Virtual Config";
 
 /**
  * @brief Struct that holds additional information about fields for printing.
  */
 struct FieldInfo {
-  // Name of the field. This is always given.
+  //! Name of the field. This is always given.
   std::string name;
 
-  // Optional: Unit of the field.
+  //! Optional: Unit of the field.
   std::string unit;
 
-  // The value of the field if the field is not a config.
+  //! The value of the field if the field is not a config.
   YAML::Node value;
 
-  // Whether the field corresponds to its default value. Only queried if Settings().indicate_default_values is true.
-  bool is_default = false;
+  //! The default value of the field if the field is not a config.
+  YAML::Node default_value;
 
-  // Whether or not the field was parsed
+  //! Whether the field corresponds to its default value. Only queried if Settings().printing.show_defaults is true.
+  bool isDefault() const;
+
+  //! Whether or not the field was parsed
   bool was_parsed = false;
+
+  //! Additional information about the input type and constraints of the field. Only queried when using getInfo.
+  std::shared_ptr<FieldInputInfo> input_info;
+
+  //! Serialize the field info to yaml.
+  YAML::Node serializeFieldInfos() const;
 };
 
 // Struct to issue warnings. Currently used for parsing errors but can be extended to other warnings in the future.
@@ -103,8 +116,12 @@ struct MetaData {
   // Name of the field if the data is a sub-config.
   std::string field_name;
 
-  // Whether the data stored belongs to a virtual config.
-  bool is_virtual_config = false;
+  // If the config is a virtual config, this is the type of the virtual config. If it is not set, the type will be the
+  // uninitialized virtual config string.
+  std::string virtual_config_type;
+
+  // If the config is a virtual config, the own input info stores the available types.
+  std::vector<std::string> available_types;
 
   // If this config is part of an array config, this is the index of the array.
   int array_config_index = -1;
@@ -137,12 +154,19 @@ struct MetaData {
   void performOnAll(const std::function<void(MetaData&)>& func);
   void performOnAll(const std::function<void(const MetaData&)>& func) const;
 
+  // Check whether this is a virtual config.
+  bool isVirtualConfig() const { return !virtual_config_type.empty(); }
+
+  // Utility function to get field info.
+  YAML::Node serializeFieldInfos() const;
+
  private:
   void copyValues(const MetaData& other) {
     name = other.name;
-    is_virtual_config = other.is_virtual_config;
     data = YAML::Clone(other.data);
     field_infos = other.field_infos;
+    checks.clear();
+    errors.clear();
     for (const auto& check : other.checks) {
       checks.emplace_back(check->clone());
     }
@@ -153,6 +177,8 @@ struct MetaData {
     sub_configs = other.sub_configs;
     array_config_index = other.array_config_index;
     map_config_key = other.map_config_key;
+    virtual_config_type = other.virtual_config_type;
+    available_types = other.available_types;
   }
 };
 

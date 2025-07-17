@@ -40,10 +40,25 @@
 #include <gtest/gtest.h>
 
 #include "config_utilities/config.h"
+#include "config_utilities/internal/visitor.h"
 #include "config_utilities/parsing/yaml.h"
 #include "config_utilities/printing.h"
 
 namespace config::test {
+
+struct TestConversion {
+  static std::string toIntermediate(int value, std::string& /* error */) { return std::to_string(value); }
+  static void fromIntermediate(const std::string& intermediate, int& value, std::string& /* error */) {
+    value = std::stoi(intermediate);
+  }
+
+  // Optional: Define this to provide a field input info.
+  static internal::FieldInputInfo::Ptr getFieldInputInfo() {
+    auto info = std::make_shared<internal::OptionsFieldInputInfo>();
+    info->options = {"OptionFromTestConversion"};
+    return info;
+  }
+};
 
 template <typename T>
 std::string toYamlString(const T& conf) {
@@ -64,6 +79,10 @@ struct NoConversionStruct {
   uint8_t some_character = 'a';
 };
 
+struct TestConversionStruct {
+  int test = 0;
+};
+
 void declare_config(ConversionStruct& conf) {
   field<ThreadNumConversion>(conf.num_threads, "num_threads");
   field<CharConversion>(conf.some_character, "some_character");
@@ -73,6 +92,8 @@ void declare_config(NoConversionStruct& conf) {
   field(conf.num_threads, "num_threads");
   field(conf.some_character, "some_character");
 }
+
+void declare_config(TestConversionStruct& conf) { field<TestConversion>(conf.test, "test"); }
 
 // tests that we pull the right character from a string
 TEST(Conversions, CharConversionCorrect) {
@@ -161,6 +182,28 @@ some_character: 5
 
   EXPECT_EQ(toYamlString(conv), yaml_string);
   EXPECT_EQ(toYamlString(no_conv), yaml_string);
+}
+
+TEST(Conversions, FieldInputInfo) {
+  // Test SFINAE traits.
+  EXPECT_FALSE(hasFieldInputInfo<CharConversion>());
+  EXPECT_TRUE(hasFieldInputInfo<TestConversion>());
+
+  // Get info from the conversion.
+  TestConversionStruct with_info;
+  auto data = internal::Visitor::getInfo(with_info);
+  EXPECT_EQ(data.field_infos.size(), 1);
+  EXPECT_TRUE(data.field_infos[0].input_info);
+  EXPECT_EQ(data.field_infos[0].input_info->type, internal::FieldInputInfo::Type::kOptions);
+  auto options = std::dynamic_pointer_cast<internal::OptionsFieldInputInfo>(data.field_infos[0].input_info)->options;
+  EXPECT_EQ(options.size(), 1);
+  EXPECT_EQ(options[0], "OptionFromTestConversion");
+
+  ConversionStruct without_info;
+  data = internal::Visitor::getInfo(without_info);
+  EXPECT_EQ(data.field_infos.size(), 2);
+  EXPECT_FALSE(data.field_infos[0].input_info);
+  EXPECT_FALSE(data.field_infos[1].input_info);
 }
 
 }  // namespace config::test

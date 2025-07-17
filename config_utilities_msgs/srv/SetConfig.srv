@@ -1,0 +1,5 @@
+# Requested data by the client as YAML string data.
+string data
+---
+# Response from the server as YAML string data. 
+string data

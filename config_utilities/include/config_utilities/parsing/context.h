@@ -109,4 +109,10 @@ std::unique_ptr<BaseT> createFromContextWithNamespace(const std::string& name_sp
   return internal::Context::createNamespaced<BaseT, ConstructorArguments...>(name_space, args...);
 }
 
+/**
+ * @brief Load global settings for `config_utilities` from current parsed context
+ * @param name_space Namespace to load the settings from
+ */
+void setConfigSettingsFromContext(const std::string& name_space = "");
+
 }  // namespace config

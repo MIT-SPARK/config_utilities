@@ -35,7 +35,16 @@
 
 #include "config_utilities/internal/meta_data.h"
 
+#include "config_utilities/internal/string_utils.h"
+#include "config_utilities/settings.h"
+
 namespace config::internal {
+
+bool FieldInfo::isDefault() const {
+  // NOTE(lschmid): Operator YAML::Node== checks for identity, not equality. Since these are all scalars, comparing
+  // the formatted strings should be identical.
+  return internal::yamlToString(value) == internal::yamlToString(default_value);
+}
 
 bool MetaData::hasErrors() const {
   if (!errors.empty()) {
@@ -79,6 +88,63 @@ void MetaData::performOnAll(const std::function<void(const MetaData&)>& func) co
   for (const MetaData& sub_config : sub_configs) {
     sub_config.performOnAll(func);
   }
+}
+
+YAML::Node FieldInfo::serializeFieldInfos() const {
+  YAML::Node result;
+  result["type"] = "field";
+  result["name"] = name;
+  if (!unit.empty()) {
+    result["unit"] = unit;
+  }
+  result["value"] = YAML::Clone(value);
+  result["default"] = YAML::Clone(default_value);
+  if (was_parsed) {
+    result["was_parsed"] = true;
+  }
+  if (input_info) {
+    result["input_info"] = input_info->toYaml();
+  }
+  return result;
+}
+
+YAML::Node MetaData::serializeFieldInfos() const {
+  YAML::Node result;
+  // Log the config.
+  result["type"] = "config";
+  result["name"] = name;
+  if (!field_name.empty()) {
+    result["field_name"] = field_name;
+  }
+
+  if (isVirtualConfig()) {
+    // This is a virtual config: Use the virtual config type as the name.
+    result["available_types"] = available_types;
+    result["name"] = virtual_config_type;
+  }
+
+  if (array_config_index >= 0) {
+    result["array_index"] = array_config_index;
+  }
+
+  if (map_config_key) {
+    result["map_config_key"] = map_config_key.value();
+  }
+
+  YAML::Node fields(YAML::NodeType::Sequence);
+
+  // Parse the direct fields.
+  for (const FieldInfo& info : field_infos) {
+    fields.push_back(info.serializeFieldInfos());
+  }
+
+  // Parse the sub-configs.
+  for (const MetaData& sub_data : sub_configs) {
+    fields.push_back(sub_data.serializeFieldInfos());
+  }
+
+  result["fields"] = fields;
+  return result;
 }
 
 }  // namespace config::internal
