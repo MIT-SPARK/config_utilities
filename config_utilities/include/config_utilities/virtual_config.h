@@ -43,10 +43,6 @@
 #include "config_utilities/factory.h"
 #include "config_utilities/traits.h"
 
-namespace config::internal {
-inline static const std::string kUninitializedVirtualConfigType = "Uninitialized Virtual Config";
-}
-
 namespace config {
 
 /**
@@ -152,7 +148,7 @@ class VirtualConfig {
   /**
    * @brief Get the string-identifier-type of the config stored in the virtual config.
    */
-  std::string getType() const { return config_ ? config_->type : "Uninitialized"; }
+  std::string getType() const { return config_ ? config_->type : internal::kUninitializedVirtualConfigType; }
 
   /**
    * @brief Get the underlying config that this holds, if set

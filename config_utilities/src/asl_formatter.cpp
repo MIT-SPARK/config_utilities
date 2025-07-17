@@ -238,7 +238,7 @@ std::string AslFormatter::formatSubconfig(const MetaData& data, size_t indent) c
   if (settings.show_subconfig_types) {
     header += " [" + resolveConfigName(data) + "]";
   }
-  if (settings.show_defaults && !data.is_virtual_config) {
+  if (settings.show_defaults && !data.isVirtualConfig()) {
     bool is_default = true;
     for (const FieldInfo& info : data.field_infos) {
       if (!info.isDefault()) {
@@ -250,7 +250,7 @@ std::string AslFormatter::formatSubconfig(const MetaData& data, size_t indent) c
       header += " (default)";
     }
   }
-  if (resolveConfigName(data) != "Uninitialized Virtual Config") {
+  if (resolveConfigName(data) != kUninitializedVirtualConfigType) {
     header += ":";
   }
   header += "\n";
@@ -343,13 +343,14 @@ std::string AslFormatter::formatField(const FieldInfo& info, size_t indent) cons
 
 std::string AslFormatter::resolveConfigName(const MetaData& data) const {
   if (data.name.empty()) {
-    if (data.is_virtual_config) {
+    if (data.isVirtualConfig()) {
+      // NOTE(lschmid): Here we use the human readable name of the virtual config type if the token were to get changed.
       return "Uninitialized Virtual Config";
     } else {
       return "Unnamed Config";
     }
   } else {
-    if (data.is_virtual_config && Settings::instance().printing.show_virtual_configs) {
+    if (data.isVirtualConfig() && Settings::instance().printing.show_virtual_configs) {
       return "Virtual Config: " + data.name;
     } else {
       return data.name;
