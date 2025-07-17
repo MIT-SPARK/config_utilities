@@ -335,7 +335,7 @@ class DynamicConfigGUI:
                     if "available_types" in field:
                         # Virtual configs
                         conf_data["available_types"] = field["available_types"]
-                        if field["name"] == "Uninitialized Virtual Config":
+                        if field["name"] == UNINITIALIZED_VIRTUAL_CONFIG_NAME:
                             # Special case for the not set config.
                             has_subfields = False
                     if "array_index" in field:

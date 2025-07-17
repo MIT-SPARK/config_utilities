@@ -49,6 +49,9 @@
 
 namespace config::internal {
 
+// Reserved token for virtual configs that are not set.
+inline const std::string kUninitializedVirtualConfigType = "Uninitialized Virtual Config";
+
 /**
  * @brief Struct that holds additional information about fields for printing.
  */
@@ -113,8 +116,9 @@ struct MetaData {
   // Name of the field if the data is a sub-config.
   std::string field_name;
 
-  // Whether the data stored belongs to a virtual config.
-  bool is_virtual_config = false;
+  // If the config is a virtual config, this is the type of the virtual config. If it is not set, the type will be the
+  // uninitialized virtual config string.
+  std::string virtual_config_type;
 
   // If the config is a virtual config, the own input info stores the available types.
   std::vector<std::string> available_types;
@@ -150,15 +154,19 @@ struct MetaData {
   void performOnAll(const std::function<void(MetaData&)>& func);
   void performOnAll(const std::function<void(const MetaData&)>& func) const;
 
+  // Check whether this is a virtual config.
+  bool isVirtualConfig() const { return !virtual_config_type.empty(); }
+
   // Utility function to get field info.
-  YAML::Node serializeFieldInfos(const std::string& ns = "") const;
+  YAML::Node serializeFieldInfos() const;
 
  private:
   void copyValues(const MetaData& other) {
     name = other.name;
-    is_virtual_config = other.is_virtual_config;
     data = YAML::Clone(other.data);
     field_infos = other.field_infos;
+    checks.clear();
+    errors.clear();
     for (const auto& check : other.checks) {
       checks.emplace_back(check->clone());
     }
@@ -169,6 +177,7 @@ struct MetaData {
     sub_configs = other.sub_configs;
     array_config_index = other.array_config_index;
     map_config_key = other.map_config_key;
+    virtual_config_type = other.virtual_config_type;
     available_types = other.available_types;
   }
 };

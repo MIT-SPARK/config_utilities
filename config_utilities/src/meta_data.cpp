@@ -108,10 +108,7 @@ YAML::Node FieldInfo::serializeFieldInfos() const {
   return result;
 }
 
-YAML::Node MetaData::serializeFieldInfos(const std::string& name_space) const {
-  auto ns = field_name.empty() ? name_space : joinNamespace(name_space, field_name);
-  auto curr_data = lookupNamespace(data, ns);
-
+YAML::Node MetaData::serializeFieldInfos() const {
   YAML::Node result;
   // Log the config.
   result["type"] = "config";
@@ -120,14 +117,10 @@ YAML::Node MetaData::serializeFieldInfos(const std::string& name_space) const {
     result["field_name"] = field_name;
   }
 
-  if (is_virtual_config) {
+  if (isVirtualConfig()) {
+    // This is a virtual config: Use the virtual config type as the name.
     result["available_types"] = available_types;
-    const auto type_name = Settings::instance().factory.type_param_name;
-    if (curr_data[type_name]) {
-      result["name"] = curr_data[type_name];
-    } else {
-      result["name"] = "Uninitialized Virtual Config";  // Reserved token for virtual configs that are not set.
-    }
+    result["name"] = virtual_config_type;
   }
 
   if (array_config_index >= 0) {
@@ -147,7 +140,7 @@ YAML::Node MetaData::serializeFieldInfos(const std::string& name_space) const {
 
   // Parse the sub-configs.
   for (const MetaData& sub_data : sub_configs) {
-    fields.push_back(sub_data.serializeFieldInfos(ns));
+    fields.push_back(sub_data.serializeFieldInfos());
   }
 
   result["fields"] = fields;

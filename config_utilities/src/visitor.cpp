@@ -86,7 +86,7 @@ std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set,
                                                       const std::string& type,
                                                       const std::string& base_type) {
   Visitor& visitor = Visitor::instance();
-  visitor.data.is_virtual_config = true;
+  visitor.data.virtual_config_type = type;
 
   // Treat the validity of virtual configs as checks.
   if (visitor.mode == Visitor::Mode::kCheck) {
@@ -110,7 +110,7 @@ std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set,
   if (visitor.mode == internal::Visitor::Mode::kGetInfo) {
     visitor.data.available_types = ModuleRegistry::getRegisteredConfigTypes(base_type);
     if (is_optional) {
-      visitor.data.available_types.push_back("Uninitialized Virtual Config");
+      visitor.data.available_types.push_back(kUninitializedVirtualConfigType);
     }
   }
 
