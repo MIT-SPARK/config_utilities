@@ -104,8 +104,8 @@ struct Visitor {
   template <typename T, typename std::enable_if<!isConfig<T>(), bool>::type = true>
   static void visitField(T& field, const std::string& field_name, const std::string& unit);
 
-  // Non-config types with a conversion.
-  template <typename Conversion, typename T, typename std::enable_if<!isConfig<T>(), bool>::type = true>
+  // Types with a extra conversion.
+  template <typename Conversion, typename T>
   static void visitField(T& field, const std::string& field_name, const std::string& unit);
 
   // Single config types.
@@ -166,11 +166,16 @@ struct Visitor {
   template <typename ConfigT, typename std::enable_if<is_virtual_config<ConfigT>::value, bool>::type = true>
   static MetaData getDefaults(const ConfigT& config);
 
-  // Dispatch getting field input info from conversions.
-  template <typename Conversion, typename std::enable_if<!hasFieldInputInfo<Conversion>(), bool>::type = true>
-  static FieldInputInfo::Ptr getFieldInputInfo();
-  template <typename Conversion, typename std::enable_if<hasFieldInputInfo<Conversion>(), bool>::type = true>
-  static FieldInputInfo::Ptr getFieldInputInfo();
+  // Dispatch populating field input info from conversions.
+  template <typename Conversion,
+            typename ConfigT,
+            typename std::enable_if<!hasFieldInputInfo<Conversion>() || isConfig<ConfigT>(), bool>::type = true>
+  static void getFieldInputInfo(const std::string& field_name);
+
+  template <typename Conversion,
+            typename ConfigT,
+            typename std::enable_if<hasFieldInputInfo<Conversion>() && !isConfig<ConfigT>(), bool>::type = true>
+  static void getFieldInputInfo(const std::string& field_name);
 
   // Computes the default values for all fields in the meta data. This assumes that the meta data is already created,
   // and the meta data was created from ConfigT.

@@ -54,6 +54,17 @@ namespace config {
 inline void name(const std::string& name) { internal::Visitor::visitName(name); }
 
 /**
+ * @brief Set the name of a config from the template parameter type.
+ * @tparam T type to get the name from
+ *
+ * This is for cases where you may not have a static config struct name (i.e., with a templated config struct)
+ */
+template <typename T>
+void name() {
+  internal::Visitor::visitName(internal::typeName<T>());
+}
+
+/**
  * @brief Declare string-named fields of the config. This string will be used to get the configs field values during
  * creation, and for checking of validity.
  * @param field The config member that stores data.
