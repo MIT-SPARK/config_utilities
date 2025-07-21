@@ -40,7 +40,6 @@
 #include <iostream>
 #include <string>
 
-#include <glog/logging.h>
 #include <rclcpp/rclcpp.hpp>
 
 #include "config_utilities/config.h"                         // Enables declare_config().
@@ -218,7 +217,6 @@ class DemoNode : public rclcpp::Node {
 
 int main(int argc, char** argv) {
   rclcpp::init(argc, argv);
-  google::InstallFailureSignalHandler();
 
   // Create some objects with a dynamic config.
   demo::ObjectWithDynamicConfig obj("dynamic_config_object");
