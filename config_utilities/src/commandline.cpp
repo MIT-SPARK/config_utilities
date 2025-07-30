@@ -215,6 +215,13 @@ CliParser& CliParser::parse(int& argc, char* argv[], bool remove_args) {
       continue;
     }
 
+    if ((curr_opt == "--force-block-style") && !found_separator) {
+      info.force_block_style = true;
+      spans.emplace_back(Span{i, 0, curr_opt});
+      ++i;
+      continue;
+    }
+
     if (curr_opt == "--" && !found_separator) {
       found_separator = true;
       spans.emplace_back(Span{i, 0, curr_opt});

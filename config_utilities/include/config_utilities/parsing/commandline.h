@@ -47,6 +47,7 @@ namespace internal {
 
 struct ParserInfo {
   bool help_present = false;
+  bool force_block_style = false;
 };
 
 /**
