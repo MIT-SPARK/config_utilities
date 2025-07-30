@@ -21,6 +21,7 @@ Options:
                              multiple times.
   -d/--disable-substitutions: Turn off substitutions resolution
   --no-disable-substitutions: Turn substitution resolution on (currently on by default)
+  --force-block-style: Force emitted YAML to only use block style
 
 Example:
 > echo "{a: 42, bar: hello}" > /tmp/test_in.yaml
@@ -87,6 +88,32 @@ inline void forceBlockForNonLeaves(YAML::Node node) {
   }
 }
 
+inline void forceBlockForAll(YAML::Node node) {
+  switch (node.Type()) {
+    case YAML::NodeType::Sequence:
+      if (node.size() > 0) {
+        node.SetStyle(YAML::EmitterStyle::Block);
+      }
+      for (const auto& child : node) {
+        forceBlockForAll(child);
+      }
+      break;
+    case YAML::NodeType::Map:
+      if (node.size() > 0) {
+        node.SetStyle(YAML::EmitterStyle::Block);
+      }
+      for (const auto& child : node) {
+        forceBlockForAll(child.second);
+      }
+      break;
+    case YAML::NodeType::Null:
+    case YAML::NodeType::Undefined:
+    case YAML::NodeType::Scalar:
+    default:
+      return;
+  }
+}
+
 }  // namespace
 
 int main(int argc, char* argv[]) {
@@ -98,6 +125,9 @@ int main(int argc, char* argv[]) {
   }
 
   forceBlockForNonLeaves(result);
+  if (info.force_block_style) {
+    forceBlockForAll(result);
+  }
 
   YAML::Emitter emit;
   switch (result.Type()) {
