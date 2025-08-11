@@ -14,6 +14,8 @@
 
   <buildtool_depend>cmake</buildtool_depend>
   <depend>yaml-cpp</depend>
+  <depend>libboost-filesystem-dev</depend>
+  <depend>libboost-system-dev</depend>
 
   <export>
     <build_type>cmake</build_type>
