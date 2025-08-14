@@ -34,40 +34,34 @@
  * -------------------------------------------------------------------------- */
 #include "config_utilities_ros/ros_dynamic_config_server.h"
 
+#include <rclcpp/create_publisher.hpp>
+#include <rclcpp/create_service.hpp>
+
 namespace config {
 
 RosDynamicConfigServer::ConfigReceiver::ConfigReceiver(const DynamicConfigServer::Key& key,
-                                                       RosDynamicConfigServer* server,
-                                                       rclcpp::Node* node)
+                                                       RosDynamicConfigServer* server)
     : key(key), server(server) {
+  const auto base_topic = "~/" + key;
   const auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
-  pub = node->create_publisher<std_msgs::msg::String>("~/" + key + "/get", qos);
-  srv = node->create_service<Srv>(
-      "~/" + key + "/set",
-      std::bind(&ConfigReceiver::handle_service, this, std::placeholders::_1, std::placeholders::_2));
+  pub = rclcpp::create_publisher<std_msgs::msg::String>(
+      server->node_parameters_, server->node_topics_, base_topic + "/get", qos);
+  srv = rclcpp::create_service<Srv>(
+      server->node_base_,
+      server->node_services_,
+      base_topic + "/set",
+      std::bind(&ConfigReceiver::handle_service, this, std::placeholders::_1, std::placeholders::_2),
+      {},
+      nullptr);
 }
 
-void RosDynamicConfigServer::ConfigReceiver::handle_service(const std::shared_ptr<Srv::Request> request,
+void RosDynamicConfigServer::ConfigReceiver::handle_service(const std::shared_ptr<Srv::Request>& request,
                                                             std::shared_ptr<Srv::Response> response) {
   response->data = YAML::Dump(server->onSet(key, YAML::Load(request->data)));
 }
 
-RosDynamicConfigServer::RosDynamicConfigServer(rclcpp::Node* node) : node_(node) {
-  // Setup all currently registered configs.
-  for (const auto& key : server_.registeredConfigs()) {
-    onRegister(key);
-  }
-
-  // Register the hooks for the dynamic config server.
-  DynamicConfigServer::Hooks hooks;
-  hooks.onRegister = [this](const DynamicConfigServer::Key& key) { onRegister(key); };
-  hooks.onDeregister = [this](const DynamicConfigServer::Key& key) { onDeregister(key); };
-  hooks.onUpdate = [this](const DynamicConfigServer::Key& key, const YAML::Node& values) { onUpdate(key, values); };
-  server_.setHooks(hooks);
-}
-
 void RosDynamicConfigServer::onRegister(const DynamicConfigServer::Key& key) {
-  configs_.emplace(key, std::make_unique<ConfigReceiver>(key, this, node_));
+  configs_.emplace(key, std::make_unique<ConfigReceiver>(key, this));
 
   // Latch the current state of the config.
   onUpdate(key, server_.getInfo(key));

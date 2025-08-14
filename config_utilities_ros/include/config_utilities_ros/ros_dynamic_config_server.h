@@ -40,7 +40,10 @@
 
 #include <config_utilities/dynamic_config.h>
 #include <config_utilities_msgs/srv/set_config.hpp>
-#include <rclcpp/rclcpp.hpp>
+#include <rclcpp/node_interfaces/get_node_base_interface.hpp>
+#include <rclcpp/node_interfaces/get_node_parameters_interface.hpp>
+#include <rclcpp/node_interfaces/get_node_services_interface.hpp>
+#include <rclcpp/node_interfaces/get_node_topics_interface.hpp>
 #include <std_msgs/msg/string.hpp>
 
 namespace config {
@@ -50,23 +53,26 @@ namespace config {
  */
 class RosDynamicConfigServer {
  public:
-  explicit RosDynamicConfigServer(rclcpp::Node* node);
+  template <typename Node>
+  explicit RosDynamicConfigServer(Node&& node);
 
   using Srv = config_utilities_msgs::srv::SetConfig;
 
  private:
   // Helper that manages the exposure of each config.
   struct ConfigReceiver {
-    ConfigReceiver(const DynamicConfigServer::Key& key, RosDynamicConfigServer* server, rclcpp::Node* node);
+    ConfigReceiver(const DynamicConfigServer::Key& key, RosDynamicConfigServer* server);
     const DynamicConfigServer::Key key;
     RosDynamicConfigServer* const server;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pub;
     rclcpp::Service<Srv>::SharedPtr srv;
-    void handle_service(const std::shared_ptr<Srv::Request> request, std::shared_ptr<Srv::Response> response);
+    void handle_service(const std::shared_ptr<Srv::Request>& request, std::shared_ptr<Srv::Response> response);
   };
 
-  // TODO(lschmid): Figure out if we can use smart pointers here. This should allow nice wrapping in the node.
-  rclcpp::Node* node_;
+  std::shared_ptr<rclcpp::node_interfaces::NodeBaseInterface> node_base_;
+  std::shared_ptr<rclcpp::node_interfaces::NodeTopicsInterface> node_topics_;
+  std::shared_ptr<rclcpp::node_interfaces::NodeParametersInterface> node_parameters_;
+  std::shared_ptr<rclcpp::node_interfaces::NodeServicesInterface> node_services_;
   std::map<DynamicConfigServer::Key, std::unique_ptr<ConfigReceiver>> configs_;
   DynamicConfigServer server_;
 
@@ -75,5 +81,24 @@ class RosDynamicConfigServer {
   void onUpdate(const DynamicConfigServer::Key& key, const YAML::Node& data);
   YAML::Node onSet(const DynamicConfigServer::Key& key, const YAML::Node& new_values);
 };
+
+template <typename Node>
+RosDynamicConfigServer::RosDynamicConfigServer(Node&& node)
+    : node_base_(rclcpp::node_interfaces::get_node_base_interface(node)),
+      node_topics_(rclcpp::node_interfaces::get_node_topics_interface(node)),
+      node_parameters_(rclcpp::node_interfaces::get_node_parameters_interface(node)),
+      node_services_(rclcpp::node_interfaces::get_node_services_interface(node)) {
+  // Setup all currently registered configs.
+  for (const auto& key : server_.registeredConfigs()) {
+    onRegister(key);
+  }
+
+  // Register the hooks for the dynamic config server.
+  DynamicConfigServer::Hooks hooks;
+  hooks.onRegister = [this](const DynamicConfigServer::Key& key) { onRegister(key); };
+  hooks.onDeregister = [this](const DynamicConfigServer::Key& key) { onDeregister(key); };
+  hooks.onUpdate = [this](const DynamicConfigServer::Key& key, const YAML::Node& values) { onUpdate(key, values); };
+  server_.setHooks(hooks);
+}
 
 }  // namespace config
