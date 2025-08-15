@@ -30,6 +30,7 @@ add_library(
   src/formatter.cpp
   src/field_input_info.cpp
   src/log_to_stdout.cpp
+  src/log_to_glog.cpp
   src/logger.cpp
   src/meta_data.cpp
   src/namespacing.cpp

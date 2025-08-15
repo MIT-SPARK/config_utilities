@@ -38,7 +38,15 @@
 #include <exception>
 #include <iostream>
 
+#include "config_utilities/factory.h"
+
 namespace config::internal {
+namespace {
+
+// Factory registration to allow setting of formatters via Settings::setLogger().
+static const auto registration = Registration<Logger, StdoutLogger>("stdout");
+
+}  // namespace
 
 StdoutLogger::StdoutLogger(Severity min_severity, Severity stderr_severity)
     : min_severity_(min_severity), stderr_severity_(stderr_severity) {}

@@ -1,4 +1,4 @@
-if(ENABLE_Eigen3)
+if(Eigen3_FOUND)
   add_executable(demo_config demo_config.cpp)
   target_link_libraries(demo_config ${PROJECT_NAME})
 endif()

@@ -35,7 +35,6 @@
 
 #pragma once
 
-#include "config_utilities/factory.h"
 #include "config_utilities/internal/logger.h"
 
 namespace config::internal {
@@ -60,11 +59,11 @@ class StdoutLogger : public Logger {
  private:
   const Severity min_severity_;
   const Severity stderr_severity_;
-  // Factory registration to allow setting of formatters via Settings::setLogger().
-  inline static const auto registration_ = Registration<Logger, StdoutLogger>("stdout");
 
   // Initialize the stdout logger to be used if included.
-  inline static const struct Initializer { Initializer(); } initializer_ = Initializer();
+  inline static const struct Initializer {
+    Initializer();
+  } initializer_ = Initializer();
 };
 
 }  // namespace config::internal

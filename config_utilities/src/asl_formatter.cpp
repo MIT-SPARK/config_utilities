@@ -33,11 +33,24 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
+#include "config_utilities/factory.h"
 #include "config_utilities/formatting/asl.h"
 #include "config_utilities/internal/string_utils.h"
 #include "config_utilities/settings.h"
 
 namespace config::internal {
+namespace {
+
+// Factory registration to allow setting of formatters via Settings::setFormatter().
+static const auto registration = Registration<Formatter, AslFormatter>("asl");
+
+}  // namespace
+
+AslFormatter::AslFormatter() = default;
+
+AslFormatter::~AslFormatter() = default;
+
+AslFormatter::Initializer::Initializer() { Formatter::setFormatter(std::make_unique<AslFormatter>()); }
 
 std::string AslFormatter::formatErrorsImpl(const MetaData& data,
                                            const std::string& what,
