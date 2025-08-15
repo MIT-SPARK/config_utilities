@@ -5,23 +5,10 @@ get_filename_component(config_utilities_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}"
 include(CMakeFindDependencyMacro)
 
 find_dependency(yaml-cpp REQUIRED)
+find_dependency(Eigen3 QUIET)
 
-if(@ENABLE_Eigen3@)
-  find_dependency(Eigen3 REQUIRED)
-endif()
-
-if(@ENABLE_roscpp@)
-  find_dependency(roscpp REQUIRED)
-  set(config_utilities_FOUND_CATKIN_PROJECT TRUE)
-endif()
-
-if(@ENABLE_rclcpp@)
-  find_dependency(rclcpp REQUIRED)
-endif()
-
-if(@ENABLE_libglog@)
-  find_dependency(PkgConfig REQUIRED)
-  pkg_check_modules(libglog IMPORTED_TARGET libglog)
+if(@ENABLE_glog@)
+  find_dependency(glog REQUIRED)
 endif()
 
 if(NOT TARGET config_utilities::config_utilities)
