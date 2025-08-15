@@ -60,6 +60,7 @@ if(Eigen3_FOUND)
 endif()
 if(glog_FOUND)
   target_link_libraries(${PROJECT_NAME} PUBLIC glog::glog)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE CONFIG_UTILS_ENABLE_GLOG_LOGGING)
 endif()
 
 add_executable(composite-configs app/composite_configs.cpp)

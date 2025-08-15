@@ -35,22 +35,36 @@
 
 #include "config_utilities/logging/log_to_glog.h"
 
+#ifdef CONFIG_UTILS_ENABLE_GLOG_LOGGING
 #include <glog/logging.h>
+#endif
+
+#include <iostream>
 
 #include "config_utilities/factory.h"
+#include "config_utilities/logging/log_to_stdout.h"
 
 namespace config::internal {
 namespace {
 
 static const auto registration = Registration<Logger, GlogLogger>("glog");
 
-}
+}  // namespace
 
 // TODO(nathan) add warning
-GlogLogger::GlogLogger() {}
+GlogLogger::GlogLogger() {
+#ifndef CONFIG_UTILS_ENABLE_GLOG_LOGGING
+  std::cerr << "config_utilities was not build with glog support! reverting to stdout logging implementation"
+            << std::endl;
+#endif
+}
 
 // TODO(nathan) conditional compilation
 void GlogLogger::logImpl(const Severity severity, const std::string& message) {
+#ifndef CONFIG_UTILS_ENABLE_GLOG_LOGGING
+  Logger::setLogger(std::make_shared<StdoutLogger>());
+  Logger::log(severity, message);
+#else
   switch (severity) {
     case Severity::kInfo:
       LOG(INFO) << message;
@@ -68,6 +82,7 @@ void GlogLogger::logImpl(const Severity severity, const std::string& message) {
     case Severity::kFatal:
       LOG(FATAL) << message;
   }
+#endif
 }
 
 }  // namespace config::internal
