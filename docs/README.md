@@ -50,10 +50,10 @@ The following tutorials will guide you through functionalities of `config_utilit
     - [Debugging](External.md#debugging)
 
 9. [**Dynamic Configs**](Dynamic_Configs.md)
-    - [Declaring a dynamic config](Dynamix_Configs.md#declaring-a-dynamic-config)
-    - [Dynamic Config Callbacks](Dynamix_Configs.md#dynamic-config-callbacks)
-    - [Setting Dynamic Configs](Dynamix_Configs.md#setting-dynamic-configs)
-    - [Custom Dynamic Config Servers](Dynamix_Configs.md#custom-dynamic-config-servers)
+    - [Declaring a dynamic config](Dynamic_Configs.md#declaring-a-dynamic-config)
+    - [Dynamic Config Callbacks](Dynamic_Configs.md#dynamic-config-callbacks)
+    - [Setting Dynamic Configs](Dynamic_Configs.md#setting-dynamic-configs)
+    - [Custom Dynamic Config Servers](Dynamic_Configs.md#custom-dynamic-config-servers)
 
 10. [**Varia**](Varia.md)
     - [Settings](Varia.md#settings)
