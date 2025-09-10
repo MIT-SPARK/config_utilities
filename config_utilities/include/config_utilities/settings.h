@@ -111,6 +111,16 @@ struct Settings {
     bool log_allocation = false;
   } external_libraries;
 
+  /**
+   * @brief Settings for introspection (debug-tool). By default, no introspection is performed.
+   */
+  struct Introspection {
+    //! @brief Directory where the output files are written to. If empty, no files are written.
+    std::string output = "";
+
+    bool enabled() const;
+  } introspection;
+
   //! @brief Control whether config_utilities is initialized to log to stdout/stderr by default
   bool disable_default_stdout_logger = false;
 
@@ -136,6 +146,7 @@ void declare_config(Settings& config);
 void declare_config(Settings::Printing& config);
 void declare_config(Settings::Factory& config);
 void declare_config(Settings::ExternalLibraries& config);
+void declare_config(Settings::Introspection& config);
 
 }  // namespace internal
 
