@@ -67,6 +67,7 @@ struct DynamicConfigServer {
   };
 
   DynamicConfigServer() = default;
+  explicit DynamicConfigServer(const Hooks& hooks);
   virtual ~DynamicConfigServer();
   DynamicConfigServer(const DynamicConfigServer&) = delete;
   DynamicConfigServer(DynamicConfigServer&&) = default;
@@ -205,7 +206,8 @@ struct DynamicConfigRegistry {
 }  // namespace internal
 
 /**
- * @brief A wrapper class for for configs that can be dynamically changed.
+ * @brief A wrapper class for for configs that can be dynamically changed. If the dynamic config is const, it will be
+ * read-only of the underlying config, which can still be changed from external sources.
  *
  * @tparam ConfigT The contained configuration type.
  */
@@ -217,10 +219,12 @@ struct DynamicConfig {
    * @brief Construct a new Dynamic Config, wrapping a config_uilities config.
    * @param name Unique name of the dynamic config. This identifier is used to access the config on the client side.
    * @param config The config to wrap.
+   * @param callback A callback function that is called whenever the config is updated. This is only called if the
+   * values of the config change, not on every set request.
    */
   explicit DynamicConfig(const std::string& name, const ConfigT& config = {}, Callback callback = {});
 
-  ~DynamicConfig();
+  virtual ~DynamicConfig();
 
   DynamicConfig(const DynamicConfig&) = delete;
   DynamicConfig& operator=(const DynamicConfig&) = delete;
@@ -248,15 +252,15 @@ struct DynamicConfig {
 
  private:
   const std::string name_;
-  ConfigT config_;
+  mutable ConfigT config_;
   mutable std::mutex mutex_;
   Callback callback_;
   const bool is_registered_;
 
-  std::string setValues(const YAML::Node& values);
+  std::string setValues(const YAML::Node& values) const;
   YAML::Node getValues() const;
   YAML::Node getInfo() const;
-  internal::DynamicConfigRegistry::ConfigInterface getInterface();
+  internal::DynamicConfigRegistry::ConfigInterface getInterface() const;
   void moveMembers(DynamicConfig&& other);
 };
 
