@@ -4,9 +4,11 @@ import argparse
 import signal
 import yaml
 from threading import Thread
-import rclpy
 import sys
+
+import rclpy
 from rclpy.node import Node
+from ros2node.api import get_node_names
 from config_utilities_msgs.srv import SetConfig
 from config_utilities_ros.gui import DynamicConfigGUI
 
@@ -46,16 +48,19 @@ class RosDynamicConfigGUI(Node):
             and t[1][0] == "config_utilities_msgs/srv/SetConfig"
         ]
 
+        available_nodes = [n[2] for n in get_node_names(node=self, include_hidden_nodes=False)]
+
         servers = {}
         for config in configs:
-            # We assume that no other node will use config_utilities messages with the same name.
-            ind = config.rfind("/")
-            server = config[:ind]
-            key = config[ind + 1 :]
-            if server not in servers:
-                servers[server] = [key]
-            else:
-                servers[server].append(key)
+            for server in available_nodes:
+                if not config.startswith(f"{server}/"):
+                    continue
+                key = config[len(server) + 1 :]
+                if server not in servers:
+                    servers[server] = [key]
+                else:
+                    servers[server].append(key)
+                    break
         return servers
 
     def set_request(self, server, key, data):
