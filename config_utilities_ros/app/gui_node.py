@@ -99,18 +99,27 @@ class RosDynamicConfigGUI(Node):
 
 
 def main():
-    rclpy.init()
-    gui = RosDynamicConfigGUI()
-    signal.signal(signal.SIGINT, lambda sig, frame: gui.shutdown())
-
     parser = argparse.ArgumentParser(
         description="Webserver hosting dynamic configuration GUI."
     )
     parser.add_argument("--debug", "-d", action="store_true")
+    parser.add_argument(
+        "--host", type=str, default="localhost", help="Host to run the webserver on."
+    )
+    parser.add_argument(
+        "--port", "-p", type=int, default=5000, help="Port to run the webserver on."
+    )
+    parser.add_argument(
+        "--no-open-browser",
+        action="store_true",
+        help="Do not open the web browser automatically.",
+    )
     args, _ = parser.parse_known_args()
 
-    # TODO(lschmid): Expose GUI args in the future.
-    gui.run(debug=args.debug)
+    rclpy.init()
+    gui = RosDynamicConfigGUI()
+    signal.signal(signal.SIGINT, lambda sig, frame: gui.shutdown())
+    gui.run(debug=args.debug, host=args.host, port=args.port, open_browser=not args.no_open_browser)
     gui.shutdown()
 
 
