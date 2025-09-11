@@ -1,107 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
+  <!-- Head -->
+  <head>
+    <title>Config Utilities Dynamic Configs</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+  </head>
 
-<!-- Head -->
+  <!-- Scripts -->
+  <script src="{{ url_for('static', filename='js/config_table.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/build_fields.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/selection_panes.js') }}"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script>
+    // Reload the page when the AJAX request is complete.
+    $(document).ajaxStop(function () {
+      window.location.reload(false);
+    });
+    // Send post requests via Ctrl+Enter
+    document.addEventListener("keydown", function (event) {
+      if (event.ctrlKey && event.key === "Enter") {
+        post("/submit", readConfigData());
+      }
+    });
+  </script>
 
-<head>
-  <title>Config Utilities Dynamic Configs</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
+  <!-- Body -->
 
-<!-- Scripts -->
-<script src="{{ url_for('static', filename='js/config_table.js') }}"></script>
-<script src="{{ url_for('static', filename='js/build_fields.js') }}"></script>
-<script src="{{ url_for('static', filename='js/selection_panes.js') }}"></script>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-<script>
-  // Reload the page when the AJAX request is complete.
-  $(document).ajaxStop(function () {
-    window.location.reload(false);
-  });
-</script>
+  <body>
+    <header>
+      <h1>Config Utilities Dynamic Config GUI</h1>
+    </header>
 
-<!-- Body -->
+    <!-- The config -->
+    {% if config_name %}
+    <div class="config-pane">
+      <table id="config-table" class="config-table">
+        <tr>
+          <th>{{ config_name }}</th>
+          <th>Value</th>
+          <th>Default</th>
+        </tr>
+        <script>
+          const configData = {{ config_data | tojson }};
+          buildFields(configData);
+        </script>
+      </table>
+    </div>
+    {% endif %}
 
-<body>
-  <header>
-    <h1>Config Utilities Dynamic Config GUI</h1>
-  </header>
+    <!-- Interaction with the config -->
+    <div class="config-pane">
+      <button
+        name="refreshBtn"
+        class="config-button"
+        type="submit"
+        onclick="post('/refresh');"
+      >
+        Refresh
+      </button>
+      <button
+        name="submitBtn"
+        class="config-button"
+        type="submit"
+        onclick="post('/submit', readConfigData());"
+      >
+        Submit
+      </button>
+    </div>
 
-  <!-- The config -->
-  {% if config_name %}
-  <div class="config-pane">
-    <table id="config-table" class="config-table">
-      <tr>
-        <th>{{ config_name }} </th>
-        <th>Value</th>
-        <th>Default</th>
-      </tr>
+    <!-- Config Key selection -->
+    <div class="config-pane" id="key-pane">
+      <span class="selection-header">Config:</span>
       <script>
-        const configData = {{ config_data | tojson }};
-        buildFields(configData);
+        const availableKeys = {{ available_keys | tojson }};
+        const activeKey = "{{ active_key }}";
+        buildSelectionPane(availableKeys, activeKey, 'key-pane');
       </script>
-    </table>
-  </div>
-  {% endif %}
-
-
-  <!-- Interaction with the config -->
-  <div class="config-pane">
-    <button name="refreshBtn" class='config-button' type="submit" onclick="post('/refresh');">Refresh</button>
-    <button name="submitBtn" class='config-button' type="submit"
-      onclick="post('/submit', readConfigData());">Submit</button>
-  </div>
-
-
-  <!-- Config Key selection -->
-  <div class="config-pane" id="key-pane">
-    <span class="selection-header">Config:</span>
-    <script>
-      const availableKeys = {{ available_keys | tojson }};
-      const activeKey = "{{ active_key }}";
-      buildSelectionPane(availableKeys, activeKey, 'key-pane');
-    </script>
-  </div>
-
-  <!-- Config Server selection -->
-  <div class="config-pane" id="server-pane">
-    <span class="selection-header">Server:</span>
-    <script>
-      const availableServers = {{ available_servers | tojson }};
-      const activeServer = "{{ active_server }}";
-      buildSelectionPane(availableServers, activeServer, 'server-pane');
-    </script>
-  </div>
-
-  <!-- Error Pane -->
-  {% if error_message %}
-  <div class="config-pane" id="error-pane"
-    style="color: #b71c1c; background: #ffebee; border: 1px solid #b71c1c; padding: 10px; display: block;">
-    {% for error in error_message %}
-    <div style="margin-bottom: 0px; margin-top: 0px;">
-      <span style="font-size: 1.2em; margin-right: 10px;">&#9888;</span> {{ error }}
     </div>
-    {% endfor %}
-  </div>
-  {% endif %}
 
-  <!-- Warning Pane -->
-  {% if warning_message %}
-  <div class="config-pane" id="warning-pane"
-    style="color: #ff9800; background: #fff3e0; border: 1px solid #ff9800; padding: 10px; display: block;">
-    {% for warning in warning_message %}
-    <div style="margin-bottom: 0px; margin-top: 0px;">
-      <span style="font-size: 1.2em; margin-right: 10px;">&#9888;</span> {{ warning }}
+    <!-- Config Server selection -->
+    <div class="config-pane" id="server-pane">
+      <span class="selection-header">Server:</span>
+      <script>
+        const availableServers = {{ available_servers | tojson }};
+        const activeServer = "{{ active_server }}";
+        buildSelectionPane(availableServers, activeServer, 'server-pane');
+      </script>
     </div>
-    {% endfor %}
-  </div>
-  {% endif %}
 
-  <!-- Message Pane -->
-  {% if message %}
-  <div class="config-pane" id="message-pane">
-    <div class="selection-header" display="block">Messages:</div>
-    <span id="message-text">{{ message }}</span>
-  </div>
-  {% endif %}
-</body>
+    <!-- Error Pane -->
+    {% if error_message %}
+    <div
+      class="config-pane"
+      id="error-pane"
+      style="
+        color: #b71c1c;
+        background: #ffebee;
+        border: 1px solid #b71c1c;
+        padding: 10px;
+        display: block;
+      "
+    >
+      {% for error in error_message %}
+      <div style="margin-bottom: 0px; margin-top: 0px">
+        <span style="font-size: 1.2em; margin-right: 10px">&#9888;</span> {{
+        error }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Warning Pane -->
+    {% if warning_message %}
+    <div
+      class="config-pane"
+      id="warning-pane"
+      style="
+        color: #ff9800;
+        background: #fff3e0;
+        border: 1px solid #ff9800;
+        padding: 10px;
+        display: block;
+      "
+    >
+      {% for warning in warning_message %}
+      <div style="margin-bottom: 0px; margin-top: 0px">
+        <span style="font-size: 1.2em; margin-right: 10px">&#9888;</span> {{
+        warning }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Message Pane -->
+    {% if message %}
+    <div class="config-pane" id="message-pane">
+      <div class="selection-header" display="block">Messages:</div>
+      <span id="message-text">{{ message }}</span>
+    </div>
+    {% endif %}
+  </body>
+</html>

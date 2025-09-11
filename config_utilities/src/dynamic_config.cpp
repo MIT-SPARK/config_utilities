@@ -39,7 +39,9 @@
 
 namespace config {
 
-bool DynamicConfigServer::Hooks::empty() const { return !onRegister && !onDeregister; }
+bool DynamicConfigServer::Hooks::empty() const { return !onRegister && !onDeregister && !onUpdate; }
+
+DynamicConfigServer::DynamicConfigServer(const Hooks& hooks) { setHooks(hooks); }
 
 bool DynamicConfigServer::hasConfig(const Key& key) const {
   return internal::DynamicConfigRegistry::instance().hasKey(key);

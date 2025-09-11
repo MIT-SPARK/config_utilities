@@ -113,7 +113,7 @@ void DynamicConfig<ConfigT>::setCallback(const Callback& callback) {
 }
 
 template <typename ConfigT>
-std::string DynamicConfig<ConfigT>::setValues(const YAML::Node& values) {
+std::string DynamicConfig<ConfigT>::setValues(const YAML::Node& values) const {
   if (values.Type() != YAML::NodeType::Map || values.size() == 0) {
     return "";
   }
@@ -164,7 +164,7 @@ YAML::Node DynamicConfig<ConfigT>::getInfo() const {
 }
 
 template <typename ConfigT>
-internal::DynamicConfigRegistry::ConfigInterface DynamicConfig<ConfigT>::getInterface() {
+internal::DynamicConfigRegistry::ConfigInterface DynamicConfig<ConfigT>::getInterface() const {
   internal::DynamicConfigRegistry::ConfigInterface interface;
 
   interface.get = [this]() { return getValues(); };

@@ -4,9 +4,11 @@ import argparse
 import signal
 import yaml
 from threading import Thread
-import rclpy
 import sys
+
+import rclpy
 from rclpy.node import Node
+from ros2node.api import get_node_names
 from config_utilities_msgs.srv import SetConfig
 from config_utilities_ros.gui import DynamicConfigGUI
 
@@ -46,16 +48,19 @@ class RosDynamicConfigGUI(Node):
             and t[1][0] == "config_utilities_msgs/srv/SetConfig"
         ]
 
+        available_nodes = [n[2] for n in get_node_names(node=self, include_hidden_nodes=False)]
+
         servers = {}
         for config in configs:
-            # We assume that no other node will use config_utilities messages with the same name.
-            ind = config.rfind("/")
-            server = config[:ind]
-            key = config[ind + 1 :]
-            if server not in servers:
-                servers[server] = [key]
-            else:
-                servers[server].append(key)
+            for server in available_nodes:
+                if not config.startswith(f"{server}/"):
+                    continue
+                key = config[len(server) + 1 :]
+                if server not in servers:
+                    servers[server] = [key]
+                else:
+                    servers[server].append(key)
+                break
         return servers
 
     def set_request(self, server, key, data):
@@ -94,18 +99,27 @@ class RosDynamicConfigGUI(Node):
 
 
 def main():
-    rclpy.init()
-    gui = RosDynamicConfigGUI()
-    signal.signal(signal.SIGINT, lambda sig, frame: gui.shutdown())
-
     parser = argparse.ArgumentParser(
         description="Webserver hosting dynamic configuration GUI."
     )
     parser.add_argument("--debug", "-d", action="store_true")
+    parser.add_argument(
+        "--host", type=str, default="localhost", help="Host to run the webserver on."
+    )
+    parser.add_argument(
+        "--port", "-p", type=int, default=5000, help="Port to run the webserver on."
+    )
+    parser.add_argument(
+        "--no-open-browser",
+        action="store_true",
+        help="Do not open the web browser automatically.",
+    )
     args, _ = parser.parse_known_args()
 
-    # TODO(lschmid): Expose GUI args in the future.
-    gui.run(debug=args.debug)
+    rclpy.init()
+    gui = RosDynamicConfigGUI()
+    signal.signal(signal.SIGINT, lambda sig, frame: gui.shutdown())
+    gui.run(debug=args.debug, host=args.host, port=args.port, open_browser=not args.no_open_browser)
     gui.shutdown()
 
 
