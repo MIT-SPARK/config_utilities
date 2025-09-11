@@ -60,7 +60,7 @@ class RosDynamicConfigGUI(Node):
                     servers[server] = [key]
                 else:
                     servers[server].append(key)
-                    break
+                break
         return servers
 
     def set_request(self, server, key, data):
