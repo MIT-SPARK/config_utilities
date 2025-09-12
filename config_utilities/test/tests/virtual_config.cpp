@@ -175,16 +175,11 @@ void declare_config(ObjectWithOptionalConfigs::Config& config) {
   config::field(config.modules, "modules");
 }
 
-struct BaseDefaultedOptional {
-  virtual ~BaseDefaultedOptional() = default;
-};
-
-struct DefaultedOptional : BaseDefaultedOptional {
+struct DefaultedOptional {
   struct Config {
     int foo = 3;
   } const config;
   explicit DefaultedOptional(const Config& config) : config(config) {}
-  virtual ~DefaultedOptional() = default;
 };
 
 void declare_config(DefaultedOptional::Config& config) {
@@ -194,12 +189,11 @@ void declare_config(DefaultedOptional::Config& config) {
 
 struct ParentOfDefaultedOptional {
   struct Config {
-    VirtualConfig<BaseDefaultedOptional> child{DefaultedOptional::Config()};
+    VirtualConfig<DefaultedOptional> child{DefaultedOptional::Config()};
   } const config;
 
-  explicit ParentOfDefaultedOptional(const Config& config)
-      : config(config::checkValid(config)), child(config.child.create()) {}
-  std::unique_ptr<BaseDefaultedOptional> child;
+  explicit ParentOfDefaultedOptional(const Config& config) : config(config), child(config.child.create()) {}
+  std::unique_ptr<DefaultedOptional> child;
 };
 
 void declare_config(ParentOfDefaultedOptional::Config& config) {
@@ -210,11 +204,10 @@ void declare_config(ParentOfDefaultedOptional::Config& config) {
 
 struct GrandparentOfDefaultedOptional {
   struct Config {
-    VirtualConfig<ParentOfDefaultedOptional> child{ParentOfDefaultedOptional::Config()};
+    VirtualConfig<ParentOfDefaultedOptional> child;
   } const config;
 
-  explicit GrandparentOfDefaultedOptional(const Config& config)
-      : config(config::checkValid(config)), child(config.child.create()) {}
+  explicit GrandparentOfDefaultedOptional(const Config& config) : config(config), child(config.child.create()) {}
   std::unique_ptr<ParentOfDefaultedOptional> child;
 };
 
@@ -621,7 +614,7 @@ TEST(VirtualConfig, optionalNullCreation) {
 }
 
 TEST(VirtualConfig, defaultedConfigCorrect) {
-  RegistrationGuard<BaseDefaultedOptional, DefaultedOptional, DefaultedOptional::Config> guard("DefaultedOptional");
+  RegistrationGuard<DefaultedOptional, DefaultedOptional, DefaultedOptional::Config> guard("DefaultedOptional");
   RegistrationGuard<ParentOfDefaultedOptional, ParentOfDefaultedOptional, ParentOfDefaultedOptional::Config>
       parent_guard("ParentOfDefaultedOptional");
   RegistrationGuard<GrandparentOfDefaultedOptional,
@@ -629,15 +622,12 @@ TEST(VirtualConfig, defaultedConfigCorrect) {
                     GrandparentOfDefaultedOptional::Config>
       grandparent_guard("GrandparentOfDefaultedOptional");
 
-  {  // default config does the right thing
-    GrandparentOfDefaultedOptional::Config config;
-    GrandparentOfDefaultedOptional root(config);
-    ASSERT_TRUE(root.child);
-    EXPECT_TRUE(root.child->child);
-  }
-
   {  // default config does the right thing from YAML
-    const auto node = YAML::Load("{type: GrandparentOfDefaultedOptional}");
+    const auto node = YAML::Load(R"""(
+type: GrandparentOfDefaultedOptional
+child:
+  type: ParentOfDefaultedOptional
+)""");
     auto root = config::createFromYaml<GrandparentOfDefaultedOptional>(node);
     ASSERT_TRUE(root);
     ASSERT_TRUE(root->child);
@@ -645,30 +635,34 @@ TEST(VirtualConfig, defaultedConfigCorrect) {
   }
 
   {  // manually specifying the type does the right thing
-    const auto node = YAML::Load(
-        "{type: GrandparentOfDefaultedOptional, child: {type: ParentOfDefaultedOptional, child: {type: "
-        "DefaultedOptional, foo: 5}}}");
+    const auto node = YAML::Load(R"""(
+type: GrandparentOfDefaultedOptional
+child:
+  type: ParentOfDefaultedOptional
+  child:
+    type: DefaultedOptional
+    foo: 5
+)""");
     auto root = config::createFromYaml<GrandparentOfDefaultedOptional>(node);
     ASSERT_TRUE(root);
     ASSERT_TRUE(root->child);
-    auto derived_parent = dynamic_cast<ParentOfDefaultedOptional*>(root->child.get());
-    ASSERT_TRUE(derived_parent);
-    auto derived = dynamic_cast<DefaultedOptional*>(derived_parent->child.get());
-    ASSERT_TRUE(derived);
-    EXPECT_EQ(derived->config.foo, 5);
+    ASSERT_TRUE(root->child->child);
+    EXPECT_EQ(root->child->child->config.foo, 5);
   }
 
   {  // overriding default does the right thing
-    const auto node = YAML::Load(
-        "{type: GrandparentOfDefaultedOptional, child: {type: ParentOfDefaultedOptional, child: {type: ''}}}");
+    const auto node = YAML::Load(R"""(
+type: GrandparentOfDefaultedOptional
+child:
+  type: ParentOfDefaultedOptional
+  child:
+    type: ''
+)""");
     auto root_config = config::fromYaml<GrandparentOfDefaultedOptional::Config>(node);
-    std::cerr << toString(root_config) << std::endl;
     auto root = config::createFromYaml<GrandparentOfDefaultedOptional>(node);
     ASSERT_TRUE(root);
     ASSERT_TRUE(root->child);
-    auto derived_parent = dynamic_cast<ParentOfDefaultedOptional*>(root->child.get());
-    ASSERT_TRUE(derived_parent);
-    EXPECT_FALSE(derived_parent->child);
+    EXPECT_FALSE(root->child->child);
   }
 }
 
