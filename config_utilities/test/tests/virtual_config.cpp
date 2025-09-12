@@ -96,7 +96,7 @@ struct Derived2WithComplexParam : public Base2 {
   const std::shared_ptr<int> i_;
   inline static const auto registration_ =
       config::RegistrationWithConfig<Base2, Derived2WithComplexParam, Config, std::shared_ptr<int>>(
-        "Derived2WithComplexParam");
+          "Derived2WithComplexParam");
 };
 
 void declare_config(Derived2WithComplexParam::Config& config) {
@@ -108,13 +108,14 @@ struct Derived2WithMoveOnlyParam : public Base2 {
   struct Config {
     int i = 0;
   };
-  explicit Derived2WithMoveOnlyParam(const Config& config, std::unique_ptr<int> i) : config_(config), i_(std::move(i)) {}
+  explicit Derived2WithMoveOnlyParam(const Config& config, std::unique_ptr<int> i)
+      : config_(config), i_(std::move(i)) {}
   std::string name() const override { return "Derived2WithMoveOnlyParam"; }
   const Config config_;
   const std::unique_ptr<int> i_;
   inline static const auto registration_ =
       config::RegistrationWithConfig<Base2, Derived2WithMoveOnlyParam, Config, std::unique_ptr<int>>(
-        "Derived2WithMoveOnlyParam");
+          "Derived2WithMoveOnlyParam");
 };
 
 void declare_config(Derived2WithMoveOnlyParam::Config& config) {
@@ -172,6 +173,55 @@ struct ObjectWithOptionalConfigs {
 void declare_config(ObjectWithOptionalConfigs::Config& config) {
   config::name("ObjectWithOptionalConfigs");
   config::field(config.modules, "modules");
+}
+
+struct BaseDefaultedOptional {
+  virtual ~BaseDefaultedOptional() = default;
+};
+
+struct DefaultedOptional : BaseDefaultedOptional {
+  struct Config {
+    int foo = 3;
+  } const config;
+  explicit DefaultedOptional(const Config& config) : config(config) {}
+  virtual ~DefaultedOptional() = default;
+};
+
+void declare_config(DefaultedOptional::Config& config) {
+  name<DefaultedOptional::Config>();
+  field(config.foo, "foo");
+}
+
+struct ParentOfDefaultedOptional {
+  struct Config {
+    VirtualConfig<BaseDefaultedOptional> child{DefaultedOptional::Config()};
+  } const config;
+
+  explicit ParentOfDefaultedOptional(const Config& config)
+      : config(config::checkValid(config)), child(config.child.create()) {}
+  std::unique_ptr<BaseDefaultedOptional> child;
+};
+
+void declare_config(ParentOfDefaultedOptional::Config& config) {
+  name<ParentOfDefaultedOptional::Config>();
+  field(config.child, "child");
+  config.child.setOptional();
+}
+
+struct GrandparentOfDefaultedOptional {
+  struct Config {
+    VirtualConfig<ParentOfDefaultedOptional> child{ParentOfDefaultedOptional::Config()};
+  } const config;
+
+  explicit GrandparentOfDefaultedOptional(const Config& config)
+      : config(config::checkValid(config)), child(config.child.create()) {}
+  std::unique_ptr<ParentOfDefaultedOptional> child;
+};
+
+void declare_config(GrandparentOfDefaultedOptional::Config& config) {
+  name<ParentOfDefaultedOptional::Config>();
+  field(config.child, "child");
+  config.child.setOptional();
 }
 
 TEST(VirtualConfig, isSet) {
@@ -568,6 +618,58 @@ TEST(VirtualConfig, optionalNullCreation) {
 
   auto object = config.create();
   ASSERT_EQ(object, nullptr);
+}
+
+TEST(VirtualConfig, defaultedConfigCorrect) {
+  RegistrationGuard<BaseDefaultedOptional, DefaultedOptional, DefaultedOptional::Config> guard("DefaultedOptional");
+  RegistrationGuard<ParentOfDefaultedOptional, ParentOfDefaultedOptional, ParentOfDefaultedOptional::Config>
+      parent_guard("ParentOfDefaultedOptional");
+  RegistrationGuard<GrandparentOfDefaultedOptional,
+                    GrandparentOfDefaultedOptional,
+                    GrandparentOfDefaultedOptional::Config>
+      grandparent_guard("GrandparentOfDefaultedOptional");
+
+  {  // default config does the right thing
+    GrandparentOfDefaultedOptional::Config config;
+    GrandparentOfDefaultedOptional root(config);
+    ASSERT_TRUE(root.child);
+    EXPECT_TRUE(root.child->child);
+  }
+
+  {  // default config does the right thing from YAML
+    const auto node = YAML::Load("{type: GrandparentOfDefaultedOptional}");
+    auto root = config::createFromYaml<GrandparentOfDefaultedOptional>(node);
+    ASSERT_TRUE(root);
+    ASSERT_TRUE(root->child);
+    EXPECT_TRUE(root->child->child);
+  }
+
+  {  // manually specifying the type does the right thing
+    const auto node = YAML::Load(
+        "{type: GrandparentOfDefaultedOptional, child: {type: ParentOfDefaultedOptional, child: {type: "
+        "DefaultedOptional, foo: 5}}}");
+    auto root = config::createFromYaml<GrandparentOfDefaultedOptional>(node);
+    ASSERT_TRUE(root);
+    ASSERT_TRUE(root->child);
+    auto derived_parent = dynamic_cast<ParentOfDefaultedOptional*>(root->child.get());
+    ASSERT_TRUE(derived_parent);
+    auto derived = dynamic_cast<DefaultedOptional*>(derived_parent->child.get());
+    ASSERT_TRUE(derived);
+    EXPECT_EQ(derived->config.foo, 5);
+  }
+
+  {  // overriding default does the right thing
+    const auto node = YAML::Load(
+        "{type: GrandparentOfDefaultedOptional, child: {type: ParentOfDefaultedOptional, child: {type: ''}}}");
+    auto root_config = config::fromYaml<GrandparentOfDefaultedOptional::Config>(node);
+    std::cerr << toString(root_config) << std::endl;
+    auto root = config::createFromYaml<GrandparentOfDefaultedOptional>(node);
+    ASSERT_TRUE(root);
+    ASSERT_TRUE(root->child);
+    auto derived_parent = dynamic_cast<ParentOfDefaultedOptional*>(root->child.get());
+    ASSERT_TRUE(derived_parent);
+    EXPECT_FALSE(derived_parent->child);
+  }
 }
 
 }  // namespace config::test
