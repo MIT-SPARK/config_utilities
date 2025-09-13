@@ -169,13 +169,15 @@ struct Visitor {
   // Dispatch populating field input info from conversions.
   template <typename Conversion,
             typename ConfigT,
+            typename IntermediateT,
             typename std::enable_if<!hasFieldInputInfo<Conversion>() || isConfig<ConfigT>(), bool>::type = true>
-  static void getFieldInputInfo(const std::string& field_name);
+  static void getFieldInputInfo(const IntermediateT& intermediate, const std::string& field_name);
 
   template <typename Conversion,
             typename ConfigT,
+            typename IntermediateT,
             typename std::enable_if<hasFieldInputInfo<Conversion>() && !isConfig<ConfigT>(), bool>::type = true>
-  static void getFieldInputInfo(const std::string& field_name);
+  static void getFieldInputInfo(const IntermediateT& intermediate, const std::string& field_name);
 
   // Computes the default values for all fields in the meta data. This assumes that the meta data is already created,
   // and the meta data was created from ConfigT.

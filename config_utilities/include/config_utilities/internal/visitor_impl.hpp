@@ -211,14 +211,13 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
     auto intermediate = Conversion::toIntermediate(field, error);
     if (!error.empty()) {
       visitor.data.errors.emplace_back(new Warning(field_name, error));
-      error.clear();
     }
 
     Visitor::visitField(intermediate, field_name, unit);
 
     // Get type information if requested.
     if (visitor.mode == Visitor::Mode::kGetInfo) {
-      Visitor::getFieldInputInfo<Conversion, T>(field_name);
+      Visitor::getFieldInputInfo<Conversion, T>(intermediate, field_name);
     }
   }
 }
@@ -457,8 +456,9 @@ void Visitor::getDefaultValues(const ConfigT& config, MetaData& data) {
 // intentional no-op
 template <typename Conversion,
           typename ConfigT,
+          typename IntermediateT,
           typename std::enable_if<!hasFieldInputInfo<Conversion>() || isConfig<ConfigT>(), bool>::type>
-void Visitor::getFieldInputInfo(const std::string& field_name) {
+void Visitor::getFieldInputInfo(const IntermediateT&, const std::string& field_name) {
   static_assert(!isConfig<ConfigT>() || !hasFieldInputInfo<Conversion>(),
                 "Config types (with declare_config) cannot have field input information!");
 
@@ -471,14 +471,18 @@ void Visitor::getFieldInputInfo(const std::string& field_name) {
     visitor.data.errors.emplace_back(
         new Warning(field_name, "Invalid parsing state! Field info should already exist!"));
   } else {
-    visitor.data.field_infos.back().input_info.reset();  // clear field input info for underlying intermediate type
+    // Default: Create the field input info of the intermediate type.
+    auto input_info = createFieldInputInfo<IntermediateT>();
+    auto& info = visitor.data.field_infos.back();
+    info.input_info = FieldInputInfo::merge(input_info, info.input_info);
   }
 }
 
 template <typename Conversion,
           typename ConfigT,
+          typename IntermediateT,
           typename std::enable_if<hasFieldInputInfo<Conversion>() && !isConfig<ConfigT>(), bool>::type>
-void Visitor::getFieldInputInfo(const std::string& field_name) {
+void Visitor::getFieldInputInfo(const IntermediateT&, const std::string& field_name) {
   auto input_info = Conversion::getFieldInputInfo();
 
   auto& visitor = Visitor::instance();
