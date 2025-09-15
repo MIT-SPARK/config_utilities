@@ -243,8 +243,10 @@ TEST(Conversions, FieldInputInfo) {
   ConversionStruct without_info;
   data = internal::Visitor::getInfo(without_info);
   EXPECT_EQ(data.field_infos.size(), 2);
-  EXPECT_FALSE(data.field_infos[0].input_info);
-  EXPECT_FALSE(data.field_infos[1].input_info);
+  EXPECT_TRUE(data.field_infos[0].input_info);
+  EXPECT_TRUE(data.field_infos[1].input_info);
+  EXPECT_EQ(data.field_infos[0].input_info->type, internal::FieldInputInfo::Type::kInt);     // num_threads
+  EXPECT_EQ(data.field_infos[1].input_info->type, internal::FieldInputInfo::Type::kString);  // some_character
 }
 
 TEST(Conversions, ConversionDeclareConfigDispatch) {

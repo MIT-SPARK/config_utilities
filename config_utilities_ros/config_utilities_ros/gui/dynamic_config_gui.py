@@ -314,6 +314,10 @@ class DynamicConfigGUI:
             prefix_str = "".join([f"{p}{NS_SEP}" for p in prefix])
             for field in config["fields"]:
                 if field["type"] == "field":
+                    # Default the input info to just strings if no details are present.
+                    if "input_info" not in field:
+                        field["input_info"] = {"type": "yaml"}
+
                     # Data for each field (leaves of the config).
                     field["id"] = f"{prefix_str}{field['name']}"
                     field["indent"] = indent
