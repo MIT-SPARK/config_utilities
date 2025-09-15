@@ -66,3 +66,6 @@ Notes.txt
 tmp/
 
 compile_commands.json
+
+# Doxygen
+.doxygen/
