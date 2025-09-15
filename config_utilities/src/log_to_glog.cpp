@@ -33,54 +33,56 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
-#include "config_utilities/logging/log_to_stdout.h"
+#include "config_utilities/logging/log_to_glog.h"
 
-#include <exception>
+#ifdef CONFIG_UTILS_ENABLE_GLOG_LOGGING
+#include <glog/logging.h>
+#endif
+
 #include <iostream>
 
 #include "config_utilities/factory.h"
+#include "config_utilities/logging/log_to_stdout.h"
 
 namespace config::internal {
 namespace {
 
-// Factory registration to allow setting of formatters via Settings::setLogger().
-static const auto registration = Registration<Logger, StdoutLogger>("stdout");
+#ifdef CONFIG_UTILS_ENABLE_GLOG_LOGGING
+static const auto registration = Registration<Logger, GlogLogger>("glog");
+#endif
 
 }  // namespace
 
-StdoutLogger::StdoutLogger(Severity min_severity, Severity stderr_severity)
-    : min_severity_(min_severity), stderr_severity_(stderr_severity) {}
+GlogLogger::GlogLogger() {
+#ifndef CONFIG_UTILS_ENABLE_GLOG_LOGGING
+  std::cerr << "config_utilities was not build with glog support! reverting to stdout logging implementation"
+            << std::endl;
+#endif
+}
 
-void StdoutLogger::logImpl(const Severity severity, const std::string& message) {
-  if (severity < min_severity_ && severity != Severity::kFatal) {
-    return;
-  }
-
-  std::stringstream ss;
+void GlogLogger::logImpl(const Severity severity, const std::string& message) {
+#ifndef CONFIG_UTILS_ENABLE_GLOG_LOGGING
+  Logger::setLogger(std::make_shared<StdoutLogger>());
+  Logger::log(severity, message);
+#else
   switch (severity) {
     case Severity::kInfo:
-      ss << "[INFO] " << message;
+      LOG(INFO) << message;
       break;
 
     case Severity::kWarning:
-      ss << "\033[33m[WARNING] " << message << "\033[0m";
+      LOG(WARNING) << message;
+
       break;
 
     case Severity::kError:
-      ss << "\033[31m[ERROR] " << message << "\033[0m";
+      LOG(ERROR) << message;
       break;
 
     case Severity::kFatal:
-      throw std::runtime_error(message);
+      LOG(FATAL) << message;
   }
-
-  if (severity < stderr_severity_) {
-    std::cout << ss.str() << std::endl;
-  } else {
-    std::cerr << ss.str() << std::endl;
-  }
+#endif
 }
-
-StdoutLogger::Initializer::Initializer() { Logger::setLogger(std::make_shared<StdoutLogger>()); }
 
 }  // namespace config::internal

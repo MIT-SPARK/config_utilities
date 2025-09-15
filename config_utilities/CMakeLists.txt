@@ -9,19 +9,13 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-include(OptionalPackage)
-
 option(BUILD_SHARED_LIBS "Build shared libs" ON)
-option(CONFIG_UTILS_ENABLE_EIGEN "Export Eigen and build related code" ON)
-option(CONFIG_UTILS_ENABLE_GLOG "Export glog and build related code" ON)
-option(CONFIG_UTILS_BUILD_TESTS "Build unit tests" ON)
 option(CONFIG_UTILS_BUILD_DEMOS "Build demo executables" ON)
 
 find_package(yaml-cpp REQUIRED)
 find_package(Boost CONFIG REQUIRED COMPONENTS filesystem system)
-find_optional(Eigen3 CONFIG_UTILS_ENABLE_EIGEN)
-find_optional_pkgcfg(libglog CONFIG_UTILS_ENABLE_GLOG)
+find_package(Eigen3 QUIET)
+find_package(glog QUIET)
 
 add_library(
   ${PROJECT_NAME}
@@ -36,6 +30,7 @@ add_library(
   src/formatter.cpp
   src/field_input_info.cpp
   src/log_to_stdout.cpp
+  src/log_to_glog.cpp
   src/logger.cpp
   src/meta_data.cpp
   src/namespacing.cpp
@@ -49,39 +44,69 @@ add_library(
   src/yaml_parser.cpp
   src/yaml_utils.cpp
 )
+target_include_directories(
+  ${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>
+                         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+
+# Set up main library linkage
 target_link_libraries(
   ${PROJECT_NAME}
   PUBLIC yaml-cpp
   PRIVATE Boost::filesystem Boost::system Boost::boost ${CMAKE_DL_LIBS})
-target_include_directories(
-  ${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>
-                         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE 1)
 add_library(config_utilities::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+if(Eigen3_FOUND)
+  target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen)
+endif()
+if(glog_FOUND)
+  target_link_libraries(${PROJECT_NAME} PUBLIC glog::glog)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE CONFIG_UTILS_ENABLE_GLOG_LOGGING)
+endif()
 
 add_executable(composite-configs app/composite_configs.cpp)
 target_link_libraries(composite-configs ${PROJECT_NAME})
-
-if(ENABLE_Eigen3)
-  target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen)
-endif()
-
-if(ENABLE_libglog)
-  target_link_libraries(${PROJECT_NAME} PUBLIC PkgConfig::libglog)
-endif()
-
-message(STATUS "Eigen features enabled: ${ENABLE_Eigen3}")
-message(STATUS "glog features enabled:  ${ENABLE_libglog}")
 
 if(CONFIG_UTILS_BUILD_DEMOS)
   add_subdirectory(demos)
 endif()
 
-if(CONFIG_UTILS_BUILD_TESTS)
-  include(CTest)
+include(CTest)
+if(BUILD_TESTING)
   enable_testing()
   add_subdirectory(test)
 endif()
 
-include(HandleInstall)
+# Install targets and headers
+include(GNUInstallDirs)
+install(
+  TARGETS ${PROJECT_NAME} composite-configs
+  EXPORT config_utilities-targets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(
+  EXPORT config_utilities-targets
+  FILE config_utilitiesTargets.cmake
+  NAMESPACE config_utilities::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/config_utilities)
+
+# Install packaging
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+  ${CMAKE_CURRENT_LIST_DIR}/cmake/config_utilitiesConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/config_utilitiesConfig.cmake
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/config_utilities)
+write_basic_package_version_file(
+  config_utilitiesConfigVersion.cmake
+  VERSION ${PACKAGE_VERSION}
+  COMPATIBILITY AnyNewerVersion)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/config_utilitiesConfig.cmake
+              ${CMAKE_CURRENT_BINARY_DIR}/config_utilitiesConfigVersion.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/config_utilities)
+
+# Exposes this package to ament for ros2 run and other utilities to work
+find_package(ament_cmake_core QUIET)
+if (${ament_cmake_core_FOUND})
+  ament_package()
+endif()

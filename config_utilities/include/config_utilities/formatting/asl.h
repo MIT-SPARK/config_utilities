@@ -39,7 +39,6 @@
 #include <string>
 #include <vector>
 
-#include "config_utilities/factory.h"
 #include "config_utilities/internal/formatter.h"
 #include "config_utilities/internal/meta_data.h"
 
@@ -47,12 +46,12 @@ namespace config::internal {
 
 /**
  * @brief Implements formatting of text in the style of https://github.com/ethz-asl/config_utilities, emphasizing
- * readability wenn printed to the console.
+ * readability when printed to the console.
  */
 class AslFormatter : public Formatter {
  public:
   AslFormatter() = default;
-  ~AslFormatter() override = default;
+  virtual ~AslFormatter() = default;
 
  protected:
   std::string formatErrorsImpl(const MetaData& data,
@@ -64,12 +63,9 @@ class AslFormatter : public Formatter {
   std::string formatConfigsImpl(const std::vector<MetaData>& data) override;
 
  private:
-  // Factory registration to allow setting of formatters via Settings::setFormatter().
-  inline static const auto registration_ = Registration<Formatter, AslFormatter>("asl");
-
   // Initialize the asl formatter to be used if included.
   inline static const struct Initializer {
-    Initializer() { Formatter::setFormatter(std::make_unique<AslFormatter>()); }
+    Initializer();
   } initializer_;
 
   // Helper functions.

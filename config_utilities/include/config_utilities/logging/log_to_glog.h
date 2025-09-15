@@ -35,9 +35,6 @@
 
 #pragma once
 
-#include <glog/logging.h>
-
-#include "config_utilities/factory.h"
 #include "config_utilities/internal/logger.h"
 
 namespace config::internal {
@@ -48,33 +45,11 @@ namespace config::internal {
  */
 class GlogLogger : public Logger {
  public:
-  GlogLogger() = default;
+  GlogLogger();
   virtual ~GlogLogger() = default;
 
  protected:
-  void logImpl(const Severity severity, const std::string& message) override {
-    switch (severity) {
-      case Severity::kInfo:
-        LOG(INFO) << message;
-        break;
-
-      case Severity::kWarning:
-        LOG(WARNING) << message;
-
-        break;
-
-      case Severity::kError:
-        LOG(ERROR) << message;
-        break;
-
-      case Severity::kFatal:
-        LOG(FATAL) << message;
-    }
-  }
-
- private:
-  // Factory registration to allow setting of formatters via Settings::setLogger().
-  inline static const auto registration_ = Registration<Logger, GlogLogger>("glog");
+  void logImpl(const Severity severity, const std::string& message) override;
 };
 
 }  // namespace config::internal

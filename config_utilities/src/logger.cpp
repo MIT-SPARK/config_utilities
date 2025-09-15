@@ -38,6 +38,7 @@
 #include <stdexcept>
 
 #include "config_utilities/logging/log_to_stdout.h"
+#include "config_utilities/settings.h"
 
 namespace config::internal {
 
