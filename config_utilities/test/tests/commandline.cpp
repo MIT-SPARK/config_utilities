@@ -37,42 +37,10 @@
 
 #include <gtest/gtest.h>
 
+#include "config_utilities/test/cli_args.h"
 #include "config_utilities/test/utils.h"
 
 namespace config::test {
-namespace {
-
-struct CliArgs {
-  struct Args {
-    int argc;
-    char** argv;
-
-    std::string get_cmd() const {
-      std::stringstream ss;
-      for (int i = 0; i < argc; ++i) {
-        ss << argv[i];
-        if (i < argc - 1) {
-          ss << " ";
-        }
-      }
-
-      return ss.str();
-    }
-  };
-
-  explicit CliArgs(const std::vector<std::string>& args) : original_args(args) {
-    for (auto& str : original_args) {
-      arg_pointers.push_back(str.data());
-    }
-  }
-
-  Args get() { return {static_cast<int>(arg_pointers.size()), arg_pointers.data()}; }
-
-  std::vector<std::string> original_args;
-  std::vector<char*> arg_pointers;
-};
-
-}  // namespace
 
 TEST(Commandline, noInputArgs) {
   CliArgs cli_args(std::vector<std::string>{"some_command"});
@@ -305,7 +273,8 @@ TEST(Commandline, InvalidVariable) {
 
 TEST(Commandline, SeparatorCorrect) {
   // Checks that we stop processing options after a separator
-  CliArgs cli_args(std::vector<std::string>{"some_command", "-c", "{c: ", "$<var", "c>}", "-v", "c=5", "--", "-v", "c=6"});
+  CliArgs cli_args(
+      std::vector<std::string>{"some_command", "-c", "{c: ", "$<var", "c>}", "-v", "c=5", "--", "-v", "c=6"});
   auto args = cli_args.get();
   const auto node = internal::loadFromArguments(args.argc, args.argv, true);
   const auto expected = YAML::Load(R"yaml({c: 5})yaml");
