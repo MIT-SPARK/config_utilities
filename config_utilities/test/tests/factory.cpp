@@ -422,6 +422,7 @@ config::internal::Formatter():
   'asl' (config::internal::AslFormatter)
 
 config::internal::Logger():
+  'glog' (config::internal::GlogLogger)
   'stdout' (config::internal::StdoutLogger)
   'test_logger' (config::test::TestLogger)
 
