@@ -47,11 +47,12 @@
 namespace config::internal {
 namespace {
 
+#ifdef CONFIG_UTILS_ENABLE_GLOG_LOGGING
 static const auto registration = Registration<Logger, GlogLogger>("glog");
+#endif
 
 }  // namespace
 
-// TODO(nathan) add warning
 GlogLogger::GlogLogger() {
 #ifndef CONFIG_UTILS_ENABLE_GLOG_LOGGING
   std::cerr << "config_utilities was not build with glog support! reverting to stdout logging implementation"
@@ -59,7 +60,6 @@ GlogLogger::GlogLogger() {
 #endif
 }
 
-// TODO(nathan) conditional compilation
 void GlogLogger::logImpl(const Severity severity, const std::string& message) {
 #ifndef CONFIG_UTILS_ENABLE_GLOG_LOGGING
   Logger::setLogger(std::make_shared<StdoutLogger>());

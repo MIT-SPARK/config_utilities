@@ -50,8 +50,8 @@ namespace config::internal {
  */
 class AslFormatter : public Formatter {
  public:
-  AslFormatter();
-  virtual ~AslFormatter();
+  AslFormatter() = default;
+  virtual ~AslFormatter() = default;
 
  protected:
   std::string formatErrorsImpl(const MetaData& data,

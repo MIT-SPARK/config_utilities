@@ -46,10 +46,6 @@ static const auto registration = Registration<Formatter, AslFormatter>("asl");
 
 }  // namespace
 
-AslFormatter::AslFormatter() = default;
-
-AslFormatter::~AslFormatter() = default;
-
 AslFormatter::Initializer::Initializer() { Formatter::setFormatter(std::make_unique<AslFormatter>()); }
 
 std::string AslFormatter::formatErrorsImpl(const MetaData& data,

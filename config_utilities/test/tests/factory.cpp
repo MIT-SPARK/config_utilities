@@ -422,7 +422,6 @@ config::internal::Formatter():
   'asl' (config::internal::AslFormatter)
 
 config::internal::Logger():
-  'glog' (config::internal::GlogLogger)
   'stdout' (config::internal::StdoutLogger)
   'test_logger' (config::test::TestLogger)
 
@@ -505,6 +504,9 @@ Config[config::test::Talker]():
 )""";
 
   Settings().printing.width = 40;
+
+  // drop glog if it exists to avoid conditional registration problems
+  internal::ObjectFactory<internal::Logger>::removeEntry("glog");
   const std::string modules = internal::ModuleRegistry::getAllRegistered();
   EXPECT_EQ(modules, expected);
   Settings().restoreDefaults();
