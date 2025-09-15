@@ -44,6 +44,9 @@
 #include "config_utilities/substitutions.h"
 #include "config_utilities/update.h"
 
+// TMP
+#include <iostream>
+
 namespace config {
 namespace internal {
 
@@ -75,12 +78,11 @@ struct CliParser {
     std::string getFlagToken(const std::string& option) const;
   };
 
-  const std::vector<Opt> opts{
-      {"config-utilities-file", Entry::Type::File, 1, "f"},
-      {"config-utilities-yaml", Entry::Type::Yaml, -1, "c"},
-      {"config-utilities-var", Entry::Type::Var, 1, "v"},
-      {"disable-substitutions", Entry::Type::Flag, 0, "d"},
-  };
+  const std::vector<Opt> opts{{"config-utilities-file", Entry::Type::File, 1, "f"},
+                              {"config-utilities-yaml", Entry::Type::Yaml, -1, "c"},
+                              {"config-utilities-var", Entry::Type::Var, 1, "v"},
+                              {"disable-substitutions", Entry::Type::Flag, 0, "d"},
+                              {"config-utilities-introspect", Entry::Type::Flag, 1, "i"}};
 
   CliParser() = default;
   CliParser& parse(int& argc, char* argv[], bool remove_args);
@@ -347,6 +349,13 @@ void updateContextFromFlag(const CliParser::Entry& entry, ParserContext& context
   }
 }
 
+void setupIntrospectionFromParser(const CliParser& parser) {
+  // TMP
+  for (const auto& entry : parser.entries) {
+    std::cout << "ENTRY: " << static_cast<int>(entry.type) << " -> " << entry.value << std::endl;
+  }
+}
+
 YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args, ParserInfo* info) {
   const auto parser = CliParser().parse(argc, argv, remove_args);
   if (info) {
@@ -357,6 +366,9 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args, ParserIn
   }
 
   ParserContext context;
+
+  // Check for initialization of introspection first.
+  setupIntrospectionFromParser(parser);
 
   YAML::Node node;
   for (const auto& entry : parser.entries) {

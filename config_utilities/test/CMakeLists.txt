@@ -33,6 +33,7 @@ add_custom_target(
 add_executable(
   test_${PROJECT_NAME}
   main.cpp
+  src/cli_args.cpp
   src/default_config.cpp
   src/utils.cpp
   tests/asl_formatter.cpp
@@ -47,6 +48,7 @@ add_executable(
   tests/getters.cpp
   tests/field_input_info.cpp
   tests/inheritance.cpp
+  tests/introspection.cpp
   tests/missing_fields.cpp
   tests/namespacing.cpp
   tests/path.cpp
