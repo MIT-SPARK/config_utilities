@@ -58,8 +58,7 @@ bool loadData(nlohmann::json& j) {
   return true;
 }
 
-TEST(Introspection, logCLI) {
-  // File-based entry
+TEST(Introspection, logCLIFile) {
   internal::Introspection::instance().clear();
   CliArgs cli_args(std::vector<std::string>{"some_command", "--config-utilities-file", "resources/foo.yaml@foo", "-i"});
   auto args = cli_args.get();
@@ -100,6 +99,17 @@ TEST(Introspection, logCLI) {
   }
 })"_json;
   EXPECT_EQ(j, expected);
+}
+
+TEST(Introspection, logCLIYaml) {
+  internal::Introspection::instance().clear();
+  CliArgs cli_args(std::vector<std::string>{
+      "some_command", "--config-utilities-yaml", "foo: {a: 5.0,  b: [1, 2, 3],  sub_ns: {c: hello}}", "-i"});
+  auto args = cli_args.get();
+  auto node = internal::loadFromArguments(args.argc, args.argv, true);
+  nlohmann::json j;
+  EXPECT_TRUE(loadData(j));
+  std::cout << j.dump(2) << std::endl;
 }
 
 }  // namespace config::test

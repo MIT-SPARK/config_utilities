@@ -67,10 +67,11 @@ class Introspection {
 
     // Source/owner of the event.
     struct By {
-      enum Type : char { File = 'f', Arg = 'a' } type;
+      enum Type : char { File = 'f', Arg = 'a', Substitution = 's' } type;
 
       static By file(const std::string& filename);
       static By arg(const std::string& args);
+      static By substitution(const std::string& substitution_details = "");
 
       size_t index;
 
@@ -109,6 +110,12 @@ class Introspection {
    * @param by The source of the entry (e.g. filename or 'arg').
    */
   static void logCliEntry(const YAML::Node& merged_node, const YAML::Node& parsed_node, const Event::By& by);
+
+  /**
+   * @brief Log substitution events. Call this on the merged node after all substitutions have been resolved.
+   * @param merged_node The current context node after all substitutions have been resolved.
+   */
+  static void logSubstitution(const YAML::Node& merged_node);
 
   /**
    * @brief Clear the introspection data.
