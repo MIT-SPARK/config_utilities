@@ -22,6 +22,9 @@ Options:
   -d/--disable-substitutions: Turn off substitutions resolution
   --no-disable-substitutions: Turn substitution resolution on (currently on by default)
   --force-block-style: Force emitted YAML to only use block style
+  -i/--config-utilities-introspect [OUTPUT_DIR]: Enable introspection and output results to OUTPUT_DIR.
+                                                 If OUTPUT_DIR is not specified, defaults to 'introspection_results'.
+                                                 Note that if the directory already exists, it will be overwritten.
 
 Example:
 > echo "{a: 42, bar: hello}" > /tmp/test_in.yaml
