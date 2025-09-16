@@ -363,7 +363,7 @@ void setupIntrospectionFromParser(const CliParser& parser) {
     if (entry.value.rfind("config-utilities-introspect", 0) == 0) {
       const auto pos = entry.value.find(" ");
       internal::Settings::instance().introspection.output =
-          pos != std::string::npos ? entry.value.substr(pos + 1) : "introspection_results";
+          pos != std::string::npos ? entry.value.substr(pos + 1) : "config_introspection_output";
       return;
     }
   }

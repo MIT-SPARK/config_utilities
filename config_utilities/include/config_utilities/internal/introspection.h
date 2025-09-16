@@ -33,41 +33,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
-#include <gtest/gtest.h>
+#pragma once
 
-#include "config_utilities/parsing/commandline.h"
+#include <memory>
+#include <string>
+
 #include "config_utilities/settings.h"
-#include "config_utilities/test/cli_args.h"
-#include "config_utilities/test/utils.h"
 
-namespace config::test {
-
-TEST(Introspection, setupFromParser) {
-  CliArgs cli_args(std::vector<std::string>{"some_command",
-                                            "--config-utilities-file",
-                                            "resources/foo.yaml",
-                                            "--config-utilities-file",
-                                            "resources/bar.yaml",
-                                            "--config-utilities-introspect",
-                                            "/path/to/output"});
-
-  // With specified output directory
-  auto args = cli_args.get();
-  auto node = internal::loadFromArguments(args.argc, args.argv, true);
-  EXPECT_EQ(args.get_cmd(), "some_command");
-  EXPECT_EQ(config::Settings().introspection.output, "/path/to/output");
-
-  // Default output directory.
-  cli_args = CliArgs(std::vector<std::string>{"some_command",
-                                              "--config-utilities-file",
-                                              "resources/foo.yaml",
-                                              "--config-utilities-file",
-                                              "resources/bar.yaml",
-                                              "--config-utilities-introspect"});
-  args = cli_args.get();
-  node = internal::loadFromArguments(args.argc, args.argv, true);
-  EXPECT_EQ(args.get_cmd(), "some_command");
-  EXPECT_EQ(config::Settings().introspection.output, "config_introspection_output");
-}
-
-}  // namespace config::test
+namespace config::internal {}  // namespace config::internal
