@@ -39,6 +39,7 @@
 #include <regex>
 #include <sstream>
 
+#include "config_utilities/internal/introspection.h"
 #include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/yaml_utils.h"
 #include "config_utilities/substitutions.h"
@@ -297,7 +298,7 @@ YAML::Node nodeFromFileEntry(const CliParser::Entry& entry) {
   std::filesystem::path file(filepath);
   if (!fs::exists(file)) {
     std::stringstream ss;
-    ss << "File " << file << " does not exist!";
+    ss << "File '" << file << "' does not exist!";
     Logger::logError(ss.str());
     return node;
   }
@@ -306,7 +307,7 @@ YAML::Node nodeFromFileEntry(const CliParser::Entry& entry) {
     node = YAML::LoadFile(file);
   } catch (const std::exception& e) {
     std::stringstream ss;
-    ss << "Failure for " << file << ": " << e.what();
+    ss << "Failure for '" << file << "': " << e.what();
     Logger::logError(ss.str());
     return node;
   }
@@ -380,6 +381,7 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args, ParserIn
 
   // Check for introspection first.
   setupIntrospectionFromParser(parser);
+  const bool introspection_enabled = Settings::instance().introspection.enabled();
 
   // Populate the context.
   ParserContext context;
@@ -403,8 +405,17 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args, ParserIn
         break;
     }
 
-    // no-op for invalid parsed node
+    if (!parsed_node) {
+      continue;
+    }
+
     internal::mergeYamlNodes(node, parsed_node, MergeMode::APPEND);
+    if (introspection_enabled) {
+      const auto by = entry.type == CliParser::Entry::Type::File
+                          ? Introspection::Event::By::file(fs::absolute(entry.value).string())
+                          : Introspection::Event::By::arg(entry.value);
+      Introspection::logCliEntry(node, parsed_node, by);
+    }
   }
 
   resolveSubstitutions(node, context);
