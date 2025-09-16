@@ -30,6 +30,10 @@ Introspection::Event::By Introspection::Event::By::file(const std::string& filen
 
 Introspection::Event::By Introspection::Event::By::arg(const std::string& args) { return By(Type::Arg, args); }
 
+Introspection::Event::By Introspection::Event::By::substitution(const std::string& substitution_details) {
+  return By(Type::Substitution, substitution_details);
+}
+
 Introspection::Event::Event(Type type, const By& by, const std::string& info, const std::string& value)
     : type(type), by(by), info(info), value(value) {}
 
@@ -62,6 +66,27 @@ void Introspection::logCliEntry(const YAML::Node& merged_node, const YAML::Node&
       continue;
     }
     addEvent(key, Event(Event::Type::Update, by, "", parsed_value));
+  }
+}
+
+void Introspection::logSubstitution(const YAML::Node& merged_node) {
+  // Log all top-level keys in the merged node as 'Read' events if they have not been set before.
+  const auto merged_flat = flattenNamespace(merged_node);
+  for (const auto& [key, value] : merged_flat) {
+    const std::string merged_value = yamlToString(value, false);
+    const auto& previous_value = instance().lastValue(key);
+    if (previous_value.empty()) {
+      // This is unlikely to happen, but good to be covered. If this becomes more common probably more substitution
+      // details should be extracted.
+      addEvent(key, Event(Event::Type::Set, Event::By::substitution(), "", merged_value));
+      continue;
+    }
+    if (merged_value == previous_value) {
+      addEvent(key, Event(Event::Type::SetNonModified, Event::By::substitution()));
+      continue;
+    }
+    // Substitutions are always classified as update, even if the entire string was replaced.
+    addEvent(key, Event(Event::Type::Update, Event::By::substitution(), "", merged_value));
   }
 }
 
