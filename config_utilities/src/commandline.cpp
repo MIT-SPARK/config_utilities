@@ -44,9 +44,6 @@
 #include "config_utilities/substitutions.h"
 #include "config_utilities/update.h"
 
-// TMP
-#include <iostream>
-
 namespace config {
 namespace internal {
 
@@ -62,7 +59,7 @@ struct Span {
 
 struct CliParser {
   struct Entry {
-    enum class Type { File, Yaml, Var, Flag } type;
+    enum class Type { File, Yaml, Var, Flag, Arg } type;
     std::string value;
   };
 
@@ -71,18 +68,18 @@ struct CliParser {
   struct Opt {
     const std::string name;
     Entry::Type type;
-    int nargs = 1;
+    enum class NumArgs { Zero, One, ZeroOrOne, ZeroOrMore, OneOrMore } nargs = NumArgs::One;
     const std::string short_name;
 
     bool matches(const std::string& option) const;
     std::string getFlagToken(const std::string& option) const;
   };
 
-  const std::vector<Opt> opts{{"config-utilities-file", Entry::Type::File, 1, "f"},
-                              {"config-utilities-yaml", Entry::Type::Yaml, -1, "c"},
-                              {"config-utilities-var", Entry::Type::Var, 1, "v"},
-                              {"disable-substitutions", Entry::Type::Flag, 0, "d"},
-                              {"config-utilities-introspect", Entry::Type::Flag, 1, "i"}};
+  const std::vector<Opt> opts{{"config-utilities-file", Entry::Type::File, Opt::NumArgs::One, "f"},
+                              {"config-utilities-yaml", Entry::Type::Yaml, Opt::NumArgs::OneOrMore, "c"},
+                              {"config-utilities-var", Entry::Type::Var, Opt::NumArgs::One, "v"},
+                              {"disable-substitutions", Entry::Type::Flag, Opt::NumArgs::Zero, "d"},
+                              {"config-utilities-introspect", Entry::Type::Arg, Opt::NumArgs::ZeroOrOne, "i"}};
 
   CliParser() = default;
   CliParser& parse(int& argc, char* argv[], bool remove_args);
@@ -114,7 +111,7 @@ bool checkIfFlag(const std::string& opt) {
   return std::regex_match(opt, m, flag_regex);
 }
 
-std::optional<Span> getSpan(int argc, char* argv[], int pos, int nargs, std::string& error) {
+std::optional<Span> getSpan(int argc, char* argv[], int pos, CliParser::Opt::NumArgs nargs, std::string& error) {
   // a flag is one of:
   //   -some-option_name
   //   --some_0ption-name
@@ -129,7 +126,7 @@ std::optional<Span> getSpan(int argc, char* argv[], int pos, int nargs, std::str
   // "{a: --some_value=value}"
   // you should escape it when passing the argument, i.e.,
   // --config-utilities-yaml '{a: --some_value=value}'
-  if (nargs == 0) {
+  if (nargs == CliParser::Opt::NumArgs::Zero) {
     return Span{pos, 0, argv[pos]};
   }
 
@@ -140,15 +137,19 @@ std::optional<Span> getSpan(int argc, char* argv[], int pos, int nargs, std::str
       break;  // stop parsing the span
     }
 
-    if (nargs == 1) {
+    if (nargs == CliParser::Opt::NumArgs::One) {
       return Span{pos, 1, argv[pos]};
     }
 
     ++index;
   }
 
-  if (index == pos + 1) {
-    error = nargs < 0 ? "at least one value required!" : "missing required value!";
+  if (index == pos + 1 && (nargs == CliParser::Opt::NumArgs::One || nargs == CliParser::Opt::NumArgs::OneOrMore)) {
+    error = nargs == CliParser::Opt::NumArgs::OneOrMore ? "at least one value required!" : "missing required value!";
+    return std::nullopt;
+  }
+  if (nargs == CliParser::Opt::NumArgs::ZeroOrOne && index > pos + 2) {
+    error = "At most one value allowed!";
     return std::nullopt;
   }
 
@@ -264,6 +265,11 @@ CliParser& CliParser::parse(int& argc, char* argv[], bool remove_args) {
         break;
       case Entry::Type::Flag:
         entries.push_back(Entry{opt->type, opt->getFlagToken(span.key)});
+        break;
+      case Entry::Type::Arg:
+        const auto tokens = span.extractTokens(argc, argv);
+        entries.push_back(Entry{opt->type, opt->name + (tokens.empty() ? "" : " " + tokens)});
+        break;
     }
   }
 
@@ -350,9 +356,16 @@ void updateContextFromFlag(const CliParser::Entry& entry, ParserContext& context
 }
 
 void setupIntrospectionFromParser(const CliParser& parser) {
-  // TMP
   for (const auto& entry : parser.entries) {
-    std::cout << "ENTRY: " << static_cast<int>(entry.type) << " -> " << entry.value << std::endl;
+    if (entry.type != CliParser::Entry::Type::Arg) {
+      continue;
+    }
+    if (entry.value.rfind("config-utilities-introspect", 0) == 0) {
+      const auto pos = entry.value.find(" ");
+      internal::Settings::instance().introspection.output =
+          pos != std::string::npos ? entry.value.substr(pos + 1) : "introspection_results";
+      return;
+    }
   }
 }
 
@@ -365,11 +378,11 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args, ParserIn
     }
   }
 
-  ParserContext context;
-
-  // Check for initialization of introspection first.
+  // Check for introspection first.
   setupIntrospectionFromParser(parser);
 
+  // Populate the context.
+  ParserContext context;
   YAML::Node node;
   for (const auto& entry : parser.entries) {
     YAML::Node parsed_node;
@@ -385,6 +398,8 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args, ParserIn
         break;
       case CliParser::Entry::Type::Flag:
         updateContextFromFlag(entry, context);
+        break;
+      case CliParser::Entry::Type::Arg:
         break;
     }
 
