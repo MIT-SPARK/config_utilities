@@ -80,6 +80,18 @@ YAML::Node lookupNamespace(const YAML::Node& node, const std::string& name_space
 void moveDownNamespace(YAML::Node& node, const std::string& name_space, const std::string& separator = "/");
 
 /**
+ * @brief Flatten a YAML node into a map of key-value pairs, where keys represent the full namespace of the value in the
+ * original node. Namespaces are separated by the specified separator.
+ * @param node The node to flatten.
+ * @param create_copy If true create a deep copy of the node values. If false reference the original data.
+ * @param separator The separator to use between namespaces.
+ * @returns A map of key-value pairs representing the flattened node.
+ */
+std::map<std::string, YAML::Node> flattenNamespace(const YAML::Node& node,
+                                                   bool create_copy = false,
+                                                   const std::string& separator = "/");
+
+/**
  * @brief Check whether two yaml nodes are equal. Note that since since yaml-cpp operator== checks for identity and not
  * equality, scalar values will be compared by string representation.
  */

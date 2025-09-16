@@ -16,6 +16,7 @@ find_package(yaml-cpp REQUIRED)
 find_package(Boost CONFIG REQUIRED COMPONENTS filesystem system)
 find_package(Eigen3 QUIET)
 find_package(glog QUIET)
+find_package(nlohmann_json QUIET)
 
 add_library(
   ${PROJECT_NAME}
@@ -62,6 +63,10 @@ endif()
 if(glog_FOUND)
   target_link_libraries(${PROJECT_NAME} PUBLIC glog::glog)
   target_compile_definitions(${PROJECT_NAME} PRIVATE CONFIG_UTILS_ENABLE_GLOG_LOGGING)
+endif()
+if(nlohmann_json_FOUND)
+  target_link_libraries(${PROJECT_NAME} PUBLIC nlohmann_json::nlohmann_json)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE CONFIG_UTILS_ENABLE_JSON)
 endif()
 
 add_executable(composite-configs app/composite_configs.cpp)

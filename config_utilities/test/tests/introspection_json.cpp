@@ -33,10 +33,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
-#include "config_utilities/internal/introspection.h"
+#include <filesystem>
+#include <fstream>
 
 #include <gtest/gtest.h>
+#include <nlohmann/json.hpp>
 
+#include "config_utilities/internal/introspection.h"
 #include "config_utilities/parsing/commandline.h"
 #include "config_utilities/settings.h"
 #include "config_utilities/test/cli_args.h"
@@ -46,32 +49,57 @@ namespace config::test {
 
 const std::string intro_dir = "config_introspection_output";
 
-TEST(Introspection, invokeFromParser) {
-  CliArgs cli_args(std::vector<std::string>{"some_command",
-                                            "--config-utilities-file",
-                                            "resources/foo.yaml",
-                                            "--config-utilities-file",
-                                            "resources/bar.yaml",
-                                            "--config-utilities-introspect",
-                                            "/path/to/output"});
+bool loadData(nlohmann::json& j) {
+  const std::string intro_file = "config_introspection_output/data.json";
+  if (!std::filesystem::exists(intro_file)) {
+    return false;
+  }
+  std::ifstream(intro_file) >> j;
+  return true;
+}
 
-  // With specified output directory
+TEST(Introspection, logCLI) {
+  // File-based entry
+  internal::Introspection::instance().clear();
+  CliArgs cli_args(std::vector<std::string>{"some_command", "--config-utilities-file", "resources/foo.yaml@foo", "-i"});
   auto args = cli_args.get();
   auto node = internal::loadFromArguments(args.argc, args.argv, true);
-  EXPECT_EQ(args.get_cmd(), "some_command");
-  EXPECT_EQ(config::Settings().introspection.output, "/path/to/output");
-
-  // Default output directory.
-  cli_args = CliArgs(std::vector<std::string>{"some_command",
-                                              "--config-utilities-file",
-                                              "resources/foo.yaml",
-                                              "--config-utilities-file",
-                                              "resources/bar.yaml",
-                                              "--config-utilities-introspect"});
-  args = cli_args.get();
-  node = internal::loadFromArguments(args.argc, args.argv, true);
-  EXPECT_EQ(args.get_cmd(), "some_command");
-  EXPECT_EQ(config::Settings().introspection.output, intro_dir);
+  nlohmann::json j;
+  EXPECT_TRUE(loadData(j));
+  const nlohmann::json expected = R"({
+  "data": {
+    "foo/a": [
+      {
+        "by": "f0",
+        "type": "s",
+        "val": "5.0"
+      }
+    ],
+    "foo/b": [
+      {
+        "by": "f0",
+        "type": "s",
+        "val": "[1, 2, 3]"
+      }
+    ],
+    "foo/c": [
+      {
+        "by": "f0",
+        "type": "s",
+        "val": "hello"
+      }
+    ]
+  },
+  "sources": {
+    "a": [
+      "config-utilities-introspect"
+    ],
+    "f": [
+      "/home/lukas/khronos_ws/build/config_utilities/test/resources/foo.yaml@foo"
+    ]
+  }
+})"_json;
+  EXPECT_EQ(j, expected);
 }
 
 }  // namespace config::test
