@@ -12,6 +12,9 @@
 #include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/yaml_utils.h"
 
+// TMP
+#include <iostream>
+
 namespace config::internal {
 
 Introspection::Event::By::By(Type type, const std::string& value) : type(type) {
@@ -35,6 +38,10 @@ Introspection::Event::By Introspection::Event::By::substitution(const std::strin
   return By(Type::Substitution, substitution_details);
 }
 
+Introspection::Event::By Introspection::Event::By::programmatic(const std::string& call) {
+  return By(Type::Programmatic, call);
+}
+
 Introspection::Event::Event(Type type, const By& by, const std::string& info, const std::string& value)
     : type(type), by(by), info(info), value(value) {}
 
@@ -46,24 +53,26 @@ void Introspection::addEvent(const Key& key, const Event& event) {
 }
 
 void Introspection::logMerge(const YAML::Node& merged, const YAML::Node& input, const Event::By& by) {
-  // Log all top-level keys in the parsed node as 'Set' events.
   const auto merged_flat = flatten(merged);
   const auto input_flat = flatten(input);
-  for (const auto& [key, value] : input_flat) {
+  for (const auto& [key, input_value] : input_flat) {
     const auto it = merged_flat.find(key);
     if (it == merged_flat.end()) {
       continue;  // Should never happen after merging. This indicates that an upstream key was overwritten.
     }
+    const auto& merged_value = it->second;
     const auto& previous_value = instance().lastValue(key);
-    if (it->second == previous_value) {
+    if (merged_value == previous_value) {
       addEvent(key, Event(Event::Type::SetNonModified, by));
       continue;
     }
-    if (it->second == value) {
-      addEvent(key, Event(Event::Type::Set, by, "", value));
+    if (merged_value == input_value) {
+      // Overwritten or new key.
+      addEvent(key, Event(Event::Type::Set, by, "", merged_value));
       continue;
     }
-    addEvent(key, Event(Event::Type::Update, by, "", value));
+    // Modified key.
+    addEvent(key, Event(Event::Type::Update, by, "", merged_value));
   }
 }
 
@@ -93,6 +102,19 @@ void Introspection::logDiff(const YAML::Node& before,
   }
 }
 
+void Introspection::logClear(const Event::By& by) {
+  for (const auto& [key, events] : instance().data_) {
+    if (events.empty()) {
+      continue;
+    }
+    const auto& last_event = events.back();
+    if (last_event.type == Event::Type::Remove) {
+      continue;  // Already removed.
+    }
+    addEvent(key, Event(Event::Type::Remove, by));
+  }
+}
+
 const std::string& Introspection::lastValue(const Key& key) const {
   static const std::string empty_string = "";
   const auto it = data_.find(key);
@@ -118,7 +140,7 @@ void Introspection::clear() {
 
 nlohmann::json toJson(const Introspection::Event& event) {
   nlohmann::json j;
-  j["type"] = event.type == Introspection::Event::Type::Set ? "s" : "r";
+  j["type"] = std::string(1, static_cast<char>(event.type));
   j["by"] = std::string(1, static_cast<char>(event.by.type)) + std::to_string(event.by.index);
   if (!event.info.empty()) {
     j["info"] = event.info;

@@ -44,12 +44,15 @@ Context& Context::instance() {
   return s_instance;
 }
 
-void Context::update(const YAML::Node& other, const std::string& ns) {
+void Context::update(const YAML::Node& other, const std::string& ns, Introspection::Event::By* by) {
   auto& context = instance();
   auto node = YAML::Clone(other);
   moveDownNamespace(node, ns);
   // default behavior of context is to act like the ROS1 param server and extend sequences
   mergeYamlNodes(context.contents_, node, MergeMode::APPEND);
+  if (by) {
+    Introspection::logMerge(context.contents_, node, *by);
+  }
 }
 
 void Context::clear() { instance().contents_ = YAML::Node(); }

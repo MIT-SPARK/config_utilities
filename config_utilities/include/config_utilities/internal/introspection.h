@@ -67,11 +67,12 @@ class Introspection {
 
     // Source/owner of the event.
     struct By {
-      enum Type : char { File = 'f', Arg = 'a', Substitution = 's' } type;
+      enum Type : char { File = 'f', Arg = 'a', Substitution = 's', Programmatic = 'p' } type;
 
       static By file(const std::string& filename);
       static By arg(const std::string& args);
       static By substitution(const std::string& substitution_details = "");
+      static By programmatic(const std::string& call);
 
       size_t index;
 
@@ -125,6 +126,12 @@ class Introspection {
                       const YAML::Node& after,
                       const Event::By& by,
                       const Event::Type log_diff_as = Event::Type::Update);
+
+  /**
+   * @brief Log a clear event. This marks all current keys as removed.
+   * @param by The source of the clear event.
+   */
+  static void logClear(const Event::By& by);
 
   /**
    * @brief Clear the introspection data.

@@ -41,6 +41,7 @@
 
 #include "config_utilities/internal/introspection.h"
 #include "config_utilities/parsing/commandline.h"
+#include "config_utilities/parsing/context.h"
 #include "config_utilities/settings.h"
 #include "config_utilities/test/cli_args.h"
 #include "config_utilities/test/utils.h"
@@ -64,6 +65,7 @@ void reset() {
   if (std::filesystem::exists(intro_dir)) {
     std::filesystem::remove_all(intro_dir);
   }
+  Settings().introspection.output.clear();
 }
 
 void writeOutput() { internal::Introspection::instance().writeOutputData(intro_dir); }
@@ -186,7 +188,7 @@ TEST(Introspection, logCLISubstitution) {
       },
       {
         "by": "s0",
-        "type": "r",
+        "type": "u",
         "val": "env_val"
       }
     ],
@@ -205,7 +207,7 @@ TEST(Introspection, logCLISubstitution) {
       },
       {
         "by": "s0",
-        "type": "r",
+        "type": "u",
         "val": "var_val"
       }
     ]
@@ -221,6 +223,72 @@ TEST(Introspection, logCLISubstitution) {
 })"_json;
   EXPECT_EQ(j, expected);
   unsetenv("CONF_UTILS_RANDOM_ENV_VAR");
+}
+
+TEST(Introspection, logProgrammatic) {
+  reset();
+  config::Settings().introspection.output = intro_dir;
+  config::pushToContext(YAML::Load("{a: 5.0, foo: {b: [1, 2, 3]}}"));
+  config::pushToContext(YAML::Load("{b: [4], sub_ns: {c: hello}}"), "foo");
+  config::clearContext();
+  config::pushToContext(YAML::Load("{foo: {b: 6.0}}"));
+  writeOutput();
+  nlohmann::json j = loadOutput();
+  const nlohmann::json expected = R"""({
+  "data": {
+    "a": [
+      {
+        "by": "p0",
+        "type": "s",
+        "val": "5.0"
+      },
+      {
+        "by": "p2",
+        "type": "r"
+      }
+    ],
+    "foo/b": [
+      {
+        "by": "p0",
+        "type": "s",
+        "val": "[1, 2, 3]"
+      },
+      {
+        "by": "p1",
+        "type": "u",
+        "val": "[1, 2, 3, 4]"
+      },
+      {
+        "by": "p2",
+        "type": "r"
+      },
+      {
+        "by": "p0",
+        "type": "s",
+        "val": "6.0"
+      }
+    ],
+    "foo/sub_ns/c": [
+      {
+        "by": "p1",
+        "type": "s",
+        "val": "hello"
+      },
+      {
+        "by": "p2",
+        "type": "r"
+      }
+    ]
+  },
+  "sources": {
+    "p": [
+      "pushToContext()",
+      "pushToContext()@foo",
+      "clearContext()"
+    ]
+  }
+})"""_json;
+  EXPECT_EQ(j, expected);
 }
 
 }  // namespace config::test
