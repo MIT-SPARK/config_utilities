@@ -385,7 +385,7 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args, ParserIn
 
   // Populate the context.
   ParserContext context;
-  YAML::Node node;
+  YAML::Node node = YAML::Node(YAML::NodeType::Null);
   for (const auto& entry : parser.entries) {
     YAML::Node parsed_node;
     switch (entry.type) {
@@ -397,16 +397,12 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args, ParserIn
         break;
       case CliParser::Entry::Type::Var:
         parseEntryVar(entry, context.vars);
-        break;
+        continue;
       case CliParser::Entry::Type::Flag:
         updateContextFromFlag(entry, context);
-        break;
+        continue;
       case CliParser::Entry::Type::Arg:
-        break;
-    }
-
-    if (!parsed_node) {
-      continue;
+        continue;
     }
 
     internal::mergeYamlNodes(node, parsed_node, MergeMode::APPEND);
@@ -414,11 +410,17 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args, ParserIn
       const auto by = entry.type == CliParser::Entry::Type::File
                           ? Introspection::Event::By::file(fs::absolute(entry.value).string())
                           : Introspection::Event::By::arg(entry.value);
-      Introspection::logCliEntry(node, parsed_node, by);
+      Introspection::logMerge(node, parsed_node, by);
     }
   }
 
-  resolveSubstitutions(node, context);
+  if (introspection_enabled) {
+    const auto before = YAML::Clone(node);
+    resolveSubstitutions(node, context);
+    Introspection::logDiff(before, node, Introspection::Event::By::substitution(), Introspection::Event::Type::Update);
+  } else {
+    resolveSubstitutions(node, context);
+  }
   return node;
 }
 

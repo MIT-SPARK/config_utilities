@@ -181,27 +181,6 @@ void moveDownNamespace(YAML::Node& node, const std::string& name_space, const st
   }
 }
 
-std::map<std::string, YAML::Node> flattenNamespace(const YAML::Node& node,
-                                                   bool create_copy,
-                                                   const std::string& separator) {
-  std::map<std::string, YAML::Node> result;
-
-  // Helper function to recursively flatten the node.
-  std::function<void(const YAML::Node&, const std::string&)> flatten = [&](const YAML::Node& n,
-                                                                           const std::string& path) {
-    if (n.IsMap()) {
-      for (const auto& kv : n) {
-        flatten(kv.second, path.empty() ? kv.first.Scalar() : path + separator + kv.first.Scalar());
-      }
-    } else {
-      result[path] = create_copy ? YAML::Clone(n) : n;
-    }
-  };
-
-  flatten(node, "");
-  return result;
-}
-
 bool isEqual(const YAML::Node& a, const YAML::Node& b) {
   if (a.Type() != b.Type()) {
     return false;

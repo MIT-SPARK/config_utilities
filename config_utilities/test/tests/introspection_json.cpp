@@ -49,22 +49,32 @@ namespace config::test {
 
 const std::string intro_dir = "config_introspection_output";
 
-bool loadData(nlohmann::json& j) {
+nlohmann::json loadOutput() {
   const std::string intro_file = "config_introspection_output/data.json";
   if (!std::filesystem::exists(intro_file)) {
-    return false;
+    throw std::runtime_error("introspection output file '" + intro_file + "' does not exist");
   }
+  nlohmann::json j;
   std::ifstream(intro_file) >> j;
-  return true;
+  return j;
 }
 
-TEST(Introspection, logCLIFile) {
+void reset() {
   internal::Introspection::instance().clear();
+  if (std::filesystem::exists(intro_dir)) {
+    std::filesystem::remove_all(intro_dir);
+  }
+}
+
+void writeOutput() { internal::Introspection::instance().writeOutputData(intro_dir); }
+
+TEST(Introspection, logCLIFile) {
+  reset();
   CliArgs cli_args(std::vector<std::string>{"some_command", "--config-utilities-file", "resources/foo.yaml@foo", "-i"});
   auto args = cli_args.get();
   auto node = internal::loadFromArguments(args.argc, args.argv, true);
-  nlohmann::json j;
-  EXPECT_TRUE(loadData(j));
+  writeOutput();
+  nlohmann::json j = loadOutput();
   const nlohmann::json expected = R"({
   "data": {
     "foo/a": [
@@ -90,11 +100,11 @@ TEST(Introspection, logCLIFile) {
     ]
   },
   "sources": {
-    "a": [
-      "config-utilities-introspect"
-    ],
     "f": [
       "/home/lukas/khronos_ws/build/config_utilities/test/resources/foo.yaml@foo"
+    ],
+    "s": [
+      ""
     ]
   }
 })"_json;
@@ -102,14 +112,115 @@ TEST(Introspection, logCLIFile) {
 }
 
 TEST(Introspection, logCLIYaml) {
-  internal::Introspection::instance().clear();
+  reset();
   CliArgs cli_args(std::vector<std::string>{
       "some_command", "--config-utilities-yaml", "foo: {a: 5.0,  b: [1, 2, 3],  sub_ns: {c: hello}}", "-i"});
   auto args = cli_args.get();
   auto node = internal::loadFromArguments(args.argc, args.argv, true);
-  nlohmann::json j;
-  EXPECT_TRUE(loadData(j));
-  std::cout << j.dump(2) << std::endl;
+  writeOutput();
+  nlohmann::json j = loadOutput();
+  const nlohmann::json expected = R"({
+  "data": {
+    "foo/a": [
+      {
+        "by": "a0",
+        "type": "s",
+        "val": "5.0"
+      }
+    ],
+    "foo/b": [
+      {
+        "by": "a0",
+        "type": "s",
+        "val": "[1, 2, 3]"
+      }
+    ],
+    "foo/sub_ns/c": [
+      {
+        "by": "a0",
+        "type": "s",
+        "val": "hello"
+      }
+    ]
+  },
+  "sources": {
+    "a": [
+      "foo: {a: 5.0,  b: [1, 2, 3],  sub_ns: {c: hello}}"
+    ],
+    "s": [
+      ""
+    ]
+  }
+})"_json;
+  EXPECT_EQ(j, expected);
+}
+
+TEST(Introspection, logCLISubstitution) {
+  reset();
+  // Set env variable.
+  auto var = std::getenv("CONF_UTILS_RANDOM_ENV_VAR");
+  if (var) {
+    FAIL() << "environment variable 'CONF_UTILS_RANDOM_ENV_VAR' is already set.";
+  }
+  setenv("CONF_UTILS_RANDOM_ENV_VAR", "env_val", 1);
+
+  // Parse.
+  CliArgs cli_args(std::vector<std::string>{"some_command",
+                                            "--config-utilities-yaml",
+                                            "{val: 42, env: $<env | CONF_UTILS_RANDOM_ENV_VAR>, var: $<var | my_var>}",
+                                            "-v",
+                                            "my_var=var_val",
+                                            "-i"});
+  auto args = cli_args.get();
+  auto node = internal::loadFromArguments(args.argc, args.argv, true);
+  writeOutput();
+  nlohmann::json j = loadOutput();
+
+  const nlohmann::json expected = R"({
+  "data": {
+    "env": [
+      {
+        "by": "a0",
+        "type": "s",
+        "val": "$<env | CONF_UTILS_RANDOM_ENV_VAR>"
+      },
+      {
+        "by": "s0",
+        "type": "r",
+        "val": "env_val"
+      }
+    ],
+    "val": [
+      {
+        "by": "a0",
+        "type": "s",
+        "val": "42"
+      }
+    ],
+    "var": [
+      {
+        "by": "a0",
+        "type": "s",
+        "val": "$<var | my_var>"
+      },
+      {
+        "by": "s0",
+        "type": "r",
+        "val": "var_val"
+      }
+    ]
+  },
+  "sources": {
+    "a": [
+      "{val: 42, env: $<env | CONF_UTILS_RANDOM_ENV_VAR>, var: $<var | my_var>}"
+    ],
+    "s": [
+      ""
+    ]
+  }
+})"_json;
+  EXPECT_EQ(j, expected);
+  unsetenv("CONF_UTILS_RANDOM_ENV_VAR");
 }
 
 }  // namespace config::test

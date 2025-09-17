@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <sstream>
 
 #ifdef CONFIG_UTILS_ENABLE_JSON
@@ -44,49 +45,51 @@ void Introspection::addEvent(const Key& key, const Event& event) {
   instance().data_[key].emplace_back(event);
 }
 
-void Introspection::logCliEntry(const YAML::Node& merged_node, const YAML::Node& parsed_node, const Event::By& by) {
+void Introspection::logMerge(const YAML::Node& merged, const YAML::Node& input, const Event::By& by) {
   // Log all top-level keys in the parsed node as 'Set' events.
-  const auto merged_flat = flattenNamespace(merged_node);
-  const auto parsed_flat = flattenNamespace(parsed_node);
-  for (const auto& [key, value] : parsed_flat) {
+  const auto merged_flat = flatten(merged);
+  const auto input_flat = flatten(input);
+  for (const auto& [key, value] : input_flat) {
     const auto it = merged_flat.find(key);
     if (it == merged_flat.end()) {
-      continue;  // Should never happen after merging.
+      continue;  // Should never happen after merging. This indicates that an upstream key was overwritten.
     }
-
-    const std::string merged_value = yamlToString(it->second, false);
     const auto& previous_value = instance().lastValue(key);
-    if (merged_value == previous_value) {
+    if (it->second == previous_value) {
       addEvent(key, Event(Event::Type::SetNonModified, by));
       continue;
     }
-    const std::string parsed_value = yamlToString(value, false);
-    if (merged_value == parsed_value) {
-      addEvent(key, Event(Event::Type::Set, by, "", parsed_value));
+    if (it->second == value) {
+      addEvent(key, Event(Event::Type::Set, by, "", value));
       continue;
     }
-    addEvent(key, Event(Event::Type::Update, by, "", parsed_value));
+    addEvent(key, Event(Event::Type::Update, by, "", value));
   }
 }
 
-void Introspection::logSubstitution(const YAML::Node& merged_node) {
+void Introspection::logDiff(const YAML::Node& before,
+                            const YAML::Node& after,
+                            const Event::By& by,
+                            const Event::Type log_diff_as) {
   // Log all top-level keys in the merged node as 'Read' events if they have not been set before.
-  const auto merged_flat = flattenNamespace(merged_node);
-  for (const auto& [key, value] : merged_flat) {
-    const std::string merged_value = yamlToString(value, false);
-    const auto& previous_value = instance().lastValue(key);
-    if (previous_value.empty()) {
-      // This is unlikely to happen, but good to be covered. If this becomes more common probably more substitution
-      // details should be extracted.
-      addEvent(key, Event(Event::Type::Set, Event::By::substitution(), "", merged_value));
+  const auto before_flat = flatten(before);
+  const auto after_flat = flatten(after);
+  for (const auto& [key, value] : before_flat) {
+    const auto it = after_flat.find(key);
+    if (it == after_flat.end()) {
+      addEvent(key, Event(Event::Type::Remove, by));
+    }
+  }
+  for (const auto& [key, value] : after_flat) {
+    const auto it = before_flat.find(key);
+    if (it == before_flat.end()) {
+      addEvent(key, Event(Event::Type::Set, by, "", value));
       continue;
     }
-    if (merged_value == previous_value) {
-      addEvent(key, Event(Event::Type::SetNonModified, Event::By::substitution()));
-      continue;
+    if (it->second == value) {
+      continue;  // No change.
     }
-    // Substitutions are always classified as update, even if the entire string was replaced.
-    addEvent(key, Event(Event::Type::Update, Event::By::substitution(), "", merged_value));
+    addEvent(key, Event(log_diff_as, by, "", value));
   }
 }
 
@@ -203,6 +206,25 @@ Introspection::~Introspection() {
 Introspection& Introspection::instance() {
   static Introspection instance;
   return instance;
+}
+
+std::map<std::string, std::string> flatten(const YAML::Node& node, const std::string& ns_separator) {
+  std::map<std::string, std::string> result;
+
+  // Helper function to recursively flatten the node.
+  std::function<void(const YAML::Node&, const std::string&)> flatten = [&](const YAML::Node& n,
+                                                                           const std::string& path) {
+    if (n.IsMap()) {
+      for (const auto& kv : n) {
+        flatten(kv.second, path.empty() ? kv.first.Scalar() : path + ns_separator + kv.first.Scalar());
+      }
+    } else {
+      result[path] = yamlToString(n, false);
+    }
+  };
+
+  flatten(node, "");
+  return result;
 }
 
 }  // namespace config::internal

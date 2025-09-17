@@ -63,7 +63,7 @@ class Introspection {
    */
   struct Event {
     // Action type of events.
-    enum Type : char { Set = 's', Read = 'r', Update = 'u', SetNonModified = 'n', ReadDefault = 'd' } type;
+    enum Type : char { Set = 's', Get = 'g', Update = 'u', SetNonModified = 'n', GetDefault = 'd', Remove = 'r' } type;
 
     // Source/owner of the event.
     struct By {
@@ -104,18 +104,27 @@ class Introspection {
   static void addEvent(const Key& key, const Event& event);
 
   /**
-   * @brief Log global context events from CLI parsing for each entry.
-   * @param merged_node The current context node after merging the parsed node.
-   * @param parsed_node The newly parsed node from the CLI entry.
+   * @brief Log differences from merging a node into the current context. E.g. After a CLI entry is parsed and merged.
+   * @param merged The context node after merging the parsed node.
+   * @param input The input node before it was merged into the context.
    * @param by The source of the entry (e.g. filename or 'arg').
    */
-  static void logCliEntry(const YAML::Node& merged_node, const YAML::Node& parsed_node, const Event::By& by);
+  static void logMerge(const YAML::Node& merged, const YAML::Node& input, const Event::By& by);
 
   /**
-   * @brief Log substitution events. Call this on the merged node after all substitutions have been resolved.
-   * @param merged_node The current context node after all substitutions have been resolved.
+   * @brief Log the difference between two nodes. E.g. before and after substitution resolution.
+   * @note This does not log unsuccessful events (SetNonModified). All updates will be logged as Updated, even if the
+   * value was completely overwritten.
+   * @param before The current context node before all substitutions have been resolved.
+   * @param after The current context node after all substitutions have been resolved.
+   * @param by The source of the changes.
+   * @param log_diff_as The event type to use for logging field that have been changed. Choose Update or Set as
+   * appropriate. Default is Update.
    */
-  static void logSubstitution(const YAML::Node& merged_node);
+  static void logDiff(const YAML::Node& before,
+                      const YAML::Node& after,
+                      const Event::By& by,
+                      const Event::Type log_diff_as = Event::Type::Update);
 
   /**
    * @brief Clear the introspection data.
@@ -139,5 +148,14 @@ class Introspection {
   Data data_;
   Sources sources_;
 };
+
+/**
+ * @brief Flatten a YAML node into a map of key-value pairs, where keys represent the full namespace of the value in the
+ * original node and values are the string representations of the values. Namespaces are separated by the specified
+ * @param node The node to flatten.
+ * @param separator The separator to use between namespaces.
+ * @returns A map of key-value pairs representing the flattened node.
+ */
+std::map<std::string, std::string> flatten(const YAML::Node& node, const std::string& ns_separator = "/");
 
 }  // namespace config::internal
