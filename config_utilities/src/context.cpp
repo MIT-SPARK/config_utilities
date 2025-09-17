@@ -35,10 +35,13 @@
 
 #include "config_utilities/parsing/context.h"
 
+#include <memory>
+
 #include "config_utilities/internal/config_context.h"
+#include "config_utilities/internal/introspection.h"
 #include "config_utilities/parsing/commandline.h"
-#include "config_utilities/update.h"
 #include "config_utilities/settings.h"
+#include "config_utilities/update.h"
 
 namespace config {
 
@@ -47,9 +50,21 @@ void initContext(int& argc, char* argv[], bool remove_arguments) {
   internal::Context::update(node, "");
 }
 
-void pushToContext(const YAML::Node& node, const std::string& ns) { internal::Context::update(node, ns); }
+void pushToContext(const YAML::Node& node, const std::string& ns) {
+  std::unique_ptr<internal::Introspection::Event::By> by = nullptr;
+  if (Settings().introspection.enabled()) {
+    by = std::make_unique<internal::Introspection::Event::By>(
+        internal::Introspection::Event::By::programmatic("pushToContext()" + (ns.empty() ? "" : "@" + ns)));
+  }
+  internal::Context::update(node, ns, by.get());
+}
 
-void clearContext() { internal::Context::clear(); }
+void clearContext() {
+  if (Settings().introspection.enabled()) {
+    internal::Introspection::logClear(internal::Introspection::Event::By::programmatic("clearContext()"));
+  }
+  internal::Context::clear();
+}
 
 YAML::Node contextToYaml() { return internal::Context::toYaml(); }
 

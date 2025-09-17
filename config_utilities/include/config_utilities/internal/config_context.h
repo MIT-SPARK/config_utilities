@@ -40,6 +40,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include "config_utilities/factory.h"
+#include "config_utilities/internal/introspection.h"
 #include "config_utilities/internal/visitor.h"
 
 namespace config::internal {
@@ -51,7 +52,13 @@ class Context {
  public:
   ~Context() = default;
 
-  static void update(const YAML::Node& other, const std::string& ns);
+  /**
+   * @brief Update the context by merging in a new YAML node.
+   * @param other The node to merge into the context.
+   * @param ns Optional namespace to move the node down into before merging.
+   * @param by If provided, the merge will be logged as an introspection event with this source.
+   */
+  static void update(const YAML::Node& other, const std::string& ns, Introspection::Event::By* by = nullptr);
 
   static void clear();
 
@@ -60,7 +67,7 @@ class Context {
   template <typename BaseT, typename... ConstructorArguments>
   static std::unique_ptr<BaseT> create(ConstructorArguments... args) {
     return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(instance().contents_,
-      std::move(args)...);
+                                                                                     std::move(args)...);
   }
 
   template <typename BaseT, typename... ConstructorArguments>
