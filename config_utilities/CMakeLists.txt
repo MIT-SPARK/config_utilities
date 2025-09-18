@@ -65,7 +65,7 @@ if(glog_FOUND)
   target_compile_definitions(${PROJECT_NAME} PRIVATE CONFIG_UTILS_ENABLE_GLOG_LOGGING)
 endif()
 if(nlohmann_json_FOUND)
-  target_link_libraries(${PROJECT_NAME} PUBLIC nlohmann_json::nlohmann_json)
+  target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)
   target_compile_definitions(${PROJECT_NAME} PRIVATE CONFIG_UTILS_ENABLE_JSON)
 endif()
 

@@ -42,6 +42,7 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include "config_utilities/internal/meta_data.h"
 #include "config_utilities/settings.h"
 
 namespace config::internal {
@@ -63,7 +64,14 @@ class Introspection {
    */
   struct Event {
     // Action type of events.
-    enum Type : char { Set = 's', Get = 'g', Update = 'u', SetNonModified = 'n', GetDefault = 'd', Remove = 'r' } type;
+    enum Type : char {
+      Set = 's',             // The value was set (new or overwritten).
+      Update = 'u',          // The value was updated (typically retaining information from the previous state).
+      SetNonModified = 'n',  // The value was set, but not modified (e.g. from a file, but same as before).
+      Get = 'g',             // The value was read/requested (irrespective of whether it was present or not).
+      GetDefault = 'd',      // The value was read but is the default value of the config.
+      Remove = 'r'           // The value was removed (e.g. by a clear operation).
+    } type;
 
     // Source/owner of the event.
     struct By {
@@ -78,7 +86,6 @@ class Introspection {
 
      private:
       By(Type type, const std::string& value);
-
     } by;
 
     // TODO(lschmid): Revisit this for more clarity.
@@ -126,6 +133,13 @@ class Introspection {
                       const YAML::Node& after,
                       const Event::By& by,
                       const Event::Type log_diff_as = Event::Type::Update);
+
+  /**
+   * @brief Log reading of values by the config system from the resulting meta data of the visitor.
+   * @param meta_data The meta data created by Visitor::setValues or similar.
+   * @param ns Additional namespace to prepend to all keys in the meta data.
+   */
+  static void logSetValue(const MetaData& meta_data, const std::string& ns = "");
 
   /**
    * @brief Log a clear event. This marks all current keys as removed.
