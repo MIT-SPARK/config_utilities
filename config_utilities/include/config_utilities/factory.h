@@ -257,7 +257,6 @@ class ModuleRegistry {
 
   template <typename BaseT, typename ConfigT>
   static void registerConfig(const std::string& type) {
-    // NOTE(lschmid): This is not forbidden behavior, but is not recommended so for now simply warn the user.
     const auto key = ConfigPair::fromTypes<BaseT, ConfigT>();
     auto& registry = instance().config_registry;
     auto iter = registry.find(key);
@@ -266,6 +265,7 @@ class ModuleRegistry {
       return;
     }
 
+    // NOTE(lschmid): This is not forbidden behavior, but is not recommended so for now simply warn the user.
     if (iter != registry.end() && iter->second != type) {
       Logger::logInfo("Overwriting type name for config '" + typeName<ConfigT>() + "' for base module '" +
                       typeName<BaseT>() + "' from '" + iter->second + "' to '" + type +

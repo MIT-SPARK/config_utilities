@@ -95,7 +95,7 @@ class NameSpace {
    */
   void enter();
 
-  //  private:
+ private:
   const std::string sub_ns_;
   std::string previous_ns_;
   bool is_open_ = false;
