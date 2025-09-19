@@ -44,11 +44,12 @@
 #include "config_utilities/parsing/context.h"
 #include "config_utilities/settings.h"
 #include "config_utilities/test/cli_args.h"
+#include "config_utilities/test/introspection_utils.h"
 #include "config_utilities/test/utils.h"
 
 namespace config::test {
 
-const std::string intro_dir = "config_introspection_output";
+void writeOutput() { internal::Introspection::instance().writeOutputData(intro_dir); }
 
 nlohmann::json loadOutput() {
   const std::string intro_file = "config_introspection_output/data.json";
@@ -59,16 +60,6 @@ nlohmann::json loadOutput() {
   std::ifstream(intro_file) >> j;
   return j;
 }
-
-void reset() {
-  internal::Introspection::instance().clear();
-  if (std::filesystem::exists(intro_dir)) {
-    std::filesystem::remove_all(intro_dir);
-  }
-  Settings().introspection.output.clear();
-}
-
-void writeOutput() { internal::Introspection::instance().writeOutputData(intro_dir); }
 
 TEST(Introspection, logCLIFile) {
   reset();
@@ -244,7 +235,6 @@ TEST(Introspection, logCLIYaml) {
   }
 })"_json;
   EXPECT_EQ(j, expected);
-  std::cout << "---------------------------" << j.dump(2) << std::endl;
 }
 
 TEST(Introspection, logCLISubstitution) {
@@ -327,7 +317,6 @@ TEST(Introspection, logCLISubstitution) {
 })"_json;
   EXPECT_EQ(j, expected);
   unsetenv("CONF_UTILS_RANDOM_ENV_VAR");
-  std::cout << "---------------------------" << j.dump(2) << std::endl;
 }
 
 TEST(Introspection, logProgrammatic) {
@@ -437,7 +426,7 @@ TEST(Introspection, logProgrammatic) {
   }
 })"""_json;
   EXPECT_EQ(j, expected);
-  std::cout << "---------------------------" << j.dump(2) << std::endl;
+  disable();  // Final cleanup.
 }
 
 }  // namespace config::test

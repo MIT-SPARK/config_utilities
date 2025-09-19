@@ -276,6 +276,9 @@ class Introspection {
                   const By& by,
                   Node& node,
                   const Event::Type log_diff_as);
+
+  static YAML::Node at(const YAML::Node& node, const std::string& key);
+  static YAML::Node at(const YAML::Node& node, size_t index);
 };
 
 }  // namespace config::internal
