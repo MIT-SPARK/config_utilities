@@ -51,17 +51,17 @@ void initContext(int& argc, char* argv[], bool remove_arguments) {
 }
 
 void pushToContext(const YAML::Node& node, const std::string& ns) {
-  std::unique_ptr<internal::Introspection::Event::By> by = nullptr;
+  std::unique_ptr<internal::Introspection::By> by = nullptr;
   if (Settings().introspection.enabled()) {
-    by = std::make_unique<internal::Introspection::Event::By>(
-        internal::Introspection::Event::By::programmatic("pushToContext()" + (ns.empty() ? "" : "@" + ns)));
+    by = std::make_unique<internal::Introspection::By>(
+        internal::Introspection::By::programmatic("pushToContext()" + (ns.empty() ? "" : "@" + ns)));
   }
   internal::Context::update(node, ns, by.get());
 }
 
 void clearContext() {
   if (Settings().introspection.enabled()) {
-    internal::Introspection::logClear(internal::Introspection::Event::By::programmatic("clearContext()"));
+    internal::Introspection::logClear(internal::Introspection::By::programmatic("clearContext()"));
   }
   internal::Context::clear();
 }

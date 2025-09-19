@@ -408,8 +408,8 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args, ParserIn
     internal::mergeYamlNodes(node, parsed_node, MergeMode::APPEND);
     if (introspection_enabled) {
       const auto by = entry.type == CliParser::Entry::Type::File
-                          ? Introspection::Event::By::file(fs::absolute(entry.value).string())
-                          : Introspection::Event::By::arg(entry.value);
+                          ? Introspection::By::file(fs::absolute(entry.value).string())
+                          : Introspection::By::arg(entry.value);
       Introspection::logMerge(node, parsed_node, by);
     }
   }
@@ -417,7 +417,7 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args, ParserIn
   if (introspection_enabled) {
     const auto before = YAML::Clone(node);
     resolveSubstitutions(node, context);
-    Introspection::logDiff(before, node, Introspection::Event::By::substitution(), Introspection::Event::Type::Update);
+    Introspection::logDiff(before, node, Introspection::By::substitution(), Introspection::Event::Type::Update);
   } else {
     resolveSubstitutions(node, context);
   }

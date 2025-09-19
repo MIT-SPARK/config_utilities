@@ -17,148 +17,299 @@
 
 namespace config::internal {
 
-Introspection::Event::By::By(Type type, const std::string& value) : type(type) {
+using Event = Introspection::Event;
+using By = Introspection::By;
+using Node = Introspection::Node;
+
+By::By(Type type, const std::string& value) : type(type), index(registerSource(type, value)) {}
+
+size_t By::registerSource(Type type, const std::string& value) {
   auto& sources = Introspection::instance().sources_[type];
   const auto it = sources.find(value);
   if (it != sources.end()) {
-    index = it->second;
+    return it->second;
+  }
+  const size_t new_index = sources.size();
+  sources[value] = new_index;
+  return new_index;
+}
+
+By By::file(const std::string& filename) { return By(Type::File, filename); }
+
+By By::arg(const std::string& args) { return By(Type::Arg, args); }
+
+By By::substitution(const std::string& substitution_details) { return By(Type::Substitution, substitution_details); }
+
+By By::programmatic(const std::string& call) { return By(Type::Programmatic, call); }
+
+By By::config(const std::string& config_name) { return By(Type::Config, config_name); }
+
+Event::Event(Type type, const By& by, const std::string& value)
+    : type(type), by(by), value(value), sequence_id(instance().sequence_id_) {}
+
+bool Event::isDeleteEvent() const { return type == Type::Remove; }
+
+bool Event::isSetEvent() const {
+  return type == Type::Set || type == Type::Update || type == Type::SetNonModified || type == Type::SetFailed;
+}
+
+bool Event::isGetEvent() const { return type == Type::Get || type == Type::GetDefault || type == Type::GetError; }
+
+bool Event::valueModified() const {
+  if (type != Type::Set && type == Type::Update) {
+    return false;
+  }
+  return !value.empty();
+}
+
+const std::string& Node::lastValue() const { return last_value_; }
+
+void Node::addEvent(const Event& event) {
+  history.push_back(event);
+  if (event.type == Event::Type::Remove) {
+    last_value_.clear();
+    clearDownstream();
     return;
   }
-  index = sources.size();
-  sources[value] = index;
-}
-
-Introspection::Event::By Introspection::Event::By::file(const std::string& filename) {
-  return By(Type::File, filename);
-}
-
-Introspection::Event::By Introspection::Event::By::arg(const std::string& args) { return By(Type::Arg, args); }
-
-Introspection::Event::By Introspection::Event::By::substitution(const std::string& substitution_details) {
-  return By(Type::Substitution, substitution_details);
-}
-
-Introspection::Event::By Introspection::Event::By::programmatic(const std::string& call) {
-  return By(Type::Programmatic, call);
-}
-
-Introspection::Event::Event(Type type, const By& by, const std::string& info, const std::string& value)
-    : type(type), by(by), info(info), value(value) {}
-
-void Introspection::addEvent(const Key& key, const Event& event) {
-  if (!Settings::instance().introspection.enabled()) {
-    return;
+  if (event.valueModified()) {
+    last_value_ = event.value;
+    clearDownstream();
   }
-  instance().data_[key].emplace_back(event);
 }
 
-void Introspection::logMerge(const YAML::Node& merged, const YAML::Node& input, const Event::By& by) {
-  const auto merged_flat = flatten(merged);
-  const auto input_flat = flatten(input);
-  for (const auto& [key, input_value] : input_flat) {
-    const auto it = merged_flat.find(key);
-    if (it == merged_flat.end()) {
-      continue;  // Should never happen after merging. This indicates that an upstream key was overwritten.
+void Node::clearDownstream() {
+  for (auto& child : list) {
+    child.last_value_.clear();
+    child.clearDownstream();
+  }
+  for (auto& [key, child] : map) {
+    child.last_value_.clear();
+    child.clearDownstream();
+  }
+}
+
+Node& Node::at(const std::string& key) { return map[key]; }
+
+Node& Node::at(size_t index) {
+  if (index >= list.size()) {
+    list.resize(index + 1);
+  }
+  return list[index];
+}
+
+void Node::clear() {
+  history.clear();
+  last_value_.clear();
+  list.clear();
+  map.clear();
+}
+
+bool Node::empty() const { return history.empty() && list.empty() && map.empty(); }
+
+YAML::Node Node::toYaml(size_t at_sequence_id) const { return toYamlRec(at_sequence_id).first; }
+
+std::pair<YAML::Node, size_t> Node::toYamlRec(size_t at_sequence_id) const {
+  // 1. Compute the last set or removed value and the corresponding sequence id.
+  std::string value;
+  size_t value_last_set = 0;
+  for (auto& event : history) {
+    if (event.sequence_id > at_sequence_id) {
+      break;
     }
-    const auto& merged_value = it->second;
-    const auto& previous_value = instance().lastValue(key);
-    if (merged_value == previous_value) {
-      addEvent(key, Event(Event::Type::SetNonModified, by));
+    value_last_set = event.sequence_id;
+    if (event.valueModified()) {
+      value = event.value;
       continue;
+    }
+    if (event.isDeleteEvent()) {
+      value.clear();
+    }
+  }
+
+  // 2. Get the list values if present.
+  auto yaml_list = YAML::Node(YAML::NodeType::Sequence);
+  size_t list_last_set = 0;
+  for (const auto& child : list) {
+    const auto [child_node, child_last_set] = child.toYamlRec(at_sequence_id);
+    if (child_node.IsNull()) {
+      continue;
+    }
+    yaml_list.push_back(child_node);
+    list_last_set = std::max(list_last_set, child_last_set);
+  }
+
+  // 3. Get the map values if present.
+  auto yaml_map = YAML::Node(YAML::NodeType::Map);
+  size_t map_last_set = 0;
+  for (const auto& [key, child] : map) {
+    const auto [child_node, child_last_set] = child.toYamlRec(at_sequence_id);
+    if (child_node.IsNull()) {
+      continue;
+    }
+    yaml_map[key] = child_node;
+    map_last_set = std::max(map_last_set, child_last_set);
+  }
+
+  // 4. Compute the state of the node.
+  if (value_last_set >= list_last_set && value_last_set >= map_last_set) {
+    // Scalar was set or the node was deleted, no downstream members. This also covers the case where everything is
+    // empty.
+    if (value.empty()) {
+      return {YAML::Node(YAML::NodeType::Null), value_last_set};
+    }
+    return {YamlParser::toYaml(value), value_last_set};
+  }
+  if (map_last_set >= list_last_set) {
+    // Map was set or has the most recent change.
+    return {yaml_map, map_last_set};
+  }
+  return {yaml_list, list_last_set};
+}
+
+void Introspection::logMerge(const YAML::Node& merged, const YAML::Node& input, const By& by) {
+  auto& instance = Introspection::instance();
+  instance.initLog();
+  instance.logMergeRec(merged, input, by, instance.data_);
+}
+
+void Introspection::logMergeRec(const YAML::Node& merged, const YAML::Node& input, const By& by, Node& node) {
+  if (input.IsScalar()) {
+    // Compare actual values in the leaf nodes.
+    const std::string input_value = yamlToString(input, false);
+    if (!merged.IsScalar()) {
+      // If the resulting node is not a scalar, the set failed.
+      node.addEvent(Event(Event::Type::SetFailed, by, input_value));
+      return;
+    }
+    const std::string merged_value = yamlToString(merged, false);
+    const std::string& previous_value = node.lastValue();
+    if (merged_value == previous_value) {
+      // Value is present in set but not modified.
+      node.addEvent(Event(Event::Type::SetNonModified, by));
+      return;
     }
     if (merged_value == input_value) {
-      // Overwritten or new key.
-      addEvent(key, Event(Event::Type::Set, by, "", merged_value));
-      continue;
+      // Overwritten or new.
+      node.addEvent(Event(Event::Type::Set, by, merged_value));
+      return;
     }
-    // Modified key.
-    addEvent(key, Event(Event::Type::Update, by, "", merged_value));
+    // Modified value in other ways.
+    node.addEvent(Event(Event::Type::Update, by, merged_value));
+    return;
+  }
+  if (input.IsSequence()) {
+    for (size_t i = 0; i < input.size(); ++i) {
+      logMergeRec(merged[i], input[i], by, node[i]);
+    }
+  } else if (input.IsMap()) {
+    for (const auto& kv : input) {
+      const std::string key = kv.first.Scalar();
+      logMergeRec(merged[key], kv.second, by, node[key]);
+    }
   }
 }
 
 void Introspection::logDiff(const YAML::Node& before,
                             const YAML::Node& after,
-                            const Event::By& by,
+                            const By& by,
                             const Event::Type log_diff_as) {
-  // Log all top-level keys in the merged node as 'Read' events if they have not been set before.
-  const auto before_flat = flatten(before);
-  const auto after_flat = flatten(after);
-  for (const auto& [key, value] : before_flat) {
-    const auto it = after_flat.find(key);
-    if (it == after_flat.end()) {
-      addEvent(key, Event(Event::Type::Remove, by));
+  auto& instance = Introspection::instance();
+  instance.initLog();
+  instance.logDiffRec(before, after, by, instance.data_, log_diff_as);
+}
+
+void Introspection::logDiffRec(const YAML::Node& before,
+                               const YAML::Node& after,
+                               const By& by,
+                               Node& node,
+                               const Event::Type log_diff_as) {
+  if (after.IsNull()) {
+    if (!before.IsNull()) {
+      node.addEvent(Event(Event::Type::Remove, by));
     }
+    return;
   }
-  for (const auto& [key, value] : after_flat) {
-    const auto it = before_flat.find(key);
-    if (it == before_flat.end()) {
-      addEvent(key, Event(Event::Type::Set, by, "", value));
-      continue;
+  if (after.IsScalar()) {
+    // Compare actual values in the leaf nodes.
+    const std::string after_value = yamlToString(after, false);
+    if (!before.IsScalar()) {
+      // Now a scalar: was newly set / overridden.
+      node.addEvent(Event(Event::Type::Set, by, after_value));
+      return;
     }
-    if (it->second == value) {
-      continue;  // No change.
+    const std::string before_value = yamlToString(before, false);
+    if (after_value != before_value) {
+      node.addEvent(Event(log_diff_as, by, after_value));
+      return;
     }
-    addEvent(key, Event(log_diff_as, by, "", value));
+    // Value is not modified, no need to log diff.
+    return;
+  }
+  if (after.IsSequence()) {
+    for (size_t i = 0; i < after.size(); ++i) {
+      logDiffRec(before[i], after[i], by, node[i], log_diff_as);
+    }
+  } else if (after.IsMap()) {
+    for (const auto& kv : after) {
+      const std::string key = kv.first.Scalar();
+      logDiffRec(before[key], kv.second, by, node[key], log_diff_as);
+    }
   }
 }
 
-void Introspection::logClear(const Event::By& by) {
-  for (const auto& [key, events] : instance().data_) {
-    if (events.empty()) {
-      continue;
-    }
-    const auto& last_event = events.back();
-    if (last_event.type == Event::Type::Remove) {
-      continue;  // Already removed.
-    }
-    addEvent(key, Event(Event::Type::Remove, by));
-  }
-}
+void Introspection::logSetValue(const MetaData& meta_data, const std::string& ns) {}
 
-const std::string& Introspection::lastValue(const Key& key) const {
-  static const std::string empty_string = "";
-  const auto it = data_.find(key);
-  if (it == data_.end() || it->second.empty()) {
-    return empty_string;
-  }
-  // Find the last event with a value change.
-  for (auto rit = it->second.rbegin(); rit != it->second.rend(); ++rit) {
-    if (!rit->value.empty()) {
-      return rit->value;
-    }
-  }
-  return empty_string;
+void Introspection::logClear(const By& by) {
+  auto& instance = Introspection::instance();
+  instance.initLog();
+  instance.data_.addEvent(Event(Event::Type::Remove, by));
 }
 
 void Introspection::clear() {
   data_.clear();
   sources_.clear();
+  sequence_id_ = 0;
+}
+
+void Introspection::initLog() {
+  // Increment the sequence id for the next events.
+  ++sequence_id_;
 }
 
 // Serialization: conditional compilation.
 #ifdef CONFIG_UTILS_ENABLE_JSON
 
-nlohmann::json toJson(const Introspection::Event& event) {
+nlohmann::json toJson(const Event& event) {
   nlohmann::json j;
   j["type"] = std::string(1, static_cast<char>(event.type));
   j["by"] = std::string(1, static_cast<char>(event.by.type)) + std::to_string(event.by.index);
-  if (!event.info.empty()) {
-    j["info"] = event.info;
-  }
+  j["seq"] = event.sequence_id;
   if (!event.value.empty()) {
     j["val"] = event.value;
   }
   return j;
 }
 
-nlohmann::json toJson(const Introspection::Data& data) {
+nlohmann::json toJson(const Node& node) {
   nlohmann::json j;
-  for (const auto& [key, events] : data) {
-    nlohmann::json event_array = nlohmann::json::array();
-    for (const auto& event : events) {
-      event_array.push_back(toJson(event));
+  auto hist = nlohmann::json::array();
+  for (const auto& event : node.history) {
+    hist.push_back(toJson(event));
+  }
+  j["history"] = hist;
+  if (!node.list.empty()) {
+    auto list = nlohmann::json::array();
+    for (const auto& child : node.list) {
+      list.push_back(toJson(child));
     }
-    j[key] = event_array;
+    j["list"] = list;
+  }
+  if (!node.map.empty()) {
+    nlohmann::json map;
+    for (const auto& [key, child] : node.map) {
+      map[key] = toJson(child);
+    }
+    j["map"] = map;
   }
   return j;
 }
@@ -166,18 +317,16 @@ nlohmann::json toJson(const Introspection::Data& data) {
 nlohmann::json toJson(const Introspection::Sources& sources) {
   nlohmann::json j;
   for (const auto& [type, entries] : sources) {
-    nlohmann::json j_entry;
+    nlohmann::json entry;
     for (const auto& [value, index] : entries) {
-      j_entry[index] = value;
+      entry[index] = value;
     }
-    j[std::string(1, static_cast<char>(type))] = j_entry;
+    j[std::string(1, static_cast<char>(type))] = entry;
   }
   return j;
 }
 
-void writeOutputDataImpl(const Introspection::Data& data,
-                         const Introspection::Sources& sources,
-                         const std::string& output_directory) {
+void writeOutputDataImpl(const Node& data, const Introspection::Sources& sources, const std::string& output_directory) {
   const auto output_dir = std::filesystem::path(output_directory);
   // Setup and clear the output directory if it exists.
   if (std::filesystem::exists(output_dir)) {

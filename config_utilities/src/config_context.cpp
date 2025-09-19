@@ -44,7 +44,7 @@ Context& Context::instance() {
   return s_instance;
 }
 
-void Context::update(const YAML::Node& other, const std::string& ns, Introspection::Event::By* by) {
+void Context::update(const YAML::Node& other, const std::string& ns, Introspection::By* by) {
   auto& context = instance();
   auto node = YAML::Clone(other);
   moveDownNamespace(node, ns);

@@ -101,7 +101,7 @@ MetaData Visitor::getInfo(const ConfigT& config, const std::string& name_space, 
   ::config::declare_config(const_cast<ConfigT&>(config));
   Visitor::getDefaultValues(config, visitor.data);
 
-  // Try to associate check data with the fieds by name.
+  // Try to associate check data with the fields by name.
   visitor.data.performOnAll([](MetaData& data) {
     for (const auto& check : data.checks) {
       for (auto& field_info : data.field_infos) {
