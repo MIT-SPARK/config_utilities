@@ -79,27 +79,69 @@ TEST(Introspection, logCLIFile) {
   nlohmann::json j = loadOutput();
   const nlohmann::json expected = R"({
   "data": {
-    "foo/a": [
-      {
-        "by": "f0",
-        "type": "s",
-        "val": "5.0"
+    "history": [],
+    "map": {
+      "foo": {
+        "history": [],
+        "map": {
+          "a": {
+            "history": [
+              {
+                "by": "f0",
+                "seq": 1,
+                "type": "s",
+                "val": "5.0"
+              }
+            ]
+          },
+          "b": {
+            "history": [],
+            "list": [
+              {
+                "history": [
+                  {
+                    "by": "f0",
+                    "seq": 1,
+                    "type": "s",
+                    "val": "1"
+                  }
+                ]
+              },
+              {
+                "history": [
+                  {
+                    "by": "f0",
+                    "seq": 1,
+                    "type": "s",
+                    "val": "2"
+                  }
+                ]
+              },
+              {
+                "history": [
+                  {
+                    "by": "f0",
+                    "seq": 1,
+                    "type": "s",
+                    "val": "3"
+                  }
+                ]
+              }
+            ]
+          },
+          "c": {
+            "history": [
+              {
+                "by": "f0",
+                "seq": 1,
+                "type": "s",
+                "val": "hello"
+              }
+            ]
+          }
+        }
       }
-    ],
-    "foo/b": [
-      {
-        "by": "f0",
-        "type": "s",
-        "val": "[1, 2, 3]"
-      }
-    ],
-    "foo/c": [
-      {
-        "by": "f0",
-        "type": "s",
-        "val": "hello"
-      }
-    ]
+    }
   },
   "sources": {
     "f": [
@@ -123,27 +165,74 @@ TEST(Introspection, logCLIYaml) {
   nlohmann::json j = loadOutput();
   const nlohmann::json expected = R"({
   "data": {
-    "foo/a": [
-      {
-        "by": "a0",
-        "type": "s",
-        "val": "5.0"
+    "history": [],
+    "map": {
+      "foo": {
+        "history": [],
+        "map": {
+          "a": {
+            "history": [
+              {
+                "by": "a0",
+                "seq": 1,
+                "type": "s",
+                "val": "5.0"
+              }
+            ]
+          },
+          "b": {
+            "history": [],
+            "list": [
+              {
+                "history": [
+                  {
+                    "by": "a0",
+                    "seq": 1,
+                    "type": "s",
+                    "val": "1"
+                  }
+                ]
+              },
+              {
+                "history": [
+                  {
+                    "by": "a0",
+                    "seq": 1,
+                    "type": "s",
+                    "val": "2"
+                  }
+                ]
+              },
+              {
+                "history": [
+                  {
+                    "by": "a0",
+                    "seq": 1,
+                    "type": "s",
+                    "val": "3"
+                  }
+                ]
+              }
+            ]
+          },
+          "sub_ns": {
+            "history": [],
+            "map": {
+              "c": {
+                "history": [
+                  {
+                    "by": "a0",
+                    "seq": 1,
+                    "type": "s",
+                    "val": "hello"
+                  }
+                ]
+              }
+            }
+          }
+        }
       }
-    ],
-    "foo/b": [
-      {
-        "by": "a0",
-        "type": "s",
-        "val": "[1, 2, 3]"
-      }
-    ],
-    "foo/sub_ns/c": [
-      {
-        "by": "a0",
-        "type": "s",
-        "val": "hello"
-      }
-    ]
+    }
   },
   "sources": {
     "a": [
@@ -155,6 +244,7 @@ TEST(Introspection, logCLIYaml) {
   }
 })"_json;
   EXPECT_EQ(j, expected);
+  std::cout << "---------------------------" << j.dump(2) << std::endl;
 }
 
 TEST(Introspection, logCLISubstitution) {
@@ -180,37 +270,51 @@ TEST(Introspection, logCLISubstitution) {
 
   const nlohmann::json expected = R"({
   "data": {
-    "env": [
-      {
-        "by": "a0",
-        "type": "s",
-        "val": "$<env | CONF_UTILS_RANDOM_ENV_VAR>"
+    "history": [],
+    "map": {
+      "env": {
+        "history": [
+          {
+            "by": "a0",
+            "seq": 1,
+            "type": "s",
+            "val": "$<env | CONF_UTILS_RANDOM_ENV_VAR>"
+          },
+          {
+            "by": "s0",
+            "seq": 2,
+            "type": "u",
+            "val": "env_val"
+          }
+        ]
       },
-      {
-        "by": "s0",
-        "type": "u",
-        "val": "env_val"
-      }
-    ],
-    "val": [
-      {
-        "by": "a0",
-        "type": "s",
-        "val": "42"
-      }
-    ],
-    "var": [
-      {
-        "by": "a0",
-        "type": "s",
-        "val": "$<var | my_var>"
+      "val": {
+        "history": [
+          {
+            "by": "a0",
+            "seq": 1,
+            "type": "s",
+            "val": "42"
+          }
+        ]
       },
-      {
-        "by": "s0",
-        "type": "u",
-        "val": "var_val"
+      "var": {
+        "history": [
+          {
+            "by": "a0",
+            "seq": 1,
+            "type": "s",
+            "val": "$<var | my_var>"
+          },
+          {
+            "by": "s0",
+            "seq": 2,
+            "type": "u",
+            "val": "var_val"
+          }
+        ]
       }
-    ]
+    }
   },
   "sources": {
     "a": [
@@ -223,6 +327,7 @@ TEST(Introspection, logCLISubstitution) {
 })"_json;
   EXPECT_EQ(j, expected);
   unsetenv("CONF_UTILS_RANDOM_ENV_VAR");
+  std::cout << "---------------------------" << j.dump(2) << std::endl;
 }
 
 TEST(Introspection, logProgrammatic) {
@@ -236,49 +341,92 @@ TEST(Introspection, logProgrammatic) {
   nlohmann::json j = loadOutput();
   const nlohmann::json expected = R"""({
   "data": {
-    "a": [
-      {
-        "by": "p0",
-        "type": "s",
-        "val": "5.0"
-      },
+    "history": [
       {
         "by": "p2",
+        "seq": 3,
         "type": "r"
       }
     ],
-    "foo/b": [
-      {
-        "by": "p0",
-        "type": "s",
-        "val": "[1, 2, 3]"
+    "map": {
+      "a": {
+        "history": [
+          {
+            "by": "p0",
+            "seq": 1,
+            "type": "s",
+            "val": "5.0"
+          }
+        ]
       },
-      {
-        "by": "p1",
-        "type": "u",
-        "val": "[1, 2, 3, 4]"
-      },
-      {
-        "by": "p2",
-        "type": "r"
-      },
-      {
-        "by": "p0",
-        "type": "s",
-        "val": "6.0"
+      "foo": {
+        "history": [],
+        "map": {
+          "b": {
+            "history": [
+              {
+                "by": "p0",
+                "seq": 4,
+                "type": "s",
+                "val": "6.0"
+              }
+            ],
+            "list": [
+              {
+                "history": [
+                  {
+                    "by": "p0",
+                    "seq": 1,
+                    "type": "s",
+                    "val": "1"
+                  },
+                  {
+                    "by": "p1",
+                    "seq": 2,
+                    "type": "n"
+                  }
+                ]
+              },
+              {
+                "history": [
+                  {
+                    "by": "p0",
+                    "seq": 1,
+                    "type": "s",
+                    "val": "2"
+                  }
+                ]
+              },
+              {
+                "history": [
+                  {
+                    "by": "p0",
+                    "seq": 1,
+                    "type": "s",
+                    "val": "3"
+                  }
+                ]
+              }
+            ]
+          },
+          "sub_ns": {
+            "history": [],
+            "map": {
+              "c": {
+                "history": [
+                  {
+                    "by": "p1",
+                    "seq": 2,
+                    "type": "s",
+                    "val": "hello"
+                  }
+                ]
+              }
+            }
+          }
+        }
       }
-    ],
-    "foo/sub_ns/c": [
-      {
-        "by": "p1",
-        "type": "s",
-        "val": "hello"
-      },
-      {
-        "by": "p2",
-        "type": "r"
-      }
-    ]
+    }
   },
   "sources": {
     "p": [
@@ -289,6 +437,7 @@ TEST(Introspection, logProgrammatic) {
   }
 })"""_json;
   EXPECT_EQ(j, expected);
+  std::cout << "---------------------------" << j.dump(2) << std::endl;
 }
 
 }  // namespace config::test

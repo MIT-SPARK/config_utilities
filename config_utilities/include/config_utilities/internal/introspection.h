@@ -53,54 +53,136 @@ namespace config::internal {
  */
 class Introspection {
  public:
-  // Singleton access.
-  static Introspection& instance();
-  Introspection(const Introspection&) = delete;
-  Introspection& operator=(const Introspection&) = delete;
+  // Data structures for introspection logging. The idea is to build a tree that mirrors the YAML structure of all keys
+  // ever modified and stores a history of events for each key. Values are stored for scalars/leafs.
+
+  /**
+   *  @brief Source or owner of an event.
+   */
+  struct By {
+    //! @brief Source type.
+    enum Type : char { File = 'f', Arg = 'a', Substitution = 's', Programmatic = 'p', Config = 'c' } const type;
+
+    //! @brief Index of the specific source in the sources lookup table.
+    const size_t index;
+
+    // Public facing constructors.
+    static By file(const std::string& filename);
+    static By arg(const std::string& args);
+    static By substitution(const std::string& substitution_details = "");
+    static By programmatic(const std::string& call);
+    static By config(const std::string& config_name);
+
+   private:
+    By(Type type, const std::string& value);
+    static size_t registerSource(Type type, const std::string& value);
+  };
+
+  // Registry of sources that have contributed to the current context. <SourceType, <SourceValue, SourceIndex>>
+  using Sources = std::map<By::Type, std::map<std::string, size_t>>;
 
   /**
    * @brief Event data structure for introspection logging. The underlying information for each param is a history of
    * events.
    */
   struct Event {
-    // Action type of events.
+    //! @brief Action type of events.
     enum Type : char {
       Set = 's',             // The value was set (new or overwritten).
       Update = 'u',          // The value was updated (typically retaining information from the previous state).
       SetNonModified = 'n',  // The value was set, but not modified (e.g. from a file, but same as before).
+      SetFailed = 'f',       // An attempt was made to set the value, but it failed.
       Get = 'g',             // The value was read/requested (irrespective of whether it was present or not).
       GetDefault = 'd',      // The value was read but is the default value of the config.
+      GetError = 'e',        // An attempt was made to read the value, but it was not read.
       Remove = 'r'           // The value was removed (e.g. by a clear operation).
     } type;
 
-    // Source/owner of the event.
-    struct By {
-      enum Type : char { File = 'f', Arg = 'a', Substitution = 's', Programmatic = 'p' } type;
+    //! @brief Source or owner of the event.
+    By by;
 
-      static By file(const std::string& filename);
-      static By arg(const std::string& args);
-      static By substitution(const std::string& substitution_details = "");
-      static By programmatic(const std::string& call);
+    //! @brief New value of the node if the value has changed. Values only indicate scalar nodes as YAML string.
+    std::string value;
 
-      size_t index;
+    //! @brief Sequence id of the event specifying the order of events in the global tree.
+    const size_t sequence_id = 0;
 
-     private:
-      By(Type type, const std::string& value);
-    } by;
+    // Constructors.
+    Event(Type type, const By& by, const std::string& value = "");
 
-    // TODO(lschmid): Revisit this for more clarity.
-    std::string info;   // Additional info (e.g. value for Set events).
-    std::string value;  // New value if the value has changed.
+    /* Lookup functions */
+    //! @brief Check if this event indicates unsetting/deletion of a value.
+    bool isDeleteEvent() const;
 
-    Event(Type type, const By& by, const std::string& info = "", const std::string& value = "");
+    //! @brief Check if this event indicates a set (attempt) of a value.
+    bool isSetEvent() const;
+
+    //! @brief Check if this event indicates a get (attempt) of a value.
+    bool isGetEvent() const;
+
+    //! @brief Check if the value was modified in this event.
+    bool valueModified() const;
   };
 
-  // Full namespace of each param.
-  using Key = std::string;
-  // The underlying data is a ordered history of events for each key that was interacted with.
-  using Data = std::map<Key, std::vector<Event>>;
-  // Registry of sources that have contributed to the current context.
-  using Sources = std::map<Event::By::Type, std::map<std::string, size_t>>;
+  // History of events for a node.
+  using History = std::vector<Event>;
+
+  /**
+   * @brief Tree data structure for storing introspection information.
+   */
+  struct Node {
+    /* Data members */
+    //! @brief The list of child nodes if the node is a sequence.
+    std::vector<Node> list;
+
+    //! @brief The map of child nodes if the node is a map.
+    std::map<std::string, Node> map;
+
+    //! @brief The history of events for this node.
+    History history;
+
+    /* Interaction */
+    //! @brief Get the current (most recent) value of the node.
+    const std::string& lastValue() const;
+
+    //! @brief Check if the node currently has a (scalar) value set.
+    bool hasValue() const { return !last_value_.empty(); }
+
+    //! @brief Add an event to the history of this node.
+    void addEvent(const Event& event);
+
+    //! @brief Get a child node by map-key. This will create the node if it does not exist.
+    Node& at(const std::string& key);
+    Node& operator[](const std::string& key) { return at(key); }
+
+    //! @brief Get a child node by list-index. This will create the node if it does not exist.
+    Node& at(size_t index);
+    Node& operator[](size_t index) { return at(index); }
+
+    //! @brief Remove this node and all children from the tree.
+    void clear();
+
+    //! @brief Check if the node is empty (no history, no children).
+    bool empty() const;
+
+    //! @brief Serialize the node and all children to a YAML node at the specified sequence time step.
+    YAML::Node toYaml(size_t at_sequence_id = std::numeric_limits<size_t>::max()) const;
+
+   private:
+    // Caching of values for efficiency of tracking.
+    std::string last_value_;
+
+    // Clear the last value for all downstream nodes (excluding this one) in the case of a remove or set event.
+    void clearDownstream();
+
+    // Recursive helper for toYaml. Returns the downstream tree and when it was last set.
+    std::pair<YAML::Node, size_t> toYamlRec(size_t at_sequence_id) const;
+  };
+
+  // Singleton access.
+  static Introspection& instance();
+  Introspection(const Introspection&) = delete;
+  Introspection& operator=(const Introspection&) = delete;
 
   // Logging interface.
 
@@ -109,15 +191,15 @@ class Introspection {
    * @param key Full namespace of the parameter.
    * @param event The event to log.
    */
-  static void addEvent(const Key& key, const Event& event);
+  //   static void addEvent(const Key& key, const Event& event);
 
   /**
    * @brief Log differences from merging a node into the current context. E.g. After a CLI entry is parsed and merged.
-   * @param merged The context node after merging the parsed node.
+   * @param merged The context node after merging the input node.
    * @param input The input node before it was merged into the context.
-   * @param by The source of the entry (e.g. filename or 'arg').
+   * @param by The source of the entry (e.g. filename or arg).
    */
-  static void logMerge(const YAML::Node& merged, const YAML::Node& input, const Event::By& by);
+  static void logMerge(const YAML::Node& merged, const YAML::Node& input, const By& by);
 
   /**
    * @brief Log the difference between two nodes. E.g. before and after substitution resolution.
@@ -126,12 +208,12 @@ class Introspection {
    * @param before The current context node before all substitutions have been resolved.
    * @param after The current context node after all substitutions have been resolved.
    * @param by The source of the changes.
-   * @param log_diff_as The event type to use for logging field that have been changed. Choose Update or Set as
+   * @param log_diff_as The event type to use for logging fields that have been changed. Choose Update or Set as
    * appropriate. Default is Update.
    */
   static void logDiff(const YAML::Node& before,
                       const YAML::Node& after,
-                      const Event::By& by,
+                      const By& by,
                       const Event::Type log_diff_as = Event::Type::Update);
 
   /**
@@ -145,7 +227,7 @@ class Introspection {
    * @brief Log a clear event. This marks all current keys as removed.
    * @param by The source of the clear event.
    */
-  static void logClear(const Event::By& by);
+  static void logClear(const By& by);
 
   /**
    * @brief Clear the introspection data.
@@ -154,8 +236,15 @@ class Introspection {
   void clear();
 
   /**
+   * @brief Get the current introspection data tree.
+   * @note This should probably not be invoked directly, mostly used for testing purposes.
+   */
+  const Node& data() const { return data_; }
+
+  /**
    * @brief Write the introspection data to the specified output directory.
-   * @note This should not be invoked directly, the output is written automatically at the end of parsing if enabled.
+   * @note This should probably not be invoked directly, the output is written automatically at the end of processing if
+   * enabled.
    */
   void writeOutputData(const std::string& output_dir);
 
@@ -163,20 +252,30 @@ class Introspection {
   Introspection() = default;
   ~Introspection();
 
-  // Get the last value of a key.
-  const std::string& lastValue(const Key& key) const;
+  // Root of the data tree tracked by this instance.
+  Node data_;
 
-  Data data_;
+  // Registry of sources that have contributed to the current context. <SourceType, <SourceValue, SourceIndex>>
   Sources sources_;
-};
 
-/**
- * @brief Flatten a YAML node into a map of key-value pairs, where keys represent the full namespace of the value in the
- * original node and values are the string representations of the values. Namespaces are separated by the specified
- * @param node The node to flatten.
- * @param separator The separator to use between namespaces.
- * @returns A map of key-value pairs representing the flattened node.
- */
-std::map<std::string, std::string> flatten(const YAML::Node& node, const std::string& ns_separator = "/");
+  // Counter for sequence ids. Events start at 1, leaving 0 for uninitialized events.
+  size_t sequence_id_ = 0;
+
+ private:
+  // Setup a new logging event.
+  void initLog();
+
+  // NOTE(lschmid): The recursions make extensive use of the fact that non-existing YAML nodes are null nodes, so can
+  // easily recurse down the tree.
+  // Recurse through the nodes and add events for merge logs.
+  void logMergeRec(const YAML::Node& merged, const YAML::Node& input, const By& by, Node& node);
+
+  // Recurse through the nodes and add events for difference logs.
+  void logDiffRec(const YAML::Node& before,
+                  const YAML::Node& after,
+                  const By& by,
+                  Node& node,
+                  const Event::Type log_diff_as);
+};
 
 }  // namespace config::internal
