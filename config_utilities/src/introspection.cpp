@@ -106,9 +106,16 @@ void Node::clear() {
 
 bool Node::empty() const { return history.empty() && list.empty() && map.empty(); }
 
-YAML::Node Node::toYaml(size_t at_sequence_id) const { return toYamlRec(at_sequence_id).first; }
+static std::string tmp_indent = "";
+
+YAML::Node Node::toYaml(size_t at_sequence_id) const {
+  tmp_indent = "";
+  auto node = toYamlRec(at_sequence_id).first;
+  return node.IsNull() ? YAML::Node() : node;
+}
 
 std::pair<YAML::Node, size_t> Node::toYamlRec(size_t at_sequence_id) const {
+  tmp_indent += "  ";
   // 1. Compute the last set or removed value and the corresponding sequence id.
   std::string value;
   size_t value_last_set = 0;
@@ -126,11 +133,19 @@ std::pair<YAML::Node, size_t> Node::toYamlRec(size_t at_sequence_id) const {
     }
   }
 
+  std::cout << tmp_indent << "Value: '" << value << "' at " << value_last_set << std::endl;
+
   // 2. Get the list values if present.
   auto yaml_list = YAML::Node(YAML::NodeType::Sequence);
   size_t list_last_set = 0;
+
+  size_t tmp = 0;
   for (const auto& child : list) {
+    std::cout << tmp_indent << "- Going into  list child " << tmp << std::endl;
     const auto [child_node, child_last_set] = child.toYamlRec(at_sequence_id);
+    std::cout << tmp_indent << "- Came back from list child " << tmp << ", valid: " << !child_node.IsNull()
+              << ", last set: " << child_last_set << std::endl;
+    ++tmp;
     if (child_node.IsNull()) {
       continue;
     }
@@ -138,11 +153,16 @@ std::pair<YAML::Node, size_t> Node::toYamlRec(size_t at_sequence_id) const {
     list_last_set = std::max(list_last_set, child_last_set);
   }
 
+  std::cout << tmp_indent << "List size: " << yaml_list.size() << " at " << list_last_set << std::endl;
+
   // 3. Get the map values if present.
   auto yaml_map = YAML::Node(YAML::NodeType::Map);
   size_t map_last_set = 0;
   for (const auto& [key, child] : map) {
+    std::cout << tmp_indent << "- Going into map child " << key << std::endl;
     const auto [child_node, child_last_set] = child.toYamlRec(at_sequence_id);
+    std::cout << tmp_indent << "- Came back from map child " << key << ", valid: " << !child_node.IsNull()
+              << ", last set: " << child_last_set << std::endl;
     if (child_node.IsNull()) {
       continue;
     }
@@ -150,19 +170,35 @@ std::pair<YAML::Node, size_t> Node::toYamlRec(size_t at_sequence_id) const {
     map_last_set = std::max(map_last_set, child_last_set);
   }
 
+  std::cout << tmp_indent << "Map size: " << yaml_map.size() << " at " << map_last_set << std::endl;
+
   // 4. Compute the state of the node.
   if (value_last_set >= list_last_set && value_last_set >= map_last_set) {
     // Scalar was set or the node was deleted, no downstream members. This also covers the case where everything is
     // empty.
     if (value.empty()) {
+      std::cout << tmp_indent << "Returning null, last set: " << value_last_set << std::endl;
+      tmp_indent.pop_back();
+      tmp_indent.pop_back();
       return {YAML::Node(YAML::NodeType::Null), value_last_set};
     }
+    std::cout << tmp_indent << "Returning scalar '" << value << "', last set: " << value_last_set << std::endl;
+    tmp_indent.pop_back();
+    tmp_indent.pop_back();
     return {YamlParser::toYaml(value), value_last_set};
   }
   if (map_last_set >= list_last_set) {
     // Map was set or has the most recent change.
+    std::cout << tmp_indent << "Returning map, size: " << yaml_map.size() << ", last set: " << map_last_set
+              << std::endl;
+    tmp_indent.pop_back();
+    tmp_indent.pop_back();
     return {yaml_map, map_last_set};
   }
+  std::cout << tmp_indent << "Returning list, size: " << yaml_list.size() << ", last set: " << list_last_set
+            << std::endl;
+  tmp_indent.pop_back();
+  tmp_indent.pop_back();
   return {yaml_list, list_last_set};
 }
 
@@ -198,13 +234,16 @@ void Introspection::logMergeRec(const YAML::Node& merged, const YAML::Node& inpu
     return;
   }
   if (input.IsSequence()) {
-    for (size_t i = 0; i < input.size(); ++i) {
-      logMergeRec(merged[i], input[i], by, node[i]);
+    const size_t merged_size = merged.IsSequence() ? merged.size() : 0;
+
+    // TODO(lschmid): Handle list appends! These currently are not captured.
+    for (size_t i = 0; i < std::max(merged_size, input.size()); ++i) {
+      logMergeRec(at(merged, i), at(input, i), by, node[i]);
     }
   } else if (input.IsMap()) {
     for (const auto& kv : input) {
       const std::string key = kv.first.Scalar();
-      logMergeRec(merged[key], kv.second, by, node[key]);
+      logMergeRec(at(merged, key), kv.second, by, node[key]);
     }
   }
 }
@@ -247,12 +286,12 @@ void Introspection::logDiffRec(const YAML::Node& before,
   }
   if (after.IsSequence()) {
     for (size_t i = 0; i < after.size(); ++i) {
-      logDiffRec(before[i], after[i], by, node[i], log_diff_as);
+      logDiffRec(at(before, i), after[i], by, node[i], log_diff_as);
     }
   } else if (after.IsMap()) {
     for (const auto& kv : after) {
       const std::string key = kv.first.Scalar();
-      logDiffRec(before[key], kv.second, by, node[key], log_diff_as);
+      logDiffRec(at(before, key), kv.second, by, node[key], log_diff_as);
     }
   }
 }
@@ -379,23 +418,18 @@ Introspection& Introspection::instance() {
   return instance;
 }
 
-std::map<std::string, std::string> flatten(const YAML::Node& node, const std::string& ns_separator) {
-  std::map<std::string, std::string> result;
+YAML::Node Introspection::at(const YAML::Node& node, const std::string& key) {
+  if (!node.IsMap()) {
+    return YAML::Node(YAML::NodeType::Null);
+  }
+  return node[key];
+}
 
-  // Helper function to recursively flatten the node.
-  std::function<void(const YAML::Node&, const std::string&)> flatten = [&](const YAML::Node& n,
-                                                                           const std::string& path) {
-    if (n.IsMap()) {
-      for (const auto& kv : n) {
-        flatten(kv.second, path.empty() ? kv.first.Scalar() : path + ns_separator + kv.first.Scalar());
-      }
-    } else {
-      result[path] = yamlToString(n, false);
-    }
-  };
-
-  flatten(node, "");
-  return result;
+YAML::Node Introspection::at(const YAML::Node& node, size_t index) {
+  if (!node.IsSequence()) {
+    return YAML::Node(YAML::NodeType::Null);
+  }
+  return node[index];
 }
 
 }  // namespace config::internal

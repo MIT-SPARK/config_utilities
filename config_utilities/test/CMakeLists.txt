@@ -34,6 +34,7 @@ add_custom_target(
 set(CONFIG_UTILS_TEST_SOURCES
   src/cli_args.cpp
   src/default_config.cpp
+  src/introspection_utils.cpp
   src/utils.cpp
   tests/asl_formatter.cpp
   tests/commandline.cpp

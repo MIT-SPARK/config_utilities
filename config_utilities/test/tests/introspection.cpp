@@ -40,13 +40,17 @@
 #include "config_utilities/parsing/commandline.h"
 #include "config_utilities/settings.h"
 #include "config_utilities/test/cli_args.h"
+#include "config_utilities/test/introspection_utils.h"
 #include "config_utilities/test/utils.h"
 
 namespace config::test {
 
-const std::string intro_dir = "config_introspection_output";
+using Event = internal::Introspection::Event;
+using By = internal::Introspection::By;
+using Intro = internal::Introspection;
 
 TEST(Introspection, invokeFromParser) {
+  reset();
   CliArgs cli_args(std::vector<std::string>{"some_command",
                                             "--config-utilities-file",
                                             "resources/foo.yaml",
@@ -72,6 +76,87 @@ TEST(Introspection, invokeFromParser) {
   node = internal::loadFromArguments(args.argc, args.argv, true);
   EXPECT_EQ(args.get_cmd(), "some_command");
   EXPECT_EQ(config::Settings().introspection.output, intro_dir);
+}
+
+TEST(Introspection, renderStateFromHistory) {
+  reset();
+
+  // Setup 1.
+  YAML::Node node1 = YAML::Load("{a: 5, b: [1, 2], c: {d: 10, e: 20}}");
+  Intro::logMerge(node1, node1, By::file("file0.yaml"));
+
+  // Merge 2.
+  YAML::Node in = YAML::Load("{a: 7, c: {e: {f: blipp}}}");
+  YAML::Node node2 = YAML::Clone(node1);
+  internal::mergeYamlNodes(node2, in, internal::MergeMode::APPEND);
+  Intro::logMerge(node2, in, By::file("file1.yaml"));
+
+  // Merge 3.
+  in = YAML::Load("{b: [3], c: {d: 15}}");
+  YAML::Node node3 = YAML::Clone(node2);
+  internal::mergeYamlNodes(node3, in, internal::MergeMode::APPEND);
+  Intro::logMerge(node3, in, By::file("file2.yaml"));
+
+  // Overwriting sets: list to map & upstream scalars.
+  in = YAML::Load("{b: {foo: bar}, c: 123}");
+  YAML::Node node4 = YAML::Clone(node2);
+  internal::mergeYamlNodes(node4, in, internal::MergeMode::REPLACE);
+  Intro::logMerge(node4, in, By::file("file3.yaml"));
+
+  // Clear.
+  YAML::Node node5 = YAML::Node();
+  Intro::logClear(By::programmatic("test clear"));
+
+  // Set again with new values.
+  in = YAML::Load("{x: 42, b: [{nested: true}, {nested: false}], c: {sub: \"<!emulate | subst>\"}}");
+  YAML::Node node6 = YAML::Clone(node5);
+  internal::mergeYamlNodes(node6, in, internal::MergeMode::APPEND);
+  Intro::logMerge(node6, in, By::file("file4.yaml"));
+
+  // Emulate substitution resolution.
+  YAML::Node node7 = YAML::Clone(node6);
+  node7["c"]["sub"] = "substituted_value";
+  Intro::logDiff(node6, node7, By::substitution("emulated substitution"));
+
+  // Render state at different sequence ids after history is complete.
+  std::function<void(YAML::Node&, YAML::Node&, size_t)> printAt = [&](YAML::Node& a, YAML::Node& b, size_t seq_id) {
+    std::cout << "---------------------- " << seq_id << " ----------------------\n"
+              << a << "\n---------------------- rendered to ----------------------\n"
+              << b << "\n--------------------------------------------" << std::endl;
+  };
+
+  auto rendered0 = Intro::instance().data().toYaml(0);
+  YAML::Node empty;
+  expectEqual(empty, rendered0);
+  printAt(empty, rendered0, 0);
+
+  auto rendered1 = Intro::instance().data().toYaml(1);
+  expectEqual(node1, rendered1);
+  printAt(node1, rendered1, 1);
+
+  auto rendered2 = Intro::instance().data().toYaml(2);
+  expectEqual(node2, rendered2);
+  printAt(node2, rendered2, 2);
+
+  auto rendered3 = Intro::instance().data().toYaml(3);
+  expectEqual(node3, rendered3);
+  printAt(node3, rendered3, 3);
+
+  auto rendered4 = Intro::instance().data().toYaml(4);
+  expectEqual(node4, rendered4);
+  printAt(node4, rendered4, 4);
+
+  auto rendered5 = Intro::instance().data().toYaml(5);
+  expectEqual(node5, rendered5);
+  printAt(node5, rendered5, 5);
+
+  auto rendered6 = Intro::instance().data().toYaml(6);
+  expectEqual(node6, rendered6);
+  printAt(node6, rendered6, 6);
+
+  auto rendered7 = Intro::instance().data().toYaml(7);
+  expectEqual(node7, rendered7);
+  printAt(node7, rendered7, 7);
 }
 
 }  // namespace config::test
