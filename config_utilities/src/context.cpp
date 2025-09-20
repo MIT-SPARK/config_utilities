@@ -47,16 +47,16 @@ namespace config {
 
 void initContext(int& argc, char* argv[], bool remove_arguments) {
   const auto node = internal::loadFromArguments(argc, argv, remove_arguments);
-  internal::Context::update(node, "");
+  internal::Context::update(node, "", internal::MergeMode::APPEND);
 }
 
-void pushToContext(const YAML::Node& node, const std::string& ns) {
+void pushToContext(const YAML::Node& node, const std::string& ns, internal::MergeMode merge_mode) {
   std::unique_ptr<internal::Introspection::By> by = nullptr;
   if (Settings().introspection.enabled()) {
     by = std::make_unique<internal::Introspection::By>(
         internal::Introspection::By::programmatic("pushToContext()" + (ns.empty() ? "" : "@" + ns)));
   }
-  internal::Context::update(node, ns, by.get());
+  internal::Context::update(node, ns, merge_mode, by.get());
 }
 
 void clearContext() {

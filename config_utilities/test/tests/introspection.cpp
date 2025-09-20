@@ -99,7 +99,7 @@ TEST(Introspection, renderStateFromHistory) {
 
   // Overwriting sets: list to map & upstream scalars.
   in = YAML::Load("{b: {foo: bar}, c: 123}");
-  YAML::Node node4 = YAML::Clone(node2);
+  YAML::Node node4 = YAML::Clone(node3);
   internal::mergeYamlNodes(node4, in, internal::MergeMode::REPLACE);
   Intro::logMerge(node4, in, By::file("file3.yaml"));
 
@@ -118,45 +118,31 @@ TEST(Introspection, renderStateFromHistory) {
   node7["c"]["sub"] = "substituted_value";
   Intro::logDiff(node6, node7, By::substitution("emulated substitution"));
 
-  // Render state at different sequence ids after history is complete.
-  std::function<void(YAML::Node&, YAML::Node&, size_t)> printAt = [&](YAML::Node& a, YAML::Node& b, size_t seq_id) {
-    std::cout << "---------------------- " << seq_id << " ----------------------\n"
-              << a << "\n---------------------- rendered to ----------------------\n"
-              << b << "\n--------------------------------------------" << std::endl;
-  };
-
+  // Render out the history after the fact.
   auto rendered0 = Intro::instance().data().toYaml(0);
   YAML::Node empty;
   expectEqual(empty, rendered0);
-  printAt(empty, rendered0, 0);
 
   auto rendered1 = Intro::instance().data().toYaml(1);
   expectEqual(node1, rendered1);
-  printAt(node1, rendered1, 1);
 
   auto rendered2 = Intro::instance().data().toYaml(2);
   expectEqual(node2, rendered2);
-  printAt(node2, rendered2, 2);
 
   auto rendered3 = Intro::instance().data().toYaml(3);
   expectEqual(node3, rendered3);
-  printAt(node3, rendered3, 3);
 
   auto rendered4 = Intro::instance().data().toYaml(4);
   expectEqual(node4, rendered4);
-  printAt(node4, rendered4, 4);
 
   auto rendered5 = Intro::instance().data().toYaml(5);
   expectEqual(node5, rendered5);
-  printAt(node5, rendered5, 5);
 
   auto rendered6 = Intro::instance().data().toYaml(6);
   expectEqual(node6, rendered6);
-  printAt(node6, rendered6, 6);
 
   auto rendered7 = Intro::instance().data().toYaml(7);
   expectEqual(node7, rendered7);
-  printAt(node7, rendered7, 7);
 }
 
 }  // namespace config::test

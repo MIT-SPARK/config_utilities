@@ -37,6 +37,7 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -175,8 +176,11 @@ class Introspection {
     // Clear the last value for all downstream nodes (excluding this one) in the case of a remove or set event.
     void clearDownstream();
 
-    // Recursive helper for toYaml. Returns the downstream tree and when it was last set.
-    std::pair<YAML::Node, size_t> toYamlRec(size_t at_sequence_id) const;
+    // Recursive helper for toYaml.
+    std::optional<YAML::Node> toYamlRec(size_t at_sequence_id, size_t last_delete_id) const;
+
+    // Compute the latest sequence id where a leaf value was set in the subtree.
+    size_t lastSet(size_t max_sequence_id) const;
   };
 
   // Singleton access.
@@ -195,6 +199,7 @@ class Introspection {
 
   /**
    * @brief Log differences from merging a node into the current context. E.g. After a CLI entry is parsed and merged.
+   * @todo (lschmid): Currently does not log nodes that have been removed by mergeMode::RESET.
    * @param merged The context node after merging the input node.
    * @param input The input node before it was merged into the context.
    * @param by The source of the entry (e.g. filename or arg).
@@ -265,8 +270,6 @@ class Introspection {
   // Setup a new logging event.
   void initLog();
 
-  // NOTE(lschmid): The recursions make extensive use of the fact that non-existing YAML nodes are null nodes, so can
-  // easily recurse down the tree.
   // Recurse through the nodes and add events for merge logs.
   void logMergeRec(const YAML::Node& merged, const YAML::Node& input, const By& by, Node& node);
 
@@ -276,9 +279,6 @@ class Introspection {
                   const By& by,
                   Node& node,
                   const Event::Type log_diff_as);
-
-  static YAML::Node at(const YAML::Node& node, const std::string& key);
-  static YAML::Node at(const YAML::Node& node, size_t index);
 };
 
 }  // namespace config::internal

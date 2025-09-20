@@ -53,8 +53,12 @@ void initContext(int& argc, char* argv[], bool remove_arguments = true);
  * @brief Aggregate YAML node into global context
  * @param node YAML to add to context
  * @param ns Optional namespace
+ * @param merge_mode Merge mode to use when merging the new node into the existing context. The default is APPEND, which
+ * will act like the ROS1 param server and extend sequences
  */
-void pushToContext(const YAML::Node& node, const std::string& ns = "");
+void pushToContext(const YAML::Node& node,
+                   const std::string& ns = "",
+                   internal::MergeMode merge_mode = internal::MergeMode::APPEND);
 
 /**
  * @brief Delete parsed context
