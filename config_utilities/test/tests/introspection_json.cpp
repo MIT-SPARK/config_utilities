@@ -368,11 +368,6 @@ TEST(Introspection, logProgrammatic) {
                     "seq": 1,
                     "type": "s",
                     "val": "1"
-                  },
-                  {
-                    "by": "p1",
-                    "seq": 2,
-                    "type": "n"
                   }
                 ]
               },
@@ -393,6 +388,16 @@ TEST(Introspection, logProgrammatic) {
                     "seq": 1,
                     "type": "s",
                     "val": "3"
+                  }
+                ]
+              },
+              {
+                "history": [
+                  {
+                    "by": "p1",
+                    "seq": 2,
+                    "type": "s",
+                    "val": "4"
                   }
                 ]
               }

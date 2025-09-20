@@ -56,7 +56,7 @@ bool Event::isSetEvent() const {
 bool Event::isGetEvent() const { return type == Type::Get || type == Type::GetDefault || type == Type::GetError; }
 
 bool Event::valueModified() const {
-  if (type != Type::Set && type == Type::Update) {
+  if (type != Type::Set && type != Type::Update) {
     return false;
   }
   return !value.empty();
@@ -106,100 +106,101 @@ void Node::clear() {
 
 bool Node::empty() const { return history.empty() && list.empty() && map.empty(); }
 
-static std::string tmp_indent = "";
+YAML::Node Node::toYaml(size_t at_sequence_id) const { return toYamlRec(at_sequence_id, 0).value_or(YAML::Node()); }
 
-YAML::Node Node::toYaml(size_t at_sequence_id) const {
-  tmp_indent = "";
-  auto node = toYamlRec(at_sequence_id).first;
-  return node.IsNull() ? YAML::Node() : node;
-}
-
-std::pair<YAML::Node, size_t> Node::toYamlRec(size_t at_sequence_id) const {
-  tmp_indent += "  ";
-  // 1. Compute the last set or removed value and the corresponding sequence id.
+std::optional<YAML::Node> Node::toYamlRec(size_t at_sequence_id, size_t last_delete_id) const {
+  // 1. Compute the last set or delete value and the corresponding sequence id.
   std::string value;
   size_t value_last_set = 0;
   for (auto& event : history) {
+    if (event.sequence_id <= last_delete_id) {
+      continue;
+    }
     if (event.sequence_id > at_sequence_id) {
       break;
     }
-    value_last_set = event.sequence_id;
     if (event.valueModified()) {
       value = event.value;
-      continue;
-    }
-    if (event.isDeleteEvent()) {
+      value_last_set = event.sequence_id;
+    } else if (event.isDeleteEvent()) {
       value.clear();
+      value_last_set = event.sequence_id;
     }
   }
 
-  std::cout << tmp_indent << "Value: '" << value << "' at " << value_last_set << std::endl;
-
-  // 2. Get the list values if present.
-  auto yaml_list = YAML::Node(YAML::NodeType::Sequence);
+  // 2. Compute whether the list or map overwrote this node later.
   size_t list_last_set = 0;
-
-  size_t tmp = 0;
   for (const auto& child : list) {
-    std::cout << tmp_indent << "- Going into  list child " << tmp << std::endl;
-    const auto [child_node, child_last_set] = child.toYamlRec(at_sequence_id);
-    std::cout << tmp_indent << "- Came back from list child " << tmp << ", valid: " << !child_node.IsNull()
-              << ", last set: " << child_last_set << std::endl;
-    ++tmp;
-    if (child_node.IsNull()) {
-      continue;
-    }
-    yaml_list.push_back(child_node);
-    list_last_set = std::max(list_last_set, child_last_set);
+    list_last_set = std::max(list_last_set, child.lastSet(at_sequence_id));
   }
-
-  std::cout << tmp_indent << "List size: " << yaml_list.size() << " at " << list_last_set << std::endl;
-
-  // 3. Get the map values if present.
-  auto yaml_map = YAML::Node(YAML::NodeType::Map);
+  if (list_last_set <= last_delete_id) {
+    list_last_set = 0;
+  }
   size_t map_last_set = 0;
   for (const auto& [key, child] : map) {
-    std::cout << tmp_indent << "- Going into map child " << key << std::endl;
-    const auto [child_node, child_last_set] = child.toYamlRec(at_sequence_id);
-    std::cout << tmp_indent << "- Came back from map child " << key << ", valid: " << !child_node.IsNull()
-              << ", last set: " << child_last_set << std::endl;
-    if (child_node.IsNull()) {
-      continue;
-    }
-    yaml_map[key] = child_node;
-    map_last_set = std::max(map_last_set, child_last_set);
+    map_last_set = std::max(map_last_set, child.lastSet(at_sequence_id));
+  }
+  if (map_last_set <= last_delete_id) {
+    map_last_set = 0;
   }
 
-  std::cout << tmp_indent << "Map size: " << yaml_map.size() << " at " << map_last_set << std::endl;
-
-  // 4. Compute the state of the node.
+  // 3. Figure out the most recent type of the node (scalar/list/map) and compute the final present values.
   if (value_last_set >= list_last_set && value_last_set >= map_last_set) {
-    // Scalar was set or the node was deleted, no downstream members. This also covers the case where everything is
-    // empty.
-    if (value.empty()) {
-      std::cout << tmp_indent << "Returning null, last set: " << value_last_set << std::endl;
-      tmp_indent.pop_back();
-      tmp_indent.pop_back();
-      return {YAML::Node(YAML::NodeType::Null), value_last_set};
+    // Scalar was set or the node was deleted. This also covers the case where everything is empty.
+    if (value.empty() || last_delete_id >= value_last_set) {
+      return std::nullopt;
     }
-    std::cout << tmp_indent << "Returning scalar '" << value << "', last set: " << value_last_set << std::endl;
-    tmp_indent.pop_back();
-    tmp_indent.pop_back();
-    return {YamlParser::toYaml(value), value_last_set};
+    return YamlParser::toYaml(value);
   }
-  if (map_last_set >= list_last_set) {
-    // Map was set or has the most recent change.
-    std::cout << tmp_indent << "Returning map, size: " << yaml_map.size() << ", last set: " << map_last_set
-              << std::endl;
-    tmp_indent.pop_back();
-    tmp_indent.pop_back();
-    return {yaml_map, map_last_set};
+  last_delete_id = std::max(last_delete_id, value_last_set);
+  if (list_last_set > map_last_set) {
+    // List was set last.
+    last_delete_id = std::max(last_delete_id, map_last_set);
+    YAML::Node node(YAML::NodeType::Sequence);
+    for (const auto& child : list) {
+      const auto child_node = child.toYamlRec(at_sequence_id, last_delete_id);
+      if (child_node) {
+        node.push_back(*child_node);
+      }
+    }
+    if (node.size() == 0) {
+      return std::nullopt;
+    }
+    return node;
   }
-  std::cout << tmp_indent << "Returning list, size: " << yaml_list.size() << ", last set: " << list_last_set
-            << std::endl;
-  tmp_indent.pop_back();
-  tmp_indent.pop_back();
-  return {yaml_list, list_last_set};
+
+  // Map was set last.
+  last_delete_id = std::max(last_delete_id, list_last_set);
+  YAML::Node node(YAML::NodeType::Map);
+  for (const auto& [key, child] : map) {
+    const auto child_node = child.toYamlRec(at_sequence_id, last_delete_id);
+    if (child_node) {
+      node[key] = *child_node;
+    }
+  }
+  if (node.size() == 0) {
+    return std::nullopt;
+  }
+  return node;
+}
+
+size_t Node::lastSet(size_t max_sequence_id) const {
+  size_t last_set = 0;
+  for (const auto& event : history) {
+    if (event.sequence_id > max_sequence_id) {
+      break;
+    }
+    if (event.valueModified()) {
+      last_set = event.sequence_id;
+    }
+  }
+  for (const auto& child : list) {
+    last_set = std::max(last_set, child.lastSet(max_sequence_id));
+  }
+  for (const auto& [key, child] : map) {
+    last_set = std::max(last_set, child.lastSet(max_sequence_id));
+  }
+  return last_set;
 }
 
 void Introspection::logMerge(const YAML::Node& merged, const YAML::Node& input, const By& by) {
@@ -234,16 +235,17 @@ void Introspection::logMergeRec(const YAML::Node& merged, const YAML::Node& inpu
     return;
   }
   if (input.IsSequence()) {
-    const size_t merged_size = merged.IsSequence() ? merged.size() : 0;
-
-    // TODO(lschmid): Handle list appends! These currently are not captured.
-    for (size_t i = 0; i < std::max(merged_size, input.size()); ++i) {
-      logMergeRec(at(merged, i), at(input, i), by, node[i]);
+    // NOTE(lschmid): Lists are tricky as indexing happens by position. This means the lists have been merged (in
+    // potentially arbitrary ways). Currently cover the tail of the merged sequence, as this will log appends and
+    // likely the full sequence. This will miss introspection for changes in the middle of lists though.
+    const size_t offset = merged.IsSequence() && merged.size() > input.size() ? merged.size() - input.size() : 0;
+    for (size_t i = 0; i < input.size(); ++i) {
+      logMergeRec(merged[i + offset], input[i], by, node[i + offset]);
     }
   } else if (input.IsMap()) {
     for (const auto& kv : input) {
       const std::string key = kv.first.Scalar();
-      logMergeRec(at(merged, key), kv.second, by, node[key]);
+      logMergeRec(merged[key], kv.second, by, node[key]);
     }
   }
 }
@@ -262,21 +264,20 @@ void Introspection::logDiffRec(const YAML::Node& before,
                                const By& by,
                                Node& node,
                                const Event::Type log_diff_as) {
-  if (after.IsNull()) {
-    if (!before.IsNull()) {
+  if (!after) {
+    if (before) {
       node.addEvent(Event(Event::Type::Remove, by));
     }
     return;
   }
   if (after.IsScalar()) {
     // Compare actual values in the leaf nodes.
-    const std::string after_value = yamlToString(after, false);
+    const std::string after_value = yamlToString(after);
     if (!before.IsScalar()) {
-      // Now a scalar: was newly set / overridden.
       node.addEvent(Event(Event::Type::Set, by, after_value));
       return;
     }
-    const std::string before_value = yamlToString(before, false);
+    const std::string before_value = yamlToString(before);
     if (after_value != before_value) {
       node.addEvent(Event(log_diff_as, by, after_value));
       return;
@@ -286,12 +287,22 @@ void Introspection::logDiffRec(const YAML::Node& before,
   }
   if (after.IsSequence()) {
     for (size_t i = 0; i < after.size(); ++i) {
-      logDiffRec(at(before, i), after[i], by, node[i], log_diff_as);
+      logDiffRec(before[i], after[i], by, node[i], log_diff_as);
     }
   } else if (after.IsMap()) {
     for (const auto& kv : after) {
       const std::string key = kv.first.Scalar();
-      logDiffRec(at(before, key), kv.second, by, node[key], log_diff_as);
+      logDiffRec(before[key], kv.second, by, node[key], log_diff_as);
+    }
+  }
+
+  // Also log removed keys. This can only happen for maps.
+  if (before.IsMap()) {
+    for (const auto& kv : before) {
+      const std::string key = kv.first.Scalar();
+      if (!after[key]) {
+        node[key].addEvent(Event(Event::Type::Remove, by));
+      }
     }
   }
 }
@@ -416,20 +427,6 @@ Introspection::~Introspection() {
 Introspection& Introspection::instance() {
   static Introspection instance;
   return instance;
-}
-
-YAML::Node Introspection::at(const YAML::Node& node, const std::string& key) {
-  if (!node.IsMap()) {
-    return YAML::Node(YAML::NodeType::Null);
-  }
-  return node[key];
-}
-
-YAML::Node Introspection::at(const YAML::Node& node, size_t index) {
-  if (!node.IsSequence()) {
-    return YAML::Node(YAML::NodeType::Null);
-  }
-  return node[index];
 }
 
 }  // namespace config::internal

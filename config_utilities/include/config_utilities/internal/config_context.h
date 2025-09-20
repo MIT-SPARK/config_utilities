@@ -56,9 +56,13 @@ class Context {
    * @brief Update the context by merging in a new YAML node.
    * @param other The node to merge into the context.
    * @param ns Optional namespace to move the node down into before merging.
+   * @param merge_mode The merge mode to use when merging the new node into the existing context.
    * @param by If provided, the merge will be logged as an introspection event with this source.
    */
-  static void update(const YAML::Node& other, const std::string& ns, Introspection::By* by = nullptr);
+  static void update(const YAML::Node& other,
+                     const std::string& ns,
+                     internal::MergeMode merge_mode,
+                     Introspection::By* by = nullptr);
 
   static void clear();
 
