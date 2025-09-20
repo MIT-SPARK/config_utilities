@@ -55,14 +55,39 @@ inline std::optional<MergeMode> modeFromTag(const YAML::Node& a) {
     return MergeMode::UPDATE;
   } else if (tag == "!replace") {
     return MergeMode::REPLACE;
+  } else if (tag == "!reset") {
+    return MergeMode::RESET;
   } else {
     return std::nullopt;
   }
 }
+inline std::string modeToString(MergeMode mode) {
+  switch (mode) {
+    case MergeMode::APPEND:
+      return "APPEND";
+    case MergeMode::UPDATE:
+      return "UPDATE";
+    case MergeMode::REPLACE:
+      return "REPLACE";
+    case MergeMode::RESET:
+      return "RESET";
+    default:
+      return "UNKNOWN";
+  }
+}
 
-inline void mergeLeaves(YAML::Node& a, const YAML::Node& b) {
+inline void mergeLeaves(YAML::Node& a, const YAML::Node& b, MergeMode mode) {
   // If b is invalid, we can't do anything.
-  if (b.IsNull() || !b.IsDefined()) {
+  if ((b.IsNull() || !b.IsDefined())) {
+    if (mode == MergeMode::RESET) {
+      a = YAML::Node();
+    }
+    return;
+  }
+  if (!isLeaf(a) && mode != MergeMode::RESET && mode != MergeMode::REPLACE) {
+    std::stringstream ss;
+    ss << "Cannot merge leaf and non-leaf in mode " << modeToString(mode) << "! Discarding '" << b << "'";
+    Logger::logWarning(ss.str());
     return;
   }
 
@@ -72,12 +97,11 @@ inline void mergeLeaves(YAML::Node& a, const YAML::Node& b) {
 inline void mergeYamlMaps(YAML::Node& a, const YAML::Node& b, MergeMode mode) {
   const auto tag_mode = modeFromTag(b);
   mode = tag_mode.value_or(mode);
-  if (mode == MergeMode::REPLACE) {
+  if (mode == MergeMode::RESET) {
     a = YAML::Clone(b);
     if (tag_mode) {
       a.SetTag("");
     }
-
     return;
   }
 
@@ -85,7 +109,7 @@ inline void mergeYamlMaps(YAML::Node& a, const YAML::Node& b, MergeMode mode) {
   for (const auto& node : b) {
     if (!node.first.IsScalar()) {
       std::stringstream ss;
-      ss << "Complex keys not supported, dropping '" << node.first << "' during merge";
+      ss << "Non-scalar keys not supported, dropping '" << node.first << "' during merge";
       Logger::logWarning(ss.str());
       continue;
     }
@@ -113,7 +137,6 @@ inline void updateYamlSequence(YAML::Node& a, const YAML::Node& b, MergeMode mod
     } else {
       a.push_back(YAML::Clone(*iter_b));
     }
-
     ++iter_b;
   }
 }
@@ -122,7 +145,7 @@ inline void mergeYamlSequences(YAML::Node& a, const YAML::Node& b, MergeMode mod
   const auto tag_mode = modeFromTag(b);
   mode = tag_mode.value_or(mode);
   switch (mode) {
-    case MergeMode::REPLACE:
+    case MergeMode::RESET:
       a = YAML::Clone(b);
       if (tag_mode) {
         a.SetTag("");
@@ -133,6 +156,7 @@ inline void mergeYamlSequences(YAML::Node& a, const YAML::Node& b, MergeMode mod
         a.push_back(YAML::Clone(child));
       }
       break;
+    case MergeMode::REPLACE:
     case MergeMode::UPDATE:
     default:
       updateYamlSequence(a, b, mode);
@@ -145,7 +169,7 @@ inline void mergeYamlSequences(YAML::Node& a, const YAML::Node& b, MergeMode mod
 void mergeYamlNodes(YAML::Node& a, const YAML::Node& b, MergeMode mode) {
   // If either node is a leaf in the config tree, pass merging behavior to helper function
   if (isLeaf(b) || isLeaf(a)) {
-    mergeLeaves(a, b);
+    mergeLeaves(a, b, mode);
     return;
   }
 
@@ -153,9 +177,14 @@ void mergeYamlNodes(YAML::Node& a, const YAML::Node& b, MergeMode mode) {
     mergeYamlMaps(a, b, mode);
   } else if (a.IsSequence() && b.IsSequence()) {
     mergeYamlSequences(a, b, mode);
+  } else if (mode == MergeMode::RESET || mode == MergeMode::REPLACE) {
+    a = YAML::Clone(b);
+    if (modeFromTag(b)) {
+      a.SetTag("");
+    }
   } else {
     std::stringstream ss;
-    ss << "Cannot merge map and sequence! Discarding '" << b << "'";
+    ss << "Cannot merge map and sequence in mode " << modeToString(mode) << "! Discarding '" << b << "'";
     Logger::logWarning(ss.str());
   }
 }
