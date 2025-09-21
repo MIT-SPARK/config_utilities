@@ -1,0 +1,102 @@
+{
+  "data": {
+    "history": [
+      {
+        "by": "p2",
+        "seq": 3,
+        "type": "r"
+      }
+    ],
+    "map": {
+      "a": {
+        "history": [
+          {
+            "by": "p0",
+            "seq": 1,
+            "type": "s",
+            "val": "5.0"
+          }
+        ]
+      },
+      "foo": {
+        "history": [],
+        "map": {
+          "b": {
+            "history": [
+              {
+                "by": "p0",
+                "seq": 4,
+                "type": "s",
+                "val": "6.0"
+              }
+            ],
+            "list": [
+              {
+                "history": [
+                  {
+                    "by": "p0",
+                    "seq": 1,
+                    "type": "s",
+                    "val": "1"
+                  }
+                ]
+              },
+              {
+                "history": [
+                  {
+                    "by": "p0",
+                    "seq": 1,
+                    "type": "s",
+                    "val": "2"
+                  }
+                ]
+              },
+              {
+                "history": [
+                  {
+                    "by": "p0",
+                    "seq": 1,
+                    "type": "s",
+                    "val": "3"
+                  }
+                ]
+              },
+              {
+                "history": [
+                  {
+                    "by": "p1",
+                    "seq": 2,
+                    "type": "s",
+                    "val": "4"
+                  }
+                ]
+              }
+            ]
+          },
+          "sub_ns": {
+            "history": [],
+            "map": {
+              "c": {
+                "history": [
+                  {
+                    "by": "p1",
+                    "seq": 2,
+                    "type": "s",
+                    "val": "hello"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "sources": {
+    "p": [
+      "pushToContext()",
+      "pushToContext()@foo",
+      "clearContext()"
+    ]
+  }
+}
