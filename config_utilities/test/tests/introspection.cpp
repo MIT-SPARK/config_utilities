@@ -143,6 +143,8 @@ TEST(Introspection, renderStateFromHistory) {
 
   auto rendered7 = Intro::instance().data().toYaml(7);
   expectEqual(node7, rendered7);
+
+  disable();  // Final cleanup.
 }
 
 }  // namespace config::test

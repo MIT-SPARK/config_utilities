@@ -431,7 +431,7 @@ TEST(Introspection, logProgrammatic) {
   }
 })"""_json;
   EXPECT_EQ(j, expected);
-  disable();  // Final cleanup.
+  // disable();  // Final cleanup.
 }
 
 }  // namespace config::test
