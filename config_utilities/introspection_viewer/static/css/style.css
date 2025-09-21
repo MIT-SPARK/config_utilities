@@ -1,0 +1,8 @@
+.wide-pane {
+  max-width: 100%;
+}
+
+.yaml-value {
+  font-family: monospace;
+  color: var(--text_color);
+}
