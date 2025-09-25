@@ -91,6 +91,29 @@ class VirtualConfig {
   }
 
   /**
+   * @brief Operators == and != checks for equality of the carried configs, i.e. operator== returns true if both are
+   * unset or if both are set and the types and values are equal.
+   */
+  // TODO(lschmid): Think about enabling operator== for types where operator== is defined. Easy to do if we want to bump
+  // to C++20 at some point.
+  bool operator==(const VirtualConfig& other) const {
+    if (!config_ && !other.config_) {
+      return true;
+    }
+    if (!config_ || !other.config_) {
+      return false;
+    }
+    if (config_->type != other.config_->type) {
+      return false;
+    }
+    // Compare the YAML representation of the configs as a work around for now.
+    const auto this_meta = internal::Visitor::getValues(*this);
+    const auto other_meta = internal::Visitor::getValues(other);
+    return internal::yamlToString(this_meta.data) == internal::yamlToString(other_meta.data);
+  }
+  bool operator!=(const VirtualConfig& other) const { return !(*this == other); }
+
+  /**
    * @brief Assign a config to this virtual config. This will check that the config being assigned is registered for a
    * module inheritin from the base class of this virtual config, and will use the registered type-string as type.
    * NOTE: If the same config is registered with different names for different constructor arguments, config assignments

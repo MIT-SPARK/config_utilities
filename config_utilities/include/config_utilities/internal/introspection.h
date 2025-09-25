@@ -93,9 +93,10 @@ class Introspection {
       Update = 'u',          // The value was updated (typically retaining information from the previous state).
       SetNonModified = 'n',  // The value was set, but not modified (e.g. from a file, but same as before).
       SetFailed = 'f',       // An attempt was made to set the value, but it failed.
-      Get = 'g',             // The value was read/requested (irrespective of whether it was present or not).
+      Get = 'g',             // The value was read (successfully).
       GetDefault = 'd',      // The value was read but is the default value of the config.
-      GetError = 'e',        // An attempt was made to read the value, but it was not read.
+      GetAbsent = 'a',       // An attempt was made to read the value, but it was not set.
+      GetError = 'e',        // An attempt was made to read the value, but it was not successful.
       Remove = 'r'           // The value was removed (e.g. by a clear operation).
     } type;
 
@@ -123,6 +124,9 @@ class Introspection {
 
     //! @brief Check if the value was modified in this event.
     bool valueModified() const;
+
+    //! @brief Display the event as a string for debugging purposes.
+    std::string display() const;
   };
 
   // History of events for a node.
@@ -160,6 +164,9 @@ class Introspection {
     Node& at(size_t index);
     Node& operator[](size_t index) { return at(index); }
 
+    //! @brief Get the child node at the specified namespace. This will create subsequent nodes if they do not exist.
+    Node& atNamespace(const std::string& name_space);
+
     //! @brief Remove this node and all children from the tree.
     void clear();
 
@@ -168,6 +175,9 @@ class Introspection {
 
     //! @brief Serialize the node and all children to a YAML node at the specified sequence time step.
     YAML::Node toYaml(size_t at_sequence_id = std::numeric_limits<size_t>::max()) const;
+
+    //! @brief Display the node and all children as a string for debugging purposes.
+    std::string display(size_t indent = 0) const;
 
    private:
     // Caching of values for efficiency of tracking.
@@ -223,10 +233,11 @@ class Introspection {
 
   /**
    * @brief Log reading of values by the config system from the resulting meta data of the visitor.
-   * @param meta_data The meta data created by Visitor::setValues or similar.
-   * @param ns Additional namespace to prepend to all keys in the meta data.
+   * @param set The meta data created by Visitor::setValues.
+   * @param get_info The meta data created by Visitor::getInfo after the set call.
+   * @param ns Additional namespace to prepend for this logging call.
    */
-  static void logSetValue(const MetaData& meta_data, const std::string& ns = "");
+  static void logSetValue(const MetaData& set, const MetaData& get_info, const std::string& ns = "");
 
   /**
    * @brief Log a clear event. This marks all current keys as removed.
@@ -279,6 +290,21 @@ class Introspection {
                   const By& by,
                   Node& node,
                   const Event::Type log_diff_as);
+
+  // Recurse through the meta data and add get/set events.
+  void logSetValueRec(const MetaData& set, const MetaData& get_info);
+
+  // Recurse through the meta data and log the events to the leaf nodes.
+  void logSetRecurseLeaves(const YAML::Node& set,
+                           const YAML::Node& get,
+                           bool was_parsed,
+                           bool is_default,
+                           Node& node,
+                           const By& by);
+
+  // Lookup helpers to recurse through invalid nodes safely.
+  static YAML::Node at(const YAML::Node& node, const std::string& key);
+  static YAML::Node at(const YAML::Node& node, size_t index);
 };
 
 }  // namespace config::internal

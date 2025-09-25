@@ -91,6 +91,7 @@ struct RegistrationGuard {
   ~RegistrationGuard() {
     internal::ConfigFactory<BaseT>::template removeEntry<ConfigT>(type);
     internal::ObjectWithConfigFactory<BaseT, Args...>::removeEntry(type);
+    internal::ModuleRegistry::registerConfig<DerivedT, ConfigT>(type);
   }
 
   std::string type;

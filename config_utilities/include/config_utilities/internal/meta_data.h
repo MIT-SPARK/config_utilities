@@ -59,6 +59,9 @@ struct FieldInfo {
   //! Name of the field. This is always given.
   std::string name;
 
+  //! The namespace when the field was parsed.
+  std::string ns;
+
   //! Optional: Unit of the field.
   std::string unit;
 
