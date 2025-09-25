@@ -49,38 +49,48 @@ TEST(YamlParsing, parsefromYaml) {
   YAML::Node data = DefaultConfig::modifiedValues();
   std::string error;
 
-  internal::YamlParser::fromYaml(data, "i", config.i, "", error);
-  EXPECT_EQ(config.i, 2);
+  auto val1 = internal::YamlParser::fromYaml<int>(data["i"]);
+  EXPECT_TRUE(val1.has_value());
+  EXPECT_EQ(*val1, 2);
 
-  internal::YamlParser::fromYaml(data, "f", config.f, "", error);
-  EXPECT_EQ(config.f, -1.f);
+  auto val2 = internal::YamlParser::fromYaml<float>(data["f"]);
+  EXPECT_TRUE(val2.has_value());
+  EXPECT_EQ(*val2, -1.f);
 
-  internal::YamlParser::fromYaml(data, "d", config.d, "", error);
-  EXPECT_EQ(config.d, 3.14159);
+  auto val3 = internal::YamlParser::fromYaml<double>(data["d"]);
+  EXPECT_TRUE(val3.has_value());
+  EXPECT_EQ(*val3, 3.14159);
 
-  internal::YamlParser::fromYaml(data, "b", config.b, "", error);
-  EXPECT_EQ(config.b, false);
+  auto val4 = internal::YamlParser::fromYaml<bool>(data["b"]);
+  EXPECT_TRUE(val4.has_value());
+  EXPECT_EQ(*val4, false);
 
-  internal::YamlParser::fromYaml(data, "u8", config.u8, "", error);
-  EXPECT_EQ(config.u8, 255);
+  auto val5 = internal::YamlParser::fromYaml<uint8_t>(data["u8"]);
+  EXPECT_TRUE(val5.has_value());
+  EXPECT_EQ(*val5, 255);
 
-  internal::YamlParser::fromYaml(data, "s", config.s, "", error);
-  EXPECT_EQ(config.s, "a different test string");
+  auto val6 = internal::YamlParser::fromYaml<std::string>(data["s"]);
+  EXPECT_TRUE(val6.has_value());
+  EXPECT_EQ(*val6, "a different test string");
 
-  internal::YamlParser::fromYaml(data, "vec", config.vec, "", error);
-  EXPECT_EQ(config.vec, std::vector<int>({2, 3, 4, 5}));
+  auto val7 = internal::YamlParser::fromYaml<std::vector<int>>(data["vec"]);
+  EXPECT_TRUE(val7.has_value());
+  EXPECT_EQ(*val7, std::vector<int>({2, 3, 4, 5}));
 
-  internal::YamlParser::fromYaml(data, "map", config.map, "", error);
+  auto val8 = internal::YamlParser::fromYaml<std::map<std::string, int>>(data["map"]);
+  EXPECT_TRUE(val8.has_value());
   const std::map<std::string, int> map({{"x", 24}, {"y", 25}, {"z", 26}});
-  EXPECT_EQ(config.map, map);
+  EXPECT_EQ(*val8, map);
 
-  internal::YamlParser::fromYaml(data, "set", config.set, "", error);
-  EXPECT_EQ(config.set, std::set<float>({11.11, 22.22, 33.33, 44.44}));
+  auto val9 = internal::YamlParser::fromYaml<std::set<float>>(data["set"]);
+  EXPECT_TRUE(val9.has_value());
+  EXPECT_EQ(*val9, std::set<float>({11.11, 22.22, 33.33, 44.44}));
 
-  internal::YamlParser::fromYaml(data, "mat", config.mat, "", error);
+  auto val10 = internal::YamlParser::fromYaml<Eigen::Matrix3d>(data["mat"]);
+  EXPECT_TRUE(val10.has_value());
   Eigen::Matrix3d mat;
   mat << 1, 2, 3, 4, 5, 6, 7, 8, 9;
-  EXPECT_EQ(config.mat, mat);
+  EXPECT_EQ(*val10, mat);
 }
 
 TEST(YamlParsing, conversionFailure) {
@@ -126,7 +136,8 @@ TEST(YamlParsing, overflowConversionFailure) {
   {  // values below [0, 255] cause errors
     uint8_t value = 0;
     std::string error;
-    EXPECT_FALSE(internal::YamlParser::fromYaml(node, "under", value, "", error));
+    auto val = internal::YamlParser::fromYaml<uint8_t>(node["under"], &error);
+    EXPECT_FALSE(val.has_value());
     EXPECT_EQ(value, 0u);
     EXPECT_EQ(error, "Value '-1' underflows storage min of '0'.");
   }
@@ -134,7 +145,8 @@ TEST(YamlParsing, overflowConversionFailure) {
   {  // values above [0, 255] cause errors
     uint8_t value = 0;
     std::string error;
-    EXPECT_FALSE(internal::YamlParser::fromYaml(node, "over", value, "", error));
+    auto val = internal::YamlParser::fromYaml<uint8_t>(node["over"], &error);
+    EXPECT_FALSE(val.has_value());
     EXPECT_EQ(value, 0u);
     EXPECT_EQ(error, "Value '256' overflows storage max of '255'.");
   }

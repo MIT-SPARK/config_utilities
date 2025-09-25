@@ -67,6 +67,10 @@ class YamlParser {
    */
   template <typename T>
   static std::optional<T> fromYaml(const YAML::Node& node, std::string* error = nullptr) {
+    if (!node) {
+      // The param is not defined. This is not an error.
+      return std::nullopt;
+    }
     auto value = T();
     std::string err;
     try {
@@ -81,39 +85,6 @@ class YamlParser {
       return std::nullopt;
     }
     return value;
-  }
-
-  /**
-   * @brief Parse a value from the yaml node. If the value is not found, the value is not modified, and thus should
-   * remain the default value. If the value is found, but the conversion fails, a warning is issued and the value is
-   * not modified.
-   *
-   * @tparam T Type of the value to parse.
-   * @param node The yaml node to parse the value from.
-   * @param name Name of the param to look up.
-   * @param value Value to parse.
-   * @param sub_namespace Sub-namespace of the param to look up in the node.
-   * @param error Where to store the error message if conversion fails. If successful, error will be empty.
-   * @return true If the value was found and successfully parsed.
-   */
-  template <typename T>
-  static bool fromYaml(const YAML::Node& node,
-                       const std::string& name,
-                       T& value,
-                       const std::string& sub_namespace,
-                       std::string& error) {
-    YAML::Node child_node = lookupNamespace(node, sub_namespace + "/" + name);
-    if (!child_node) {
-      // The param is not defined. This is not an error.
-      return false;
-    }
-    error.clear();
-    try {
-      fromYamlImpl(value, child_node, error);
-    } catch (const std::exception& e) {
-      error = std::string(e.what());
-    }
-    return error.empty();
   }
 
   /**
@@ -137,41 +108,6 @@ class YamlParser {
       return YAML::Node(YAML::NodeType::Null);
     }
     return node;
-  }
-
-  /**
-   * @brief Parse a C++ value to the yaml node. If the conversion fails, a warning is issued and the node is not
-   * modified.
-   *
-   * @tparam T Type of the value to parse.
-   * @param name Name of the param to store.
-   * @param value Value to parse.
-   * @param sub_namespace Sub-namespace of the param when adding it to the root node.
-   * @param error Where to store the error message if conversion fails. If successful, error will be empty.
-   * @return The yaml node the value was successfully parsed. Null-node if conversion failed.
-   */
-  template <typename T>
-  static YAML::Node toYaml(const std::string& name,
-                           const T& value,
-                           const std::string& sub_namespace,
-                           std::string& error) {
-    YAML::Node node;
-    error.clear();
-    try {
-      node = toYamlImpl(value, error);
-    } catch (const std::exception& e) {
-      error = std::string(e.what());
-    }
-
-    if (!error.empty()) {
-      return YAML::Node(YAML::NodeType::Null);
-    }
-
-    // Fix the namespacing and param name.
-    YAML::Node root_node;
-    root_node[name] = node;
-    moveDownNamespace(root_node, sub_namespace);
-    return root_node;
   }
 
  private:

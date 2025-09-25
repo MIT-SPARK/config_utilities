@@ -192,7 +192,7 @@ struct Visitor {
 
   /* Internal data to handle visits. */
   // The messenger data to read from and return eventually.
-  MetaData data;
+  MetaData meta_data;
 
   // Storage for user specified namespaces. Managed by namespacing.h.
   OpenNameSpace::Stack open_namespaces;

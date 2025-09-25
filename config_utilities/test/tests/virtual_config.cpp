@@ -666,4 +666,44 @@ child:
   }
 }
 
+TEST(VirtualConfig, equality) {
+  VirtualConfig<Base2> config1;
+  VirtualConfig<Base2> config2;
+  EXPECT_TRUE(config1 == config2);
+
+  config1 = Derived2::Config();
+  EXPECT_FALSE(config1 == config2);
+
+  config2 = Derived2::Config();
+  EXPECT_TRUE(config1 == config2);
+
+  config1 = Derived2A::Config();
+  EXPECT_FALSE(config1 == config2);
+
+  auto derived_cfg = Derived2A::Config();
+  derived_cfg.i = 5;
+  config2 = derived_cfg;
+  EXPECT_FALSE(config1 == config2);
+}
+
+TEST(VirtualConfig, inequality) {
+  VirtualConfig<Base2> config1;
+  VirtualConfig<Base2> config2;
+  EXPECT_FALSE(config1 != config2);
+
+  config1 = Derived2::Config();
+  EXPECT_TRUE(config1 != config2);
+
+  config2 = Derived2::Config();
+  EXPECT_FALSE(config1 != config2);
+
+  config1 = Derived2A::Config();
+  EXPECT_TRUE(config1 != config2);
+
+  auto derived_cfg = Derived2A::Config();
+  derived_cfg.i = 5;
+  config2 = derived_cfg;
+  EXPECT_TRUE(config1 != config2);
+}
+
 }  // namespace config::test

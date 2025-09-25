@@ -62,6 +62,17 @@ bool Event::valueModified() const {
   return !value.empty();
 }
 
+std::string Event::display() const {
+  std::stringstream ss;
+  // <type><index>@<by>[:<value>]
+  ss << "'" << type << sequence_id << "@" << by.type << by.index;
+  if (!value.empty()) {
+    ss << ":" << value;
+  }
+  ss << "'";
+  return ss.str();
+}
+
 const std::string& Node::lastValue() const { return last_value_; }
 
 void Node::addEvent(const Event& event) {
@@ -95,6 +106,15 @@ Node& Node::at(size_t index) {
     list.resize(index + 1);
   }
   return list[index];
+}
+
+Node& Node::atNamespace(const std::string& name_space) {
+  const auto parts = splitNamespace(name_space, "/");
+  Node* current = this;
+  for (const auto& part : parts) {
+    current = &current->at(part);
+  }
+  return *current;
 }
 
 void Node::clear() {
@@ -203,6 +223,31 @@ size_t Node::lastSet(size_t max_sequence_id) const {
   return last_set;
 }
 
+std::string Node::display(size_t indent) const {
+  if (list.empty() && map.empty() && history.empty()) {
+    return "";
+  }
+  std::stringstream ss;
+  const std::string indent_str(indent, ' ');
+  if (!history.empty()) {
+    ss << "[";
+    for (size_t i = 0; i < history.size(); ++i) {
+      ss << history[i].display();
+      if (i + 1 < history.size()) {
+        ss << ", ";
+      }
+    }
+    ss << "]";
+  }
+  for (size_t i = 0; i < list.size(); ++i) {
+    ss << "\n" << indent_str << "[" << i << "]: " << list[i].display(indent + 2);
+  }
+  for (const auto& [key, child] : map) {
+    ss << "\n" << indent_str << key << ": " << child.display(indent + 2);
+  }
+  return ss.str();
+}
+
 void Introspection::logMerge(const YAML::Node& merged, const YAML::Node& input, const By& by) {
   auto& instance = Introspection::instance();
   instance.initLog();
@@ -240,12 +285,12 @@ void Introspection::logMergeRec(const YAML::Node& merged, const YAML::Node& inpu
     // likely the full sequence. This will miss introspection for changes in the middle of lists though.
     const size_t offset = merged.IsSequence() && merged.size() > input.size() ? merged.size() - input.size() : 0;
     for (size_t i = 0; i < input.size(); ++i) {
-      logMergeRec(merged[i + offset], input[i], by, node[i + offset]);
+      logMergeRec(at(merged, i + offset), input[i], by, node[i + offset]);
     }
   } else if (input.IsMap()) {
     for (const auto& kv : input) {
       const std::string key = kv.first.Scalar();
-      logMergeRec(merged[key], kv.second, by, node[key]);
+      logMergeRec(at(merged, key), kv.second, by, node[key]);
     }
   }
 }
@@ -287,12 +332,12 @@ void Introspection::logDiffRec(const YAML::Node& before,
   }
   if (after.IsSequence()) {
     for (size_t i = 0; i < after.size(); ++i) {
-      logDiffRec(before[i], after[i], by, node[i], log_diff_as);
+      logDiffRec(at(before, i), after[i], by, node[i], log_diff_as);
     }
   } else if (after.IsMap()) {
     for (const auto& kv : after) {
       const std::string key = kv.first.Scalar();
-      logDiffRec(before[key], kv.second, by, node[key], log_diff_as);
+      logDiffRec(at(before, key), kv.second, by, node[key], log_diff_as);
     }
   }
 
@@ -307,7 +352,96 @@ void Introspection::logDiffRec(const YAML::Node& before,
   }
 }
 
-void Introspection::logSetValue(const MetaData& meta_data, const std::string& ns) {}
+void Introspection::logSetValue(const MetaData& set, const MetaData& get_info, const std::string& ns) {
+  auto& instance = Introspection::instance();
+  instance.initLog();
+  instance.logSetValueRec(set, get_info);
+}
+
+void Introspection::logSetValueRec(const MetaData& set, const MetaData& get_info) {
+  // Register the config as a source.
+  // TODO(lschmid): Check for uninitialized virtual configs?
+  // TODO(lschmid): Consdier tracking the invoking/parent configs for subconfigs?
+  const std::string config_name = set.name.empty() ? "Unnamed Config" : set.name;
+  const By by(By::config(config_name));
+
+  // Parse all fields in the meta data.
+  // NOTE(lschmid): Just associating fields by order should cover most cases, but technically funky things could happen
+  // with conditional field reading etc. Same for config-vectors, these can technically mess up if get/set is different.
+  size_t num_fields = set.field_infos.size();
+  if (set.field_infos.size() != get_info.field_infos.size()) {
+    Logger::logWarning("Different number of fields in config '" + config_name + "' for Set (" +
+                       std::to_string(set.field_infos.size()) + ") and Get (" +
+                       std::to_string(get_info.field_infos.size()) +
+                       "). This might lead to incorrect introspection data.");
+    num_fields = std::min(num_fields, get_info.field_infos.size());
+  }
+  for (size_t i = 0; i < num_fields; ++i) {
+    const auto& set_field = set.field_infos[i];
+    const auto& get_field = get_info.field_infos[i];
+    if (get_field.ns != set_field.ns) {
+      Logger::logWarning("Different namespaces for field '" + set_field.name + "' in config '" + config_name +
+                         "' for Set ('" + set_field.ns + "') and Get ('" + get_field.ns +
+                         "'). This might lead to incorrect introspection data.");
+    }
+    auto& node = data_.atNamespace(get_field.ns);
+    logSetRecurseLeaves(
+        set_field.value, get_field.value, set_field.was_parsed, get_field.isDefault(), node[set_field.name], by);
+  }
+
+  // TODO(lschmid): Handle virtual configs (type param)?
+  // Handle sub-configs
+  num_fields = set.sub_configs.size();
+  if (set.sub_configs.size() != get_info.sub_configs.size()) {
+    Logger::logWarning("Different number of sub-configs in config '" + config_name + "' for Set (" +
+                       std::to_string(set.sub_configs.size()) + ") and Get (" +
+                       std::to_string(get_info.sub_configs.size()) +
+                       "). This might lead to incorrect introspection data.");
+    num_fields = std::min(num_fields, get_info.sub_configs.size());
+  }
+  for (size_t i = 0; i < num_fields; ++i) {
+    logSetValueRec(set.sub_configs[i], get_info.sub_configs[i]);
+  }
+}
+
+void Introspection::logSetRecurseLeaves(const YAML::Node& set,
+                                        const YAML::Node& get,
+                                        bool was_parsed,
+                                        bool is_default,
+                                        Node& node,
+                                        const By& by) {
+  if (get.IsScalar()) {
+    const std::string value = yamlToString(get);
+    if (!set) {
+      node.addEvent(Event(Event::Type::GetAbsent, by, value));
+      return;
+    }
+    if (!was_parsed) {
+      node.addEvent(Event(Event::Type::GetError, by, value));
+      return;
+    }
+    if (is_default) {
+      if (value == yamlToString(set)) {
+        node.addEvent(Event(Event::Type::GetDefault, by));
+      } else {
+        node.addEvent(Event(Event::Type::GetError, by, value));
+      }
+      return;
+    }
+    node.addEvent(Event(Event::Type::Get, by, value));
+    return;
+  }
+  if (get.IsSequence()) {
+    for (size_t i = 0; i < get.size(); ++i) {
+      logSetRecurseLeaves(at(set, i), get[i], was_parsed, is_default, node[i], by);
+    }
+  } else if (get.IsMap()) {
+    for (const auto& kv : get) {
+      const std::string key = kv.first.Scalar();
+      logSetRecurseLeaves(at(set, key), kv.second, was_parsed, is_default, node[key], by);
+    }
+  }
+}
 
 void Introspection::logClear(const By& by) {
   auto& instance = Introspection::instance();
@@ -428,5 +562,9 @@ Introspection& Introspection::instance() {
   static Introspection instance;
   return instance;
 }
+
+YAML::Node Introspection::at(const YAML::Node& node, const std::string& key) { return node ? node[key] : node; }
+
+YAML::Node Introspection::at(const YAML::Node& node, size_t index) { return node ? node[index] : node; }
 
 }  // namespace config::internal

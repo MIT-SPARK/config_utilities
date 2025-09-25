@@ -43,6 +43,9 @@
 #include "config_utilities/internal/introspection.h"
 #include "config_utilities/internal/visitor.h"
 
+// TMP
+#include <iostream>
+
 namespace config::internal {
 
 /**
@@ -83,7 +86,12 @@ class Context {
   template <typename ConfigT>
   static ConfigT loadConfig(const std::string& name_space = "") {
     ConfigT config;
-    internal::Visitor::setValues(config, internal::lookupNamespace(instance().contents_, name_space), true);
+    const auto set_data = internal::Visitor::setValues(config, instance().contents_, true, name_space);
+    if (internal::Settings::instance().introspection.enabled()) {
+      // TODO(lschmid): Double check the namespaces and whether these are needed.
+      const auto get_info = internal::Visitor::getInfo(config, name_space);
+      Introspection::logSetValue(set_data, get_info, name_space);
+    }
     return config;
   }
 

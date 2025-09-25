@@ -37,11 +37,18 @@
 
 #include <gtest/gtest.h>
 
+#include "config_utilities/config.h"
+#include "config_utilities/factory.h"
 #include "config_utilities/parsing/commandline.h"
+#include "config_utilities/parsing/context.h"
 #include "config_utilities/settings.h"
 #include "config_utilities/test/cli_args.h"
+#include "config_utilities/test/default_config.h"
 #include "config_utilities/test/introspection_utils.h"
 #include "config_utilities/test/utils.h"
+#include "config_utilities/types/conversions.h"
+#include "config_utilities/types/enum.h"
+#include "config_utilities/virtual_config.h"
 
 namespace config::test {
 
@@ -49,8 +56,78 @@ using Event = internal::Introspection::Event;
 using By = internal::Introspection::By;
 using Intro = internal::Introspection;
 
+struct IntroBase {
+  virtual ~IntroBase() = default;
+};
+
+struct IntroDerivedA : public IntroBase {
+  struct Config {
+    std::string s = "default";
+  } const config;
+  explicit IntroDerivedA(const Config& config) : config(config) {}
+};
+
+struct IntroDerivedB : public IntroBase {
+  struct Config {
+    std::string hi = "hello";
+  } const config;
+  explicit IntroDerivedB(const Config& config) : config(config) {}
+};
+
+struct IntroTestConfig {
+  int a = 1;
+  std::vector<float> vec = {1.0f, 2.0f, 3.0f};
+  std::map<std::string, bool> map = {{"a", true}, {"b", false}};
+  struct IntroSubConfig {
+    double d = 3.1415;
+  } subconfig;
+  enum IntroEnum { ONE = 1, TWO = 2, THREE = 3 } e = IntroEnum::TWO;
+  using VirtConf = VirtualConfig<IntroBase>;
+  VirtConf unset_virtual;
+  VirtConf virtual_config{IntroDerivedA::Config()};
+  std::vector<VirtConf> virt_modules{VirtConf{IntroDerivedA::Config()}, VirtConf{IntroDerivedB::Config()}};
+};
+
+void declare_config(IntroDerivedA::Config& config) {
+  name("IntroDerivedA::Config");
+  field(config.s, "s");
+}
+
+void declare_config(IntroDerivedB::Config& config) {
+  name("IntroDerivedB::Config");
+  field(config.hi, "hi");
+}
+
+void declare_config(IntroTestConfig::IntroSubConfig& config) {
+  name("IntroTestConfig::IntroSubConfig");
+  field(config.d, "d");
+}
+
+void declare_config(IntroTestConfig& config) {
+  name("IntroTestConfig");
+  field(config.a, "a");
+  field(config.vec, "vec");
+  field(config.map, "map");
+  field(config.subconfig, "subconfig");
+  enum_field(config.e,
+             "e",
+             {{IntroTestConfig::IntroEnum::ONE, "ONE"},
+              {IntroTestConfig::IntroEnum::TWO, "TWO"},
+              {IntroTestConfig::IntroEnum::THREE, "THREE"}});
+  config.unset_virtual.setOptional(true);
+  field(config.unset_virtual, "unset_virtual");
+  field(config.virtual_config, "virtual_config");
+  field(config.virt_modules, "virt_modules");
+}
+
+std::unique_ptr<RegistrationGuard<IntroBase, IntroDerivedA, IntroDerivedA::Config>> regA;
+std::unique_ptr<RegistrationGuard<IntroBase, IntroDerivedB, IntroDerivedB::Config>> regB;
+
 TEST(Introspection, invokeFromParser) {
   reset();
+  regA = std::make_unique<RegistrationGuard<IntroBase, IntroDerivedA, IntroDerivedA::Config>>("IntroDerivedA");
+  regB = std::make_unique<RegistrationGuard<IntroBase, IntroDerivedB, IntroDerivedB::Config>>("IntroDerivedB");
+
   CliArgs cli_args(std::vector<std::string>{"some_command",
                                             "--config-utilities-file",
                                             "resources/foo.yaml",
@@ -143,8 +220,155 @@ TEST(Introspection, renderStateFromHistory) {
 
   auto rendered7 = Intro::instance().data().toYaml(7);
   expectEqual(node7, rendered7);
+}
 
-  disable();  // Final cleanup.
+TEST(Introspection, getValuesAbsent) {
+  reset();
+  // const auto data = YAML::Load("{a: 5, b: {c: 10, d: 20}}");
+  // pushToContext(data);
+  auto config = fromContext<IntroTestConfig>();
+  const std::string expected = R"""(
+b: ['a1@c0:true']
+d: ['a1@c0:3.2000000000000002']
+f: ['a1@c0:2.0999999']
+i: ['a1@c0:1']
+map: 
+  a: ['a1@c0:1']
+  b: ['a1@c0:2']
+  c: ['a1@c0:3']
+mat: 
+  [0]: 
+    [0]: ['a1@c0:1']
+    [1]: ['a1@c0:0']
+    [2]: ['a1@c0:0']
+  [1]: 
+    [0]: ['a1@c0:0']
+    [1]: ['a1@c0:1']
+    [2]: ['a1@c0:0']
+  [2]: 
+    [0]: ['a1@c0:0']
+    [1]: ['a1@c0:0']
+    [2]: ['a1@c0:1']
+my_enum: ['a1@c0:A']
+my_strange_enum: ['a1@c0:X']
+s: ['a1@c0:test string']
+set: 
+  [0]: ['a1@c0:1.10000002']
+  [1]: ['a1@c0:2.20000005']
+  [2]: ['a1@c0:3.29999995']
+sub_ns: 
+  i: ['a1@c1:1']
+  nested_ns: 
+    i: ['a1@c2:1']
+sub_sub_ns: 
+  i: ['a1@c2:1']
+u8: ['a1@c0:4']
+vec: 
+  [0]: ['a1@c0:1']
+  [1]: ['a1@c0:2']
+  [2]: ['a1@c0:3'])""";
+  // EXPECT_EQ(expected, Intro::instance().data().display());
+  std::cout << "Introspection: " << Intro::instance().data().display() << std::endl;
+}
+
+TEST(Introspection, getValuesNamespaced) {
+  reset();
+  auto config = fromContext<IntroTestConfig>("foo/bar");
+  const std::string expected = R"""(
+foo:
+  bar:
+    b: ['a1@c0:true']
+    d: ['a1@c0:3.2000000000000002']
+    f: ['a1@c0:2.0999999']
+    i: ['a1@c0:1']
+    map:
+      a: ['a1@c0:1']
+      b: ['a1@c0:2']
+      c: ['a1@c0:3']
+    mat:
+      [0]:
+        [0]: ['a1@c0:1']
+        [1]: ['a1@c0:0']
+        [2]: ['a1@c0:0']
+      [1]:
+        [0]: ['a1@c0:0']
+        [1]: ['a1@c0:1']
+        [2]: ['a1@c0:0']
+      [2]:
+        [0]: ['a1@c0:0']
+        [1]: ['a1@c0:0']
+        [2]: ['a1@c0:1']
+    my_enum: ['a1@c0:A']
+    my_strange_enum: ['a1@c0:X']
+    s: ['a1@c0:test string']
+    set:
+      [0]: ['a1@c0:1.10000002']
+      [1]: ['a1@c0:2.20000005']
+      [2]: ['a1@c0:3.29999995']
+    sub_ns:
+      i: ['a1@c1:1']
+      nested_ns:
+        i: ['a1@c2:1']
+    sub_sub_ns:
+      i: ['a1@c2:1']
+    u8: ['a1@c0:4']
+    vec:
+      [0]: ['a1@c0:1']
+      [1]: ['a1@c0:2']
+      [2]: ['a1@c0:3'])""";
+  std::cout << "Introspection: " << Intro::instance().data().display() << std::endl;
+  // EXPECT_EQ(expected, Intro::instance().data().display());
+}
+
+TEST(Introspection, getValuesNamespaced2) {
+  reset();
+  auto config = fromContext<DefaultConfig>("foo/bar");
+  const std::string expected = R"""(
+foo:
+  bar:
+    b: ['a1@c0:true']
+    d: ['a1@c0:3.2000000000000002']
+    f: ['a1@c0:2.0999999']
+    i: ['a1@c0:1']
+    map:
+      a: ['a1@c0:1']
+      b: ['a1@c0:2']
+      c: ['a1@c0:3']
+    mat:
+      [0]:
+        [0]: ['a1@c0:1']
+        [1]: ['a1@c0:0']
+        [2]: ['a1@c0:0']
+      [1]:
+        [0]: ['a1@c0:0']
+        [1]: ['a1@c0:1']
+        [2]: ['a1@c0:0']
+      [2]:
+        [0]: ['a1@c0:0']
+        [1]: ['a1@c0:0']
+        [2]: ['a1@c0:1']
+    my_enum: ['a1@c0:A']
+    my_strange_enum: ['a1@c0:X']
+    s: ['a1@c0:test string']
+    set:
+      [0]: ['a1@c0:1.10000002']
+      [1]: ['a1@c0:2.20000005']
+      [2]: ['a1@c0:3.29999995']
+    sub_ns:
+      i: ['a1@c1:1']
+      nested_ns:
+        i: ['a1@c2:1']
+    sub_sub_ns:
+      i: ['a1@c2:1']
+    u8: ['a1@c0:4']
+    vec:
+      [0]: ['a1@c0:1']
+      [1]: ['a1@c0:2']
+      [2]: ['a1@c0:3'])""";
+  // std::cout << "Introspection: " << Intro::instance().data().display() << std::endl;
+  // EXPECT_EQ(expected, Intro::instance().data().display());
+  regA.reset();
+  regB.reset();
 }
 
 }  // namespace config::test

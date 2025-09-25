@@ -83,7 +83,9 @@ some_string: "Hello"
   const auto wrong = getField<GetterStruct, int>(config, "some_string");
   EXPECT_FALSE(wrong.has_value());
   EXPECT_EQ(logger->numMessages(), 1);
-  EXPECT_EQ(logger->lastMessage(), "Field 'some_string' could not be converted to the requested type: bad conversion");
+  EXPECT_EQ(logger->lastMessage(),
+            "Field 'some_string' could not be converted to the requested type: yaml-cpp: error at line 1, column 1: "
+            "bad conversion");
 
   const auto wrong2 = getField<GetterStruct, std::string>(config, "non_existent_field");
   EXPECT_FALSE(wrong2.has_value());
