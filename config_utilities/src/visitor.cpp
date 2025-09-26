@@ -84,10 +84,11 @@ void Visitor::visitCheck(const CheckBase& check) {
   }
 }
 
-std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set,
-                                                      bool is_optional,
-                                                      const std::string& type,
-                                                      const std::string& base_type) {
+std::optional<std::string> Visitor::visitVirtualConfig(bool is_set,
+                                                       bool is_optional,
+                                                       const std::string& type,
+                                                       const std::string& base_type,
+                                                       const std::string& base_factory_info) {
   Visitor& visitor = Visitor::instance();
   visitor.meta_data.virtual_config_type = type;
 
@@ -105,11 +106,15 @@ std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set,
 
   if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetInfo) {
     // Also write the type param back to file.
-    std::string error;
     auto type_node = YAML::Node(is_set ? type : kUninitializedVirtualConfigType);
     const std::string ns = joinNamespace(visitor.name_space, Settings::instance().factory.type_param_name);
     moveDownNamespace(type_node, ns);
     mergeYamlNodes(visitor.meta_data.data, type_node);
+    auto& field_info = visitor.meta_data.field_infos.emplace_back();
+    field_info.name = Settings::instance().factory.type_param_name;
+    field_info.ns = visitor.name_space;
+    field_info.value = lookupNamespace(visitor.meta_data.data, ns);
+    field_info.is_meta_field = true;
   }
 
   if (visitor.mode == internal::Visitor::Mode::kGetInfo) {
@@ -120,8 +125,22 @@ std::optional<YAML::Node> Visitor::visitVirtualConfig(bool is_set,
   }
 
   if (visitor.mode == Visitor::Mode::kSet) {
-    // Return the data to intialize the virtual config if this is the first time setting it.
-    return lookupNamespace(visitor.meta_data.data, visitor.name_space);
+    auto& field_info = visitor.meta_data.field_infos.emplace_back();
+    field_info.name = internal::Settings::instance().factory.type_param_name;
+    field_info.ns = visitor.name_space;
+    field_info.value = lookupNamespace(visitor.meta_data.data, visitor.name_space);
+    field_info.is_meta_field = true;
+
+    // underlying derived type is not required if the config is optional, or if the config has been
+    // initialized to a derived type already.
+    const bool type_required = !is_set && !is_optional;
+    std::string type_param;
+    if (internal::getType(field_info.value, type_param, type_required)) {
+      field_info.was_parsed = true;
+      return type_param;
+    } else if (type_required) {
+      internal::Logger::logError("Could not get type for '" + base_factory_info + "'");
+    }
   }
 
   return std::nullopt;

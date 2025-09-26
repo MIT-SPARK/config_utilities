@@ -270,6 +270,11 @@ std::string AslFormatter::formatField(const FieldInfo& info, size_t indent) cons
   std::string result;
   const auto& settings = Settings::instance().printing;
 
+  // Check meta fields for printing.
+  if (!settings.print_meta_fields && info.is_meta_field) {
+    return result;
+  }
+
   // field is the stringified value, The header is the field name.
   std::string field = yamlToString(info.value, settings.reformat_floats);
   if (info.isDefault() && Settings::instance().printing.show_defaults) {

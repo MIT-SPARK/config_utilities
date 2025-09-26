@@ -134,10 +134,11 @@ struct Visitor {
   static void visitBase(ConfigT& config);
 
   // Virtual config.
-  static std::optional<YAML::Node> visitVirtualConfig(bool is_set,
-                                                      bool is_optional,
-                                                      const std::string& type,
-                                                      const std::string& base_type);
+  static std::optional<std::string> visitVirtualConfig(bool is_set,
+                                                       bool is_optional,
+                                                       const std::string& type,
+                                                       const std::string& base_type,
+                                                       const std::string& base_factory_info);
 
  private:
   friend class config::NameSpace;

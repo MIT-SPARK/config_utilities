@@ -90,7 +90,7 @@ class Context {
     if (internal::Settings::instance().introspection.enabled()) {
       // TODO(lschmid): Double check the namespaces and whether these are needed.
       const auto get_info = internal::Visitor::getInfo(config, name_space);
-      Introspection::logSetValue(set_data, get_info, name_space);
+      Introspection::logSetValue(set_data, get_info);
     }
     return config;
   }

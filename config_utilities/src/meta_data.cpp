@@ -108,7 +108,7 @@ YAML::Node FieldInfo::serializeFieldInfos() const {
   return result;
 }
 
-YAML::Node MetaData::serializeFieldInfos() const {
+YAML::Node MetaData::serializeFieldInfos(bool include_meta_fields) const {
   YAML::Node result;
   // Log the config.
   result["type"] = "config";
@@ -135,7 +135,9 @@ YAML::Node MetaData::serializeFieldInfos() const {
 
   // Parse the direct fields.
   for (const FieldInfo& info : field_infos) {
-    fields.push_back(info.serializeFieldInfos());
+    if (include_meta_fields || !info.is_meta_field) {
+      fields.push_back(info.serializeFieldInfos());
+    }
   }
 
   // Parse the sub-configs.
@@ -145,6 +147,16 @@ YAML::Node MetaData::serializeFieldInfos() const {
 
   result["fields"] = fields;
   return result;
+}
+
+std::string MetaData::displayIndex() const {
+  if (isArrayConfig()) {
+    return "[" + std::to_string(array_config_index) + "]";
+  }
+  if (isMapConfig()) {
+    return *map_config_key;
+  }
+  return "";
 }
 
 }  // namespace config::internal
