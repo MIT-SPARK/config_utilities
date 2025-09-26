@@ -77,25 +77,11 @@ const std::string& Node::lastValue() const { return last_value_; }
 
 void Node::addEvent(const Event& event) {
   history.push_back(event);
-  if (event.type == Event::Type::Remove) {
+  // If this event unset downstream values, log this as separate delete events for easier in-leave tracking.
+  if (event.isDeleteEvent()) {
     last_value_.clear();
-    clearDownstream();
-    return;
-  }
-  if (event.valueModified()) {
+  } else if (event.valueModified()) {
     last_value_ = event.value;
-    clearDownstream();
-  }
-}
-
-void Node::clearDownstream() {
-  for (auto& child : list) {
-    child.last_value_.clear();
-    child.clearDownstream();
-  }
-  for (auto& [key, child] : map) {
-    child.last_value_.clear();
-    child.clearDownstream();
   }
 }
 
@@ -126,101 +112,49 @@ void Node::clear() {
 
 bool Node::empty() const { return history.empty() && list.empty() && map.empty(); }
 
-YAML::Node Node::toYaml(size_t at_sequence_id) const { return toYamlRec(at_sequence_id, 0).value_or(YAML::Node()); }
+YAML::Node Node::toYaml(size_t at_sequence_id) const { return toYamlRec(at_sequence_id).value_or(YAML::Node()); }
 
-std::optional<YAML::Node> Node::toYamlRec(size_t at_sequence_id, size_t last_delete_id) const {
-  // 1. Compute the last set or delete value and the corresponding sequence id.
+std::optional<YAML::Node> Node::toYamlRec(size_t at_sequence_id) const {
+  // All nodes should log correct delete events, so it is fine to just go through the history.
   std::string value;
-  size_t value_last_set = 0;
   for (auto& event : history) {
-    if (event.sequence_id <= last_delete_id) {
-      continue;
-    }
     if (event.sequence_id > at_sequence_id) {
       break;
     }
     if (event.valueModified()) {
       value = event.value;
-      value_last_set = event.sequence_id;
     } else if (event.isDeleteEvent()) {
       value.clear();
-      value_last_set = event.sequence_id;
     }
   }
+  if (!value.empty()) {
+    return YAML::Node(value);
+  }
 
-  // 2. Compute whether the list or map overwrote this node later.
-  size_t list_last_set = 0;
+  // Check list.
+  YAML::Node node(YAML::NodeType::Sequence);
   for (const auto& child : list) {
-    list_last_set = std::max(list_last_set, child.lastSet(at_sequence_id));
-  }
-  if (list_last_set <= last_delete_id) {
-    list_last_set = 0;
-  }
-  size_t map_last_set = 0;
-  for (const auto& [key, child] : map) {
-    map_last_set = std::max(map_last_set, child.lastSet(at_sequence_id));
-  }
-  if (map_last_set <= last_delete_id) {
-    map_last_set = 0;
-  }
-
-  // 3. Figure out the most recent type of the node (scalar/list/map) and compute the final present values.
-  if (value_last_set >= list_last_set && value_last_set >= map_last_set) {
-    // Scalar was set or the node was deleted. This also covers the case where everything is empty.
-    if (value.empty() || last_delete_id >= value_last_set) {
-      return std::nullopt;
+    const auto child_node = child.toYamlRec(at_sequence_id);
+    if (child_node) {
+      node.push_back(*child_node);
     }
-    return YamlParser::toYaml(value);
   }
-  last_delete_id = std::max(last_delete_id, value_last_set);
-  if (list_last_set > map_last_set) {
-    // List was set last.
-    last_delete_id = std::max(last_delete_id, map_last_set);
-    YAML::Node node(YAML::NodeType::Sequence);
-    for (const auto& child : list) {
-      const auto child_node = child.toYamlRec(at_sequence_id, last_delete_id);
-      if (child_node) {
-        node.push_back(*child_node);
-      }
-    }
-    if (node.size() == 0) {
-      return std::nullopt;
-    }
+  if (node.size() != 0) {
     return node;
   }
 
-  // Map was set last.
-  last_delete_id = std::max(last_delete_id, list_last_set);
-  YAML::Node node(YAML::NodeType::Map);
+  // Check map.
+  node = YAML::Node(YAML::NodeType::Map);
   for (const auto& [key, child] : map) {
-    const auto child_node = child.toYamlRec(at_sequence_id, last_delete_id);
+    const auto child_node = child.toYamlRec(at_sequence_id);
     if (child_node) {
       node[key] = *child_node;
     }
   }
-  if (node.size() == 0) {
-    return std::nullopt;
+  if (node.size() != 0) {
+    return node;
   }
-  return node;
-}
-
-size_t Node::lastSet(size_t max_sequence_id) const {
-  size_t last_set = 0;
-  for (const auto& event : history) {
-    if (event.sequence_id > max_sequence_id) {
-      break;
-    }
-    if (event.valueModified()) {
-      last_set = event.sequence_id;
-    }
-  }
-  for (const auto& child : list) {
-    last_set = std::max(last_set, child.lastSet(max_sequence_id));
-  }
-  for (const auto& [key, child] : map) {
-    last_set = std::max(last_set, child.lastSet(max_sequence_id));
-  }
-  return last_set;
+  return std::nullopt;
 }
 
 std::string Node::display(size_t indent) const {
@@ -252,9 +186,12 @@ void Introspection::logMerge(const YAML::Node& merged, const YAML::Node& input, 
   auto& instance = Introspection::instance();
   instance.initLog();
   instance.logMergeRec(merged, input, by, instance.data_);
+  instance.logRemovesRec(merged, instance.data_, by);
 }
 
 void Introspection::logMergeRec(const YAML::Node& merged, const YAML::Node& input, const By& by, Node& node) {
+  // Only log 'positive' changes here, i.e. sets, modified values, and failed sets. Removed values will be handled in a
+  // separate pass.
   if (input.IsScalar()) {
     // Compare actual values in the leaf nodes.
     const std::string input_value = yamlToString(input, false);
@@ -264,6 +201,11 @@ void Introspection::logMergeRec(const YAML::Node& merged, const YAML::Node& inpu
       return;
     }
     const std::string merged_value = yamlToString(merged, false);
+    if (merged_value != input_value) {
+      // Overwritten or new.
+      node.addEvent(Event(Event::Type::SetFailed, by, input_value));
+      return;
+    }
     const std::string& previous_value = node.lastValue();
     if (merged_value == previous_value) {
       // Value is present in set but not modified.
@@ -275,11 +217,7 @@ void Introspection::logMergeRec(const YAML::Node& merged, const YAML::Node& inpu
       node.addEvent(Event(Event::Type::Set, by, merged_value));
       return;
     }
-    // Modified value in other ways.
-    node.addEvent(Event(Event::Type::Update, by, merged_value));
-    return;
-  }
-  if (input.IsSequence()) {
+  } else if (input.IsSequence()) {
     // NOTE(lschmid): Lists are tricky as indexing happens by position. This means the lists have been merged (in
     // potentially arbitrary ways). Currently cover the tail of the merged sequence, as this will log appends and
     // likely the full sequence. This will miss introspection for changes in the middle of lists though.
@@ -295,59 +233,32 @@ void Introspection::logMergeRec(const YAML::Node& merged, const YAML::Node& inpu
   }
 }
 
-void Introspection::logDiff(const YAML::Node& before,
-                            const YAML::Node& after,
-                            const By& by,
-                            const Event::Type log_diff_as) {
+void Introspection::logDiff(const YAML::Node& after, const By& by, const Event::Type log_diff_as) {
   auto& instance = Introspection::instance();
   instance.initLog();
-  instance.logDiffRec(before, after, by, instance.data_, log_diff_as);
+  instance.logDiffRec(after, by, instance.data_, log_diff_as);
+  instance.logRemovesRec(after, instance.data_, by);
 }
 
-void Introspection::logDiffRec(const YAML::Node& before,
-                               const YAML::Node& after,
-                               const By& by,
-                               Node& node,
-                               const Event::Type log_diff_as) {
-  if (!after) {
-    if (before) {
-      node.addEvent(Event(Event::Type::Remove, by));
-    }
-    return;
-  }
+void Introspection::logDiffRec(const YAML::Node& after, const By& by, Node& node, const Event::Type log_diff_as) {
+  // Only check for 'positive' changes here, i.e. set or modified values. Removed values will be handled in a separate
+  // pass.
   if (after.IsScalar()) {
     // Compare actual values in the leaf nodes.
     const std::string after_value = yamlToString(after);
-    if (!before.IsScalar()) {
-      node.addEvent(Event(Event::Type::Set, by, after_value));
-      return;
-    }
-    const std::string before_value = yamlToString(before);
+    const std::string& before_value = node.lastValue();
     if (after_value != before_value) {
       node.addEvent(Event(log_diff_as, by, after_value));
-      return;
     }
-    // Value is not modified, no need to log diff.
     return;
-  }
-  if (after.IsSequence()) {
+  } else if (after.IsSequence()) {
     for (size_t i = 0; i < after.size(); ++i) {
-      logDiffRec(at(before, i), after[i], by, node[i], log_diff_as);
+      logDiffRec(after[i], by, node[i], log_diff_as);
     }
   } else if (after.IsMap()) {
     for (const auto& kv : after) {
       const std::string key = kv.first.Scalar();
-      logDiffRec(at(before, key), kv.second, by, node[key], log_diff_as);
-    }
-  }
-
-  // Also log removed keys. This can only happen for maps.
-  if (before.IsMap()) {
-    for (const auto& kv : before) {
-      const std::string key = kv.first.Scalar();
-      if (!after[key]) {
-        node[key].addEvent(Event(Event::Type::Remove, by));
-      }
+      logDiffRec(kv.second, by, node[key], log_diff_as);
     }
   }
 }
@@ -373,21 +284,9 @@ std::optional<size_t> findMatchingSubConfig(const MetaData& search_key, const st
 
 void Introspection::logSetValueRec(const MetaData& set, const MetaData& get_info) {
   // Register the config as a source.
-  // TODO(lschmid): Check for uninitialized virtual configs?
-  // TODO(lschmid): Consider tracking the invoking/parent configs for subconfigs?
+  // TODO(lschmid): Consider tracking the invoking/parent configs for subconfigs as extra info?
   const std::string config_name = set.name.empty() ? "Unnamed Config" : set.name;
   const By by(By::config(config_name));
-
-  // // Handle the type of virtual configs separately and first.
-  // if (get_info.isVirtualConfig()) {
-  //   const std::string& type_param = Settings::instance().factory.type_param_name;
-  //   auto get_type = get_info.data[type_param];
-  //   auto set_type = set.data[type_param];
-  //   const bool was_parsed = (get_type && set_type && get_type == set_type);
-  //   const bool
-  //   logSetRecurseLeaves(set_type, get_type, true, false, data_.atNamespace(get_info.name)[type_param], by);
-
-  // }
 
   // Parse all fields in the meta data.
   // NOTE(lschmid): Just associating fields by order should cover most cases, but technically funky things could happen
@@ -488,10 +387,25 @@ void Introspection::logSetRecurseLeaves(const YAML::Node& set,
   }
 }
 
+void Introspection::logRemovesRec(const YAML::Node& present, Node& node, const By& by) {
+  // Handle the scalar case.
+  if (!node.lastValue().empty() && (!present || !present.IsScalar())) {
+    node.addEvent(Event(Event::Type::Remove, by));
+  }
+
+  // Recurse through all children.
+  for (size_t i = 0; i < node.list.size(); ++i) {
+    logRemovesRec(at(present, i), node.list[i], by);
+  }
+  for (auto& [key, child] : node.map) {
+    logRemovesRec(at(present, key), child, by);
+  }
+}
+
 void Introspection::logClear(const By& by) {
   auto& instance = Introspection::instance();
   instance.initLog();
-  instance.data_.addEvent(Event(Event::Type::Remove, by));
+  instance.logRemovesRec(YAML::Node(YAML::NodeType::Undefined), instance.data_, by);
 }
 
 void Introspection::clear() {
@@ -608,8 +522,12 @@ Introspection& Introspection::instance() {
   return instance;
 }
 
-YAML::Node Introspection::at(const YAML::Node& node, const std::string& key) { return node ? node[key] : node; }
+YAML::Node Introspection::at(const YAML::Node& node, const std::string& key) {
+  return (node && node.IsMap()) ? node[key] : YAML::Node(YAML::NodeType::Undefined);
+}
 
-YAML::Node Introspection::at(const YAML::Node& node, size_t index) { return node ? node[index] : node; }
+YAML::Node Introspection::at(const YAML::Node& node, size_t index) {
+  return (node && node.IsSequence()) ? node[index] : YAML::Node(YAML::NodeType::Undefined);
+}
 
 }  // namespace config::internal

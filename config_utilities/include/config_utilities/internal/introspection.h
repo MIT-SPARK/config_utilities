@@ -183,14 +183,8 @@ class Introspection {
     // Caching of values for efficiency of tracking.
     std::string last_value_;
 
-    // Clear the last value for all downstream nodes (excluding this one) in the case of a remove or set event.
-    void clearDownstream();
-
     // Recursive helper for toYaml.
-    std::optional<YAML::Node> toYamlRec(size_t at_sequence_id, size_t last_delete_id) const;
-
-    // Compute the latest sequence id where a leaf value was set in the subtree.
-    size_t lastSet(size_t max_sequence_id) const;
+    std::optional<YAML::Node> toYamlRec(size_t at_sequence_id) const;
   };
 
   // Singleton access.
@@ -199,13 +193,6 @@ class Introspection {
   Introspection& operator=(const Introspection&) = delete;
 
   // Logging interface.
-
-  /**
-   * @brief Manually add an event to the introspection log.
-   * @param key Full namespace of the parameter.
-   * @param event The event to log.
-   */
-  //   static void addEvent(const Key& key, const Event& event);
 
   /**
    * @brief Log differences from merging a node into the current context. E.g. After a CLI entry is parsed and merged.
@@ -220,16 +207,12 @@ class Introspection {
    * @brief Log the difference between two nodes. E.g. before and after substitution resolution.
    * @note This does not log unsuccessful events (SetNonModified). All updates will be logged as Updated, even if the
    * value was completely overwritten.
-   * @param before The current context node before all substitutions have been resolved.
    * @param after The current context node after all substitutions have been resolved.
    * @param by The source of the changes.
    * @param log_diff_as The event type to use for logging fields that have been changed. Choose Update or Set as
    * appropriate. Default is Update.
    */
-  static void logDiff(const YAML::Node& before,
-                      const YAML::Node& after,
-                      const By& by,
-                      const Event::Type log_diff_as = Event::Type::Update);
+  static void logDiff(const YAML::Node& after, const By& by, const Event::Type log_diff_as = Event::Type::Update);
 
   /**
    * @brief Log reading of values by the config system from the resulting meta data of the visitor.
@@ -284,11 +267,7 @@ class Introspection {
   void logMergeRec(const YAML::Node& merged, const YAML::Node& input, const By& by, Node& node);
 
   // Recurse through the nodes and add events for difference logs.
-  void logDiffRec(const YAML::Node& before,
-                  const YAML::Node& after,
-                  const By& by,
-                  Node& node,
-                  const Event::Type log_diff_as);
+  void logDiffRec(const YAML::Node& after, const By& by, Node& node, const Event::Type log_diff_as);
 
   // Recurse through the meta data and add get/set events.
   void logSetValueRec(const MetaData& set, const MetaData& get_info);
@@ -300,6 +279,9 @@ class Introspection {
                            bool is_default,
                            Node& node,
                            const By& by);
+
+  // Find all values that were previously set but no longer present and log their removal.
+  void logRemovesRec(const YAML::Node& present, Node& node, const By& by);
 
   // Lookup helpers to recurse through invalid nodes safely.
   static YAML::Node at(const YAML::Node& node, const std::string& key);

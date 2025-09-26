@@ -62,7 +62,7 @@ struct IntroBase {
 
 struct IntroDerivedA : public IntroBase {
   struct Config {
-    std::string s = "default";
+    std::string s = "test";
   } const config;
   explicit IntroDerivedA(const Config& config) : config(config) {}
 };
@@ -125,7 +125,6 @@ void declare_config(IntroTestConfig& config) {
 
 TEST(Introspection, invokeFromParser) {
   reset();
-
   CliArgs cli_args(std::vector<std::string>{"some_command",
                                             "--config-utilities-file",
                                             "resources/foo.yaml",
@@ -151,6 +150,65 @@ TEST(Introspection, invokeFromParser) {
   node = internal::loadFromArguments(args.argc, args.argv, true);
   EXPECT_EQ(args.get_cmd(), "some_command");
   EXPECT_EQ(config::Settings().introspection.output, intro_dir);
+}
+
+TEST(Introspection, logCLIFile) {
+  reset();
+  CliArgs cli_args(std::vector<std::string>{"some_command", "--config-utilities-file", "resources/foo.yaml@foo", "-i"});
+  auto args = cli_args.get();
+  auto node = internal::loadFromArguments(args.argc, args.argv, true);
+  const std::string expected = R"(
+foo: 
+  a: ['s1@f0:5.0']
+  b: 
+    [0]: ['s1@f0:1']
+    [1]: ['s1@f0:2']
+    [2]: ['s1@f0:3']
+  c: ['s1@f0:hello'])";
+  EXPECT_EQ(Intro::instance().data().display(), expected);
+}
+
+TEST(Introspection, logCLIYaml) {
+  reset();
+  CliArgs cli_args(std::vector<std::string>{
+      "some_command", "--config-utilities-yaml", "foo: {a: 5.0,  b: [1, 2, 3],  sub_ns: {c: hello}}", "-i"});
+  auto args = cli_args.get();
+  auto node = internal::loadFromArguments(args.argc, args.argv, true);
+  const std::string expected = R"(
+foo: 
+  a: ['s1@a0:5.0']
+  b: 
+    [0]: ['s1@a0:1']
+    [1]: ['s1@a0:2']
+    [2]: ['s1@a0:3']
+  sub_ns: 
+    c: ['s1@a0:hello'])";
+  EXPECT_EQ(Intro::instance().data().display(), expected);
+}
+
+TEST(Introspection, logCLISubstitution) {
+  reset();
+  // Set env variable.
+  auto var = std::getenv("CONF_UTILS_RANDOM_ENV_VAR");
+  if (var) {
+    FAIL() << "environment variable 'CONF_UTILS_RANDOM_ENV_VAR' is already set.";
+  }
+  setenv("CONF_UTILS_RANDOM_ENV_VAR", "env_val", 1);
+
+  // Parse.
+  CliArgs cli_args(std::vector<std::string>{"some_command",
+                                            "--config-utilities-yaml",
+                                            "{val: 42, env: $<env | CONF_UTILS_RANDOM_ENV_VAR>, var: $<var | my_var>}",
+                                            "-v",
+                                            "my_var=var_val",
+                                            "-i"});
+  auto args = cli_args.get();
+  auto node = internal::loadFromArguments(args.argc, args.argv, true);
+  const std::string expected = R"(
+env: ['s1@a0:$<env | CONF_UTILS_RANDOM_ENV_VAR>', 'u2@s0:env_val']
+val: ['s1@a0:42']
+var: ['s1@a0:$<var | my_var>', 'u2@s0:var_val'])";
+  EXPECT_EQ(Intro::instance().data().display(), expected);
 }
 
 TEST(Introspection, renderStateFromHistory) {
@@ -191,7 +249,7 @@ TEST(Introspection, renderStateFromHistory) {
   // Emulate substitution resolution.
   YAML::Node node7 = YAML::Clone(node6);
   node7["c"]["sub"] = "substituted_value";
-  Intro::logDiff(node6, node7, By::substitution("emulated substitution"));
+  Intro::logDiff(node7, By::substitution("emulated substitution"));
 
   // Render out the history after the fact.
   auto rendered0 = Intro::instance().data().toYaml(0);
