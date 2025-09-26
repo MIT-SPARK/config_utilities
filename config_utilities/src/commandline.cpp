@@ -414,12 +414,9 @@ YAML::Node loadFromArguments(int& argc, char* argv[], bool remove_args, ParserIn
     }
   }
 
+  resolveSubstitutions(node, context);
   if (introspection_enabled) {
-    const auto before = YAML::Clone(node);
-    resolveSubstitutions(node, context);
-    Introspection::logDiff(before, node, Introspection::By::substitution(), Introspection::Event::Type::Update);
-  } else {
-    resolveSubstitutions(node, context);
+    Introspection::logDiff(node, Introspection::By::substitution());
   }
   return node;
 }

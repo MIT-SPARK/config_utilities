@@ -30,8 +30,9 @@ add_custom_target(
   COMMENT "Target for test resources"
   DEPENDS ${TEST_RESOURCE_BUILD_PATHS})
 
-
-set(CONFIG_UTILS_TEST_SOURCES
+add_executable(
+  test_${PROJECT_NAME}
+  main.cpp
   src/cli_args.cpp
   src/default_config.cpp
   src/introspection_utils.cpp
@@ -61,23 +62,10 @@ set(CONFIG_UTILS_TEST_SOURCES
   tests/virtual_config.cpp
   tests/yaml_parsing.cpp
   tests/yaml_utils.cpp
-)
-if(nlohmann_json_FOUND)
-  set(CONFIG_UTILS_TEST_SOURCES ${CONFIG_UTILS_TEST_SOURCES}
-    tests/introspection_json.cpp)
-endif()
-
-add_executable(
-  test_${PROJECT_NAME}
-  main.cpp
-  ${CONFIG_UTILS_TEST_SOURCES}
   )
 add_dependencies(test_${PROJECT_NAME} copy_test_resources)
 target_include_directories(test_${PROJECT_NAME} PRIVATE include)
 target_link_libraries(test_${PROJECT_NAME} PRIVATE ${PROJECT_NAME}
                                                    GTest::gtest_main)
 target_compile_options(test_${PROJECT_NAME} PRIVATE -Wno-unused-but-set-variable)
-if(nlohmann_json_FOUND)
-  target_link_libraries(test_${PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)
-endif()
 gtest_add_tests(TARGET test_${PROJECT_NAME})
