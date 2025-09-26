@@ -235,9 +235,8 @@ class Introspection {
    * @brief Log reading of values by the config system from the resulting meta data of the visitor.
    * @param set The meta data created by Visitor::setValues.
    * @param get_info The meta data created by Visitor::getInfo after the set call.
-   * @param ns Additional namespace to prepend for this logging call.
    */
-  static void logSetValue(const MetaData& set, const MetaData& get_info, const std::string& ns = "");
+  static void logSetValue(const MetaData& set, const MetaData& get_info);
 
   /**
    * @brief Log a clear event. This marks all current keys as removed.

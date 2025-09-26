@@ -85,7 +85,9 @@ struct IntroTestConfig {
   using VirtConf = VirtualConfig<IntroBase>;
   VirtConf unset_virtual;
   VirtConf virtual_config{IntroDerivedA::Config()};
-  std::vector<VirtConf> virt_modules{VirtConf{IntroDerivedA::Config()}, VirtConf{IntroDerivedB::Config()}};
+  std::vector<VirtConf> vec_modules{VirtConf{IntroDerivedA::Config()}, VirtConf{IntroDerivedB::Config()}};
+  std::map<std::string, VirtConf> map_modules{{"first", VirtConf{IntroDerivedA::Config()}},
+                                              {"second", VirtConf{IntroDerivedB::Config()}}};
 };
 
 void declare_config(IntroDerivedA::Config& config) {
@@ -117,16 +119,12 @@ void declare_config(IntroTestConfig& config) {
   config.unset_virtual.setOptional(true);
   field(config.unset_virtual, "unset_virtual");
   field(config.virtual_config, "virtual_config");
-  field(config.virt_modules, "virt_modules");
+  field(config.vec_modules, "vec_modules");
+  field(config.map_modules, "map_modules");
 }
-
-std::unique_ptr<RegistrationGuard<IntroBase, IntroDerivedA, IntroDerivedA::Config>> regA;
-std::unique_ptr<RegistrationGuard<IntroBase, IntroDerivedB, IntroDerivedB::Config>> regB;
 
 TEST(Introspection, invokeFromParser) {
   reset();
-  regA = std::make_unique<RegistrationGuard<IntroBase, IntroDerivedA, IntroDerivedA::Config>>("IntroDerivedA");
-  regB = std::make_unique<RegistrationGuard<IntroBase, IntroDerivedB, IntroDerivedB::Config>>("IntroDerivedB");
 
   CliArgs cli_args(std::vector<std::string>{"some_command",
                                             "--config-utilities-file",
@@ -224,6 +222,8 @@ TEST(Introspection, renderStateFromHistory) {
 
 TEST(Introspection, getValuesAbsent) {
   reset();
+  const auto regA = RegistrationGuard<IntroBase, IntroDerivedA, IntroDerivedA::Config>("IntroDerivedA");
+  const auto regB = RegistrationGuard<IntroBase, IntroDerivedB, IntroDerivedB::Config>("IntroDerivedB");
   // const auto data = YAML::Load("{a: 5, b: {c: 10, d: 20}}");
   // pushToContext(data);
   auto config = fromContext<IntroTestConfig>();
@@ -273,6 +273,8 @@ vec:
 
 TEST(Introspection, getValuesNamespaced) {
   reset();
+  const auto regA = RegistrationGuard<IntroBase, IntroDerivedA, IntroDerivedA::Config>("IntroDerivedA");
+  const auto regB = RegistrationGuard<IntroBase, IntroDerivedB, IntroDerivedB::Config>("IntroDerivedB");
   auto config = fromContext<IntroTestConfig>("foo/bar");
   const std::string expected = R"""(
 foo:
@@ -318,57 +320,6 @@ foo:
       [2]: ['a1@c0:3'])""";
   std::cout << "Introspection: " << Intro::instance().data().display() << std::endl;
   // EXPECT_EQ(expected, Intro::instance().data().display());
-}
-
-TEST(Introspection, getValuesNamespaced2) {
-  reset();
-  auto config = fromContext<DefaultConfig>("foo/bar");
-  const std::string expected = R"""(
-foo:
-  bar:
-    b: ['a1@c0:true']
-    d: ['a1@c0:3.2000000000000002']
-    f: ['a1@c0:2.0999999']
-    i: ['a1@c0:1']
-    map:
-      a: ['a1@c0:1']
-      b: ['a1@c0:2']
-      c: ['a1@c0:3']
-    mat:
-      [0]:
-        [0]: ['a1@c0:1']
-        [1]: ['a1@c0:0']
-        [2]: ['a1@c0:0']
-      [1]:
-        [0]: ['a1@c0:0']
-        [1]: ['a1@c0:1']
-        [2]: ['a1@c0:0']
-      [2]:
-        [0]: ['a1@c0:0']
-        [1]: ['a1@c0:0']
-        [2]: ['a1@c0:1']
-    my_enum: ['a1@c0:A']
-    my_strange_enum: ['a1@c0:X']
-    s: ['a1@c0:test string']
-    set:
-      [0]: ['a1@c0:1.10000002']
-      [1]: ['a1@c0:2.20000005']
-      [2]: ['a1@c0:3.29999995']
-    sub_ns:
-      i: ['a1@c1:1']
-      nested_ns:
-        i: ['a1@c2:1']
-    sub_sub_ns:
-      i: ['a1@c2:1']
-    u8: ['a1@c0:4']
-    vec:
-      [0]: ['a1@c0:1']
-      [1]: ['a1@c0:2']
-      [2]: ['a1@c0:3'])""";
-  // std::cout << "Introspection: " << Intro::instance().data().display() << std::endl;
-  // EXPECT_EQ(expected, Intro::instance().data().display());
-  regA.reset();
-  regB.reset();
 }
 
 }  // namespace config::test

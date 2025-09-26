@@ -232,27 +232,19 @@ struct is_virtual_config<VirtualConfig<T, Opt>> : std::true_type {};
 // Declare the Virtual Config a config, so it can be handled like any other object.
 template <typename BaseT, bool Opt>
 void declare_config(VirtualConfig<BaseT, Opt>& config) {
-  auto data = internal::Visitor::visitVirtualConfig(
-      config.isSet(), config.optional_, config.getType(), internal::typeName<BaseT>());
+  const auto type = internal::Visitor::visitVirtualConfig(config.isSet(),
+                                                          config.optional_,
+                                                          config.getType(),
+                                                          internal::typeName<BaseT>(),
+                                                          internal::ModuleInfo::fromTypes<BaseT>().typeInfo());
 
-  // underlying derived type is not required if the config is optional, or if the config has been
-  // initialized to a derived type already (i.e., config_ is already populated)
-  const bool type_required = !config.optional_ && !config.config_;
-
-  // If setting values create the wrapped config using the string identifier.
-  if (data) {
-    std::string type;
-    if (internal::getType(*data, type, type_required)) {
-      if (type == internal::kUninitializedVirtualConfigType) {
-        // Reserved token to delete the virtual config in dynamic configs.
-        config.config_.reset();
-      } else {
-        config.config_ = internal::ConfigFactory<BaseT>::create(type);
-      }
-    } else if (type_required) {
-      std::stringstream ss;
-      ss << "Could not get type for '" << internal::ModuleInfo::fromTypes<BaseT>().typeInfo() << "'";
-      internal::Logger::logError(ss.str());
+  // If a type is returned the config should be reset or created.
+  if (type) {
+    if (*type == internal::kUninitializedVirtualConfigType) {
+      // Reserved token to delete the virtual config in dynamic configs.
+      config.config_.reset();
+    } else {
+      config.config_ = internal::ConfigFactory<BaseT>::create(*type);
     }
   }
 

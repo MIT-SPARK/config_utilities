@@ -264,7 +264,8 @@ void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_
     const auto array_ns = joinNamespace(visitor.name_space, field_name);
     const auto subnode = lookupNamespace(visitor.meta_data.data, array_ns);
     if (!subnode) {
-      return;  // don't override the field if not present
+      // don't override the field if not present.
+      return;
     }
 
     // When setting the values first allocate the correct amount of configs.
@@ -427,6 +428,10 @@ template <typename ConfigT, typename std::enable_if<is_virtual_config<ConfigT>::
 MetaData Visitor::getDefaults(const ConfigT& config) {
   Visitor visitor(Mode::kGetDefaults);
   if (config.isSet()) {
+    // Parse the type param.
+    visitField(config.config_->type, Settings::instance().factory.type_param_name, "");
+
+    // Parse a default initialized config.
     auto default_config = config.config_->createDefault();
     default_config->onDeclareConfig();
   }

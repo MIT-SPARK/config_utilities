@@ -352,18 +352,42 @@ void Introspection::logDiffRec(const YAML::Node& before,
   }
 }
 
-void Introspection::logSetValue(const MetaData& set, const MetaData& get_info, const std::string& ns) {
+void Introspection::logSetValue(const MetaData& set, const MetaData& get_info) {
   auto& instance = Introspection::instance();
   instance.initLog();
   instance.logSetValueRec(set, get_info);
 }
 
+std::optional<size_t> findMatchingSubConfig(const MetaData& search_key, const std::vector<MetaData>& candidates) {
+  for (size_t i = 0; i < candidates.size(); ++i) {
+    const auto& sub = candidates[i];
+    if (search_key.field_name != sub.field_name) {
+      continue;
+    }
+    if (search_key.displayIndex() == sub.displayIndex()) {
+      return i;
+    }
+  }
+  return std::nullopt;
+}
+
 void Introspection::logSetValueRec(const MetaData& set, const MetaData& get_info) {
   // Register the config as a source.
   // TODO(lschmid): Check for uninitialized virtual configs?
-  // TODO(lschmid): Consdier tracking the invoking/parent configs for subconfigs?
+  // TODO(lschmid): Consider tracking the invoking/parent configs for subconfigs?
   const std::string config_name = set.name.empty() ? "Unnamed Config" : set.name;
   const By by(By::config(config_name));
+
+  // // Handle the type of virtual configs separately and first.
+  // if (get_info.isVirtualConfig()) {
+  //   const std::string& type_param = Settings::instance().factory.type_param_name;
+  //   auto get_type = get_info.data[type_param];
+  //   auto set_type = set.data[type_param];
+  //   const bool was_parsed = (get_type && set_type && get_type == set_type);
+  //   const bool
+  //   logSetRecurseLeaves(set_type, get_type, true, false, data_.atNamespace(get_info.name)[type_param], by);
+
+  // }
 
   // Parse all fields in the meta data.
   // NOTE(lschmid): Just associating fields by order should cover most cases, but technically funky things could happen
@@ -384,6 +408,11 @@ void Introspection::logSetValueRec(const MetaData& set, const MetaData& get_info
                          "' for Set ('" + set_field.ns + "') and Get ('" + get_field.ns +
                          "'). This might lead to incorrect introspection data.");
     }
+    if (get_field.name != set_field.name) {
+      Logger::logWarning("Different field names for index " + std::to_string(i) + " in config '" + config_name +
+                         "' for Set ('" + set_field.name + "') and Get ('" + get_field.name +
+                         "'). This might lead to incorrect introspection data.");
+    }
     auto& node = data_.atNamespace(get_field.ns);
     logSetRecurseLeaves(
         set_field.value, get_field.value, set_field.was_parsed, get_field.isDefault(), node[set_field.name], by);
@@ -391,16 +420,32 @@ void Introspection::logSetValueRec(const MetaData& set, const MetaData& get_info
 
   // TODO(lschmid): Handle virtual configs (type param)?
   // Handle sub-configs
-  num_fields = set.sub_configs.size();
-  if (set.sub_configs.size() != get_info.sub_configs.size()) {
-    Logger::logWarning("Different number of sub-configs in config '" + config_name + "' for Set (" +
-                       std::to_string(set.sub_configs.size()) + ") and Get (" +
-                       std::to_string(get_info.sub_configs.size()) +
-                       "). This might lead to incorrect introspection data.");
-    num_fields = std::min(num_fields, get_info.sub_configs.size());
+
+  for (const auto& sub_get_info : get_info.sub_configs) {
+    const auto match = findMatchingSubConfig(sub_get_info, set.sub_configs);
+    if (match) {
+      logSetValueRec(set.sub_configs[*match], sub_get_info);
+    } else {
+      // TMP
+      Logger::logWarning(
+          "Could not find matching sub-config for introspection in config '" + config_name +
+          "' (GetInfo) for subconfig: " + sub_get_info.field_name + "-" +
+          (sub_get_info.map_config_key ? *sub_get_info.map_config_key : "no key") + "-" +
+          (sub_get_info.array_config_index >= 0 ? std::to_string(sub_get_info.array_config_index) : "no index") + " (" +
+          sub_get_info.name + ").");
+    }
   }
-  for (size_t i = 0; i < num_fields; ++i) {
-    logSetValueRec(set.sub_configs[i], get_info.sub_configs[i]);
+
+  // TODO(lschmid): Can set.sub_configs be larger/different than get.sub_configs? Just warn for now.
+  for (const auto& sub_set_info : set.sub_configs) {
+    if (!findMatchingSubConfig(sub_set_info, get_info.sub_configs)) {
+      // TMP
+      Logger::logWarning(
+          "Could not find matching sub-config for introspection in config '" + config_name + "' (Set) for subconfig: " +
+          sub_set_info.field_name + "-" + (sub_set_info.map_config_key ? *sub_set_info.map_config_key : "no key") +
+          "-" + (sub_set_info.array_config_index >= 0 ? std::to_string(sub_set_info.array_config_index) : "no index") +
+          " (" + sub_set_info.name + ").");
+    }
   }
 }
 

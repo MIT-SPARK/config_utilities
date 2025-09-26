@@ -87,6 +87,10 @@ struct Settings {
 
     //! @brief If true show the enumeration info of failed checks in the output.
     bool show_num_checks = true;
+
+    //! @brief If true print the meta fields of configs (e.g., type for virtual configs) in the config body. If false
+    //! print only proper fields of the config.
+    bool print_meta_fields = false;
   } printing;
 
   /**

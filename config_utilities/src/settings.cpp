@@ -94,6 +94,7 @@ void declare_config(Settings::Printing& config) {
   field(config.show_subconfig_types, "show_subconfig_types");
   field(config.show_virtual_configs, "show_virtual_configs");
   field(config.show_num_checks, "show_num_checks");
+  field(config.print_meta_fields, "print_meta_fields");
 }
 
 void declare_config(Settings::Factory& config) {
