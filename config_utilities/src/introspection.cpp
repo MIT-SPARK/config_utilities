@@ -85,7 +85,14 @@ void Node::addEvent(const Event& event) {
   }
 }
 
-Node& Node::at(const std::string& key) { return map[key]; }
+Node& Node::at(const std::string& key) {
+  auto it = std::find_if(map.begin(), map.end(), [&](const auto& pair) { return pair.first == key; });
+  if (it == map.end()) {
+    map.emplace_back(key, Node());
+    return map.back().second;
+  }
+  return it->second;
+}
 
 Node& Node::at(size_t index) {
   if (index >= list.size()) {
@@ -95,7 +102,7 @@ Node& Node::at(size_t index) {
 }
 
 Node& Node::atNamespace(const std::string& name_space) {
-  const auto parts = splitNamespace(name_space, "/");
+  const auto parts = splitNamespace(name_space);
   Node* current = this;
   for (const auto& part : parts) {
     current = &current->at(part);
@@ -164,7 +171,7 @@ std::string Node::display(size_t indent) const {
   std::stringstream ss;
   const std::string indent_str(indent, ' ');
   if (!history.empty()) {
-    ss << "[";
+    ss << " [";
     for (size_t i = 0; i < history.size(); ++i) {
       ss << history[i].display();
       if (i + 1 < history.size()) {
@@ -174,10 +181,10 @@ std::string Node::display(size_t indent) const {
     ss << "]";
   }
   for (size_t i = 0; i < list.size(); ++i) {
-    ss << "\n" << indent_str << "[" << i << "]: " << list[i].display(indent + 2);
+    ss << "\n" << indent_str << "[" << i << "]:" << list[i].display(indent + 2);
   }
   for (const auto& [key, child] : map) {
-    ss << "\n" << indent_str << key << ": " << child.display(indent + 2);
+    ss << "\n" << indent_str << key << ":" << child.display(indent + 2);
   }
   return ss.str();
 }
@@ -194,13 +201,13 @@ void Introspection::logMergeRec(const YAML::Node& merged, const YAML::Node& inpu
   // separate pass.
   if (input.IsScalar()) {
     // Compare actual values in the leaf nodes.
-    const std::string input_value = yamlToString(input, false);
+    const std::string input_value = yamlToString(input, true);
     if (!merged.IsScalar()) {
       // If the resulting node is not a scalar, the set failed.
       node.addEvent(Event(Event::Type::SetFailed, by, input_value));
       return;
     }
-    const std::string merged_value = yamlToString(merged, false);
+    const std::string merged_value = yamlToString(merged, true);
     if (merged_value != input_value) {
       // Overwritten or new.
       node.addEvent(Event(Event::Type::SetFailed, by, input_value));
@@ -245,7 +252,7 @@ void Introspection::logDiffRec(const YAML::Node& after, const By& by, Node& node
   // pass.
   if (after.IsScalar()) {
     // Compare actual values in the leaf nodes.
-    const std::string after_value = yamlToString(after);
+    const std::string after_value = yamlToString(after, true);
     const std::string& before_value = node.lastValue();
     if (after_value != before_value) {
       node.addEvent(Event(log_diff_as, by, after_value));
@@ -266,7 +273,8 @@ void Introspection::logDiffRec(const YAML::Node& after, const By& by, Node& node
 void Introspection::logSetValue(const MetaData& set, const MetaData& get_info) {
   auto& instance = Introspection::instance();
   instance.initLog();
-  instance.logSetValueRec(set, get_info);
+  auto& node = instance.data_.atNamespace(get_info.ns);
+  instance.logSetValueRec(set, get_info, node);
 }
 
 std::optional<size_t> findMatchingSubConfig(const MetaData& search_key, const std::vector<MetaData>& candidates) {
@@ -282,10 +290,25 @@ std::optional<size_t> findMatchingSubConfig(const MetaData& search_key, const st
   return std::nullopt;
 }
 
-void Introspection::logSetValueRec(const MetaData& set, const MetaData& get_info) {
+Node& subMetaDataNode(Node& node, const MetaData& meta, const std::string& parent_ns) {
+  const std::string new_ns = meta.ns.length() > parent_ns.length()
+                                 ? (parent_ns.empty() ? meta.ns : meta.ns.substr(parent_ns.length() + 1))
+                                 : "";
+  Node* current = &node.atNamespace(new_ns);
+  if (meta.isArrayConfig()) {
+    current = &current->at(meta.array_config_index);
+  } else if (meta.isMapConfig()) {
+    current = &current->at(*meta.map_config_key);
+  }
+  return *current;
+}
+
+void Introspection::logSetValueRec(const MetaData& set, const MetaData& get_info, Node& node) {
   // Register the config as a source.
   // TODO(lschmid): Consider tracking the invoking/parent configs for subconfigs as extra info?
-  const std::string config_name = set.name.empty() ? "Unnamed Config" : set.name;
+  const std::string config_name =
+      get_info.name.empty() ? (get_info.isVirtualConfig() ? kUninitializedVirtualConfigType : "Unnamed Config")
+                            : get_info.name;
   const By by(By::config(config_name));
 
   // Parse all fields in the meta data.
@@ -312,39 +335,48 @@ void Introspection::logSetValueRec(const MetaData& set, const MetaData& get_info
                          "' for Set ('" + set_field.name + "') and Get ('" + get_field.name +
                          "'). This might lead to incorrect introspection data.");
     }
-    auto& node = data_.atNamespace(get_field.ns);
-    logSetRecurseLeaves(
-        set_field.value, get_field.value, set_field.was_parsed, get_field.isDefault(), node[set_field.name], by);
+    Node& field_node = node.atNamespace(get_field.ns).at(get_field.name);
+    logSetRecurseLeaves(set_field.value, get_field.value, set_field.was_parsed, get_field.isDefault(), field_node, by);
   }
 
-  // TODO(lschmid): Handle virtual configs (type param)?
   // Handle sub-configs
-
   for (const auto& sub_get_info : get_info.sub_configs) {
     const auto match = findMatchingSubConfig(sub_get_info, set.sub_configs);
+    Node& sub_node = subMetaDataNode(node, sub_get_info, get_info.ns);
     if (match) {
-      logSetValueRec(set.sub_configs[*match], sub_get_info);
+      logSetValueRec(set.sub_configs[*match], sub_get_info, sub_node);
     } else {
-      // TMP
-      Logger::logWarning(
-          "Could not find matching sub-config for introspection in config '" + config_name +
-          "' (GetInfo) for subconfig: " + sub_get_info.field_name + "-" +
-          (sub_get_info.map_config_key ? *sub_get_info.map_config_key : "no key") + "-" +
-          (sub_get_info.array_config_index >= 0 ? std::to_string(sub_get_info.array_config_index) : "no index") + " (" +
-          sub_get_info.name + ").");
+      // If the set meta-data is absent, a map or vector config was not present. Log their read (default) values.
+      logSetValueRecAbsent(sub_get_info, sub_node);
     }
   }
 
   // TODO(lschmid): Can set.sub_configs be larger/different than get.sub_configs? Just warn for now.
   for (const auto& sub_set_info : set.sub_configs) {
     if (!findMatchingSubConfig(sub_set_info, get_info.sub_configs)) {
-      // TMP
-      Logger::logWarning(
-          "Could not find matching sub-config for introspection in config '" + config_name + "' (Set) for subconfig: " +
-          sub_set_info.field_name + "-" + (sub_set_info.map_config_key ? *sub_set_info.map_config_key : "no key") +
-          "-" + (sub_set_info.array_config_index >= 0 ? std::to_string(sub_set_info.array_config_index) : "no index") +
-          " (" + sub_set_info.name + ").");
+      Logger::logWarning("Could not find matching sub-config for introspection in config '" + config_name +
+                         "' for subconfig: '" + sub_set_info.field_name + "', key: '" + sub_set_info.displayIndex() +
+                         "', type: '" + sub_set_info.name + "'.");
     }
+  }
+}
+
+void Introspection::logSetValueRecAbsent(const MetaData& get_info, Node& node) {
+  // Register the config as a source.
+  const std::string config_name = get_info.name.empty() ? "Unnamed Config" : get_info.name;
+  const By by(By::config(config_name));
+
+  // Parse all fields in the meta data.
+  for (size_t i = 0; i < get_info.field_infos.size(); ++i) {
+    const auto& get_field = get_info.field_infos[i];
+    Node& field_node = node.atNamespace(get_field.ns).at(get_field.name);
+    logSetRecurseLeaves(
+        YAML::Node(YAML::NodeType::Undefined), get_field.value, false, get_field.isDefault(), field_node, by);
+  }
+
+  // Handle sub-configs
+  for (const auto& sub_get_info : get_info.sub_configs) {
+    logSetValueRecAbsent(sub_get_info, subMetaDataNode(node, sub_get_info, get_info.ns));
   }
 }
 
@@ -355,17 +387,13 @@ void Introspection::logSetRecurseLeaves(const YAML::Node& set,
                                         Node& node,
                                         const By& by) {
   if (get.IsScalar()) {
-    const std::string value = yamlToString(get);
-    if (!set) {
+    const std::string value = yamlToString(get, true);
+    if (!set || !was_parsed) {
       node.addEvent(Event(Event::Type::GetAbsent, by, value));
       return;
     }
-    if (!was_parsed) {
-      node.addEvent(Event(Event::Type::GetError, by, value));
-      return;
-    }
     if (is_default) {
-      if (value == yamlToString(set)) {
+      if (value == yamlToString(set, true)) {
         node.addEvent(Event(Event::Type::GetDefault, by));
       } else {
         node.addEvent(Event(Event::Type::GetError, by, value));

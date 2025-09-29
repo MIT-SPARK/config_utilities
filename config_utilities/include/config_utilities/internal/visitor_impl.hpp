@@ -159,7 +159,7 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
   auto& info = visitor.meta_data.field_infos.emplace_back();
   info.name = field_name;
   info.unit = unit;
-  info.ns = visitor.name_space;
+  info.ns = visitor.additionalNamespace();
 
   if (visitor.mode == Visitor::Mode::kSet) {
     std::string error;
@@ -274,15 +274,16 @@ void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_
     size_t index = 0;
     for (const auto& node : nodes) {
       ConfigT& sub_config = config.emplace_back();
-      visitor.meta_data.sub_configs.emplace_back(setValues(sub_config, node, false, "", field_name, false));
-      visitor.meta_data.sub_configs.back().array_config_index = index++;
+      auto& new_data =
+          visitor.meta_data.sub_configs.emplace_back(setValues(sub_config, node, false, "", field_name, false));
+      new_data.array_config_index = index++;
     }
   }
 
   if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetInfo) {
-    const std::string name_space = joinNamespace(visitor.name_space, field_name);
     YAML::Node array_node(YAML::NodeType::Sequence);
     size_t index = 0;
+    const std::string name_space = joinNamespace(visitor.name_space, field_name);
     for (const auto& sub_config : config) {
       if (visitor.mode == Visitor::Mode::kGetInfo) {
         visitor.meta_data.sub_configs.emplace_back(getInfo(sub_config, name_space, field_name));
@@ -302,8 +303,8 @@ void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_
   if (visitor.mode == Visitor::Mode::kCheck) {
     size_t index = 0;
     for (const auto& sub_config : config) {
-      visitor.meta_data.sub_configs.emplace_back(getChecks(sub_config, field_name));
-      visitor.meta_data.sub_configs.back().array_config_index = index++;
+      auto& new_data = visitor.meta_data.sub_configs.emplace_back(getChecks(sub_config, field_name));
+      new_data.array_config_index = index++;
     }
   }
 }
@@ -352,8 +353,9 @@ void Visitor::visitField(OrderedMap<K, ConfigT>& config, const std::string& fiel
     for (auto&& [key, node] : nodes) {
       auto& entry = config.emplace_back();
       entry.first = key.template as<K>();
-      visitor.meta_data.sub_configs.emplace_back(setValues(entry.second, node, false, "", field_name, false));
-      visitor.meta_data.sub_configs.back().map_config_key = key.template as<std::string>();
+      auto& new_data =
+          visitor.meta_data.sub_configs.emplace_back(setValues(entry.second, node, false, "", field_name, false));
+      new_data.map_config_key = key.template as<std::string>();
     }
   }
 
@@ -375,7 +377,6 @@ void Visitor::visitField(OrderedMap<K, ConfigT>& config, const std::string& fiel
       // When getting info for empty maps still show them.
       // TODO(lschmid): Implement, currently empty maps will not show up in the info.
     }
-
     moveDownNamespace(map_node, name_space);
     mergeYamlNodes(visitor.meta_data.data, map_node);
   }

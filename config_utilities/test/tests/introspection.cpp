@@ -56,6 +56,10 @@ using Event = internal::Introspection::Event;
 using By = internal::Introspection::By;
 using Intro = internal::Introspection;
 
+namespace {
+bool with_namespace = false;
+}
+
 struct IntroBase {
   virtual ~IntroBase() = default;
 };
@@ -88,10 +92,19 @@ struct IntroTestConfig {
   std::vector<VirtConf> vec_modules{VirtConf{IntroDerivedA::Config()}, VirtConf{IntroDerivedB::Config()}};
   std::map<std::string, VirtConf> map_modules{{"first", VirtConf{IntroDerivedA::Config()}},
                                               {"second", VirtConf{IntroDerivedB::Config()}}};
+  std::vector<VirtConf> empty_vec_modules;
+  std::map<std::string, VirtConf> empty_map_modules;
+  std::vector<IntroSubConfig> sub_config_vec{IntroSubConfig(), IntroSubConfig()};
+  std::vector<IntroSubConfig> empty_sub_config_vec;
+  std::map<std::string, IntroSubConfig> sub_config_map{{"one", IntroSubConfig()}, {"two", IntroSubConfig()}};
+  std::map<std::string, IntroSubConfig> empty_sub_config_map;
 };
 
 void declare_config(IntroDerivedA::Config& config) {
   name("IntroDerivedA::Config");
+  if (with_namespace) {
+    enter_namespace("ns_for_A");
+  }
   field(config.s, "s");
 }
 
@@ -101,7 +114,10 @@ void declare_config(IntroDerivedB::Config& config) {
 }
 
 void declare_config(IntroTestConfig::IntroSubConfig& config) {
-  name("IntroTestConfig::IntroSubConfig");
+  name("IntroSubConfig");
+  if (with_namespace) {
+    enter_namespace("sub_ns/subsub_ns");
+  }
   field(config.d, "d");
 }
 
@@ -121,6 +137,18 @@ void declare_config(IntroTestConfig& config) {
   field(config.virtual_config, "virtual_config");
   field(config.vec_modules, "vec_modules");
   field(config.map_modules, "map_modules");
+  field(config.empty_vec_modules, "empty_vec_modules");
+  field(config.empty_map_modules, "empty_map_modules");
+  if (with_namespace) {
+    enter_namespace("vec_ns");
+  }
+  field(config.sub_config_vec, "sub_config_vec");
+  field(config.empty_sub_config_vec, "empty_sub_config_vec");
+  if (with_namespace) {
+    switch_namespace("map_ns");
+  }
+  field(config.sub_config_map, "sub_config_map");
+  field(config.empty_sub_config_map, "empty_sub_config_map");
 }
 
 TEST(Introspection, invokeFromParser) {
@@ -158,9 +186,9 @@ TEST(Introspection, logCLIFile) {
   auto args = cli_args.get();
   auto node = internal::loadFromArguments(args.argc, args.argv, true);
   const std::string expected = R"(
-foo: 
-  a: ['s1@f0:5.0']
-  b: 
+foo:
+  a: ['s1@f0:5']
+  b:
     [0]: ['s1@f0:1']
     [1]: ['s1@f0:2']
     [2]: ['s1@f0:3']
@@ -175,13 +203,13 @@ TEST(Introspection, logCLIYaml) {
   auto args = cli_args.get();
   auto node = internal::loadFromArguments(args.argc, args.argv, true);
   const std::string expected = R"(
-foo: 
-  a: ['s1@a0:5.0']
-  b: 
+foo:
+  a: ['s1@a0:5']
+  b:
     [0]: ['s1@a0:1']
     [1]: ['s1@a0:2']
     [2]: ['s1@a0:3']
-  sub_ns: 
+  sub_ns:
     c: ['s1@a0:hello'])";
   EXPECT_EQ(Intro::instance().data().display(), expected);
 }
@@ -205,10 +233,11 @@ TEST(Introspection, logCLISubstitution) {
   auto args = cli_args.get();
   auto node = internal::loadFromArguments(args.argc, args.argv, true);
   const std::string expected = R"(
-env: ['s1@a0:$<env | CONF_UTILS_RANDOM_ENV_VAR>', 'u2@s0:env_val']
 val: ['s1@a0:42']
+env: ['s1@a0:$<env | CONF_UTILS_RANDOM_ENV_VAR>', 'u2@s0:env_val']
 var: ['s1@a0:$<var | my_var>', 'u2@s0:var_val'])";
   EXPECT_EQ(Intro::instance().data().display(), expected);
+  unsetenv("CONF_UTILS_RANDOM_ENV_VAR");
 }
 
 TEST(Introspection, renderStateFromHistory) {
@@ -278,106 +307,187 @@ TEST(Introspection, renderStateFromHistory) {
   expectEqual(node7, rendered7);
 }
 
-TEST(Introspection, getValuesAbsent) {
+TEST(Introspection, getValuesStructure) {
   reset();
   const auto regA = RegistrationGuard<IntroBase, IntroDerivedA, IntroDerivedA::Config>("IntroDerivedA");
   const auto regB = RegistrationGuard<IntroBase, IntroDerivedB, IntroDerivedB::Config>("IntroDerivedB");
-  // const auto data = YAML::Load("{a: 5, b: {c: 10, d: 20}}");
-  // pushToContext(data);
   auto config = fromContext<IntroTestConfig>();
   const std::string expected = R"""(
-b: ['a1@c0:true']
-d: ['a1@c0:3.2000000000000002']
-f: ['a1@c0:2.0999999']
-i: ['a1@c0:1']
-map: 
-  a: ['a1@c0:1']
-  b: ['a1@c0:2']
-  c: ['a1@c0:3']
-mat: 
-  [0]: 
-    [0]: ['a1@c0:1']
-    [1]: ['a1@c0:0']
-    [2]: ['a1@c0:0']
-  [1]: 
-    [0]: ['a1@c0:0']
-    [1]: ['a1@c0:1']
-    [2]: ['a1@c0:0']
-  [2]: 
-    [0]: ['a1@c0:0']
-    [1]: ['a1@c0:0']
-    [2]: ['a1@c0:1']
-my_enum: ['a1@c0:A']
-my_strange_enum: ['a1@c0:X']
-s: ['a1@c0:test string']
-set: 
-  [0]: ['a1@c0:1.10000002']
-  [1]: ['a1@c0:2.20000005']
-  [2]: ['a1@c0:3.29999995']
-sub_ns: 
-  i: ['a1@c1:1']
-  nested_ns: 
-    i: ['a1@c2:1']
-sub_sub_ns: 
-  i: ['a1@c2:1']
-u8: ['a1@c0:4']
-vec: 
+a: ['a1@c0:1']
+vec:
   [0]: ['a1@c0:1']
   [1]: ['a1@c0:2']
-  [2]: ['a1@c0:3'])""";
-  // EXPECT_EQ(expected, Intro::instance().data().display());
-  std::cout << "Introspection: " << Intro::instance().data().display() << std::endl;
+  [2]: ['a1@c0:3']
+map:
+  a: ['a1@c0:true']
+  b: ['a1@c0:false']
+e: ['a1@c0:TWO']
+subconfig:
+  d: ['a1@c1:3.1415']
+unset_virtual:
+  type: ['a1@c2:Uninitialized Virtual Config']
+virtual_config:
+  type: ['a1@c3:IntroDerivedA']
+  s: ['a1@c3:test']
+vec_modules:
+  [0]:
+    type: ['a1@c3:IntroDerivedA']
+    s: ['a1@c3:test']
+  [1]:
+    type: ['a1@c4:IntroDerivedB']
+    hi: ['a1@c4:hello']
+map_modules:
+  first:
+    type: ['a1@c3:IntroDerivedA']
+    s: ['a1@c3:test']
+  second:
+    type: ['a1@c4:IntroDerivedB']
+    hi: ['a1@c4:hello']
+sub_config_vec:
+  [0]:
+    d: ['a1@c1:3.1415']
+  [1]:
+    d: ['a1@c1:3.1415']
+sub_config_map:
+  one:
+    d: ['a1@c1:3.1415']
+  two:
+    d: ['a1@c1:3.1415'])""";
+  EXPECT_EQ(Intro::instance().data().display(), expected);
 }
 
 TEST(Introspection, getValuesNamespaced) {
   reset();
   const auto regA = RegistrationGuard<IntroBase, IntroDerivedA, IntroDerivedA::Config>("IntroDerivedA");
   const auto regB = RegistrationGuard<IntroBase, IntroDerivedB, IntroDerivedB::Config>("IntroDerivedB");
+  with_namespace = true;
   auto config = fromContext<IntroTestConfig>("foo/bar");
+  with_namespace = false;
   const std::string expected = R"""(
 foo:
   bar:
-    b: ['a1@c0:true']
-    d: ['a1@c0:3.2000000000000002']
-    f: ['a1@c0:2.0999999']
-    i: ['a1@c0:1']
-    map:
-      a: ['a1@c0:1']
-      b: ['a1@c0:2']
-      c: ['a1@c0:3']
-    mat:
-      [0]:
-        [0]: ['a1@c0:1']
-        [1]: ['a1@c0:0']
-        [2]: ['a1@c0:0']
-      [1]:
-        [0]: ['a1@c0:0']
-        [1]: ['a1@c0:1']
-        [2]: ['a1@c0:0']
-      [2]:
-        [0]: ['a1@c0:0']
-        [1]: ['a1@c0:0']
-        [2]: ['a1@c0:1']
-    my_enum: ['a1@c0:A']
-    my_strange_enum: ['a1@c0:X']
-    s: ['a1@c0:test string']
-    set:
-      [0]: ['a1@c0:1.10000002']
-      [1]: ['a1@c0:2.20000005']
-      [2]: ['a1@c0:3.29999995']
-    sub_ns:
-      i: ['a1@c1:1']
-      nested_ns:
-        i: ['a1@c2:1']
-    sub_sub_ns:
-      i: ['a1@c2:1']
-    u8: ['a1@c0:4']
+    a: ['a1@c0:1']
     vec:
       [0]: ['a1@c0:1']
       [1]: ['a1@c0:2']
-      [2]: ['a1@c0:3'])""";
-  std::cout << "Introspection: " << Intro::instance().data().display() << std::endl;
-  // EXPECT_EQ(expected, Intro::instance().data().display());
+      [2]: ['a1@c0:3']
+    map:
+      a: ['a1@c0:true']
+      b: ['a1@c0:false']
+    e: ['a1@c0:TWO']
+    subconfig:
+      sub_ns:
+        subsub_ns:
+          d: ['a1@c1:3.1415']
+    unset_virtual:
+      type: ['a1@c2:Uninitialized Virtual Config']
+    virtual_config:
+      type: ['a1@c3:IntroDerivedA']
+      ns_for_A:
+        s: ['a1@c3:test']
+    vec_modules:
+      [0]:
+        type: ['a1@c3:IntroDerivedA']
+        ns_for_A:
+          s: ['a1@c3:test']
+      [1]:
+        type: ['a1@c4:IntroDerivedB']
+        hi: ['a1@c4:hello']
+    map_modules:
+      first:
+        type: ['a1@c3:IntroDerivedA']
+        ns_for_A:
+          s: ['a1@c3:test']
+      second:
+        type: ['a1@c4:IntroDerivedB']
+        hi: ['a1@c4:hello']
+    vec_ns:
+      sub_config_vec:
+        [0]:
+          sub_ns:
+            subsub_ns:
+              d: ['a1@c1:3.1415']
+        [1]:
+          sub_ns:
+            subsub_ns:
+              d: ['a1@c1:3.1415']
+    map_ns:
+      sub_config_map:
+        one:
+          sub_ns:
+            subsub_ns:
+              d: ['a1@c1:3.1415']
+        two:
+          sub_ns:
+            subsub_ns:
+              d: ['a1@c1:3.1415'])""";
+  EXPECT_EQ(Intro::instance().data().display(), expected);
+}
+
+TEST(Introspection, getValues) {
+  clearContext();
+  reset();
+  const auto regA = RegistrationGuard<IntroBase, IntroDerivedA, IntroDerivedA::Config>("IntroDerivedA");
+  const auto regB = RegistrationGuard<IntroBase, IntroDerivedB, IntroDerivedB::Config>("IntroDerivedB");
+  auto context_data = YAML::Load(R"(
+a: 123 # get
+vec: [1, 2, 3] # default
+map: {a: false} # get, absent 
+e: NONEXISTENT # fail parsing
+empty_vec_modules: [ {type: IntroDerivedA, s: overridden}, {type: IntroDerivedB} ] # create vec modules
+)");
+  // NOTE(lschmid): The type params are always recognised as default values as the default checks happen on a per-struct
+  // level and each moule canonly have their own type.
+  pushToContext(context_data);
+  auto config = fromContext<IntroTestConfig>();
+  const std::string expected = R"""(
+a: ['s1@p0:123', 'g2@c0:123']
+vec:
+  [0]: ['s1@p0:1', 'd2@c0']
+  [1]: ['s1@p0:2', 'd2@c0']
+  [2]: ['s1@p0:3', 'd2@c0']
+map:
+  a: ['s1@p0:false', 'g2@c0:false']
+e: ['s1@p0:NONEXISTENT', 'e2@c0:TWO']
+empty_vec_modules:
+  [0]:
+    type: ['s1@p0:IntroDerivedA', 'd2@c3']
+    s: ['s1@p0:overridden', 'g2@c3:overridden']
+  [1]:
+    type: ['s1@p0:IntroDerivedB', 'd2@c4']
+    hi: ['a2@c4:hello']
+subconfig:
+  d: ['a2@c1:3.1415']
+unset_virtual:
+  type: ['a2@c2:Uninitialized Virtual Config']
+virtual_config:
+  type: ['a2@c3:IntroDerivedA']
+  s: ['a2@c3:test']
+vec_modules:
+  [0]:
+    type: ['a2@c3:IntroDerivedA']
+    s: ['a2@c3:test']
+  [1]:
+    type: ['a2@c4:IntroDerivedB']
+    hi: ['a2@c4:hello']
+map_modules:
+  first:
+    type: ['a2@c3:IntroDerivedA']
+    s: ['a2@c3:test']
+  second:
+    type: ['a2@c4:IntroDerivedB']
+    hi: ['a2@c4:hello']
+sub_config_vec:
+  [0]:
+    d: ['a2@c1:3.1415']
+  [1]:
+    d: ['a2@c1:3.1415']
+sub_config_map:
+  one:
+    d: ['a2@c1:3.1415']
+  two:
+    d: ['a2@c1:3.1415'])""";
+  EXPECT_EQ(Intro::instance().data().display(), expected);
 }
 
 }  // namespace config::test

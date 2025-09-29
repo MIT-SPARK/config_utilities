@@ -159,4 +159,25 @@ std::string MetaData::displayIndex() const {
   return "";
 }
 
+void MetaData::copyValues(const MetaData& other) {
+  name = other.name;
+  ns = other.ns;
+  data = YAML::Clone(other.data);
+  field_infos = other.field_infos;
+  checks.clear();
+  errors.clear();
+  for (const auto& check : other.checks) {
+    checks.emplace_back(check->clone());
+  }
+  for (const auto& error : other.errors) {
+    errors.emplace_back(error->clone());
+  }
+  field_name = other.field_name;
+  sub_configs = other.sub_configs;
+  array_config_index = other.array_config_index;
+  map_config_key = other.map_config_key;
+  virtual_config_type = other.virtual_config_type;
+  available_types = other.available_types;
+}
+
 }  // namespace config::internal

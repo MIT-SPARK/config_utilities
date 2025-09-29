@@ -191,6 +191,9 @@ struct Visitor {
                            const std::string& field_name,
                            const std::string& sub_ns);
 
+  // Get the additional namespace with respect to the meta data.
+  std::string additionalNamespace() const;
+
   /* Internal data to handle visits. */
   // The messenger data to read from and return eventually.
   MetaData meta_data;

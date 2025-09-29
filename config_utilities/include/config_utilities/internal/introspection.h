@@ -140,8 +140,8 @@ class Introspection {
     //! @brief The list of child nodes if the node is a sequence.
     std::vector<Node> list;
 
-    //! @brief The map of child nodes if the node is a map.
-    std::map<std::string, Node> map;
+    //! @brief The map of child nodes if the node is a map. This is a vector to preserve insertion order.
+    std::vector<std::pair<std::string, Node>> map;
 
     //! @brief The history of events for this node.
     History history;
@@ -270,7 +270,8 @@ class Introspection {
   void logDiffRec(const YAML::Node& after, const By& by, Node& node, const Event::Type log_diff_as);
 
   // Recurse through the meta data and add get/set events.
-  void logSetValueRec(const MetaData& set, const MetaData& get_info);
+  void logSetValueRec(const MetaData& set, const MetaData& get_info, Node& node);
+  void logSetValueRecAbsent(const MetaData& get_info, Node& node);
 
   // Recurse through the meta data and log the events to the leaf nodes.
   void logSetRecurseLeaves(const YAML::Node& set,
