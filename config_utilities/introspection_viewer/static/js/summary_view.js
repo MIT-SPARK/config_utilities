@@ -3,23 +3,11 @@ function setupSummaryView() {
     html = "<h2>Summary View</h2>";
     html += "<p>This view summarizes the changes made to the configuration over time.</p>";
     html += `
-        <div style="
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            padding: 1em;
-            margin-top: 1em;
-            box-sizing: border-box;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            display: flex;
-            flex-direction: row;
-            gap: 2em;
-        ">
+        <div class="display-pane">
             <div id="summary-panel-content" style="flex: 1 1 0;">
-                <!-- Summary content will be displayed here -->
+                Summary content will be displayed here.
             </div>
+            
             <aside style="
                 flex: 0 0 25%;
                 max-width: 25%;
@@ -50,7 +38,11 @@ function setupSummaryView() {
         </div>
     `;
     document.getElementById("displayPane").innerHTML = html;
-    document.getElementById("summary-panel-content").appendChild(renderYamlLike(window.introspectionData, "#4caf50"));
+    document.getElementById("summary-panel-content").innerHTML = displayData(window.introspectionData.data);
+}
+
+function formatSummaryData(node) {
+    // Set values, colors, etc. for summary view.
 }
 
 

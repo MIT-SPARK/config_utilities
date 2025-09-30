@@ -1,12 +1,16 @@
-function loadJsonFile(path) {
-    return fetch(path)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Failed to load file: ${response.statusText}`);
-            }
-            return response.json();
-        });
+// Data parsing utilities.
+
+function valueModified(event) {
+    if (event.type !== "s" && event.type !== "u") {
+        return false;
+    }
+    return event.val !== undefined;
 }
+
+function isGetEvent(event) {
+    return event.type === "g" || event.type === "d" || event.type === "e";
+}
+
 
 // Create a nodes tree of the same structure as the data, with optional fields specifying the rendering properties:
 // - value (str): if the node is a leaf, this is the string to display
@@ -16,6 +20,64 @@ function loadJsonFile(path) {
 // - color: color of the text
 // - tooltip: tooltip text
 
+function getLatestValue(history) {
+    result = "";
+    for (const event of history) {
+        if (valueModified(event)) {
+            result = event.val;
+            continue;
+        }
+        if (event.type == "r") {
+            result = "";
+            continue;
+        }
+        if (isGetEvent(event) && result == "" && event.val !== undefined) {
+            result = event.val;
+        }
+    }
+    return result;
+}
+
+function displayData(node, getValueFn = getLatestValue) {
+    result = displayDataRec(node, 0, getValueFn);
+    if (result.startsWith("<br>")) {
+        result = result.slice(4);
+    }
+    return result;
+}
+
+function displayDataRec(node, indent = 0, getValueFn) {
+    result = "";
+    if (!node.history && !node.map && !node.list) {
+        return result;
+    }
+    // Render the value if it exists.
+    if (node.history) {
+        const value = getValueFn(node.history);
+        result += "&nbsp; " + formatValue(value, node);
+    }
+
+    // Render list children if they exist.
+    indent_str = "&nbsp;".repeat(indent * 2);
+    if (node.list) {
+        for (i = 0; i < node.list.length; i++) {
+            // TODO: check for leaf-only lists and render in flow style.
+            result += "<br>" + indent_str + `[${i}]:` + displayDataRec(node.list[i], indent + 1, getValueFn);
+        }
+    }
+
+    // Render map children if they exist.
+    if (node.map) {
+        for (const [key, child] of Object.entries(node.map)) {
+            result += "<br>" + indent_str + `${key}:` + displayDataRec(child, indent + 1, getValueFn);
+        }
+    }
+    return result;
+}
+
+
+
+/// Backup
 
 function isLeaf(data) {
     return data.value !== undefined;
@@ -37,7 +99,7 @@ function formatValue(value, options = {}) {
         style += `border-bottom: 1px dotted ${options.color || 'black'}; cursor: help;`;
         return html + ` style="${style}" title="${options.tooltip}">${value}</span>`;
     }
-    if (style) {
+    if (style !== "") {
         html += ` style="${style}"`;
     }
     // If no special styling, return plain text node.
@@ -69,18 +131,6 @@ function formatListFlow(data) {
     return formatValue(`[${items.join(", ")}]`, data);
 }
 
-function renderYamlLike(data, indent = 0) {
-    if (isLeaf(data)) {
-        return formatValue(data.value, data);
-    }
-    if (data.list) {
-        if (isListOfLeaves(data)) {
-
-        }
-
-
-    }
-}
 
 function renderHighlightableText(text, identifier, highlightClass = "highlight") {
     // Create a span with data-identifier attribute

@@ -122,7 +122,8 @@ class Introspection {
     //! @brief Check if this event indicates a get (attempt) of a value.
     bool isGetEvent() const;
 
-    //! @brief Check if the value was modified in this event.
+    //! @brief Check if the value was modified in this event. This counts only setting the value to a new value, not
+    //! removing it.
     bool valueModified() const;
 
     //! @brief Display the event as a string for debugging purposes.

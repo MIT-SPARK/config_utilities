@@ -450,8 +450,8 @@ void Introspection::initLog() {
 // Serialization: conditional compilation.
 #ifdef CONFIG_UTILS_ENABLE_JSON
 
-nlohmann::json toJson(const Event& event) {
-  nlohmann::json j;
+nlohmann::ordered_json toJson(const Event& event) {
+  nlohmann::ordered_json j;
   j["type"] = std::string(1, static_cast<char>(event.type));
   j["by"] = std::string(1, static_cast<char>(event.by.type)) + std::to_string(event.by.index);
   j["seq"] = event.sequence_id;
@@ -461,22 +461,24 @@ nlohmann::json toJson(const Event& event) {
   return j;
 }
 
-nlohmann::json toJson(const Node& node) {
-  nlohmann::json j;
-  auto hist = nlohmann::json::array();
-  for (const auto& event : node.history) {
-    hist.push_back(toJson(event));
+nlohmann::ordered_json toJson(const Node& node) {
+  nlohmann::ordered_json j;
+  if (!node.history.empty()) {
+    auto hist = nlohmann::ordered_json::array();
+    for (const auto& event : node.history) {
+      hist.push_back(toJson(event));
+    }
+    j["history"] = hist;
   }
-  j["history"] = hist;
   if (!node.list.empty()) {
-    auto list = nlohmann::json::array();
+    auto list = nlohmann::ordered_json::array();
     for (const auto& child : node.list) {
       list.push_back(toJson(child));
     }
     j["list"] = list;
   }
   if (!node.map.empty()) {
-    nlohmann::json map;
+    nlohmann::ordered_json map;
     for (const auto& [key, child] : node.map) {
       map[key] = toJson(child);
     }
@@ -485,10 +487,10 @@ nlohmann::json toJson(const Node& node) {
   return j;
 }
 
-nlohmann::json toJson(const Introspection::Sources& sources) {
-  nlohmann::json j;
+nlohmann::ordered_json toJson(const Introspection::Sources& sources) {
+  nlohmann::ordered_json j;
   for (const auto& [type, entries] : sources) {
-    nlohmann::json entry;
+    nlohmann::ordered_jsonentry;
     for (const auto& [value, index] : entries) {
       entry[index] = value;
     }
@@ -511,7 +513,7 @@ void writeOutputDataImpl(const Node& data, const Introspection::Sources& sources
     Logger::logError("Failed to open introspection output file '" + json_path.string() + "'.");
     return;
   }
-  nlohmann::json output_data;
+  nlohmann::ordered_jsonoutput_data;
   output_data["data"] = toJson(data);
   output_data["sources"] = toJson(sources);
   json_file << output_data.dump(2);
