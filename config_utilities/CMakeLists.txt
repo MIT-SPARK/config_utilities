@@ -90,6 +90,10 @@ install(
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(DIRECTORY introspection_viewer/ DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(PROGRAMS introspection_viewer/introspection_viewer.py
+        RENAME config_utilities_viewer
+        DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(
   EXPORT config_utilities-targets
@@ -113,9 +117,6 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/config_utilitiesConfig.cmake
 
 # Exposes this package to ament for ros2 run and other utilities to work
 find_package(ament_cmake_core QUIET)
-if (${ament_cmake_core_FOUND})
+if (${ament_cmake_core_FOUND}) 
   ament_package()
-  install(PROGRAMS introspection_viewer/introspection_viewer.py
-        RENAME introspection_viewer
-        DESTINATION lib/${PROJECT_NAME})
 endif()

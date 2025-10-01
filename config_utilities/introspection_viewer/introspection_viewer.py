@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os
 import json
 from flask import Flask, render_template
@@ -25,6 +26,7 @@ class IntrospectionViewer:
         if open_browser:
             # Open the browser to the GUI.
             webbrowser.open(f"http://{host}:{port}", new=2)
+        print(f"Introspection Viewer running at http://{host}:{port}")
         self._app.run(host=host, port=port, debug=debug, threaded=False)
 
     def _index(self):
@@ -49,9 +51,9 @@ def main():
     # Load data
     if args.data is None:
         candidate_paths = [
+            os.path.join(os.path.curdir, "data.json"),
             os.path.join(os.path.curdir,
                          "config_introspection_output", "data.json"),
-            os.path.join(os.path.curdir, "data.json"),
             os.path.join(os.path.dirname(__file__), 'data.json')]
         for path in candidate_paths:
             if os.path.exists(path):
@@ -71,5 +73,6 @@ def main():
     viewer.run(host=args.host, port=args.port,
                debug=args.debug, open_browser=args.open_browser)
 
-    if __name__ == '__main__':
-        main()
+
+if __name__ == '__main__':
+    main()
