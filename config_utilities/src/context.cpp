@@ -70,7 +70,11 @@ YAML::Node contextToYaml() { return internal::Context::toYaml(); }
 
 void setConfigSettingsFromContext(const std::string& name_space) {
   const auto node = internal::Context::toYaml();
-  internal::Visitor::setValues(Settings(), internal::lookupNamespace(node, name_space), true);
+  const auto set_data = internal::Visitor::setValues(Settings(), internal::lookupNamespace(node, name_space), true);
+  if (Settings().introspection.enabled()) {
+    const auto get_info = internal::Visitor::getInfo(Settings(), name_space);
+    internal::Introspection::logSetValue(set_data, get_info);
+  }
 }
 
 }  // namespace config

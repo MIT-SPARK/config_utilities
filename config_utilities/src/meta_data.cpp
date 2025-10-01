@@ -159,6 +159,29 @@ std::string MetaData::displayIndex() const {
   return "";
 }
 
+std::optional<size_t> MetaData::findMatchingSubConfig(const MetaData& search_key) const {
+  for (size_t i = 0; i < sub_configs.size(); ++i) {
+    const auto& sub = sub_configs[i];
+    if (search_key.field_name != sub.field_name) {
+      continue;
+    }
+    if (search_key.displayIndex() == sub.displayIndex()) {
+      return i;
+    }
+  }
+  return std::nullopt;
+}
+
+std::optional<size_t> MetaData::findMatchingFieldInfo(const FieldInfo& search_key) const {
+  for (size_t i = 0; i < field_infos.size(); ++i) {
+    const auto& field = field_infos[i];
+    if (search_key.name == field.name && search_key.ns == field.ns) {
+      return i;
+    }
+  }
+  return std::nullopt;
+}
+
 void MetaData::copyValues(const MetaData& other) {
   name = other.name;
   ns = other.ns;

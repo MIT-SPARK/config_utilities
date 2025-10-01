@@ -139,6 +139,7 @@ struct Settings {
   void restoreDefaults() { *this = Settings(); }
 
  private:
+  friend struct Visitor;
   Settings() = default;
   Settings(const Settings& other) = default;
   Settings& operator=(const Settings& other) = default;

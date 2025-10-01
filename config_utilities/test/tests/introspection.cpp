@@ -159,13 +159,13 @@ TEST(Introspection, invokeFromParser) {
                                             "--config-utilities-file",
                                             "resources/bar.yaml",
                                             "--config-utilities-introspect",
-                                            "/path/to/output"});
+                                            "path/to/output"});
 
   // With specified output directory
   auto args = cli_args.get();
   auto node = internal::loadFromArguments(args.argc, args.argv, true);
   EXPECT_EQ(args.get_cmd(), "some_command");
-  EXPECT_EQ(config::Settings().introspection.output, "/path/to/output");
+  EXPECT_EQ(config::Settings().introspection.output, "path/to/output");
 
   // Default output directory.
   cli_args = CliArgs(std::vector<std::string>{"some_command",
@@ -451,10 +451,10 @@ map:
 e: ['s1@p0:NONEXISTENT', 'e2@c0:TWO']
 empty_vec_modules:
   [0]:
-    type: ['s1@p0:IntroDerivedA', 'd2@c3']
+    type: ['s1@p0:IntroDerivedA', 'g2@c3:IntroDerivedA']
     s: ['s1@p0:overridden', 'g2@c3:overridden']
   [1]:
-    type: ['s1@p0:IntroDerivedB', 'd2@c4']
+    type: ['s1@p0:IntroDerivedB', 'g2@c4:IntroDerivedB']
     hi: ['a2@c4:hello']
 subconfig:
   d: ['a2@c1:3.1415']
@@ -488,6 +488,145 @@ sub_config_map:
   two:
     d: ['a2@c1:3.1415'])""";
   EXPECT_EQ(Intro::instance().data().display(), expected);
+}
+
+TEST(Introspection, create) {
+  reset();
+  clearContext();
+  const auto regA = RegistrationGuard<IntroBase, IntroDerivedA, IntroDerivedA::Config>("IntroDerivedA");
+
+  // No factory param.
+  auto obj = createFromContext<IntroBase>();
+  EXPECT_FALSE(obj);
+  std::string expected = R"(
+type: ['e1@c0'])";
+  EXPECT_EQ(Intro::instance().data().display(), expected);
+
+  // Get object at namespace.
+  pushToContext(YAML::Load("ns: {nns: {type: IntroDerivedA, s: custom}}"));
+  obj = createFromContextWithNamespace<IntroBase>("ns/nns");
+  EXPECT_TRUE(obj);
+  expected = R"(
+type: ['e1@c0']
+ns:
+  nns:
+    type: ['s3@p1:IntroDerivedA', 'g4@c1:IntroDerivedA']
+    s: ['s3@p1:custom', 'g4@c1:custom'])";
+  EXPECT_EQ(Intro::instance().data().display(), expected);
+}
+
+TEST(Introspection, setConfigSettingsFromContext) {
+  reset();
+  clearContext();
+  pushToContext(YAML::Load(R"(
+global_settings:
+  printing:
+    width: 123
+  external_libraries:
+    enabled: true)"));
+  setConfigSettingsFromContext("global_settings");
+  const std::string expected = R"(
+global_settings:
+  printing:
+    width: ['s2@p1:123', 'g3@c1:123']
+    indent: ['a3@c1:30']
+    subconfig_indent: ['a3@c1:3']
+    show_defaults: ['a3@c1:true']
+    show_units: ['a3@c1:true']
+    inline_subconfigs: ['a3@c1:true']
+    reformat_floats: ['a3@c1:true']
+    show_missing: ['a3@c1:false']
+    show_subconfig_types: ['a3@c1:true']
+    show_virtual_configs: ['a3@c1:true']
+    show_num_checks: ['a3@c1:true']
+    print_meta_fields: ['a3@c1:false']
+  external_libraries:
+    enabled: ['s2@p1:true', 'd3@c3']
+    verbose_load: ['a3@c3:true']
+    log_allocation: ['a3@c3:false']
+  disable_default_stdout_logger: ['a3@c0:false']
+  factory:
+    type_param_name: ['a3@c2:type']
+  introspection:
+    output: ['a3@c4:config_introspection_output'])";
+  EXPECT_EQ(Intro::instance().data().display(), expected);
+  Settings().restoreDefaults();
+}
+
+TEST(Introspection, identifyDefaultVirtualConfigs) {
+  reset();
+  clearContext();
+  const auto regA = RegistrationGuard<IntroBase, IntroDerivedA, IntroDerivedA::Config>("IntroDerivedA");
+  const auto regB = RegistrationGuard<IntroBase, IntroDerivedB, IntroDerivedB::Config>("IntroDerivedB");
+
+  // Set values for new virtual configs.
+  pushToContext(YAML::Load(R"(
+unset_virtual: {type: IntroDerivedA}
+virtual_config: {type: IntroDerivedB}
+vec_modules: [ {type: IntroDerivedB}, {type: IntroDerivedA} ]
+map_modules: {first: {type: IntroDerivedB}, second: {type: IntroDerivedA} }
+empty_vec_modules: [ {type: IntroDerivedA}, {type: IntroDerivedB} ]
+empty_map_modules: {first: {type: IntroDerivedA}, second: {type: IntroDerivedB} }
+  )"));
+  auto config = fromContext<IntroTestConfig>();
+  std::string expected = R"(
+unset_virtual:
+  type: ['s2@p1:IntroDerivedA', 'g3@c2:IntroDerivedA']
+  s: ['a3@c2:test']
+virtual_config:
+  type: ['s2@p1:IntroDerivedB', 'g3@c3:IntroDerivedB']
+  hi: ['a3@c3:hello']
+vec_modules:
+  [0]:
+    type: ['s2@p1:IntroDerivedB', 'g3@c3:IntroDerivedB']
+    hi: ['a3@c3:hello']
+  [1]:
+    type: ['s2@p1:IntroDerivedA', 'g3@c2:IntroDerivedA']
+    s: ['a3@c2:test']
+map_modules:
+  first:
+    type: ['s2@p1:IntroDerivedB', 'g3@c3:IntroDerivedB']
+    hi: ['a3@c3:hello']
+  second:
+    type: ['s2@p1:IntroDerivedA', 'g3@c2:IntroDerivedA']
+    s: ['a3@c2:test']
+empty_vec_modules:
+  [0]:
+    type: ['s2@p1:IntroDerivedA', 'g3@c2:IntroDerivedA']
+    s: ['a3@c2:test']
+  [1]:
+    type: ['s2@p1:IntroDerivedB', 'g3@c3:IntroDerivedB']
+    hi: ['a3@c3:hello']
+empty_map_modules:
+  first:
+    type: ['s2@p1:IntroDerivedA', 'g3@c2:IntroDerivedA']
+    s: ['a3@c2:test']
+  second:
+    type: ['s2@p1:IntroDerivedB', 'g3@c3:IntroDerivedB']
+    hi: ['a3@c3:hello']
+a: ['a3@c0:1']
+vec:
+  [0]: ['a3@c0:1']
+  [1]: ['a3@c0:2']
+  [2]: ['a3@c0:3']
+map:
+  a: ['a3@c0:true']
+  b: ['a3@c0:false']
+e: ['a3@c0:TWO']
+subconfig:
+  d: ['a3@c1:3.1415']
+sub_config_vec:
+  [0]:
+    d: ['a3@c1:3.1415']
+  [1]:
+    d: ['a3@c1:3.1415']
+sub_config_map:
+  one:
+    d: ['a3@c1:3.1415']
+  two:
+    d: ['a3@c1:3.1415'])";
+  EXPECT_EQ(Intro::instance().data().display(), expected);
+  disable();  // Clean up after last test.
 }
 
 }  // namespace config::test

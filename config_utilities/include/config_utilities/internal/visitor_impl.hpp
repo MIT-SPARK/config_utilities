@@ -447,25 +447,41 @@ void Visitor::getDefaultValues(const ConfigT& config, MetaData& data) {
 
   // Compare all fields. These should always be in the same order if they are from the same config and exclude
   // subconfigs.
-  size_t default_idx = 0;
-  for (size_t i = 0; i < data.field_infos.size(); ++i) {
-    FieldInfo& info = data.field_infos.at(i);
-    // note that default config may not contain the same fields as the current config
-    // if certain fields are conditionally enabled
-    for (; default_idx < default_data.field_infos.size(); ++default_idx) {
-      if (default_data.field_infos.at(default_idx).name == info.name) {
-        break;
-      }
-    }
-
-    if (default_idx >= default_data.field_infos.size()) {
-      break;
+  for (auto& field_info : data.field_infos) {
+    const auto match = default_data.findMatchingFieldInfo(field_info);
+    if (!match) {
+      continue;
     }
 
     // NOTE(lschmid): Operator YAML::Node== checks for identity, not equality. Since these are all scalars, comparing
     // the formatted strings should be identical.
-    const auto& default_info = default_data.field_infos.at(default_idx);
-    info.default_value = default_info.value;
+    const auto& default_info = default_data.field_infos.at(*match);
+    field_info.default_value = default_info.value;
+  }
+
+  // Parse all immediate virtual subconfigs to get their default type params. Downstream subconfigs will be handled when
+  // they are parsed, which will be superseded by this call.
+  for (auto& sub_data : data.sub_configs) {
+    if (sub_data.isVirtualConfig()) {
+      const auto match = default_data.findMatchingSubConfig(sub_data);
+      // Find the type param. This should exist.
+      for (auto& field_info : sub_data.field_infos) {
+        if (field_info.name == Settings::instance().factory.type_param_name && field_info.is_meta_field) {
+          if (!match) {
+            field_info.default_value = YAML::Node();  // no default
+          } else {
+            const auto& default_sub_data = default_data.sub_configs.at(*match);
+            const auto field_match = default_sub_data.findMatchingFieldInfo(field_info);
+            if (field_match) {
+              field_info.default_value = default_sub_data.field_infos.at(*field_match).value;
+            } else {
+              // NOTE(lschmid): This should never happen.
+              field_info.default_value = YAML::Node();  // no default
+            }
+          }
+        }
+      }
+    }
   }
 }
 

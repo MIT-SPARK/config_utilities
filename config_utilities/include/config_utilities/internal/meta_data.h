@@ -180,6 +180,12 @@ struct MetaData {
   // Utility function to get a display string for the index of a sub-config config.
   std::string displayIndex() const;
 
+  // Find a matching subconfig in this meta data that matches the target subconfig from another meta data.
+  std::optional<size_t> findMatchingSubConfig(const MetaData& search_key) const;
+
+  // Find a matching field info in this meta data that matches the target field info from another meta data.
+  std::optional<size_t> findMatchingFieldInfo(const FieldInfo& search_key) const;
+
   // Utility function to get field info.
   YAML::Node serializeFieldInfos(bool include_meta_fields = false) const;
 

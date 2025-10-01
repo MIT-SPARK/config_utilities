@@ -229,6 +229,29 @@ class Introspection {
   static void logClear(const By& by);
 
   /**
+   * @brief Log a single event. This is mostly useful for programmatic events that do not have a
+   * specific key associated with them.
+   * @param event The event to log.
+   * @param ns Optionally specify a namespace at which to log the event. This is relatice to the already entered
+   * namespaces.
+   */
+  static void logSingleEvent(const Event& event, const std::string& ns = "");
+
+  /**
+   * @brief Enter a namespace for all subsequent log Calls. This is useful for programmatic events that do not operate
+   * at the root level but have the namespace obscured from the logging calls. Namespaces are all relative and will
+   * stack if multiple are entered. Each enter namespace call must be matched by an exit namespace call to return to the
+   * previous namespace.
+   * @param name_space The namespace to enter.
+   */
+  static void enterNamespace(const std::string& name_space);
+
+  /**
+   * @brief Exit the current namespace and return to the previous namespace.
+   */
+  static void exitNamespace();
+
+  /**
    * @brief Clear the introspection data.
    * @note This should not be invoked directly, mostly used for testing purposes.
    */
@@ -260,12 +283,17 @@ class Introspection {
   // Counter for sequence ids. Events start at 1, leaving 0 for uninitialized events.
   size_t sequence_id_ = 0;
 
+  std::vector<std::string> current_namespace_;
+
  private:
   // Setup a new logging event.
   void initLog();
 
   // Finish the current logging event.
   void finishLog();
+
+  // Get the root node of the current namespace.
+  Node& currentNode();
 
   // Recurse through the nodes and add events for merge logs.
   void logMergeRec(const YAML::Node& merged, const YAML::Node& input, const By& by, Node& node);

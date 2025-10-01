@@ -56,9 +56,6 @@ install(DIRECTORY launch DESTINATION share/${PROJECT_NAME}/)
 install(PROGRAMS app/gui_node.py
         RENAME gui
         DESTINATION lib/${PROJECT_NAME})
-install(PROGRAMS ../config_utilities/introspection_viewer/introspection_viewer.py
-        RENAME introspection_viewer
-        DESTINATION lib/${PROJECT_NAME})
 
 ament_export_targets(${PROJECT_NAME}-targets HAS_LIBRARY_TARGET)
 ament_export_dependencies(

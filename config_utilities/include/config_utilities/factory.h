@@ -41,6 +41,7 @@
 #include <string>
 #include <vector>
 
+#include "config_utilities/internal/introspection.h"
 #include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/string_utils.h"
 #include "config_utilities/internal/visitor.h"
@@ -427,9 +428,21 @@ struct ObjectWithConfigFactory {
   // Add entries.
   template <typename DerivedT, typename DerivedConfigT>
   static void addEntry(const std::string& type) {
-    const Constructor method = [](const YAML::Node& data, Args... args) -> BaseT* {
+    const Constructor method = [type](const YAML::Node& data, Args... args) -> BaseT* {
       DerivedConfigT config;
-      Visitor::setValues(config, data);
+      auto set_data = Visitor::setValues(config, data);
+      if (Settings::instance().introspection.enabled()) {
+        auto get_info = Visitor::getInfo(config);
+        // Also log the type parameter used for creation.
+        auto& set_field = set_data.field_infos.emplace_back();
+        set_field.name = Settings::instance().factory.type_param_name;
+        set_field.value = type;
+        set_field.is_meta_field = true;
+        auto& get_field = get_info.field_infos.emplace_back();
+        get_field = set_field;
+        set_field.was_parsed = true;
+        Introspection::logSetValue(set_data, get_info);
+      }
       return new DerivedT(config, std::move(args)...);
     };
 
@@ -443,6 +456,12 @@ struct ObjectWithConfigFactory {
   static std::unique_ptr<BaseT> create(const YAML::Node& data, Args... args) {
     std::string type;
     if (!getType(data, type)) {
+      if (Settings::instance().introspection.enabled()) {
+        // Log that the type could not be determined.
+        Introspection::logSingleEvent(
+            Introspection::Event(Introspection::Event::Type::GetError, Introspection::By::config("Factory::create()")),
+            Settings::instance().factory.type_param_name);
+      }
       return nullptr;
     }
 

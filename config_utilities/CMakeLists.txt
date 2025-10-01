@@ -115,4 +115,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/config_utilitiesConfig.cmake
 find_package(ament_cmake_core QUIET)
 if (${ament_cmake_core_FOUND})
   ament_package()
+  install(PROGRAMS introspection_viewer/introspection_viewer.py
+        RENAME introspection_viewer
+        DESTINATION lib/${PROJECT_NAME})
 endif()

@@ -16,7 +16,7 @@ function setupSummaryView() {
 
     const panelContent = document.createElement("div");
     panelContent.id = "summary-panel-content";
-    panelContent.style.maxHeight = `calc(100vh - ${displayPane.getBoundingClientRect().top + 150}px)`;
+    panelContent.style.maxHeight = `calc(100vh - ${displayPane.getBoundingClientRect().top}px - 10em)`;
     panelContent.style.overflowY = "auto";
     panelContent.style.width = "100%";
     panelContent.style.minWidth = "25%";

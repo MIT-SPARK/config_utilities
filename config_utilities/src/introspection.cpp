@@ -191,8 +191,9 @@ std::string Node::display(size_t indent) const {
 void Introspection::logMerge(const YAML::Node& merged, const YAML::Node& input, const By& by) {
   auto& instance = Introspection::instance();
   instance.initLog();
-  instance.logMergeRec(merged, input, by, instance.data_);
-  instance.logRemovesRec(merged, instance.data_, by);
+  auto& node = instance.currentNode();
+  instance.logMergeRec(merged, input, by, node);
+  instance.logRemovesRec(merged, node, by);
   instance.finishLog();
 }
 
@@ -243,8 +244,9 @@ void Introspection::logMergeRec(const YAML::Node& merged, const YAML::Node& inpu
 void Introspection::logDiff(const YAML::Node& after, const By& by, const Event::Type log_diff_as) {
   auto& instance = Introspection::instance();
   instance.initLog();
-  instance.logDiffRec(after, by, instance.data_, log_diff_as);
-  instance.logRemovesRec(after, instance.data_, by);
+  auto& node = instance.currentNode();
+  instance.logDiffRec(after, by, node, log_diff_as);
+  instance.logRemovesRec(after, node, by);
   instance.finishLog();
 }
 
@@ -274,22 +276,9 @@ void Introspection::logDiffRec(const YAML::Node& after, const By& by, Node& node
 void Introspection::logSetValue(const MetaData& set, const MetaData& get_info) {
   auto& instance = Introspection::instance();
   instance.initLog();
-  auto& node = instance.data_.atNamespace(get_info.ns);
+  auto& node = instance.currentNode().atNamespace(get_info.ns);
   instance.logSetValueRec(set, get_info, node);
   instance.finishLog();
-}
-
-std::optional<size_t> findMatchingSubConfig(const MetaData& search_key, const std::vector<MetaData>& candidates) {
-  for (size_t i = 0; i < candidates.size(); ++i) {
-    const auto& sub = candidates[i];
-    if (search_key.field_name != sub.field_name) {
-      continue;
-    }
-    if (search_key.displayIndex() == sub.displayIndex()) {
-      return i;
-    }
-  }
-  return std::nullopt;
 }
 
 Node& subMetaDataNode(Node& node, const MetaData& meta, const std::string& parent_ns) {
@@ -343,7 +332,7 @@ void Introspection::logSetValueRec(const MetaData& set, const MetaData& get_info
 
   // Handle sub-configs
   for (const auto& sub_get_info : get_info.sub_configs) {
-    const auto match = findMatchingSubConfig(sub_get_info, set.sub_configs);
+    const auto match = set.findMatchingSubConfig(sub_get_info);
     Node& sub_node = subMetaDataNode(node, sub_get_info, get_info.ns);
     if (match) {
       logSetValueRec(set.sub_configs[*match], sub_get_info, sub_node);
@@ -355,7 +344,7 @@ void Introspection::logSetValueRec(const MetaData& set, const MetaData& get_info
 
   // TODO(lschmid): Can set.sub_configs be larger/different than get.sub_configs? Just warn for now.
   for (const auto& sub_set_info : set.sub_configs) {
-    if (!findMatchingSubConfig(sub_set_info, get_info.sub_configs)) {
+    if (!get_info.findMatchingSubConfig(sub_set_info)) {
       Logger::logWarning("Could not find matching sub-config for introspection in config '" + config_name +
                          "' for subconfig: '" + sub_set_info.field_name + "', key: '" + sub_set_info.displayIndex() +
                          "', type: '" + sub_set_info.name + "'.");
@@ -435,7 +424,14 @@ void Introspection::logRemovesRec(const YAML::Node& present, Node& node, const B
 void Introspection::logClear(const By& by) {
   auto& instance = Introspection::instance();
   instance.initLog();
-  instance.logRemovesRec(YAML::Node(YAML::NodeType::Undefined), instance.data_, by);
+  instance.logRemovesRec(YAML::Node(YAML::NodeType::Undefined), instance.currentNode(), by);
+  instance.finishLog();
+}
+
+void Introspection::logSingleEvent(const Event& event, const std::string& ns) {
+  auto& instance = Introspection::instance();
+  instance.initLog();
+  instance.currentNode().atNamespace(ns).addEvent(event);
   instance.finishLog();
 }
 
@@ -443,6 +439,25 @@ void Introspection::clear() {
   data_.clear();
   sources_.clear();
   sequence_id_ = 0;
+}
+
+void Introspection::enterNamespace(const std::string& name_space) {
+  if (name_space.empty()) {
+    return;
+  }
+  instance().current_namespace_.push_back(name_space);
+}
+
+void Introspection::exitNamespace() {
+  if (!instance().current_namespace_.empty()) {
+    instance().current_namespace_.pop_back();
+  }
+}
+
+Node& Introspection::currentNode() {
+  // Individual namespaces may be nested, so join first into a single string.
+  const auto full_ns = joinNamespace(current_namespace_);
+  return data_.atNamespace(full_ns);
 }
 
 void Introspection::initLog() {
@@ -517,7 +532,13 @@ void writeOutputDataImpl(const Node& data, const Introspection::Sources& sources
   if (std::filesystem::exists(output_dir)) {
     std::filesystem::remove_all(output_dir);
   }
-  std::filesystem::create_directories(output_dir);
+  try {
+    std::filesystem::create_directories(output_dir);
+  } catch (const std::filesystem::filesystem_error& e) {
+    Logger::logError("Failed to create introspection output directory '" + output_dir.string() + "': '" +
+                     std::string(e.what()) + "'. No introspection output will be written.");
+    return;
+  }
 
   const auto json_path = output_dir / "data.json";
   std::ofstream json_file(json_path);
