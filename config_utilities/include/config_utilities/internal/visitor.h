@@ -148,7 +148,7 @@ struct Visitor {
   friend std::string config::current_namespace();
 
   // Which operations to perform on the data.
-  enum class Mode { kGet, kGetDefaults, kSet, kCheck, kGetInfo } const mode;
+  enum class Mode { kGet, kSet, kCheck, kGetInfo } const mode;
 
   // Create and access the meta data for the current thread. Lifetime of the meta data is managed internally by the
   // objects. Note that meta data always needs to be created before it can be accessed. In short, 'instance()' is only

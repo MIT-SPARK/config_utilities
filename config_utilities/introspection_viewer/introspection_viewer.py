@@ -26,7 +26,6 @@ class IntrospectionViewer:
         if open_browser:
             # Open the browser to the GUI.
             webbrowser.open(f"http://{host}:{port}", new=2)
-        print(f"Introspection Viewer running at http://{host}:{port}")
         self._app.run(host=host, port=port, debug=debug, threaded=False)
 
     def _index(self):
@@ -70,6 +69,8 @@ def main():
         data = json.load(f)
 
     viewer = IntrospectionViewer(data)
+    print(
+        f"Running Introspection Viewer for '{os.path.abspath(args.data)}' at 'http://{args.host}:{args.port}'.")
     viewer.run(host=args.host, port=args.port,
                debug=args.debug, open_browser=args.open_browser)
 

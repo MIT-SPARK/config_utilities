@@ -78,6 +78,14 @@ struct IntroDerivedB : public IntroBase {
   explicit IntroDerivedB(const Config& config) : config(config) {}
 };
 
+struct IntroDerivedWithSubConfigs : public IntroBase {
+  struct Config {
+    config::VirtualConfig<IntroBase> defaulted{IntroDerivedA::Config()};
+    config::VirtualConfig<IntroBase> non_defaulted;
+  } const config;
+  explicit IntroDerivedWithSubConfigs(const Config& config) : config(config) {}
+};
+
 struct IntroTestConfig {
   int a = 1;
   std::vector<float> vec = {1.0f, 2.0f, 3.0f};
@@ -100,6 +108,10 @@ struct IntroTestConfig {
   std::map<std::string, IntroSubConfig> empty_sub_config_map;
 };
 
+struct WrapperConfig {
+  IntroTestConfig config;
+};
+
 void declare_config(IntroDerivedA::Config& config) {
   name("IntroDerivedA::Config");
   if (with_namespace) {
@@ -111,6 +123,14 @@ void declare_config(IntroDerivedA::Config& config) {
 void declare_config(IntroDerivedB::Config& config) {
   name("IntroDerivedB::Config");
   field(config.hi, "hi");
+}
+
+void declare_config(IntroDerivedWithSubConfigs::Config& config) {
+  name("IntroDerivedWithSubConfigs::Config");
+  config.defaulted.setOptional();
+  config.non_defaulted.setOptional();
+  field(config.defaulted, "defaulted");
+  field(config.non_defaulted, "non_defaulted");
 }
 
 void declare_config(IntroTestConfig::IntroSubConfig& config) {
@@ -149,6 +169,11 @@ void declare_config(IntroTestConfig& config) {
   }
   field(config.sub_config_map, "sub_config_map");
   field(config.empty_sub_config_map, "empty_sub_config_map");
+}
+
+void declare_config(WrapperConfig& config) {
+  name("WrapperConfig");
+  field(config.config, "config");
 }
 
 TEST(Introspection, invokeFromParser) {
@@ -558,73 +583,112 @@ TEST(Introspection, identifyDefaultVirtualConfigs) {
   clearContext();
   const auto regA = RegistrationGuard<IntroBase, IntroDerivedA, IntroDerivedA::Config>("IntroDerivedA");
   const auto regB = RegistrationGuard<IntroBase, IntroDerivedB, IntroDerivedB::Config>("IntroDerivedB");
+  const auto regC = RegistrationGuard<IntroBase, IntroDerivedWithSubConfigs, IntroDerivedWithSubConfigs::Config>(
+      "IntroDerivedWithSubConfigs");
 
-  // Set values for new virtual configs.
+  // Set values for new virtual configs, some default some others not.
   pushToContext(YAML::Load(R"(
-unset_virtual: {type: IntroDerivedA}
-virtual_config: {type: IntroDerivedB}
-vec_modules: [ {type: IntroDerivedB}, {type: IntroDerivedA} ]
-map_modules: {first: {type: IntroDerivedB}, second: {type: IntroDerivedA} }
-empty_vec_modules: [ {type: IntroDerivedA}, {type: IntroDerivedB} ]
-empty_map_modules: {first: {type: IntroDerivedA}, second: {type: IntroDerivedB} }
-  )"));
-  auto config = fromContext<IntroTestConfig>();
+config:
+  unset_virtual: {type: IntroDerivedA}
+  virtual_config: {type: IntroDerivedB}
+  vec_modules: [ {type: IntroDerivedA}, {type: IntroDerivedA} ]
+  map_modules: {first: {type: IntroDerivedA}, second: {type: IntroDerivedA} }
+  empty_vec_modules: [ {type: IntroDerivedA}, {type: IntroDerivedB} ]
+  empty_map_modules: {first: {type: IntroDerivedA}, second: {type: IntroDerivedA} })"));
+  auto config = fromContext<WrapperConfig>();
   std::string expected = R"(
-unset_virtual:
-  type: ['s2@p1:IntroDerivedA', 'g3@c2:IntroDerivedA']
-  s: ['a3@c2:test']
-virtual_config:
-  type: ['s2@p1:IntroDerivedB', 'g3@c3:IntroDerivedB']
-  hi: ['a3@c3:hello']
-vec_modules:
-  [0]:
-    type: ['s2@p1:IntroDerivedB', 'g3@c3:IntroDerivedB']
-    hi: ['a3@c3:hello']
-  [1]:
-    type: ['s2@p1:IntroDerivedA', 'g3@c2:IntroDerivedA']
-    s: ['a3@c2:test']
-map_modules:
-  first:
-    type: ['s2@p1:IntroDerivedB', 'g3@c3:IntroDerivedB']
-    hi: ['a3@c3:hello']
-  second:
-    type: ['s2@p1:IntroDerivedA', 'g3@c2:IntroDerivedA']
-    s: ['a3@c2:test']
-empty_vec_modules:
-  [0]:
-    type: ['s2@p1:IntroDerivedA', 'g3@c2:IntroDerivedA']
-    s: ['a3@c2:test']
-  [1]:
-    type: ['s2@p1:IntroDerivedB', 'g3@c3:IntroDerivedB']
-    hi: ['a3@c3:hello']
-empty_map_modules:
-  first:
-    type: ['s2@p1:IntroDerivedA', 'g3@c2:IntroDerivedA']
-    s: ['a3@c2:test']
-  second:
-    type: ['s2@p1:IntroDerivedB', 'g3@c3:IntroDerivedB']
-    hi: ['a3@c3:hello']
-a: ['a3@c0:1']
-vec:
-  [0]: ['a3@c0:1']
-  [1]: ['a3@c0:2']
-  [2]: ['a3@c0:3']
-map:
-  a: ['a3@c0:true']
-  b: ['a3@c0:false']
-e: ['a3@c0:TWO']
-subconfig:
-  d: ['a3@c1:3.1415']
-sub_config_vec:
-  [0]:
-    d: ['a3@c1:3.1415']
-  [1]:
-    d: ['a3@c1:3.1415']
-sub_config_map:
-  one:
-    d: ['a3@c1:3.1415']
-  two:
-    d: ['a3@c1:3.1415'])";
+config:
+  unset_virtual:
+    type: ['s2@p1:IntroDerivedA', 'g3@c3:IntroDerivedA']
+    s: ['a3@c3:test']
+  virtual_config:
+    type: ['s2@p1:IntroDerivedB', 'g3@c4:IntroDerivedB']
+    hi: ['a3@c4:hello']
+  vec_modules:
+    [0]:
+      type: ['s2@p1:IntroDerivedA', 'd3@c3']
+      s: ['a3@c3:test']
+    [1]:
+      type: ['s2@p1:IntroDerivedA', 'g3@c3:IntroDerivedA']
+      s: ['a3@c3:test']
+  map_modules:
+    first:
+      type: ['s2@p1:IntroDerivedA', 'd3@c3']
+      s: ['a3@c3:test']
+    second:
+      type: ['s2@p1:IntroDerivedA', 'g3@c3:IntroDerivedA']
+      s: ['a3@c3:test']
+  empty_vec_modules:
+    [0]:
+      type: ['s2@p1:IntroDerivedA', 'g3@c3:IntroDerivedA']
+      s: ['a3@c3:test']
+    [1]:
+      type: ['s2@p1:IntroDerivedB', 'g3@c4:IntroDerivedB']
+      hi: ['a3@c4:hello']
+  empty_map_modules:
+    first:
+      type: ['s2@p1:IntroDerivedA', 'g3@c3:IntroDerivedA']
+      s: ['a3@c3:test']
+    second:
+      type: ['s2@p1:IntroDerivedA', 'g3@c3:IntroDerivedA']
+      s: ['a3@c3:test']
+  a: ['a3@c1:1']
+  vec:
+    [0]: ['a3@c1:1']
+    [1]: ['a3@c1:2']
+    [2]: ['a3@c1:3']
+  map:
+    a: ['a3@c1:true']
+    b: ['a3@c1:false']
+  e: ['a3@c1:TWO']
+  subconfig:
+    d: ['a3@c2:3.1415']
+  sub_config_vec:
+    [0]:
+      d: ['a3@c2:3.1415']
+    [1]:
+      d: ['a3@c2:3.1415']
+  sub_config_map:
+    one:
+      d: ['a3@c2:3.1415']
+    two:
+      d: ['a3@c2:3.1415'])";
+  // EXPECT_EQ(Intro::instance().data().display(), expected);
+  std::cout << Intro::instance().data().display() << std::endl;
+
+  clearContext();
+  reset();
+  pushToContext(YAML::Load(R"(
+defaulted:
+  type: IntroDerivedWithSubConfigs
+non_defaulted: 
+  type: IntroDerivedWithSubConfigs
+  defaulted:
+    type: IntroDerivedWithSubConfigs
+    defaulted: {type: IntroDerivedA}
+    non_defaulted: {type: IntroDerivedB})"));
+
+  auto config2 = fromContext<IntroDerivedWithSubConfigs::Config>();
+  expected = R"(
+defaulted:
+  type: ['s1@p0:IntroDerivedWithSubConfigs', 'g2@c0:IntroDerivedWithSubConfigs']
+  defaulted:
+    type: ['a2@c1:IntroDerivedA']
+    s: ['a2@c1:test']
+  non_defaulted:
+    type: ['a2@c2:Uninitialized Virtual Config']
+non_defaulted:
+  type: ['s1@p0:IntroDerivedWithSubConfigs', 'g2@c0:IntroDerivedWithSubConfigs']
+  defaulted:
+    type: ['s1@p0:IntroDerivedWithSubConfigs', 'g2@c0:IntroDerivedWithSubConfigs']
+    defaulted:
+      type: ['s1@p0:IntroDerivedA', 'd2@c1']
+      s: ['a2@c1:test']
+    non_defaulted:
+      type: ['s1@p0:IntroDerivedB', 'g2@c3:IntroDerivedB']
+      hi: ['a2@c3:hello']
+  non_defaulted:
+    type: ['a2@c2:Uninitialized Virtual Config'])";
   EXPECT_EQ(Intro::instance().data().display(), expected);
   disable();  // Clean up after last test.
 }

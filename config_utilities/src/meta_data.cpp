@@ -159,27 +159,33 @@ std::string MetaData::displayIndex() const {
   return "";
 }
 
-std::optional<size_t> MetaData::findMatchingSubConfig(const MetaData& search_key) const {
-  for (size_t i = 0; i < sub_configs.size(); ++i) {
-    const auto& sub = sub_configs[i];
+MetaData* MetaData::findMatchingSubConfig(const MetaData& search_key) {
+  for (auto& sub : sub_configs) {
     if (search_key.field_name != sub.field_name) {
       continue;
     }
     if (search_key.displayIndex() == sub.displayIndex()) {
-      return i;
+      return &sub;
     }
   }
-  return std::nullopt;
+  return nullptr;
 }
 
-std::optional<size_t> MetaData::findMatchingFieldInfo(const FieldInfo& search_key) const {
-  for (size_t i = 0; i < field_infos.size(); ++i) {
-    const auto& field = field_infos[i];
+const MetaData* MetaData::findMatchingSubConfig(const MetaData& search_key) const {
+  return const_cast<MetaData*>(this)->findMatchingSubConfig(search_key);
+}
+
+FieldInfo* MetaData::findMatchingFieldInfo(const FieldInfo& search_key) {
+  for (auto& field : field_infos) {
     if (search_key.name == field.name && search_key.ns == field.ns) {
-      return i;
+      return &field;
     }
   }
-  return std::nullopt;
+  return nullptr;
+}
+
+const FieldInfo* MetaData::findMatchingFieldInfo(const FieldInfo& search_key) const {
+  return const_cast<MetaData*>(this)->findMatchingFieldInfo(search_key);
 }
 
 void MetaData::copyValues(const MetaData& other) {

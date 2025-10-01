@@ -335,7 +335,7 @@ void Introspection::logSetValueRec(const MetaData& set, const MetaData& get_info
     const auto match = set.findMatchingSubConfig(sub_get_info);
     Node& sub_node = subMetaDataNode(node, sub_get_info, get_info.ns);
     if (match) {
-      logSetValueRec(set.sub_configs[*match], sub_get_info, sub_node);
+      logSetValueRec(*match, sub_get_info, sub_node);
     } else {
       // If the set meta-data is absent, a map or vector config was not present. Log their read (default) values.
       logSetValueRecAbsent(sub_get_info, sub_node);

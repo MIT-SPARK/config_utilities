@@ -155,7 +155,7 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
   auto& visitor = Visitor::instance();
 
   // record the field that we visited without storing the value
-  // kGet and kGetDefaults will populate the value field
+  // kGet will populate the value field
   auto& info = visitor.meta_data.field_infos.emplace_back();
   info.name = field_name;
   info.unit = unit;
@@ -175,8 +175,7 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
     }
   }
 
-  if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetDefaults ||
-      visitor.mode == Visitor::Mode::kGetInfo) {
+  if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetInfo) {
     std::string error;
     // Aggregate the YAML data in the global data.
     auto node = YamlParser::toYaml(field, &error);
@@ -215,8 +214,7 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
     }
   }
 
-  if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetDefaults ||
-      visitor.mode == Visitor::Mode::kGetInfo) {
+  if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetInfo) {
     std::string error;
     auto intermediate = Conversion::toIntermediate(field, error);
     if (!error.empty()) {
@@ -236,9 +234,6 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
 template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type>
 void Visitor::visitField(ConfigT& config, const std::string& field_name, const std::string& name_space) {
   Visitor& visitor = Visitor::instance();
-  if (visitor.mode == Visitor::Mode::kGetDefaults) {
-    return;
-  }
 
   // Visit subconfig.
   MetaData& data = visitor.meta_data;
@@ -256,9 +251,6 @@ void Visitor::visitField(ConfigT& config, const std::string& field_name, const s
 template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type>
 void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_name, const std::string& /* unit */) {
   Visitor& visitor = Visitor::instance();
-  if (visitor.mode == Visitor::Mode::kGetDefaults) {
-    return;
-  }
 
   if (visitor.mode == Visitor::Mode::kSet) {
     const auto array_ns = joinNamespace(visitor.name_space, field_name);
@@ -313,9 +305,6 @@ void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_
 template <typename K, typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type>
 void Visitor::visitField(std::map<K, ConfigT>& config, const std::string& field_name, const std::string& unit) {
   Visitor& visitor = Visitor::instance();
-  if (visitor.mode == Visitor::Mode::kGetDefaults) {
-    return;
-  }
 
   // copy current config state
   OrderedMap<K, ConfigT> intermediate(config.begin(), config.end());
@@ -336,9 +325,6 @@ void Visitor::visitField(std::map<K, ConfigT>& config, const std::string& field_
 template <typename K, typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type>
 void Visitor::visitField(OrderedMap<K, ConfigT>& config, const std::string& field_name, const std::string& /* unit */) {
   Visitor& visitor = Visitor::instance();
-  if (visitor.mode == Visitor::Mode::kGetDefaults) {
-    return;
-  }
 
   if (visitor.mode == Visitor::Mode::kSet) {
     const auto map_ns = joinNamespace(visitor.name_space, field_name);
@@ -419,7 +405,7 @@ void Visitor::visitBase(ConfigT& config) {
 
 template <typename ConfigT, typename std::enable_if<!is_virtual_config<ConfigT>::value, bool>::type>
 MetaData Visitor::getDefaults(const ConfigT& /* config */) {
-  Visitor visitor(Mode::kGetDefaults);
+  Visitor visitor(Mode::kGet);
   ConfigT default_config;
   ::config::declare_config(default_config);
   return visitor.meta_data;
@@ -427,7 +413,7 @@ MetaData Visitor::getDefaults(const ConfigT& /* config */) {
 
 template <typename ConfigT, typename std::enable_if<is_virtual_config<ConfigT>::value, bool>::type>
 MetaData Visitor::getDefaults(const ConfigT& config) {
-  Visitor visitor(Mode::kGetDefaults);
+  Visitor visitor(Mode::kGet);
   if (config.isSet()) {
     // Parse the type param.
     visitField(config.config_->type, Settings::instance().factory.type_param_name, "");
@@ -441,39 +427,31 @@ MetaData Visitor::getDefaults(const ConfigT& config) {
 
 template <typename ConfigT>
 void Visitor::getDefaultValues(const ConfigT& config, MetaData& data) {
-  // Get defaults from a default constructed ConfigT. Extract the default values of all non-config fields. Subconfigs
-  // are managed separately.
+  // Get defaults from a default constructed ConfigT.
   const MetaData default_data = Visitor::getDefaults(config);
 
-  // Compare all fields. These should always be in the same order if they are from the same config and exclude
-  // subconfigs.
+  // Compare all fields. These should always be in the same order if they are from the same config.
   for (auto& field_info : data.field_infos) {
     const auto match = default_data.findMatchingFieldInfo(field_info);
-    if (!match) {
-      continue;
+    if (match) {
+      field_info.default_value = match->value;
     }
-
-    // NOTE(lschmid): Operator YAML::Node== checks for identity, not equality. Since these are all scalars, comparing
-    // the formatted strings should be identical.
-    const auto& default_info = default_data.field_infos.at(*match);
-    field_info.default_value = default_info.value;
   }
 
-  // Parse all immediate virtual subconfigs to get their default type params. Downstream subconfigs will be handled when
-  // they are parsed, which will be superseded by this call.
+  // getDefaultTypeParams(data, default_data);
+  // Parse all immediate virtual subconfigs to get their default type params.
   for (auto& sub_data : data.sub_configs) {
+    const auto match = default_data.findMatchingSubConfig(sub_data);
     if (sub_data.isVirtualConfig()) {
-      const auto match = default_data.findMatchingSubConfig(sub_data);
       // Find the type param. This should exist.
       for (auto& field_info : sub_data.field_infos) {
         if (field_info.name == Settings::instance().factory.type_param_name && field_info.is_meta_field) {
           if (!match) {
             field_info.default_value = YAML::Node();  // no default
           } else {
-            const auto& default_sub_data = default_data.sub_configs.at(*match);
-            const auto field_match = default_sub_data.findMatchingFieldInfo(field_info);
+            const auto field_match = match->findMatchingFieldInfo(field_info);
             if (field_match) {
-              field_info.default_value = default_sub_data.field_infos.at(*field_match).value;
+              field_info.default_value = field_match->value;
             } else {
               // NOTE(lschmid): This should never happen.
               field_info.default_value = YAML::Node();  // no default
