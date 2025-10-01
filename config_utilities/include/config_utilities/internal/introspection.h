@@ -249,7 +249,7 @@ class Introspection {
 
  private:
   Introspection() = default;
-  ~Introspection();
+  virtual ~Introspection() = default;
 
   // Root of the data tree tracked by this instance.
   Node data_;
@@ -263,6 +263,9 @@ class Introspection {
  private:
   // Setup a new logging event.
   void initLog();
+
+  // Finish the current logging event.
+  void finishLog();
 
   // Recurse through the nodes and add events for merge logs.
   void logMergeRec(const YAML::Node& merged, const YAML::Node& input, const By& by, Node& node);

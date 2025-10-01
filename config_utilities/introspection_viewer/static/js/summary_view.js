@@ -14,27 +14,50 @@ function setupSummaryView() {
     displayPaneDiv.style.display = "flex";
     displayPaneDiv.style.gap = "2em";
 
-    const summaryPanelContent = document.createElement("div");
-    summaryPanelContent.id = "summary-panel-content";
-    summaryPanelContent.style.flex = "1 1 0";
+    const panelContent = document.createElement("div");
+    panelContent.id = "summary-panel-content";
+    panelContent.style.maxHeight = `calc(100vh - ${displayPane.getBoundingClientRect().top + 150}px)`;
+    panelContent.style.overflowY = "auto";
+    panelContent.style.width = "100%";
+    panelContent.style.minWidth = "25%";
+    panelContent.style.overflowY = "auto";
+    panelContent.style.overflowX = "auto";
+    panelContent.style.flexGrow = "1";
+    panelContent.style.flexShrink = "1";
+    displayPaneDiv.style.position = "relative";
 
-    displayPaneDiv.appendChild(summaryPanelContent);
+    // panelContent.style.minWidth = "300px";
+    panelContent.style.boxSizing = "border-box";
+
+    displayPaneDiv.appendChild(panelContent);
     displayPane.appendChild(displayPaneDiv);
 
     // Render the data.
-    renderSummaryDefault(displayPaneDiv, summaryPanelContent);
+    renderSummaryDefault(displayPaneDiv, panelContent);
 }
 
 const eventColors = {
     "s": '#40a544ff',          // Set
-    "u": '#379becff',          // Update
-    "n": '#ff9800',            // SetNonModified
+    "u": '#1ad3caff',          // Update
+    "n": '#379becff',            // SetNonModified
     "f": '#f44336',            // SetFailed
-    "g": '#34c0caff',          //  Get
-    "d": '#fae20fff',          // GetDefault
+    "g": '#40a544ff',          // Get
+    "d": '#379becff',          // GetDefault
     "a": '#666666',            // GetAbsent
-    "e": '#c5108fff',          // GetError
-    "r": '#000000',            // Remove
+    "e": '#f44336',          // GetError
+    "r": '#ff9800',            // Remove
+};
+
+const eventNames = {
+    "s": 'Set',
+    "u": 'Updated',
+    "n": 'Set (not modified)',
+    "f": 'Set Failed',
+    "g": 'Read',
+    "d": 'Read (default)',
+    "a": 'Read (absent)',
+    "e": 'Read Failed',
+    "r": 'Removed',
 };
 
 function renderSummaryDefault(displayPaneDiv, summaryPanelContent) {
@@ -50,18 +73,41 @@ function renderSummaryDefault(displayPaneDiv, summaryPanelContent) {
 
     // Parse the data.
     var data = window.introspectionData.data;
-    createDisplayData(data, n => parseSummaryDefault(n, legendEntries, false));
+    var sources = window.introspectionData.sources;
+    createDisplayData(data, n => parseSummaryDefault(n, legendEntries, sources));
     summaryPanelContent.innerHTML = renderDisplayData(data);
 
     // Create and append the legend.
-    displayPaneDiv.appendChild(createLegend(legendEntries));
+    const legend = createLegend(legendEntries);
+    displayPaneDiv.appendChild(legend);
+    if (summaryPanelContent.scrollHeight > summaryPanelContent.clientHeight) {
+        legend.style.right = '3em';
+    }
 }
 
-function parseSummaryDefault(node, legendEntries, includeUnset = true) {
+function historyToTooltip(history, sources) {
+    if (!history || !Array.isArray(history)) return "";
+    // Create an invisible table with each event as a row
+    let html = `<div style="margin: 0.5em;"><strong>History</strong><table style="margin: 0 auto;"><tr>
+        <th style="padding-right: 2em;">Event</th>
+        <th style="padding-right: 2em;">By</th>
+        <th style="padding-right: 2em;">Value</th>
+        </tr>`;
+    for (const event of history) {
+        html += `<tr>
+            <td style="padding-right: 2em;"><span style="color: ${eventColors[event.type]}; font-weight: bold;">${eventNames[event.type]}</span></td>
+            <td style="padding-right: 2em;">${getSourceName(sources, event)}</td>
+            <td style="padding-right: 2em;">${event.val !== undefined ? event.val : ""}</td>
+        </tr>`;
+    }
+    html += `</table></div>`;
+    return html;
+}
+
+function parseSummaryDefault(node, legendEntries, sources, includeUnset = true) {
     // Set values, colors, etc. for summary view.
     node.value = "";
     node.color = "";
-    node.tooltip = "asdjjas";
     if (!node.history) {
         delete node.value;
         delete node.color;
@@ -100,6 +146,7 @@ function parseSummaryDefault(node, legendEntries, includeUnset = true) {
     if (was_set && node.color === "") {
         node.color = legendEntries[2].color;
     }
+    node.tooltip = historyToTooltip(node.history, sources);
 }
 
 

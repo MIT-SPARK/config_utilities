@@ -34,7 +34,7 @@ class IntrospectionViewer:
 def main():
     parser = argparse.ArgumentParser(
         description="Viewer for introspection data logged by config_utilities. To log introspection, run your executable using config_utilities with the --config-utilities-introspect/-i option.")
-    parser.add_argument("--data-file", default=None,
+    parser.add_argument("--data", default=None,
                         help="Path to the introspection data.json file to view")
     parser.add_argument("--host", default="localhost",
                         help="Host to run the Flask app on")
@@ -47,14 +47,27 @@ def main():
     args = parser.parse_args()
 
     # Load data
-    if args.data_file is None:
-        # args.data_file = os.path.join(os.path.curdir, "data.json")
+    if args.data is None:
         # TMP
-        args.data_file = os.path.join(os.path.dirname(__file__), 'data.json')
-    if not os.path.exists(args.data_file):
+        args.data = os.path.join(os.path.dirname(__file__), 'data.json')
+
+        candidate_paths = [
+            os.path.join(os.path.curdir,
+                         "config_introspection_output", "data.json"),
+            os.path.join(os.path.curdir, "data.json")
+        ]
+        for path in candidate_paths:
+            if os.path.exists(path):
+                args.data = path
+                break
+        if args.data is None:
+            raise FileNotFoundError(
+                "No introspection data file specified and no default found. Please specify the path to the introspection data.json file using the --data argument.")
+
+    if not os.path.exists(args.data):
         raise FileNotFoundError(
-            f"Introspection data file not found: '{args.data_file}'")
-    with open(args.data_file, 'r') as f:
+            f"Introspection data file not found: '{args.data}'")
+    with open(args.data, 'r') as f:
         data = json.load(f)
 
     viewer = IntrospectionViewer(data)

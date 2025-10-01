@@ -193,6 +193,7 @@ void Introspection::logMerge(const YAML::Node& merged, const YAML::Node& input, 
   instance.initLog();
   instance.logMergeRec(merged, input, by, instance.data_);
   instance.logRemovesRec(merged, instance.data_, by);
+  instance.finishLog();
 }
 
 void Introspection::logMergeRec(const YAML::Node& merged, const YAML::Node& input, const By& by, Node& node) {
@@ -244,6 +245,7 @@ void Introspection::logDiff(const YAML::Node& after, const By& by, const Event::
   instance.initLog();
   instance.logDiffRec(after, by, instance.data_, log_diff_as);
   instance.logRemovesRec(after, instance.data_, by);
+  instance.finishLog();
 }
 
 void Introspection::logDiffRec(const YAML::Node& after, const By& by, Node& node, const Event::Type log_diff_as) {
@@ -274,6 +276,7 @@ void Introspection::logSetValue(const MetaData& set, const MetaData& get_info) {
   instance.initLog();
   auto& node = instance.data_.atNamespace(get_info.ns);
   instance.logSetValueRec(set, get_info, node);
+  instance.finishLog();
 }
 
 std::optional<size_t> findMatchingSubConfig(const MetaData& search_key, const std::vector<MetaData>& candidates) {
@@ -433,6 +436,7 @@ void Introspection::logClear(const By& by) {
   auto& instance = Introspection::instance();
   instance.initLog();
   instance.logRemovesRec(YAML::Node(YAML::NodeType::Undefined), instance.data_, by);
+  instance.finishLog();
 }
 
 void Introspection::clear() {
@@ -444,6 +448,11 @@ void Introspection::clear() {
 void Introspection::initLog() {
   // Increment the sequence id for the next events.
   ++sequence_id_;
+}
+
+void Introspection::finishLog() {
+  // Currently incrementally save all updates as processes can die (and introspection being slow if sort of fine)
+  writeOutputData(Settings::instance().introspection.output);
 }
 
 // Serialization: conditional compilation.
@@ -521,6 +530,7 @@ void writeOutputDataImpl(const Node& data, const Introspection::Sources& sources
   output_data["sources"] = toJson(sources);
   json_file << output_data.dump(2);
   json_file.close();
+  Logger::logInfo("Wrote config introspection output to '" + json_path.string() + "'.");
 }
 
 #endif  // CONFIG_UTILS_ENABLE_JSON
@@ -533,21 +543,6 @@ void Introspection::writeOutputData(const std::string& output_dir) {
       "Introspection requires 'nlohmann_json' to be available at compile time. No output written. Try installing it "
       "via 'sudo apt install nlohmann-json3-dev' and recompile config utilities.");
 #endif  // CONFIG_UTILS_ENABLE_JSON
-}
-
-Introspection::~Introspection() {
-  // On teardown write all the output.
-  if (data_.empty()) {
-    return;
-  }
-
-  if (!Settings::instance().introspection.enabled()) {
-    Logger::logWarning(
-        "Introspection data is present but introspection has been disabled, not writing any introspection output.");
-    return;
-  }
-
-  writeOutputData(Settings::instance().introspection.output);
 }
 
 Introspection& Introspection::instance() {

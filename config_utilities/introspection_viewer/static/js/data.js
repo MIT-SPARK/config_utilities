@@ -37,6 +37,13 @@ function isGetEvent(event) {
     return event.type === "g" || event.type === "d" || event.type === "e" || event.type === "a";
 }
 
+// Lookup the name of the source of an event.
+function getSourceName(sources, event) {
+    const key = event.by.charAt(0);
+    const index = parseInt(event.by.slice(1));
+    return sources[key][index];
+}
+
 // Some default processing functions.
 
 // Get the value at the end of the setting process. If a value is never set but read, return the last read value instead.
@@ -108,7 +115,6 @@ function renderDisplayDataRec(node, indent = 0) {
             for (i = 0; i < node.list.length; i++) {
                 // Render list of non-leaves in block style:
                 let child_html = renderDisplayDataRec(node.list[i], indent + 1);
-                // console.log("Rendering list child of '", node.key, "' at indent", indent, "child_html:", child_html);
                 if (child_html.startsWith("<br>")) {
                     child_html = child_html.slice(settings.indent_width * (indent + 1) + 4);
                 }
@@ -137,20 +143,24 @@ function renderDisplayDataRec(node, indent = 0) {
 
 // Render a single value of a node including the rendering description.
 function formatValue(value, options) {
-    let html = `<span class="yaml-value"`;
     let style = "";
     if (options.color) {
         style += `color: ${options.color};`;
     }
+    let html = `<span class="yaml-value`;
     if (options.tooltip) {
-        style += `border-bottom: 1px dotted ${options.color || 'black'}; cursor: help;`;
-        return html + ` style="${style}" title="${options.tooltip}">${value}</span>`;
+        html += ` tooltip`;
     }
+    html += `"`;
     if (style !== "") {
         html += ` style="${style}"`;
     }
+    html += `>${value}`;
+    if (options.tooltip) {
+        html += `<span class="tooltiptext">${options.tooltip}</span>`;
+    }
     // If no special styling, return plain text node.
-    return html + `>${value}</span>`;
+    return html + `</span>`;
 }
 
 function isLeaf(node) {
