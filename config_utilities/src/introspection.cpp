@@ -217,7 +217,7 @@ void Introspection::logMergeRec(const YAML::Node& merged, const YAML::Node& inpu
     const std::string& previous_value = node.lastValue();
     if (merged_value == previous_value) {
       // Value is present in set but not modified.
-      node.addEvent(Event(Event::Type::SetNonModified, by));
+      node.addEvent(Event(Event::Type::SetNonModified, by, merged_value));
       return;
     }
     if (merged_value == input_value) {
@@ -385,7 +385,7 @@ void Introspection::logSetRecurseLeaves(const YAML::Node& set,
     }
     if (is_default) {
       if (value == yamlToString(set, true)) {
-        node.addEvent(Event(Event::Type::GetDefault, by));
+        node.addEvent(Event(Event::Type::GetDefault, by, value));
       } else {
         node.addEvent(Event(Event::Type::GetError, by, value));
       }

@@ -1,3 +1,23 @@
+function updateDisplay() {
+    if (window.introSettings.current_view === "summary") {
+        setupSummaryView();
+    }
+    // Future views can be added here.
+}
+
+function summaryBtnClicked(button) {
+    if (window.introSettings.current_view !== "summary") {
+        window.introSettings.current_view = "summary";
+        updateDisplay();
+        button.className = "config-button button-selected";
+    }
+}
+
+function optionButtonClicked(button, option) {
+    window.introSettings[option] = !window.introSettings[option];
+    button.classList.toggle("button-selected");
+    updateDisplay();
+}
 
 function setupSummaryView() {
 
@@ -36,29 +56,7 @@ function setupSummaryView() {
     renderSummaryDefault(displayPaneDiv, panelContent);
 }
 
-const eventColors = {
-    "s": '#40a544ff',          // Set
-    "u": '#1ad3caff',          // Update
-    "n": '#379becff',            // SetNonModified
-    "f": '#f44336',            // SetFailed
-    "g": '#40a544ff',          // Get
-    "d": '#379becff',          // GetDefault
-    "a": '#666666',            // GetAbsent
-    "e": '#f44336',          // GetError
-    "r": '#ff9800',            // Remove
-};
 
-const eventNames = {
-    "s": 'Set',
-    "u": 'Updated',
-    "n": 'Set (not modified)',
-    "f": 'Set Failed',
-    "g": 'Read',
-    "d": 'Read (default)',
-    "a": 'Read (absent)',
-    "e": 'Read Failed',
-    "r": 'Removed',
-};
 
 function renderSummaryDefault(displayPaneDiv, summaryPanelContent) {
     // Definitions.
@@ -72,46 +70,26 @@ function renderSummaryDefault(displayPaneDiv, summaryPanelContent) {
     ];
 
     // Parse the data.
-    var data = window.introspectionData.data;
-    var sources = window.introspectionData.sources;
-    createDisplayData(data, n => parseSummaryDefault(n, legendEntries, sources));
+    var data = window.introData;
+    createDisplayData(data, n => parseSummaryDefault(n, legendEntries));
     summaryPanelContent.innerHTML = renderDisplayData(data);
 
     // Create and append the legend.
     const legend = createLegend(legendEntries);
     displayPaneDiv.appendChild(legend);
+
     if (summaryPanelContent.scrollHeight > summaryPanelContent.clientHeight) {
         legend.style.right = '3em';
     }
 }
 
-function historyToTooltip(history, sources) {
-    if (!history || !Array.isArray(history)) return "";
-    // Create an invisible table with each event as a row
-    let html = `<div style="margin: 0.5em;"><strong>History</strong><table style="margin: 0 auto;"><tr>
-        <th style="padding-right: 2em;">Event</th>
-        <th style="padding-right: 2em;">By</th>
-        <th style="padding-right: 2em;">Value</th>
-        </tr>`;
-    for (const event of history) {
-        html += `<tr>
-            <td style="padding-right: 2em;"><span style="color: ${eventColors[event.type]}; font-weight: bold;">${eventNames[event.type]}</span></td>
-            <td style="padding-right: 2em;">${getSourceName(sources, event)}</td>
-            <td style="padding-right: 2em;">${event.val !== undefined ? event.val : ""}</td>
-        </tr>`;
-    }
-    html += `</table></div>`;
-    return html;
-}
-
-function parseSummaryDefault(node, legendEntries, sources, includeUnset = true) {
+function parseSummaryDefault(node, legendEntries) {
     // Set values, colors, etc. for summary view.
     node.value = "";
     node.color = "";
     if (!node.history) {
-        delete node.value;
-        delete node.color;
         delete node.tooltip;
+        delete node.identifiers;
         return;
     }
     let was_set = false;
@@ -122,6 +100,7 @@ function parseSummaryDefault(node, legendEntries, sources, includeUnset = true) 
             node.color = legendEntries[5].color; // Conflict color
         }
     };
+
     for (const event of node.history) {
         // Get the color for the latest event.
         if (event.type == "g") {
@@ -139,14 +118,23 @@ function parseSummaryDefault(node, legendEntries, sources, includeUnset = true) 
             was_set = true;
             continue;
         }
-        if (includeUnset && isGetEvent(event) && node.value === "" && event.val !== undefined) {
+        if (!!window.introSettings['show_unset'] && isGetEvent(event) && node.value === "" && event.val !== undefined) {
             node.value = event.val;
         }
     }
     if (was_set && node.color === "") {
         node.color = legendEntries[2].color;
     }
-    node.tooltip = historyToTooltip(node.history, sources);
+    // Render the history and keep all sources as identifiers.
+    node.tooltip = displayHistory(node.history);
+    node.identifiers = [];
+    if (window.introSettings['show_sources']) {
+        for (const event of node.history) {
+            if (!node.identifiers.includes(event.by)) {
+                node.identifiers.push(event.by);
+            }
+        }
+    }
 }
 
 

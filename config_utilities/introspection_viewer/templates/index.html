@@ -11,23 +11,21 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/style.css') }}"
     />
-    <!-- Settings icons created by Freepik - Flaticon -->
-    <link
-      rel="favicon.ico"
-      type="image/png"
-      href="https://cdn-icons-png.flaticon.com/512/2099/2099058.png"
-    />
     <link
       rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/font-awesome.min.css"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css"
     />
   </head>
 
   <script src="{{ url_for('static', filename='js/data.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/display.js') }}"></script>
   <script src="{{ url_for('static', filename='js/summary_view.js') }}"></script>
   <script>
     // Global JSON object to store the data
-    window.introspectionData = {{ data | tojson }};
+    const loaded_data = {{ data | tojson }};
+    window.introData = loaded_data.data;
+    window.introSources = loaded_data.sources;
+    window.introSettings = {current_view: "summary", show_unset: true, show_sources: true};
   </script>
 
   <body>
@@ -43,19 +41,28 @@
         name="summarySelectBtn"
         class="config-button button-selected"
         type="submit"
-        onclick="setupSummaryView();"
+        onclick="summaryBtnClicked(this);"
       >
         Summary
       </button>
-      <!-- <button
-        name="setHistorySelectBtn"
-        class="config-button"
-        type="submit"
-        onclick=""
-        disabled
-      >
-        Set History
-      </button> -->
+        <span class="selection-header" style="margin-left: 10em">View Options:</span>
+        <button
+          name="ShowUnsetBtn"
+          class="config-button button-selected"
+          type="submit"
+          onclick="optionButtonClicked(this, 'show_unset');"
+        >
+          Show Unset Values
+        </button>
+        <button
+          name="ShowSourcesBtn"
+          class="config-button button-selected"
+          type="submit"
+          onclick="optionButtonClicked(this, 'show_sources');"
+        >
+          Show Sources
+        </button>
+      </span>
     </div>
 
     <div

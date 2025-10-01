@@ -37,14 +37,14 @@ function isGetEvent(event) {
     return event.type === "g" || event.type === "d" || event.type === "e" || event.type === "a";
 }
 
-// Lookup the name of the source of an event.
-function getSourceName(sources, event) {
-    const key = event.by.charAt(0);
-    const index = parseInt(event.by.slice(1));
-    return sources[key][index];
+function isLeaf(node) {
+    return node.value && node.value !== "";
 }
 
-// Some default processing functions.
+function isListOfLeaves(node) {
+    return node.list ? node.list.every(isLeaf) : false;
+}
+
 
 // Get the value at the end of the setting process. If a value is never set but read, return the last read value instead.
 function getLatestValue(history) {
@@ -60,6 +60,8 @@ function getLatestValue(history) {
     }
     return result;
 }
+
+// ========== Processing Functions ==========
 
 // Default: reset the display fields and render the latest value.
 function defaultParsingFn(node) {
@@ -87,6 +89,8 @@ function createDisplayData(node, parsingFn = defaultParsingFn) {
         }
     }
 }
+
+// ========== Rendering Functions ==========
 
 // Turn the processed data into HTML for display.
 function renderDisplayData(node) {
@@ -161,74 +165,4 @@ function formatValue(value, options) {
     }
     // If no special styling, return plain text node.
     return html + `</span>`;
-}
-
-function isLeaf(node) {
-    return node.value && node.value !== "";
-}
-
-function isListOfLeaves(node) {
-    return node.list ? node.list.every(isLeaf) : false;
-}
-
-// entries: list of {color, label}
-function createLegend(entries) {
-    const aside = document.createElement('aside');
-    aside.className = 'legend-pane';
-
-    const heading = document.createElement('h3');
-    heading.textContent = 'Legend';
-    heading.style.marginTop = '0';
-    aside.appendChild(heading);
-
-    const ul = document.createElement('ul');
-    ul.style.listStyle = 'none';
-    ul.style.padding = '0';
-    ul.style.margin = '0';
-
-    entries.forEach(entry => {
-        const li = document.createElement('li');
-        li.style.marginBottom = '0.5em';
-
-        const colorBox = document.createElement('span');
-        colorBox.className = 'legend-entry-color';
-        colorBox.style.background = entry.color;
-
-        const label = document.createElement('span');
-        label.textContent = entry.label;
-        label.className = 'legend-entry-label';
-
-        li.appendChild(colorBox);
-        li.appendChild(label);
-        ul.appendChild(li);
-    });
-
-    aside.appendChild(ul);
-    return aside;
-}
-
-
-// Backup
-
-function renderHighlightableText(text, identifier, highlightClass = "highlight") {
-    // Create a span with data-identifier attribute
-    const span = document.createElement("span");
-    span.textContent = text;
-    span.setAttribute("data-identifier", identifier);
-
-    // Mouse enter: highlight all elements with same identifier
-    span.addEventListener("mouseenter", () => {
-        document.querySelectorAll(`[data-identifier="${identifier}"]`).forEach(el => {
-            el.classList.add(highlightClass);
-        });
-    });
-
-    // Mouse leave: remove highlight
-    span.addEventListener("mouseleave", () => {
-        document.querySelectorAll(`[data-identifier="${identifier}"]`).forEach(el => {
-            el.classList.remove(highlightClass);
-        });
-    });
-
-    return span;
 }
