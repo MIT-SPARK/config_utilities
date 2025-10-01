@@ -18,10 +18,89 @@
   /* white-space: pre-wrap; */
 }
 
+.tooltip {
+  position: relative;
+  display: inline-block;
+  border-bottom: 1px dotted black;
+}
+
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 120px;
+  background-color: #fff;
+  text-align: left;
+  border-radius: 6px;
+  padding: 5px 0;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -60px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.tooltip .tooltiptext::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #555 transparent transparent transparent;
+}
+
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
+
+.hover-panel-content {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 320px;
+  max-width: 90vw;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+  padding: 2em;
+  z-index: 1000;
+}
+
 .yaml-value {
-  font-family: monospace;
+  /* font-family: "Courier New", Courier, monospace; */
   color: var(--text_color);
   white-space: pre-wrap;
-  font-size: larger;
-  font-weight: bold;
+  font-size: 1em;
+  /* font-weight: 600; */
+}
+
+.legend-pane {
+  flex: 0 0 25%;
+  max-width: 25%;
+  min-width: 180px;
+  box-sizing: border-box;
+  padding-left: 1em;
+  border-left: 1px solid #eee;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.legend-entry-color {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.legend-entry-label {
+  vertical-align: middle;
+  /* font-size: 0.9em; */
 }

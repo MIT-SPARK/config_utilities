@@ -56,6 +56,9 @@ bool Event::isSetEvent() const {
 bool Event::isGetEvent() const { return type == Type::Get || type == Type::GetDefault || type == Type::GetError; }
 
 bool Event::valueModified() const {
+  if (type == Type::Remove) {
+    return true;
+  }
   if (type != Type::Set && type != Type::Update) {
     return false;
   }
@@ -78,9 +81,7 @@ const std::string& Node::lastValue() const { return last_value_; }
 void Node::addEvent(const Event& event) {
   history.push_back(event);
   // If this event unset downstream values, log this as separate delete events for easier in-leave tracking.
-  if (event.isDeleteEvent()) {
-    last_value_.clear();
-  } else if (event.valueModified()) {
+  if (event.valueModified()) {
     last_value_ = event.value;
   }
 }
@@ -130,8 +131,6 @@ std::optional<YAML::Node> Node::toYamlRec(size_t at_sequence_id) const {
     }
     if (event.valueModified()) {
       value = event.value;
-    } else if (event.isDeleteEvent()) {
-      value.clear();
     }
   }
   if (!value.empty()) {
@@ -450,8 +449,8 @@ void Introspection::initLog() {
 // Serialization: conditional compilation.
 #ifdef CONFIG_UTILS_ENABLE_JSON
 
-nlohmann::ordered_json toJson(const Event& event) {
-  nlohmann::ordered_json j;
+nlohmann::json toJson(const Event& event) {
+  nlohmann::json j;
   j["type"] = std::string(1, static_cast<char>(event.type));
   j["by"] = std::string(1, static_cast<char>(event.by.type)) + std::to_string(event.by.index);
   j["seq"] = event.sequence_id;
@@ -461,36 +460,40 @@ nlohmann::ordered_json toJson(const Event& event) {
   return j;
 }
 
-nlohmann::ordered_json toJson(const Node& node) {
-  nlohmann::ordered_json j;
+nlohmann::json toJson(const Node& node, const std::string& key = "") {
+  nlohmann::json j;
+  if (!key.empty()) {
+    j["key"] = key;
+  }
   if (!node.history.empty()) {
-    auto hist = nlohmann::ordered_json::array();
+    auto hist = nlohmann::json::array();
     for (const auto& event : node.history) {
       hist.push_back(toJson(event));
     }
     j["history"] = hist;
   }
   if (!node.list.empty()) {
-    auto list = nlohmann::ordered_json::array();
+    auto list = nlohmann::json::array();
     for (const auto& child : node.list) {
       list.push_back(toJson(child));
     }
     j["list"] = list;
   }
   if (!node.map.empty()) {
-    nlohmann::ordered_json map;
+    // Use arrays to preserve order if desired.
+    auto map = nlohmann::json::array();
     for (const auto& [key, child] : node.map) {
-      map[key] = toJson(child);
+      map.push_back(toJson(child, key));
     }
     j["map"] = map;
   }
   return j;
 }
 
-nlohmann::ordered_json toJson(const Introspection::Sources& sources) {
-  nlohmann::ordered_json j;
+nlohmann::json toJson(const Introspection::Sources& sources) {
+  nlohmann::json j;
   for (const auto& [type, entries] : sources) {
-    nlohmann::ordered_jsonentry;
+    nlohmann::json entry;
     for (const auto& [value, index] : entries) {
       entry[index] = value;
     }
@@ -513,7 +516,7 @@ void writeOutputDataImpl(const Node& data, const Introspection::Sources& sources
     Logger::logError("Failed to open introspection output file '" + json_path.string() + "'.");
     return;
   }
-  nlohmann::ordered_jsonoutput_data;
+  nlohmann::json output_data;
   output_data["data"] = toJson(data);
   output_data["sources"] = toJson(sources);
   json_file << output_data.dump(2);

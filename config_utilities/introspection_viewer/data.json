@@ -1,8 +1,7 @@
 {
   "data": {
-    "history": [],
-    "map": {
-      "a": {
+    "map": [
+      {
         "history": [
           {
             "by": "p0",
@@ -16,273 +15,11 @@
             "type": "g",
             "val": "123"
           }
-        ]
+        ],
+        "key": "a"
       },
-      "e": {
-        "history": [
-          {
-            "by": "p0",
-            "seq": 1,
-            "type": "s",
-            "val": "NONEXISTENT"
-          },
-          {
-            "by": "c0",
-            "seq": 2,
-            "type": "e",
-            "val": "TWO"
-          }
-        ]
-      },
-      "empty_vec_modules": {
-        "history": [],
-        "list": [
-          {
-            "history": [],
-            "map": {
-              "s": {
-                "history": [
-                  {
-                    "by": "p0",
-                    "seq": 1,
-                    "type": "s",
-                    "val": "overridden"
-                  },
-                  {
-                    "by": "c3",
-                    "seq": 2,
-                    "type": "g",
-                    "val": "overridden"
-                  }
-                ]
-              },
-              "type": {
-                "history": [
-                  {
-                    "by": "p0",
-                    "seq": 1,
-                    "type": "s",
-                    "val": "IntroDerivedA"
-                  },
-                  {
-                    "by": "c3",
-                    "seq": 2,
-                    "type": "d"
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "history": [],
-            "map": {
-              "hi": {
-                "history": [
-                  {
-                    "by": "c4",
-                    "seq": 2,
-                    "type": "a",
-                    "val": "hello"
-                  }
-                ]
-              },
-              "type": {
-                "history": [
-                  {
-                    "by": "p0",
-                    "seq": 1,
-                    "type": "s",
-                    "val": "IntroDerivedB"
-                  },
-                  {
-                    "by": "c4",
-                    "seq": 2,
-                    "type": "d"
-                  }
-                ]
-              }
-            }
-          }
-        ]
-      },
-      "map": {
-        "history": [],
-        "map": {
-          "a": {
-            "history": [
-              {
-                "by": "p0",
-                "seq": 1,
-                "type": "s",
-                "val": "false"
-              },
-              {
-                "by": "c0",
-                "seq": 2,
-                "type": "g",
-                "val": "false"
-              }
-            ]
-          }
-        }
-      },
-      "map_modules": {
-        "history": [],
-        "map": {
-          "first": {
-            "history": [],
-            "map": {
-              "s": {
-                "history": [
-                  {
-                    "by": "c3",
-                    "seq": 2,
-                    "type": "a",
-                    "val": "test"
-                  }
-                ]
-              },
-              "type": {
-                "history": [
-                  {
-                    "by": "c3",
-                    "seq": 2,
-                    "type": "a",
-                    "val": "IntroDerivedA"
-                  }
-                ]
-              }
-            }
-          },
-          "second": {
-            "history": [],
-            "map": {
-              "hi": {
-                "history": [
-                  {
-                    "by": "c4",
-                    "seq": 2,
-                    "type": "a",
-                    "val": "hello"
-                  }
-                ]
-              },
-              "type": {
-                "history": [
-                  {
-                    "by": "c4",
-                    "seq": 2,
-                    "type": "a",
-                    "val": "IntroDerivedB"
-                  }
-                ]
-              }
-            }
-          }
-        }
-      },
-      "sub_config_map": {
-        "history": [],
-        "map": {
-          "one": {
-            "history": [],
-            "map": {
-              "d": {
-                "history": [
-                  {
-                    "by": "c1",
-                    "seq": 2,
-                    "type": "a",
-                    "val": "3.1415"
-                  }
-                ]
-              }
-            }
-          },
-          "two": {
-            "history": [],
-            "map": {
-              "d": {
-                "history": [
-                  {
-                    "by": "c1",
-                    "seq": 2,
-                    "type": "a",
-                    "val": "3.1415"
-                  }
-                ]
-              }
-            }
-          }
-        }
-      },
-      "sub_config_vec": {
-        "history": [],
-        "list": [
-          {
-            "history": [],
-            "map": {
-              "d": {
-                "history": [
-                  {
-                    "by": "c1",
-                    "seq": 2,
-                    "type": "a",
-                    "val": "3.1415"
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "history": [],
-            "map": {
-              "d": {
-                "history": [
-                  {
-                    "by": "c1",
-                    "seq": 2,
-                    "type": "a",
-                    "val": "3.1415"
-                  }
-                ]
-              }
-            }
-          }
-        ]
-      },
-      "subconfig": {
-        "history": [],
-        "map": {
-          "d": {
-            "history": [
-              {
-                "by": "c1",
-                "seq": 2,
-                "type": "a",
-                "val": "3.1415"
-              }
-            ]
-          }
-        }
-      },
-      "unset_virtual": {
-        "history": [],
-        "map": {
-          "type": {
-            "history": [
-              {
-                "by": "c2",
-                "seq": 2,
-                "type": "a",
-                "val": "Uninitialized Virtual Config"
-              }
-            ]
-          }
-        }
-      },
-      "vec": {
-        "history": [],
+      {
+        "key": "vec",
         "list": [
           {
             "history": [
@@ -331,38 +68,104 @@
           }
         ]
       },
-      "vec_modules": {
-        "history": [],
-        "list": [
+      {
+        "key": "map",
+        "map": [
           {
-            "history": [],
-            "map": {
-              "s": {
-                "history": [
-                  {
-                    "by": "c3",
-                    "seq": 2,
-                    "type": "a",
-                    "val": "test"
-                  }
-                ]
+            "history": [
+              {
+                "by": "p0",
+                "seq": 1,
+                "type": "s",
+                "val": "false"
               },
-              "type": {
-                "history": [
-                  {
-                    "by": "c3",
-                    "seq": 2,
-                    "type": "a",
-                    "val": "IntroDerivedA"
-                  }
-                ]
+              {
+                "by": "c0",
+                "seq": 2,
+                "type": "g",
+                "val": "false"
               }
-            }
+            ],
+            "key": "a"
+          }
+        ]
+      },
+      {
+        "history": [
+          {
+            "by": "p0",
+            "seq": 1,
+            "type": "s",
+            "val": "NONEXISTENT"
           },
           {
-            "history": [],
-            "map": {
-              "hi": {
+            "by": "c0",
+            "seq": 2,
+            "type": "e",
+            "val": "TWO"
+          }
+        ],
+        "key": "e"
+      },
+      {
+        "key": "empty_vec_modules",
+        "list": [
+          {
+            "map": [
+              {
+                "history": [
+                  {
+                    "by": "p0",
+                    "seq": 1,
+                    "type": "s",
+                    "val": "IntroDerivedA"
+                  },
+                  {
+                    "by": "c3",
+                    "seq": 2,
+                    "type": "d"
+                  }
+                ],
+                "key": "type"
+              },
+              {
+                "history": [
+                  {
+                    "by": "p0",
+                    "seq": 1,
+                    "type": "s",
+                    "val": "overridden"
+                  },
+                  {
+                    "by": "c3",
+                    "seq": 2,
+                    "type": "g",
+                    "val": "overridden"
+                  }
+                ],
+                "key": "s"
+              }
+            ]
+          },
+          {
+            "map": [
+              {
+                "history": [
+                  {
+                    "by": "p0",
+                    "seq": 1,
+                    "type": "s",
+                    "val": "IntroDerivedB"
+                  },
+                  {
+                    "by": "c4",
+                    "seq": 2,
+                    "type": "d"
+                  }
+                ],
+                "key": "type"
+              },
+              {
                 "history": [
                   {
                     "by": "c4",
@@ -370,36 +173,49 @@
                     "type": "a",
                     "val": "hello"
                   }
-                ]
-              },
-              "type": {
-                "history": [
-                  {
-                    "by": "c4",
-                    "seq": 2,
-                    "type": "a",
-                    "val": "IntroDerivedB"
-                  }
-                ]
+                ],
+                "key": "hi"
               }
-            }
+            ]
           }
         ]
       },
-      "virtual_config": {
-        "history": [],
-        "map": {
-          "s": {
+      {
+        "key": "subconfig",
+        "map": [
+          {
             "history": [
               {
-                "by": "c3",
+                "by": "c1",
                 "seq": 2,
                 "type": "a",
-                "val": "test"
+                "val": "3.1415"
               }
-            ]
-          },
-          "type": {
+            ],
+            "key": "d"
+          }
+        ]
+      },
+      {
+        "key": "unset_virtual",
+        "map": [
+          {
+            "history": [
+              {
+                "by": "c2",
+                "seq": 2,
+                "type": "a",
+                "val": "Uninitialized Virtual Config"
+              }
+            ],
+            "key": "type"
+          }
+        ]
+      },
+      {
+        "key": "virtual_config",
+        "map": [
+          {
             "history": [
               {
                 "by": "c3",
@@ -407,11 +223,211 @@
                 "type": "a",
                 "val": "IntroDerivedA"
               }
+            ],
+            "key": "type"
+          },
+          {
+            "history": [
+              {
+                "by": "c3",
+                "seq": 2,
+                "type": "a",
+                "val": "test"
+              }
+            ],
+            "key": "s"
+          }
+        ]
+      },
+      {
+        "key": "vec_modules",
+        "list": [
+          {
+            "map": [
+              {
+                "history": [
+                  {
+                    "by": "c3",
+                    "seq": 2,
+                    "type": "a",
+                    "val": "IntroDerivedA"
+                  }
+                ],
+                "key": "type"
+              },
+              {
+                "history": [
+                  {
+                    "by": "c3",
+                    "seq": 2,
+                    "type": "a",
+                    "val": "test"
+                  }
+                ],
+                "key": "s"
+              }
+            ]
+          },
+          {
+            "map": [
+              {
+                "history": [
+                  {
+                    "by": "c4",
+                    "seq": 2,
+                    "type": "a",
+                    "val": "IntroDerivedB"
+                  }
+                ],
+                "key": "type"
+              },
+              {
+                "history": [
+                  {
+                    "by": "c4",
+                    "seq": 2,
+                    "type": "a",
+                    "val": "hello"
+                  }
+                ],
+                "key": "hi"
+              }
             ]
           }
-        }
+        ]
+      },
+      {
+        "key": "map_modules",
+        "map": [
+          {
+            "key": "first",
+            "map": [
+              {
+                "history": [
+                  {
+                    "by": "c3",
+                    "seq": 2,
+                    "type": "a",
+                    "val": "IntroDerivedA"
+                  }
+                ],
+                "key": "type"
+              },
+              {
+                "history": [
+                  {
+                    "by": "c3",
+                    "seq": 2,
+                    "type": "a",
+                    "val": "test"
+                  }
+                ],
+                "key": "s"
+              }
+            ]
+          },
+          {
+            "key": "second",
+            "map": [
+              {
+                "history": [
+                  {
+                    "by": "c4",
+                    "seq": 2,
+                    "type": "a",
+                    "val": "IntroDerivedB"
+                  }
+                ],
+                "key": "type"
+              },
+              {
+                "history": [
+                  {
+                    "by": "c4",
+                    "seq": 2,
+                    "type": "a",
+                    "val": "hello"
+                  }
+                ],
+                "key": "hi"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "key": "sub_config_vec",
+        "list": [
+          {
+            "map": [
+              {
+                "history": [
+                  {
+                    "by": "c1",
+                    "seq": 2,
+                    "type": "a",
+                    "val": "3.1415"
+                  }
+                ],
+                "key": "d"
+              }
+            ]
+          },
+          {
+            "map": [
+              {
+                "history": [
+                  {
+                    "by": "c1",
+                    "seq": 2,
+                    "type": "a",
+                    "val": "3.1415"
+                  }
+                ],
+                "key": "d"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "key": "sub_config_map",
+        "map": [
+          {
+            "key": "one",
+            "map": [
+              {
+                "history": [
+                  {
+                    "by": "c1",
+                    "seq": 2,
+                    "type": "a",
+                    "val": "3.1415"
+                  }
+                ],
+                "key": "d"
+              }
+            ]
+          },
+          {
+            "key": "two",
+            "map": [
+              {
+                "history": [
+                  {
+                    "by": "c1",
+                    "seq": 2,
+                    "type": "a",
+                    "val": "3.1415"
+                  }
+                ],
+                "key": "d"
+              }
+            ]
+          }
+        ]
       }
-    }
+    ]
   },
   "sources": {
     "c": [

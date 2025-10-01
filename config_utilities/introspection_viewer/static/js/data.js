@@ -1,95 +1,142 @@
 // Data parsing utilities.
+// This uses the Introspection Tree Data Structure.
+// ---------- Original Fields: Fields from the original data that may not be modified (present if set) ----------
+// - history: list of events
+// - key: Name of the key in the parent map (if any)
+// - map: child nodes, stored as array to preserve order (child nodes will have a 'key' field)
+// - list: list of child nodes 
+// -------------- Processed Fields:  Fields set by the processing that are used to render. These need to be overwritten or cleared to get the desired rendering --------------
+// - value (str): the value to display if the node is a leaf
+// - color: color of the text
+// - tooltip: tooltip text
 
-function valueModified(event) {
+// ========== Queries on the original data structure ==========
+
+// Global settings:
+const settings = {
+    indent_width: 4, // Number of spaces per indent level
+    spaces_before_value: 2, // Number of spaces before the value in a leaf node
+}
+
+// Check whether a value was (set or updated)
+function valueSet(event) {
     if (event.type !== "s" && event.type !== "u") {
         return false;
     }
     return event.val !== undefined;
 }
-
-function isGetEvent(event) {
-    return event.type === "g" || event.type === "d" || event.type === "e";
+// Check whether a value was modified (set, unset, updated, removed)
+function valueModified(event) {
+    if (event.type == "r") {
+        return true;
+    }
+    return valueSet(event);
 }
 
+function isGetEvent(event) {
+    return event.type === "g" || event.type === "d" || event.type === "e" || event.type === "a";
+}
 
-// Create a nodes tree of the same structure as the data, with optional fields specifying the rendering properties:
-// - value (str): if the node is a leaf, this is the string to display
-// - map (dict): if the node is a map, this is a dict of child nodes
-// - list (list): if the node is a list, this is a list of child nodes
-// -------------- optional fields for rendering --------------
-// - color: color of the text
-// - tooltip: tooltip text
+// Some default processing functions.
 
+// Get the value at the end of the setting process. If a value is never set but read, return the last read value instead.
 function getLatestValue(history) {
-    result = "";
+    let result = "";
     for (const event of history) {
         if (valueModified(event)) {
             result = event.val;
             continue;
         }
-        if (event.type == "r") {
-            result = "";
-            continue;
-        }
-        if (isGetEvent(event) && result == "" && event.val !== undefined) {
+        if (isGetEvent(event) && result === "" && event.val !== undefined) {
             result = event.val;
         }
     }
     return result;
 }
 
-function displayData(node, getValueFn = getLatestValue) {
-    result = displayDataRec(node, 0, getValueFn);
+// Default: reset the display fields and render the latest value.
+function defaultParsingFn(node) {
+    if (node.history) {
+        node.value = getLatestValue(node.history);
+    } else if (node.value) {
+        delete node.value;
+    }
+    delete node.color;
+    delete node.tooltip;
+}
+
+// Processing functions to write the data to be displayed from the original data.
+function createDisplayData(node, parsingFn = defaultParsingFn) {
+    // Recursively process the data tree to add display fields.
+    parsingFn(node);
+    if (node.map) {
+        for (const child of Object.values(node.map)) {
+            createDisplayData(child, parsingFn);
+        }
+    }
+    if (node.list) {
+        for (const child of node.list) {
+            createDisplayData(child, parsingFn);
+        }
+    }
+}
+
+// Turn the processed data into HTML for display.
+function renderDisplayData(node) {
+    result = renderDisplayDataRec(node, 0);
     if (result.startsWith("<br>")) {
         result = result.slice(4);
     }
-    return result;
+    return `<span class="yaml-value">${result}</span>`;
 }
 
-function displayDataRec(node, indent = 0, getValueFn) {
-    result = "";
-    if (!node.history && !node.map && !node.list) {
+// Helper function for renderDisplayData.
+function renderDisplayDataRec(node, indent = 0) {
+    let result = "";
+    if (!!node.value && !!node.map && !!node.list) {
         return result;
-    }
-    // Render the value if it exists.
-    if (node.history) {
-        const value = getValueFn(node.history);
-        result += "&nbsp; " + formatValue(value, node);
     }
 
     // Render list children if they exist.
-    indent_str = "&nbsp;".repeat(indent * 2);
+    const indent_str = " ".repeat(indent * settings.indent_width);
     if (node.list) {
-        for (i = 0; i < node.list.length; i++) {
-            // TODO: check for leaf-only lists and render in flow style.
-            result += "<br>" + indent_str + `[${i}]:` + displayDataRec(node.list[i], indent + 1, getValueFn);
+        if (isListOfLeaves(node)) {
+            // Render a list of leaves in flow style: [item1, item2, item3]
+            let items = node.list.map(item => formatValue(item.value, item));
+            result += " ".repeat(settings.spaces_before_value) + `[${items.join(", ")}]`;
+        } else {
+            for (i = 0; i < node.list.length; i++) {
+                // Render list of non-leaves in block style:
+                let child_html = renderDisplayDataRec(node.list[i], indent + 1);
+                // console.log("Rendering list child of '", node.key, "' at indent", indent, "child_html:", child_html);
+                if (child_html.startsWith("<br>")) {
+                    child_html = child_html.slice(settings.indent_width * (indent + 1) + 4);
+                }
+                if (child_html) {
+                    result += "<br>" + indent_str + "-   " + child_html;
+                }
+            }
         }
     }
 
     // Render map children if they exist.
     if (node.map) {
-        for (const [key, child] of Object.entries(node.map)) {
-            result += "<br>" + indent_str + `${key}:` + displayDataRec(child, indent + 1, getValueFn);
+        for (const child of Object.values(node.map)) {
+            if (isLeaf(child)) {
+                result += "<br>" + indent_str + formatValue(child.key + ":" + " ".repeat(settings.spaces_before_value) + child.value, child);
+            } else {
+                const child_html = renderDisplayDataRec(child, indent + 1);
+                if (child_html) {
+                    result += "<br>" + indent_str + formatValue(child.key + ":", child) + child_html;
+                }
+            }
         }
     }
     return result;
 }
 
-
-
-/// Backup
-
-function isLeaf(data) {
-    return data.value !== undefined;
-}
-
-function isListOfLeaves(data) {
-    if (!data.list) return false;
-    return data.list.every(isLeaf);
-}
-
-function formatValue(value, options = {}) {
-    // Render a single line of a value or key.
+// Render a single value of a node including the rendering description.
+function formatValue(value, options) {
     let html = `<span class="yaml-value"`;
     let style = "";
     if (options.color) {
@@ -106,31 +153,52 @@ function formatValue(value, options = {}) {
     return html + `>${value}</span>`;
 }
 
-function formatLine(key, valueHtml, indent) {
-    // Render a single line of a key-value pair with indentation.
-    const indentPx = indent * 20;
-    const lineDiv = document.createElement("div");
-    lineDiv.style.paddingLeft = `${indentPx}px`;
-    if (key !== null) {
-        const keySpan = document.createElement("span");
-        keySpan.className = "yaml-value";
-        keySpan.textContent = `${key}: `;
-        lineDiv.appendChild(keySpan);
-    }
-    if (typeof valueHtml === "string") {
-        lineDiv.innerHTML += valueHtml;
-    } else {
-        lineDiv.appendChild(valueHtml);
-    }
-    return lineDiv;
+function isLeaf(node) {
+    return node.value && node.value !== "";
 }
 
-function formatListFlow(data) {
-    // Render a list of leaves in flow style: [item1, item2, item3]
-    let items = data.list.map(item => formatValue(item.value, item));
-    return formatValue(`[${items.join(", ")}]`, data);
+function isListOfLeaves(node) {
+    return node.list ? node.list.every(isLeaf) : false;
 }
 
+// entries: list of {color, label}
+function createLegend(entries) {
+    const aside = document.createElement('aside');
+    aside.className = 'legend-pane';
+
+    const heading = document.createElement('h3');
+    heading.textContent = 'Legend';
+    heading.style.marginTop = '0';
+    aside.appendChild(heading);
+
+    const ul = document.createElement('ul');
+    ul.style.listStyle = 'none';
+    ul.style.padding = '0';
+    ul.style.margin = '0';
+
+    entries.forEach(entry => {
+        const li = document.createElement('li');
+        li.style.marginBottom = '0.5em';
+
+        const colorBox = document.createElement('span');
+        colorBox.className = 'legend-entry-color';
+        colorBox.style.background = entry.color;
+
+        const label = document.createElement('span');
+        label.textContent = entry.label;
+        label.className = 'legend-entry-label';
+
+        li.appendChild(colorBox);
+        li.appendChild(label);
+        ul.appendChild(li);
+    });
+
+    aside.appendChild(ul);
+    return aside;
+}
+
+
+// Backup
 
 function renderHighlightableText(text, identifier, highlightClass = "highlight") {
     // Create a span with data-identifier attribute
@@ -154,6 +222,3 @@ function renderHighlightableText(text, identifier, highlightClass = "highlight")
 
     return span;
 }
-
-// Example CSS to add to your stylesheet:
-// .highlight { background-color: yellow; }
