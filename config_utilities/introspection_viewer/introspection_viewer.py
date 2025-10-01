@@ -48,14 +48,11 @@ def main():
 
     # Load data
     if args.data is None:
-        # TMP
-        args.data = os.path.join(os.path.dirname(__file__), 'data.json')
-
         candidate_paths = [
             os.path.join(os.path.curdir,
                          "config_introspection_output", "data.json"),
-            os.path.join(os.path.curdir, "data.json")
-        ]
+            os.path.join(os.path.curdir, "data.json"),
+            os.path.join(os.path.dirname(__file__), 'data.json')]
         for path in candidate_paths:
             if os.path.exists(path):
                 args.data = path
@@ -74,6 +71,5 @@ def main():
     viewer.run(host=args.host, port=args.port,
                debug=args.debug, open_browser=args.open_browser)
 
-
-if __name__ == '__main__':
-    main()
+    if __name__ == '__main__':
+        main()
