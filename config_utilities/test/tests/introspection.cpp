@@ -468,9 +468,9 @@ empty_vec_modules: [ {type: IntroDerivedA, s: overridden}, {type: IntroDerivedB}
   const std::string expected = R"""(
 a: ['s1@p0:123', 'g2@c0:123']
 vec:
-  [0]: ['s1@p0:1', 'd2@c0']
-  [1]: ['s1@p0:2', 'd2@c0']
-  [2]: ['s1@p0:3', 'd2@c0']
+  [0]: ['s1@p0:1', 'd2@c0:1']
+  [1]: ['s1@p0:2', 'd2@c0:2']
+  [2]: ['s1@p0:3', 'd2@c0:3']
 map:
   a: ['s1@p0:false', 'g2@c0:false']
 e: ['s1@p0:NONEXISTENT', 'e2@c0:TWO']
@@ -566,7 +566,7 @@ global_settings:
     show_num_checks: ['a3@c1:true']
     print_meta_fields: ['a3@c1:false']
   external_libraries:
-    enabled: ['s2@p1:true', 'd3@c3']
+    enabled: ['s2@p1:true', 'd3@c3:true']
     verbose_load: ['a3@c3:true']
     log_allocation: ['a3@c3:false']
   disable_default_stdout_logger: ['a3@c0:false']
@@ -606,14 +606,14 @@ config:
     hi: ['a3@c4:hello']
   vec_modules:
     [0]:
-      type: ['s2@p1:IntroDerivedA', 'd3@c3']
+      type: ['s2@p1:IntroDerivedA', 'd3@c3:IntroDerivedA']
       s: ['a3@c3:test']
     [1]:
       type: ['s2@p1:IntroDerivedA', 'g3@c3:IntroDerivedA']
       s: ['a3@c3:test']
   map_modules:
     first:
-      type: ['s2@p1:IntroDerivedA', 'd3@c3']
+      type: ['s2@p1:IntroDerivedA', 'd3@c3:IntroDerivedA']
       s: ['a3@c3:test']
     second:
       type: ['s2@p1:IntroDerivedA', 'g3@c3:IntroDerivedA']
@@ -653,8 +653,7 @@ config:
       d: ['a3@c2:3.1415']
     two:
       d: ['a3@c2:3.1415'])";
-  // EXPECT_EQ(Intro::instance().data().display(), expected);
-  std::cout << Intro::instance().data().display() << std::endl;
+  EXPECT_EQ(Intro::instance().data().display(), expected);
 
   clearContext();
   reset();
@@ -682,7 +681,7 @@ non_defaulted:
   defaulted:
     type: ['s1@p0:IntroDerivedWithSubConfigs', 'g2@c0:IntroDerivedWithSubConfigs']
     defaulted:
-      type: ['s1@p0:IntroDerivedA', 'd2@c1']
+      type: ['s1@p0:IntroDerivedA', 'd2@c1:IntroDerivedA']
       s: ['a2@c1:test']
     non_defaulted:
       type: ['s1@p0:IntroDerivedB', 'g2@c3:IntroDerivedB']
