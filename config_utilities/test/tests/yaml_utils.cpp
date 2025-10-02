@@ -66,9 +66,8 @@ inline YAML::Node doMerge(const YAML::Node& lhs, const YAML::Node& rhs, MergeMod
 }  // namespace
 
 TEST(YamlUtils, mergeYamlNodes) {
-  auto node_a = YAML::Load(R"""(root: {a: 1, b: 2})""");
+  const auto node_a = YAML::Load(R"""(root: {a: 1, b: 2})""");
   const auto node_b = YAML::Load(R"""(root: {a: 1, c: 3})""");
-  internal::mergeYamlNodes(node_a, node_b);
 
   const auto result = doMerge(node_a, node_b);
   const auto expected = YAML::Load(R"""(root: {a: 1, b: 2, c: 3})""");
@@ -84,7 +83,7 @@ TEST(YamlUtils, mergeYamlNodesInvalidKey) {
   expectEqual(result, expected);
 }
 
-TEST(YamlUtils, mergeYamlNodesExtend) {
+TEST(YamlUtils, mergeYamlNodesSequences) {
   // NOTE(nathan) structured to require appending at different levels of recursion
   const auto node_a = YAML::Load(R"""(
 root:
@@ -105,23 +104,23 @@ root:
 other: [3, 4, 5]
 )""");
 
-  {  // without extend, lists should override
-    auto result = doMerge(node_a, node_b, MergeMode::REPLACE);
-    const auto expected = YAML::Load(R"""(
+  // Update
+  auto result = doMerge(node_a, node_b, MergeMode::UPDATE);
+  auto expected = YAML::Load(R"""(
 root:
   a: 1
   b: [4]
   c:
-    bar: [7]
+    foo: [1, 2, 3]
+    bar: [{1: 2, 3: 4}, {5, 6}]
   d: 3.0
 other: [3, 4, 5]
 )""");
-    expectEqual(result, expected);
-  }
+  expectEqual(result, expected);
 
-  {  // with extend, lists should append
-    auto result = doMerge(node_a, node_b, MergeMode::APPEND);
-    const auto expected = YAML::Load(R"""(
+  // Append
+  result = doMerge(node_a, node_b, MergeMode::APPEND);
+  expected = YAML::Load(R"""(
 root:
   a: 1
   b: [2, 4]
@@ -131,8 +130,35 @@ root:
   d: 3.0
 other: [1, 2, 3, 4, 5]
 )""");
-    expectEqual(result, expected);
-  }
+  expectEqual(result, expected);
+
+  // Replace
+  result = doMerge(node_a, node_b, MergeMode::REPLACE);
+  expected = YAML::Load(R"""(
+root:
+  a: 1
+  b: [4]
+  c:
+    foo: [1, 2, 3]
+    bar: [7, {5, 6}]
+  d: 3.0
+other: [3, 4, 5]
+)""");
+  expectEqual(result, expected);
+
+  // Reset
+
+  result = doMerge(node_a, node_b, MergeMode::RESET);
+  expected = YAML::Load(R"""(
+root:
+  a: 1
+  b: [4]
+  c:
+    bar: [7]
+  d: 3.0
+other: [3, 4, 5]
+)""");
+  expectEqual(result, expected);
 }
 
 TEST(YamlUtils, isEqual) {
@@ -233,7 +259,7 @@ other: [1, 2]
   const auto node_b = YAML::Load(R"""(
 root:
   b: !append [4]
-  c: !replace [0]
+  c: !reset [0]
 other: !append [3, 4, 5]
 )""");
 
@@ -261,7 +287,7 @@ root:
 root:
   children:
     - {a: !append [4]}
-    - {c: !replace [0]}
+    - {c: !reset [0]}
 )""");
 
   {  // check that tags get parsed corrrectly

@@ -87,6 +87,10 @@ struct Settings {
 
     //! @brief If true show the enumeration info of failed checks in the output.
     bool show_num_checks = true;
+
+    //! @brief If true print the meta fields of configs (e.g., type for virtual configs) in the config body. If false
+    //! print only proper fields of the config.
+    bool print_meta_fields = false;
   } printing;
 
   /**
@@ -111,6 +115,16 @@ struct Settings {
     bool log_allocation = false;
   } external_libraries;
 
+  /**
+   * @brief Settings for introspection (debug-tool). By default, no introspection is performed.
+   */
+  struct Introspection {
+    //! @brief Directory where the output files are written to. If empty, no files are written.
+    std::string output = "";
+
+    bool enabled() const;
+  } introspection;
+
   //! @brief Control whether config_utilities is initialized to log to stdout/stderr by default
   bool disable_default_stdout_logger = false;
 
@@ -125,6 +139,7 @@ struct Settings {
   void restoreDefaults() { *this = Settings(); }
 
  private:
+  friend struct Visitor;
   Settings() = default;
   Settings(const Settings& other) = default;
   Settings& operator=(const Settings& other) = default;
@@ -136,6 +151,7 @@ void declare_config(Settings& config);
 void declare_config(Settings::Printing& config);
 void declare_config(Settings::Factory& config);
 void declare_config(Settings::ExternalLibraries& config);
+void declare_config(Settings::Introspection& config);
 
 }  // namespace internal
 

@@ -65,7 +65,7 @@ struct Visitor {
   ~Visitor();
   static bool hasInstance();
 
-  // Interfaces for all internal tools interact with configs through the visitor.
+  // Interfaces for all internal tools to interact with configs through the visitor.
   /**
    * @brief Set the values of a config from a YAML node.
    * @param config The config to set the values for.
@@ -134,10 +134,11 @@ struct Visitor {
   static void visitBase(ConfigT& config);
 
   // Virtual config.
-  static std::optional<YAML::Node> visitVirtualConfig(bool is_set,
-                                                      bool is_optional,
-                                                      const std::string& type,
-                                                      const std::string& base_type);
+  static std::optional<std::string> visitVirtualConfig(bool is_set,
+                                                       bool is_optional,
+                                                       const std::string& type,
+                                                       const std::string& base_type,
+                                                       const std::string& base_factory_info);
 
  private:
   friend class config::NameSpace;
@@ -147,8 +148,7 @@ struct Visitor {
   friend std::string config::current_namespace();
 
   // Which operations to perform on the data.
-  enum class Mode { kGet, kGetDefaults, kSet, kCheck, kGetInfo };
-  const Mode mode;
+  enum class Mode { kGet, kSet, kCheck, kGetInfo } const mode;
 
   // Create and access the meta data for the current thread. Lifetime of the meta data is managed internally by the
   // objects. Note that meta data always needs to be created before it can be accessed. In short, 'instance()' is only
@@ -191,9 +191,12 @@ struct Visitor {
                            const std::string& field_name,
                            const std::string& sub_ns);
 
+  // Get the additional namespace with respect to the meta data.
+  std::string additionalNamespace() const;
+
   /* Internal data to handle visits. */
   // The messenger data to read from and return eventually.
-  MetaData data;
+  MetaData meta_data;
 
   // Storage for user specified namespaces. Managed by namespacing.h.
   OpenNameSpace::Stack open_namespaces;

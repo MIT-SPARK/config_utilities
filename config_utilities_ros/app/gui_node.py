@@ -48,14 +48,15 @@ class RosDynamicConfigGUI(Node):
             and t[1][0] == "config_utilities_msgs/srv/SetConfig"
         ]
 
-        available_nodes = [n[2] for n in get_node_names(node=self, include_hidden_nodes=False)]
+        available_nodes = [n[2] for n in get_node_names(
+            node=self, include_hidden_nodes=False)]
 
         servers = {}
         for config in configs:
             for server in available_nodes:
                 if not config.startswith(f"{server}/"):
                     continue
-                key = config[len(server) + 1 :]
+                key = config[len(server) + 1:]
                 if server not in servers:
                     servers[server] = [key]
                 else:
@@ -119,7 +120,9 @@ def main():
     rclpy.init()
     gui = RosDynamicConfigGUI()
     signal.signal(signal.SIGINT, lambda sig, frame: gui.shutdown())
-    gui.run(debug=args.debug, host=args.host, port=args.port, open_browser=not args.no_open_browser)
+    print(f"Running Dynamic Config GUI at 'http://{args.host}:{args.port}'.")
+    gui.run(debug=args.debug, host=args.host, port=args.port,
+            open_browser=not args.no_open_browser)
     gui.shutdown()
 
 

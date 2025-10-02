@@ -43,29 +43,41 @@
 namespace config::internal {
 
 enum class MergeMode {
-  //! @brief Combine the two trees, recursing into matching sequence entries
+  //! @brief Update original values in matching sequences to the new values. In non-matching cases, the original nodes
+  //! prevail.
   UPDATE,
-  //! @brief Combine the two trees, appending right sequences into the left
+  //! @brief Append new values to the original values in matching sequences. In non-matching cases, the original nodes
+  //! prevail.
   APPEND,
-  //! @brief Combine the two trees, replacing left sequences with the right
-  REPLACE
+  //! @brief Replace original values and sequences with the new values or sequences in matching nodes. In non-matching
+  //! cases, the new
+  //! nodes overwrite the original nodes.
+  REPLACE,
+  //! @brief Reset original nodes in conflicting cases to the new nodes. This will stop recursion and result in the
+  //! deletion of omitted nodes.
+  RESET
 };
 
 /**
- * @brief Merges node b into a with conflicting keys handled by choice of mode
+ * @brief Merges node "from" into "into" with conflicting keys handled by choice of mode
  *
- * Recurses through the YAML "tree" of b, adding all non-conflicting nodes to a. Conflicting nodes (i.e. map keys or
- * shared indices in sequences that already exist in a) are handled according to the mode selection. For `REPLACE`, any
- * conflicting node stops the recursion, and the conflicting node is replaced by the value in b. For 'APPEND', any
- * conflicting sequence node will stop the recursion and cause the entire contents of the node in b to be append to the
- * node in a. For 'UPDATE', any conflicting map or sequence node recursively calls `mergeYamlNodes` with the children of
- * the conflicting nodes as the new roots.
+ * Recurses through the YAML tree of "from", adding all non-conflicting nodes to "into". Conflicting nodes (i.e. map
+ * keys or shared indices in sequences that already exist in "into") are handled according to the mode selection.
  *
- * @param a Node to merge into ("left" node and will be changed).
- * @param b Node to merge from ("right" node and remains constant).
+ * - UPDATE will update original values in matching sequences to the new values. In non-matching cases, the original
+ * nodes prevail.
+ * - APPEND will append new values to the original values in matching sequences. In non-matching cases, the original
+ * nodes prevail.
+ * - REPLACE will replace original values and sequences with the new values or sequences in matching nodes. In
+ * non-matching cases, the new nodes overwrite the original nodes.
+ * - RESET will reset original nodes in conflicting cases to the new nodes. This will stop recursion and result in the
+ * deletion of omitted nodes.
+ *
+ * @param into Node to merge into (will be changed).
+ * @param from Node to merge from (remains constant).
  * @param mode Mode to use when merging
  */
-void mergeYamlNodes(YAML::Node& a, const YAML::Node& b, MergeMode mode = MergeMode::UPDATE);
+void mergeYamlNodes(YAML::Node& into, const YAML::Node& from, MergeMode mode = MergeMode::UPDATE);
 
 /**
  * @brief Get a pointer to the final node of the specified namespace if it exists, where each map in the yaml is

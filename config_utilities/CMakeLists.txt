@@ -16,6 +16,7 @@ find_package(yaml-cpp REQUIRED)
 find_package(Boost CONFIG REQUIRED COMPONENTS filesystem system)
 find_package(Eigen3 QUIET)
 find_package(glog QUIET)
+find_package(nlohmann_json QUIET)
 
 add_library(
   ${PROJECT_NAME}
@@ -29,6 +30,7 @@ add_library(
   src/factory.cpp
   src/formatter.cpp
   src/field_input_info.cpp
+  src/introspection.cpp
   src/log_to_stdout.cpp
   src/log_to_glog.cpp
   src/logger.cpp
@@ -62,6 +64,10 @@ if(glog_FOUND)
   target_link_libraries(${PROJECT_NAME} PUBLIC glog::glog)
   target_compile_definitions(${PROJECT_NAME} PRIVATE CONFIG_UTILS_ENABLE_GLOG_LOGGING)
 endif()
+if(nlohmann_json_FOUND)
+  target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE CONFIG_UTILS_ENABLE_JSON)
+endif()
 
 add_executable(composite-configs app/composite_configs.cpp)
 target_link_libraries(composite-configs ${PROJECT_NAME})
@@ -84,6 +90,10 @@ install(
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(DIRECTORY introspection_viewer/ DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(PROGRAMS introspection_viewer/introspection_viewer.py
+        RENAME config-utilities-viewer
+        DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(
   EXPORT config_utilities-targets
@@ -107,6 +117,6 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/config_utilitiesConfig.cmake
 
 # Exposes this package to ament for ros2 run and other utilities to work
 find_package(ament_cmake_core QUIET)
-if (${ament_cmake_core_FOUND})
+if (${ament_cmake_core_FOUND}) 
   ament_package()
 endif()

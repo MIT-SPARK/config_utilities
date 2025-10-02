@@ -40,7 +40,11 @@
 #include <yaml-cpp/yaml.h>
 
 #include "config_utilities/factory.h"
+#include "config_utilities/internal/introspection.h"
 #include "config_utilities/internal/visitor.h"
+
+// TMP
+#include <iostream>
 
 namespace config::internal {
 
@@ -51,7 +55,17 @@ class Context {
  public:
   ~Context() = default;
 
-  static void update(const YAML::Node& other, const std::string& ns);
+  /**
+   * @brief Update the context by merging in a new YAML node.
+   * @param other The node to merge into the context.
+   * @param ns Optional namespace to move the node down into before merging.
+   * @param merge_mode The merge mode to use when merging the new node into the existing context.
+   * @param by If provided, the merge will be logged as an introspection event with this source.
+   */
+  static void update(const YAML::Node& other,
+                     const std::string& ns,
+                     internal::MergeMode merge_mode,
+                     Introspection::By* by = nullptr);
 
   static void clear();
 
@@ -60,19 +74,30 @@ class Context {
   template <typename BaseT, typename... ConstructorArguments>
   static std::unique_ptr<BaseT> create(ConstructorArguments... args) {
     return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(instance().contents_,
-      std::move(args)...);
+                                                                                     std::move(args)...);
   }
 
   template <typename BaseT, typename... ConstructorArguments>
   static std::unique_ptr<BaseT> createNamespaced(const std::string& name_space, ConstructorArguments... args) {
     const auto ns_node = internal::lookupNamespace(instance().contents_, name_space);
-    return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(ns_node, std::move(args)...);
+    if (!Settings::instance().introspection.enabled()) {
+      return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(ns_node, std::move(args)...);
+    }
+    // Log introspection at the correct namespace.
+    Introspection::enterNamespace(name_space);
+    auto obj = internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(ns_node, std::move(args)...);
+    Introspection::exitNamespace();
+    return obj;
   }
 
   template <typename ConfigT>
   static ConfigT loadConfig(const std::string& name_space = "") {
     ConfigT config;
-    internal::Visitor::setValues(config, internal::lookupNamespace(instance().contents_, name_space), true);
+    const auto set_data = internal::Visitor::setValues(config, instance().contents_, true, name_space);
+    if (internal::Settings::instance().introspection.enabled()) {
+      const auto get_info = internal::Visitor::getInfo(config, name_space);
+      Introspection::logSetValue(set_data, get_info);
+    }
     return config;
   }
 

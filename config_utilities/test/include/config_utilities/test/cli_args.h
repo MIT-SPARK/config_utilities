@@ -33,64 +33,26 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
-#include "config_utilities/getters.h"
+#pragma once
 
-#include <gtest/gtest.h>
-
-#include "config_utilities/config.h"
-#include "config_utilities/parsing/yaml.h"
-#include "config_utilities/test/default_config.h"
-#include "config_utilities/test/utils.h"
+#include <string>
+#include <vector>
 
 namespace config::test {
 
-struct GetterStruct {
-  int some_number;
-  std::string some_string;
+struct CliArgs {
+  struct Args {
+    int argc;
+    char** argv;
+
+    std::string get_cmd() const;
+  };
+
+  explicit CliArgs(const std::vector<std::string>& args);
+  Args get();
+
+  std::vector<std::string> original_args;
+  std::vector<char*> arg_pointers;
 };
-
-void declare_config(GetterStruct& config) {
-  name("GetterStruct");
-  field(config.some_number, "some_number");
-  field(config.some_string, "some_string");
-}
-
-TEST(ConfigGetters, Getters) {
-  const std::string yaml_string = R"yaml(
-some_number: 5
-some_string: "Hello"
-)yaml";
-  const auto node = YAML::Load(yaml_string);
-
-  const auto config = fromYaml<GetterStruct>(node);
-  EXPECT_EQ(config.some_number, 5);
-  EXPECT_EQ(config.some_string, "Hello");
-
-  const auto fields = listFields(config);
-  EXPECT_EQ(fields.size(), 2);
-  EXPECT_EQ(fields[0], "some_number");
-  EXPECT_EQ(fields[1], "some_string");
-
-  const auto number = getField<GetterStruct, int>(config, "some_number");
-  EXPECT_TRUE(number.has_value());
-  EXPECT_EQ(number.value(), 5);
-
-  const auto string = getField<GetterStruct, std::string>(config, "some_string");
-  EXPECT_TRUE(string.has_value());
-  EXPECT_EQ(string.value(), "Hello");
-
-  auto logger = TestLogger::create();
-  const auto wrong = getField<GetterStruct, int>(config, "some_string");
-  EXPECT_FALSE(wrong.has_value());
-  EXPECT_EQ(logger->numMessages(), 1);
-  EXPECT_EQ(logger->lastMessage(),
-            "Field 'some_string' could not be converted to the requested type: yaml-cpp: error at line 1, column 1: "
-            "bad conversion");
-
-  const auto wrong2 = getField<GetterStruct, std::string>(config, "non_existent_field");
-  EXPECT_FALSE(wrong2.has_value());
-  EXPECT_EQ(logger->numMessages(), 2);
-  EXPECT_EQ(logger->lastMessage(), "Field 'non_existent_field' not found in config.");
-}
 
 }  // namespace config::test

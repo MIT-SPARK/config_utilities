@@ -62,17 +62,17 @@ MetaData Visitor::setValues(ConfigT& config,
                             const std::string& field_name,
                             const bool print_missing) {
   Visitor visitor(Mode::kSet, name_space, field_name);
-  visitor.data.data.reset(node);
+  visitor.meta_data.data.reset(node);
   ::config::declare_config(config);
-  if (print_warnings && visitor.data.hasErrors()) {
-    Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Severity::kWarning));
+  if (print_warnings && visitor.meta_data.hasErrors()) {
+    Logger::logWarning(Formatter::formatErrors(visitor.meta_data, "Errors parsing config", Severity::kWarning));
   }
 
-  if (print_missing && Settings::instance().printing.show_missing && visitor.data.hasMissing()) {
-    Logger::logWarning(Formatter::formatMissing(visitor.data, "Missing fields from config", Severity::kWarning));
+  if (print_missing && Settings::instance().printing.show_missing && visitor.meta_data.hasMissing()) {
+    Logger::logWarning(Formatter::formatMissing(visitor.meta_data, "Missing fields from config", Severity::kWarning));
   }
 
-  return visitor.data;
+  return visitor.meta_data;
 }
 
 template <typename ConfigT>
@@ -85,13 +85,13 @@ MetaData Visitor::getValues(const ConfigT& config,
   ::config::declare_config(const_cast<ConfigT&>(config));
 
   if (Settings::instance().printing.show_defaults) {
-    Visitor::getDefaultValues(config, visitor.data);
+    Visitor::getDefaultValues(config, visitor.meta_data);
   }
-  if (print_warnings && visitor.data.hasErrors()) {
-    Logger::logWarning(Formatter::formatErrors(visitor.data, "Errors parsing config", Severity::kWarning));
+  if (print_warnings && visitor.meta_data.hasErrors()) {
+    Logger::logWarning(Formatter::formatErrors(visitor.meta_data, "Errors parsing config", Severity::kWarning));
   }
 
-  return visitor.data;
+  return visitor.meta_data;
 }
 
 template <typename ConfigT>
@@ -99,10 +99,10 @@ MetaData Visitor::getInfo(const ConfigT& config, const std::string& name_space, 
   Visitor visitor(Mode::kGetInfo, name_space, field_name);
   // NOTE(lschmid): We know that in mode kGetInfo, the config is not modified.
   ::config::declare_config(const_cast<ConfigT&>(config));
-  Visitor::getDefaultValues(config, visitor.data);
+  Visitor::getDefaultValues(config, visitor.meta_data);
 
-  // Try to associate check data with the fieds by name.
-  visitor.data.performOnAll([](MetaData& data) {
+  // Try to associate check data with the fields by name.
+  visitor.meta_data.performOnAll([](MetaData& data) {
     for (const auto& check : data.checks) {
       for (auto& field_info : data.field_infos) {
         if (field_info.name == check->name()) {
@@ -112,7 +112,7 @@ MetaData Visitor::getInfo(const ConfigT& config, const std::string& name_space, 
       }
     }
   });
-  return visitor.data;
+  return visitor.meta_data;
 }
 
 template <typename ConfigT>
@@ -120,7 +120,7 @@ MetaData Visitor::getChecks(const ConfigT& config, const std::string& field_name
   Visitor visitor(Mode::kCheck, "", field_name);
   // NOTE(lschmid): We know that in mode kCheck, the config is not modified.
   ::config::declare_config(const_cast<ConfigT&>(config));
-  return visitor.data;
+  return visitor.meta_data;
 }
 
 template <typename ConfigT>
@@ -136,7 +136,7 @@ MetaData Visitor::subVisit(ConfigT& config,
       data = getValues(config, print_warnings, name_space, field_name);
       break;
     case Visitor::Mode::kSet:
-      data = setValues(config, current_visitor.data.data, print_warnings, name_space, field_name, false);
+      data = setValues(config, current_visitor.meta_data.data, print_warnings, name_space, field_name, false);
       break;
     case Visitor::Mode::kCheck:
       data = getChecks(config, field_name);
@@ -155,28 +155,37 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
   auto& visitor = Visitor::instance();
 
   // record the field that we visited without storing the value
-  // kGet and kGetDefaults will populate the value field
-  auto& info = visitor.data.field_infos.emplace_back();
+  // kGet will populate the value field
+  auto& info = visitor.meta_data.field_infos.emplace_back();
   info.name = field_name;
   info.unit = unit;
+  info.ns = visitor.additionalNamespace();
 
   if (visitor.mode == Visitor::Mode::kSet) {
     std::string error;
-    info.was_parsed = YamlParser::fromYaml(visitor.data.data, field_name, field, visitor.name_space, error);
+    // This is the input value, stores a reference to the node in the data.
+    info.value = lookupNamespace(visitor.meta_data.data, joinNamespace(visitor.name_space, field_name));
+    const auto parsed = YamlParser::fromYaml<T>(info.value, &error);
+    if (parsed) {
+      field = *parsed;
+    }
+    info.was_parsed = static_cast<bool>(parsed);
     if (!error.empty()) {
-      visitor.data.errors.emplace_back(new Warning(field_name, error));
+      visitor.meta_data.errors.emplace_back(new Warning(field_name, error));
     }
   }
 
-  if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetDefaults ||
-      visitor.mode == Visitor::Mode::kGetInfo) {
+  if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetInfo) {
     std::string error;
-    YAML::Node node = YamlParser::toYaml(field_name, field, visitor.name_space, error);
-    mergeYamlNodes(visitor.data.data, node);
-    // This stores a reference to the node in the data.
-    info.value = lookupNamespace(node, joinNamespace(visitor.name_space, field_name));
+    // Aggregate the YAML data in the global data.
+    auto node = YamlParser::toYaml(field, &error);
+    const std::string ns = joinNamespace(visitor.name_space, field_name);
+    moveDownNamespace(node, ns);
+    mergeYamlNodes(visitor.meta_data.data, node);
+    // Stores a reference to the node in the data.
+    info.value = lookupNamespace(visitor.meta_data.data, ns);
     if (!error.empty()) {
-      visitor.data.errors.emplace_back(new Warning(field_name, error));
+      visitor.meta_data.errors.emplace_back(new Warning(field_name, error));
     }
 
     // Get type information if requested.
@@ -201,16 +210,15 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
 
     Conversion::fromIntermediate(intermediate, field, error);
     if (!error.empty()) {
-      visitor.data.errors.emplace_back(new Warning(field_name, error));
+      visitor.meta_data.errors.emplace_back(new Warning(field_name, error));
     }
   }
 
-  if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetDefaults ||
-      visitor.mode == Visitor::Mode::kGetInfo) {
+  if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetInfo) {
     std::string error;
     auto intermediate = Conversion::toIntermediate(field, error);
     if (!error.empty()) {
-      visitor.data.errors.emplace_back(new Warning(field_name, error));
+      visitor.meta_data.errors.emplace_back(new Warning(field_name, error));
     }
 
     Visitor::visitField(intermediate, field_name, unit);
@@ -226,12 +234,9 @@ void Visitor::visitField(T& field, const std::string& field_name, const std::str
 template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type>
 void Visitor::visitField(ConfigT& config, const std::string& field_name, const std::string& name_space) {
   Visitor& visitor = Visitor::instance();
-  if (visitor.mode == Visitor::Mode::kGetDefaults) {
-    return;
-  }
 
   // Visit subconfig.
-  MetaData& data = visitor.data;
+  MetaData& data = visitor.meta_data;
   MetaData& new_data = data.sub_configs.emplace_back(Visitor::subVisit(config, false, field_name, name_space));
 
   // Aggregate data.
@@ -246,15 +251,13 @@ void Visitor::visitField(ConfigT& config, const std::string& field_name, const s
 template <typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type>
 void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_name, const std::string& /* unit */) {
   Visitor& visitor = Visitor::instance();
-  if (visitor.mode == Visitor::Mode::kGetDefaults) {
-    return;
-  }
 
   if (visitor.mode == Visitor::Mode::kSet) {
     const auto array_ns = joinNamespace(visitor.name_space, field_name);
-    const auto subnode = lookupNamespace(visitor.data.data, array_ns);
+    const auto subnode = lookupNamespace(visitor.meta_data.data, array_ns);
     if (!subnode) {
-      return;  // don't override the field if not present
+      // don't override the field if not present.
+      return;
     }
 
     // When setting the values first allocate the correct amount of configs.
@@ -263,36 +266,37 @@ void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_
     size_t index = 0;
     for (const auto& node : nodes) {
       ConfigT& sub_config = config.emplace_back();
-      visitor.data.sub_configs.emplace_back(setValues(sub_config, node, false, "", field_name, false));
-      visitor.data.sub_configs.back().array_config_index = index++;
+      auto& new_data =
+          visitor.meta_data.sub_configs.emplace_back(setValues(sub_config, node, false, "", field_name, false));
+      new_data.array_config_index = index++;
     }
   }
 
   if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetInfo) {
-    const std::string name_space = joinNamespace(visitor.name_space, field_name);
     YAML::Node array_node(YAML::NodeType::Sequence);
     size_t index = 0;
+    const std::string name_space = joinNamespace(visitor.name_space, field_name);
     for (const auto& sub_config : config) {
       if (visitor.mode == Visitor::Mode::kGetInfo) {
-        visitor.data.sub_configs.emplace_back(getInfo(sub_config, name_space, field_name));
+        visitor.meta_data.sub_configs.emplace_back(getInfo(sub_config, name_space, field_name));
       } else {
-        visitor.data.sub_configs.emplace_back(getValues(sub_config, false, name_space, field_name));
+        visitor.meta_data.sub_configs.emplace_back(getValues(sub_config, false, name_space, field_name));
       }
-      MetaData& new_data = visitor.data.sub_configs.back();
+      MetaData& new_data = visitor.meta_data.sub_configs.back();
       array_node.push_back(YAML::Clone(lookupNamespace(new_data.data, name_space)));
       new_data.array_config_index = index++;
     }
 
     // TODO(lschmid): Add info for empty vectors for getInfo.
     moveDownNamespace(array_node, name_space);
-    mergeYamlNodes(visitor.data.data, array_node);
+    mergeYamlNodes(visitor.meta_data.data, array_node);
   }
 
   if (visitor.mode == Visitor::Mode::kCheck) {
     size_t index = 0;
     for (const auto& sub_config : config) {
-      visitor.data.sub_configs.emplace_back(getChecks(sub_config, field_name));
-      visitor.data.sub_configs.back().array_config_index = index++;
+      auto& new_data = visitor.meta_data.sub_configs.emplace_back(getChecks(sub_config, field_name));
+      new_data.array_config_index = index++;
     }
   }
 }
@@ -301,9 +305,6 @@ void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_
 template <typename K, typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type>
 void Visitor::visitField(std::map<K, ConfigT>& config, const std::string& field_name, const std::string& unit) {
   Visitor& visitor = Visitor::instance();
-  if (visitor.mode == Visitor::Mode::kGetDefaults) {
-    return;
-  }
 
   // copy current config state
   OrderedMap<K, ConfigT> intermediate(config.begin(), config.end());
@@ -324,13 +325,10 @@ void Visitor::visitField(std::map<K, ConfigT>& config, const std::string& field_
 template <typename K, typename ConfigT, typename std::enable_if<isConfig<ConfigT>(), bool>::type>
 void Visitor::visitField(OrderedMap<K, ConfigT>& config, const std::string& field_name, const std::string& /* unit */) {
   Visitor& visitor = Visitor::instance();
-  if (visitor.mode == Visitor::Mode::kGetDefaults) {
-    return;
-  }
 
   if (visitor.mode == Visitor::Mode::kSet) {
     const auto map_ns = joinNamespace(visitor.name_space, field_name);
-    const auto subnode = lookupNamespace(visitor.data.data, map_ns);
+    const auto subnode = lookupNamespace(visitor.meta_data.data, map_ns);
     if (!subnode) {
       return;  // don't override the field if not present
     }
@@ -341,8 +339,9 @@ void Visitor::visitField(OrderedMap<K, ConfigT>& config, const std::string& fiel
     for (auto&& [key, node] : nodes) {
       auto& entry = config.emplace_back();
       entry.first = key.template as<K>();
-      visitor.data.sub_configs.emplace_back(setValues(entry.second, node, false, "", field_name, false));
-      visitor.data.sub_configs.back().map_config_key = key.template as<std::string>();
+      auto& new_data =
+          visitor.meta_data.sub_configs.emplace_back(setValues(entry.second, node, false, "", field_name, false));
+      new_data.map_config_key = key.template as<std::string>();
     }
   }
 
@@ -351,11 +350,11 @@ void Visitor::visitField(OrderedMap<K, ConfigT>& config, const std::string& fiel
     YAML::Node map_node(YAML::NodeType::Map);
     for (auto&& [key, sub_config] : config) {
       if (visitor.mode == Visitor::Mode::kGetInfo) {
-        visitor.data.sub_configs.emplace_back(getInfo(sub_config, name_space, field_name));
+        visitor.meta_data.sub_configs.emplace_back(getInfo(sub_config, name_space, field_name));
       } else {
-        visitor.data.sub_configs.emplace_back(getValues(sub_config, false, name_space, field_name));
+        visitor.meta_data.sub_configs.emplace_back(getValues(sub_config, false, name_space, field_name));
       }
-      MetaData& new_data = visitor.data.sub_configs.back();
+      MetaData& new_data = visitor.meta_data.sub_configs.back();
       map_node[key] = YAML::Clone(lookupNamespace(new_data.data, name_space));
       new_data.map_config_key = YAML::Node(key).as<std::string>();
     }
@@ -364,15 +363,14 @@ void Visitor::visitField(OrderedMap<K, ConfigT>& config, const std::string& fiel
       // When getting info for empty maps still show them.
       // TODO(lschmid): Implement, currently empty maps will not show up in the info.
     }
-
     moveDownNamespace(map_node, name_space);
-    mergeYamlNodes(visitor.data.data, map_node);
+    mergeYamlNodes(visitor.meta_data.data, map_node);
   }
 
   if (visitor.mode == Visitor::Mode::kCheck) {
     for (auto&& [key, sub_config] : config) {
-      visitor.data.sub_configs.emplace_back(getChecks(sub_config, field_name));
-      visitor.data.sub_configs.back().map_config_key = YAML::Node(key).as<std::string>();
+      visitor.meta_data.sub_configs.emplace_back(getChecks(sub_config, field_name));
+      visitor.meta_data.sub_configs.back().map_config_key = YAML::Node(key).as<std::string>();
     }
   }
 }
@@ -394,62 +392,74 @@ void Visitor::visitBase(ConfigT& config) {
   visitor.visited_base_configs.insert(key);
 
   // Call declare_config of the base while making sure the namespaces are persistent afterwards.
-  const bool config_needs_name = visitor.data.name.empty();
+  const bool config_needs_name = visitor.meta_data.name.empty();
   OpenNameSpace::performOperationWithGuardedNs(visitor.open_namespaces,
                                                [&config]() { ::config::declare_config(config); });
 
   // If the config name has changed reset it to avoid name conflicts. Configs should always be named after the most
   // derived config.
   if (config_needs_name) {
-    visitor.data.name = "";
+    visitor.meta_data.name = "";
   }
 }
 
 template <typename ConfigT, typename std::enable_if<!is_virtual_config<ConfigT>::value, bool>::type>
 MetaData Visitor::getDefaults(const ConfigT& /* config */) {
-  Visitor visitor(Mode::kGetDefaults);
+  Visitor visitor(Mode::kGet);
   ConfigT default_config;
   ::config::declare_config(default_config);
-  return visitor.data;
+  return visitor.meta_data;
 }
 
 template <typename ConfigT, typename std::enable_if<is_virtual_config<ConfigT>::value, bool>::type>
 MetaData Visitor::getDefaults(const ConfigT& config) {
-  Visitor visitor(Mode::kGetDefaults);
+  Visitor visitor(Mode::kGet);
   if (config.isSet()) {
+    // Parse the type param.
+    visitField(config.config_->type, Settings::instance().factory.type_param_name, "");
+
+    // Parse a default initialized config.
     auto default_config = config.config_->createDefault();
     default_config->onDeclareConfig();
   }
-  return visitor.data;
+  return visitor.meta_data;
 }
 
 template <typename ConfigT>
 void Visitor::getDefaultValues(const ConfigT& config, MetaData& data) {
-  // Get defaults from a default constructed ConfigT. Extract the default values of all non-config fields. Subconfigs
-  // are managed separately.
+  // Get defaults from a default constructed ConfigT.
   const MetaData default_data = Visitor::getDefaults(config);
 
-  // Compare all fields. These should always be in the same order if they are from the same config and exclude
-  // subconfigs.
-  size_t default_idx = 0;
-  for (size_t i = 0; i < data.field_infos.size(); ++i) {
-    FieldInfo& info = data.field_infos.at(i);
-    // note that default config may not contain the same fields as the current config
-    // if certain fields are conditionally enabled
-    for (; default_idx < default_data.field_infos.size(); ++default_idx) {
-      if (default_data.field_infos.at(default_idx).name == info.name) {
-        break;
+  // Compare all fields. These should always be in the same order if they are from the same config.
+  for (auto& field_info : data.field_infos) {
+    const auto match = default_data.findMatchingFieldInfo(field_info);
+    if (match) {
+      field_info.default_value = match->value;
+    }
+  }
+
+  // getDefaultTypeParams(data, default_data);
+  // Parse all immediate virtual subconfigs to get their default type params.
+  for (auto& sub_data : data.sub_configs) {
+    const auto match = default_data.findMatchingSubConfig(sub_data);
+    if (sub_data.isVirtualConfig()) {
+      // Find the type param. This should exist.
+      for (auto& field_info : sub_data.field_infos) {
+        if (field_info.name == Settings::instance().factory.type_param_name && field_info.is_meta_field) {
+          if (!match) {
+            field_info.default_value = YAML::Node();  // no default
+          } else {
+            const auto field_match = match->findMatchingFieldInfo(field_info);
+            if (field_match) {
+              field_info.default_value = field_match->value;
+            } else {
+              // NOTE(lschmid): This should never happen.
+              field_info.default_value = YAML::Node();  // no default
+            }
+          }
+        }
       }
     }
-
-    if (default_idx >= default_data.field_infos.size()) {
-      break;
-    }
-
-    // NOTE(lschmid): Operator YAML::Node== checks for identity, not equality. Since these are all scalars, comparing
-    // the formatted strings should be identical.
-    const auto& default_info = default_data.field_infos.at(default_idx);
-    info.default_value = default_info.value;
   }
 }
 
@@ -467,13 +477,13 @@ void Visitor::getFieldInputInfo(const IntermediateT&, const std::string& field_n
   }
 
   auto& visitor = Visitor::instance();
-  if (visitor.data.field_infos.empty()) {
-    visitor.data.errors.emplace_back(
+  if (visitor.meta_data.field_infos.empty()) {
+    visitor.meta_data.errors.emplace_back(
         new Warning(field_name, "Invalid parsing state! Field info should already exist!"));
   } else {
     // Default: Create the field input info of the intermediate type.
     auto input_info = createFieldInputInfo<IntermediateT>();
-    auto& info = visitor.data.field_infos.back();
+    auto& info = visitor.meta_data.field_infos.back();
     info.input_info = FieldInputInfo::merge(input_info, info.input_info);
   }
 }
@@ -486,11 +496,11 @@ void Visitor::getFieldInputInfo(const IntermediateT&, const std::string& field_n
   auto input_info = Conversion::getFieldInputInfo();
 
   auto& visitor = Visitor::instance();
-  if (visitor.data.field_infos.empty()) {
-    visitor.data.errors.emplace_back(
+  if (visitor.meta_data.field_infos.empty()) {
+    visitor.meta_data.errors.emplace_back(
         new Warning(field_name, "Invalid parsing state! Field info should already exist!"));
   } else {
-    auto& info = visitor.data.field_infos.back();
+    auto& info = visitor.meta_data.field_infos.back();
     info.input_info = FieldInputInfo::merge(input_info, info.input_info);
   }
 }

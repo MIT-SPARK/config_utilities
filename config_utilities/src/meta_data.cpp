@@ -108,7 +108,7 @@ YAML::Node FieldInfo::serializeFieldInfos() const {
   return result;
 }
 
-YAML::Node MetaData::serializeFieldInfos() const {
+YAML::Node MetaData::serializeFieldInfos(bool include_meta_fields) const {
   YAML::Node result;
   // Log the config.
   result["type"] = "config";
@@ -135,7 +135,9 @@ YAML::Node MetaData::serializeFieldInfos() const {
 
   // Parse the direct fields.
   for (const FieldInfo& info : field_infos) {
-    fields.push_back(info.serializeFieldInfos());
+    if (include_meta_fields || !info.is_meta_field) {
+      fields.push_back(info.serializeFieldInfos());
+    }
   }
 
   // Parse the sub-configs.
@@ -145,6 +147,66 @@ YAML::Node MetaData::serializeFieldInfos() const {
 
   result["fields"] = fields;
   return result;
+}
+
+std::string MetaData::displayIndex() const {
+  if (isArrayConfig()) {
+    return "[" + std::to_string(array_config_index) + "]";
+  }
+  if (isMapConfig()) {
+    return *map_config_key;
+  }
+  return "";
+}
+
+MetaData* MetaData::findMatchingSubConfig(const MetaData& search_key) {
+  for (auto& sub : sub_configs) {
+    if (search_key.field_name != sub.field_name) {
+      continue;
+    }
+    if (search_key.displayIndex() == sub.displayIndex()) {
+      return &sub;
+    }
+  }
+  return nullptr;
+}
+
+const MetaData* MetaData::findMatchingSubConfig(const MetaData& search_key) const {
+  return const_cast<MetaData*>(this)->findMatchingSubConfig(search_key);
+}
+
+FieldInfo* MetaData::findMatchingFieldInfo(const FieldInfo& search_key) {
+  for (auto& field : field_infos) {
+    if (search_key.name == field.name && search_key.ns == field.ns) {
+      return &field;
+    }
+  }
+  return nullptr;
+}
+
+const FieldInfo* MetaData::findMatchingFieldInfo(const FieldInfo& search_key) const {
+  return const_cast<MetaData*>(this)->findMatchingFieldInfo(search_key);
+}
+
+void MetaData::copyValues(const MetaData& other) {
+  name = other.name;
+  ns = other.ns;
+  data = YAML::Clone(other.data);
+  field_infos = other.field_infos;
+  checks.clear();
+  errors.clear();
+  for (const auto& check : other.checks) {
+    checks.emplace_back(check->clone());
+  }
+  for (const auto& error : other.errors) {
+    errors.emplace_back(error->clone());
+  }
+  field_name = other.field_name;
+  sub_configs = other.sub_configs;
+  array_config_index = other.array_config_index;
+  map_config_key = other.map_config_key;
+  virtual_config_type = other.virtual_config_type;
+  available_types = other.available_types;
 }
 
 }  // namespace config::internal

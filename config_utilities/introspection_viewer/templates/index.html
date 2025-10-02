@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Config Utilities Introspection Viewer</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style_base.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css"
+    />
+  </head>
+
+  <script src="{{ url_for('static', filename='js/general.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/data.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/display.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/summary_view.js') }}"></script>
+  <script>
+    // Global JSON object to store the data
+    const loaded_data = {{ data | tojson }};
+    window.introData = loaded_data.data;
+    window.introSources = loaded_data.sources;
+    window.introSettings = {current_view: "summary", show_unset: true, show_legend: true, show_sources: true, sort: false};
+  </script>
+
+  <body>
+    <h1>Config Utilities Introspection Viewer</h1>
+    <!-- <input type="file" id="file-input" accept=".json" /> -->
+    <div id="history-list"></div>
+    <div id="details"></div>
+
+    <!-- Selection Pane -->
+    <div class="config-pane wide-pane">
+      <span class="selection-header">View:</span>
+      <button
+        name="summarySelectBtn"
+        class="config-button button-selected"
+        type="submit"
+        onclick="summaryBtnClicked(this);"
+      >
+        Summary
+      </button>
+        <span class="selection-header" style="margin-left: 10em">View Options:</span>
+        <button
+          name="ShowUnsetBtn"
+          class="config-button button-selected"
+          type="submit"
+          onclick="optionButtonClicked(this, 'show_unset');"
+        >
+          Show Unset Values
+        </button>
+         <button
+          name="showLegendBtn"
+          class="config-button button-selected"
+          type="submit"
+          onclick="optionButtonClicked(this, 'show_legend');"
+        >
+          Show Legend
+        </button>
+        <button
+          name="ShowSourcesBtn"
+          class="config-button button-selected"
+          type="submit"
+          onclick="optionButtonClicked(this, 'show_sources');"
+        >
+          Show Sources
+        </button>
+        <button
+          name="SortBtn"
+          class="config-button"
+          type="submit"
+          onclick="optionButtonClicked(this, 'sort');"
+        >
+          Sort Alphabetically
+        </button>
+      </span>
+    </div>
+
+    <div
+      class="config-pane wide-pane"
+      id="displayPane"
+      style="
+        flex: 1 1 auto;
+        min-height: 0;
+        height: 100%;
+        overflow: auto;
+        max-width: 100%;
+      "
+    ></div>
+
+    <script>
+      // Initialize the view to Summary
+      setupDisplayPane();
+      updateDisplay();
+    </script>
+  </body>
+</html>

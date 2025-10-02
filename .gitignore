@@ -66,3 +66,10 @@ Notes.txt
 tmp/
 
 compile_commands.json
+
+# Doxygen
+.doxygen/
+
+# Introspection Data
+config_introspection_results/
+config_utilities/introspection_viewer/data.json

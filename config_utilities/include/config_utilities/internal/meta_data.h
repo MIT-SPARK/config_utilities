@@ -59,6 +59,9 @@ struct FieldInfo {
   //! Name of the field. This is always given.
   std::string name;
 
+  //! The namespace when the field was parsed with respect to the visitor/meta_data containing this field.
+  std::string ns;
+
   //! Optional: Unit of the field.
   std::string unit;
 
@@ -73,6 +76,10 @@ struct FieldInfo {
 
   //! Whether or not the field was parsed
   bool was_parsed = false;
+
+  //! Whether or not the field is a meta field (e.g., type for virtual configs). If false, it is a proper field of the
+  //! config.
+  bool is_meta_field = false;
 
   //! Additional information about the input type and constraints of the field. Only queried when using getInfo.
   std::shared_ptr<FieldInputInfo> input_info;
@@ -116,6 +123,9 @@ struct MetaData {
   // Name of the field if the data is a sub-config.
   std::string field_name;
 
+  // Namespace of the config with respect to the root config
+  std::string ns;
+
   // If the config is a virtual config, this is the type of the virtual config. If it is not set, the type will be the
   // uninitialized virtual config string.
   std::string virtual_config_type;
@@ -144,6 +154,10 @@ struct MetaData {
   // If a config has sub-configs, they are stored here.
   std::vector<MetaData> sub_configs;
 
+  // If true this is a config that is actually present. If false, this cnofig carries information about possible
+  // configs, but these are not actually present.
+  bool is_real_config = true;
+
   // Utility to look up if there's any error messages in the data or its sub-configs.
   bool hasErrors() const;
 
@@ -157,29 +171,28 @@ struct MetaData {
   // Check whether this is a virtual config.
   bool isVirtualConfig() const { return !virtual_config_type.empty(); }
 
+  // Check whether this is a sub-confi in an array config.
+  bool isArrayConfig() const { return array_config_index >= 0; }
+
+  // Check whether this is a sub-config in a map config.
+  bool isMapConfig() const { return map_config_key.has_value(); }
+
+  // Utility function to get a display string for the index of a sub-config config.
+  std::string displayIndex() const;
+
+  // Find a matching subconfig in this meta data that matches the target subconfig from another meta data.
+  MetaData* findMatchingSubConfig(const MetaData& search_key);
+  const MetaData* findMatchingSubConfig(const MetaData& search_key) const;
+
+  // Find a matching field info in this meta data that matches the target field info from another meta data.
+  FieldInfo* findMatchingFieldInfo(const FieldInfo& search_key);
+  const FieldInfo* findMatchingFieldInfo(const FieldInfo& search_key) const;
+
   // Utility function to get field info.
-  YAML::Node serializeFieldInfos() const;
+  YAML::Node serializeFieldInfos(bool include_meta_fields = false) const;
 
  private:
-  void copyValues(const MetaData& other) {
-    name = other.name;
-    data = YAML::Clone(other.data);
-    field_infos = other.field_infos;
-    checks.clear();
-    errors.clear();
-    for (const auto& check : other.checks) {
-      checks.emplace_back(check->clone());
-    }
-    for (const auto& error : other.errors) {
-      errors.emplace_back(error->clone());
-    }
-    field_name = other.field_name;
-    sub_configs = other.sub_configs;
-    array_config_index = other.array_config_index;
-    map_config_key = other.map_config_key;
-    virtual_config_type = other.virtual_config_type;
-    available_types = other.available_types;
-  }
+  void copyValues(const MetaData& other);
 };
 
 }  // namespace config::internal

@@ -33,7 +33,9 @@ add_custom_target(
 add_executable(
   test_${PROJECT_NAME}
   main.cpp
+  src/cli_args.cpp
   src/default_config.cpp
+  src/introspection_utils.cpp
   src/utils.cpp
   tests/asl_formatter.cpp
   tests/commandline.cpp
@@ -47,6 +49,7 @@ add_executable(
   tests/getters.cpp
   tests/field_input_info.cpp
   tests/inheritance.cpp
+  tests/introspection.cpp
   tests/missing_fields.cpp
   tests/namespacing.cpp
   tests/path.cpp
@@ -58,7 +61,8 @@ add_executable(
   tests/validity_checks.cpp
   tests/virtual_config.cpp
   tests/yaml_parsing.cpp
-  tests/yaml_utils.cpp)
+  tests/yaml_utils.cpp
+  )
 add_dependencies(test_${PROJECT_NAME} copy_test_resources)
 target_include_directories(test_${PROJECT_NAME} PRIVATE include)
 target_link_libraries(test_${PROJECT_NAME} PRIVATE ${PROJECT_NAME}

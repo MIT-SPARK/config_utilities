@@ -48,6 +48,8 @@ Settings Settings::instance_;
 
 Settings& Settings::instance() { return instance_; }
 
+bool Settings::Introspection::enabled() const { return !output.empty(); }
+
 void Settings::setLogger(const std::string& name) {
   if (name == "none") {
     Logger::setLogger(std::make_unique<Logger>());
@@ -75,6 +77,8 @@ void declare_config(Settings& config) {
   field(config.printing, "printing");
   field(config.factory, "factory");
   field(config.external_libraries, "external_libraries");
+  field(config.introspection, "introspection");
+  field(config.disable_default_stdout_logger, "disable_default_stdout_logger");
 }
 
 void declare_config(Settings::Printing& config) {
@@ -90,6 +94,7 @@ void declare_config(Settings::Printing& config) {
   field(config.show_subconfig_types, "show_subconfig_types");
   field(config.show_virtual_configs, "show_virtual_configs");
   field(config.show_num_checks, "show_num_checks");
+  field(config.print_meta_fields, "print_meta_fields");
 }
 
 void declare_config(Settings::Factory& config) {
@@ -102,6 +107,11 @@ void declare_config(Settings::ExternalLibraries& config) {
   field(config.enabled, "enabled");
   field(config.verbose_load, "verbose_load");
   field(config.log_allocation, "log_allocation");
+}
+
+void declare_config(Settings::Introspection& config) {
+  name("Introspection");
+  field(config.output, "output");
 }
 
 }  // namespace config::internal
