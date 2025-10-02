@@ -50,6 +50,14 @@
   opacity: 1;
 }
 
+.highlighted {
+  background-color: #ffe066;
+  /* bright yellow for high contrast */
+  border-radius: 4px;
+  padding: 0.3em;
+  /* color: white; */
+}
+
 .yaml-value {
   /* font-family: "Courier New", Courier, monospace; */
   color: var(--text_color);
@@ -90,4 +98,10 @@
 .legend-entry-label {
   vertical-align: middle;
   /* font-size: 0.9em; */
+}
+
+.legend-heading {
+  margin-top: 0;
+  margin-bottom: 0.5em;
+  align-self: center;
 }

@@ -25,6 +25,7 @@ function valueSet(event) {
     }
     return event.val !== undefined;
 }
+
 // Check whether a value was modified (set, unset, updated, removed)
 function valueModified(event) {
     if (event.type == "r") {
@@ -43,6 +44,21 @@ function isLeaf(node) {
 
 function isListOfLeaves(node) {
     return node.list ? node.list.every(isLeaf) : false;
+}
+
+function sortDataAlphabetically(node) {
+    if (node.map) {
+        node.map = Object.values(node.map)
+            .sort((a, b) => a.key.localeCompare(b.key));
+        for (const child of Object.values(node.map)) {
+            sortDataAlphabetically(child);
+        }
+    }
+    if (node.list) {
+        for (const child of node.list) {
+            sortDataAlphabetically(child);
+        }
+    }
 }
 
 
@@ -159,10 +175,14 @@ function formatValue(value, options) {
     if (style !== "") {
         html += ` style="${style}"`;
     }
+    if (options.identifiers) {
+        html += ` identifiers="${options.identifiers.join(',')}"`;
+    }
     html += `>${value}`;
     if (options.tooltip) {
         html += `<span class="tooltiptext">${options.tooltip}</span>`;
     }
+
     // If no special styling, return plain text node.
     return html + `</span>`;
 }

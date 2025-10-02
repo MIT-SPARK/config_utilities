@@ -17,6 +17,7 @@
     />
   </head>
 
+  <script src="{{ url_for('static', filename='js/general.js') }}"></script>
   <script src="{{ url_for('static', filename='js/data.js') }}"></script>
   <script src="{{ url_for('static', filename='js/display.js') }}"></script>
   <script src="{{ url_for('static', filename='js/summary_view.js') }}"></script>
@@ -25,7 +26,7 @@
     const loaded_data = {{ data | tojson }};
     window.introData = loaded_data.data;
     window.introSources = loaded_data.sources;
-    window.introSettings = {current_view: "summary", show_unset: true, show_sources: true};
+    window.introSettings = {current_view: "summary", show_unset: true, show_legend: true, show_sources: true, sort: false};
   </script>
 
   <body>
@@ -54,6 +55,14 @@
         >
           Show Unset Values
         </button>
+         <button
+          name="showLegendBtn"
+          class="config-button button-selected"
+          type="submit"
+          onclick="optionButtonClicked(this, 'show_legend');"
+        >
+          Show Legend
+        </button>
         <button
           name="ShowSourcesBtn"
           class="config-button button-selected"
@@ -61,6 +70,14 @@
           onclick="optionButtonClicked(this, 'show_sources');"
         >
           Show Sources
+        </button>
+        <button
+          name="SortBtn"
+          class="config-button"
+          type="submit"
+          onclick="optionButtonClicked(this, 'sort');"
+        >
+          Sort Alphabetically
         </button>
       </span>
     </div>
@@ -79,7 +96,8 @@
 
     <script>
       // Initialize the view to Summary
-      setupSummaryView();
+      setupDisplayPane();
+      updateDisplay();
     </script>
   </body>
 </html>

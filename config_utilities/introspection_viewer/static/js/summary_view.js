@@ -1,64 +1,10 @@
-function updateDisplay() {
-    if (window.introSettings.current_view === "summary") {
-        setupSummaryView();
-    }
-    // Future views can be added here.
-}
-
-function summaryBtnClicked(button) {
-    if (window.introSettings.current_view !== "summary") {
-        window.introSettings.current_view = "summary";
-        updateDisplay();
-        button.className = "config-button button-selected";
-    }
-}
-
-function optionButtonClicked(button, option) {
-    window.introSettings[option] = !window.introSettings[option];
-    button.classList.toggle("button-selected");
-    updateDisplay();
-}
-
-function setupSummaryView() {
-
-    // Format the display pane
-    const displayPane = document.getElementById("displayPane");
-    displayPane.innerHTML = ""; // Clear previous content
-
-    const heading = document.createElement("h2");
-    heading.textContent = "Summary View";
-    displayPane.appendChild(heading);
-
-    const displayPaneDiv = document.createElement("div");
-    displayPaneDiv.className = "display-pane";
-    displayPaneDiv.style.display = "flex";
-    displayPaneDiv.style.gap = "2em";
-
-    const panelContent = document.createElement("div");
-    panelContent.id = "summary-panel-content";
-    panelContent.style.maxHeight = `calc(100vh - ${displayPane.getBoundingClientRect().top}px - 10em)`;
-    panelContent.style.overflowY = "auto";
-    panelContent.style.width = "100%";
-    panelContent.style.minWidth = "25%";
-    panelContent.style.overflowY = "auto";
-    panelContent.style.overflowX = "auto";
-    panelContent.style.flexGrow = "1";
-    panelContent.style.flexShrink = "1";
-    displayPaneDiv.style.position = "relative";
-
-    // panelContent.style.minWidth = "300px";
-    panelContent.style.boxSizing = "border-box";
-
-    displayPaneDiv.appendChild(panelContent);
-    displayPane.appendChild(displayPaneDiv);
-
+function setupSummaryView(displayPanel, panelContent) {
     // Render the data.
-    renderSummaryDefault(displayPaneDiv, panelContent);
+    renderSummaryDefault(displayPanel, panelContent);
 }
 
 
-
-function renderSummaryDefault(displayPaneDiv, summaryPanelContent) {
+function renderSummaryDefault(displayPanel, panelContent) {
     // Definitions.
     const legendEntries = [
         { color: '#40a544ff', label: 'Parsed' },
@@ -71,15 +17,44 @@ function renderSummaryDefault(displayPaneDiv, summaryPanelContent) {
 
     // Parse the data.
     var data = window.introData;
+    if (window.introSettings['sort'] === true) {
+        data = JSON.parse(JSON.stringify(window.introData)); // Deep copy
+        sortDataAlphabetically(data);
+    }
     createDisplayData(data, n => parseSummaryDefault(n, legendEntries));
-    summaryPanelContent.innerHTML = renderDisplayData(data);
+    panelContent.innerHTML = renderDisplayData(data);
 
+    let upperBound = panelContent.getBoundingClientRect().top;
+    let previousHeight = "0px";
+    const panelHasScroll = panelContent.scrollHeight > panelContent.clientHeight;
     // Create and append the legend.
-    const legend = createLegend(legendEntries);
-    displayPaneDiv.appendChild(legend);
+    if (window.introSettings['show_legend'] === true) {
+        const legend = createLegend(legendEntries);
+        legend.id = "legend";
+        if (panelHasScroll) {
+            legend.style.right = '3em';
+        }
+        displayPanel.appendChild(legend);
+        upperBound = legend.getBoundingClientRect().bottom;
+        previousHeight = `calc(${legend.getBoundingClientRect().height}px + 1em)`;
+    }
 
-    if (summaryPanelContent.scrollHeight > summaryPanelContent.clientHeight) {
-        legend.style.right = '3em';
+    // Check if sources should be shown.
+    if (window.introSettings['show_sources'] === true) {
+        const sourcesLegend = createSourcesLegend();
+        if (panelHasScroll) {
+            sourcesLegend.style.right = '3em';
+        }
+        sourcesLegend.style.top = `calc(${previousHeight} + 1em)`;
+        sourcesLegend.style.maxHeight = `calc(100vh - ${upperBound}px - 5em)`;
+        sourcesLegend.style.overflowY = "auto";
+        sourcesLegend.style.width = "100%";
+        sourcesLegend.style.minWidth = "25%";
+        sourcesLegend.style.overflowX = "auto";
+        sourcesLegend.style.flexGrow = "1";
+        sourcesLegend.style.flexShrink = "1";
+        sourcesLegend.style.boxSizing = "border-box";
+        displayPanel.appendChild(sourcesLegend);
     }
 }
 

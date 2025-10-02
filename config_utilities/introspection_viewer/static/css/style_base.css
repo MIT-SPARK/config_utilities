@@ -1,7 +1,7 @@
 /* Settings */
 /* TODO(lschmid): Currently copied from config_utilities_ros, consider making a shared resource */
 :root {
-    --main_color: royalblue;
+    --main_color: rgb(65, 105, 225);
     --negative_color: #ffffff;
     --background_color: #f0f0f0;
     --radius: 5px;

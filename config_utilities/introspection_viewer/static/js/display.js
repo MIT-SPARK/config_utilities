@@ -24,6 +24,22 @@ const eventNames = {
     "r": 'Removed',
 };
 
+const byNames = {
+    "f": 'File',
+    "a": 'Argument',
+    "s": 'Substitution',
+    "p": 'Programmatic',
+    "c": 'Config',
+};
+
+const byNamesPlural = {
+    "f": 'Files',
+    "a": 'Arguments',
+    "s": 'Substitutions',
+    "p": 'Programmatic',
+    "c": 'Configs',
+};
+
 const byIcons = {
     "f": `<i class="fa-solid fa-file" style="font-size: 0.8em;"></i>`, // File
     "a": `<i class="fa-solid fa-terminal" style="font-size: 0.8em;"></i>`, // Argument
@@ -54,7 +70,7 @@ function displayHistory(history) {
     for (const event of history) {
         html += `<tr>
             <td style="padding-right: 2em;"><span style="color: ${eventColors[event.type]}; font-weight: bold;">${eventNames[event.type]}</span></td>
-            <td style="padding-right: 2em;">${displaySource(event)}</td>
+            <td style="padding-right: 2em;"><span identifiers="${event.by}">${displaySource(event)}</span></td>
             <td style="padding-right: 2em;">${event.val !== undefined ? event.val : ""}</td>
         </tr>`;
     }
@@ -69,7 +85,7 @@ function createLegend(entries) {
 
     const heading = document.createElement('h3');
     heading.textContent = 'Legend';
-    heading.style.marginTop = '0';
+    heading.classList.add('legend-heading');
     aside.appendChild(heading);
 
     const ul = document.createElement('ul');
@@ -98,25 +114,98 @@ function createLegend(entries) {
     return aside;
 }
 
-function renderHighlightableText(text, identifier, highlightClass = "highlight") {
-    // Create a span with data-identifier attribute
-    const span = document.createElement("span");
-    span.textContent = text;
-    span.setAttribute("data-identifier", identifier);
+let highlight_tracker = false;
 
+function createSourcesLegend() {
+    highlight_tracker = false;
+    const aside = document.createElement('aside');
+    aside.className = 'legend-pane';
+
+    const heading = document.createElement('h3');
+    heading.textContent = 'Sources';
+    heading.classList.add('legend-heading');
+    aside.appendChild(heading);
+
+    for (const [key, sources] of Object.entries(window.introSources)) {
+        const heading = document.createElement('h4');
+        heading.innerHTML = byIcons[key] + " " + byNamesPlural[key];
+        heading.style.marginBottom = '0em';
+        heading.style.marginTop = '0em';
+        heading.style.alignSelf = 'center';
+        aside.appendChild(heading);
+
+        const ul = document.createElement('ul');
+        ul.style.listStyle = 'none';
+        ul.style.padding = '0';
+        ul.style.margin = '0';
+
+        let entries = sources.map((source, i) => [i, source]);
+        if (window.introSettings['sort'] === true) {
+            entries.sort((a, b) => a[1].localeCompare(b[1]));
+        }
+
+        for (const entry of entries) {
+            const li = document.createElement('li');
+            li.style.marginBottom = '0.5em';
+
+            const label = document.createElement('span');
+            label.innerHTML = byIcons[key] + " " + entry[1];
+            label.className = 'legend-entry-label';
+            addHighlightTrigger(label, `${key}${entry[0]}`);
+
+            li.appendChild(label);
+            ul.appendChild(li);
+        }
+        aside.appendChild(ul);
+    }
+    return aside;
+}
+
+
+// Add hover and click triggers to highlight all elements with the same identifier.
+
+function addHighlightTrigger(element, identifier, highlightClass = "highlighted") {
     // Mouse enter: highlight all elements with same identifier
-    span.addEventListener("mouseenter", () => {
-        document.querySelectorAll(`[data-identifier="${identifier}"]`).forEach(el => {
-            el.classList.add(highlightClass);
+    const mark = () => {
+        document.querySelectorAll('[identifiers]').forEach(el => {
+            const identifiers = el.getAttribute('identifiers');
+            if (identifiers.split(',').includes(identifier)) {
+                el.classList.add(highlightClass);
+            }
         });
+        element.classList.add(highlightClass);
+    };
+    const unmark = () => {
+        document.querySelectorAll('.' + highlightClass).forEach(el => {
+            el.classList.remove(highlightClass);
+        });
+    };
+
+    element.addEventListener("mouseenter", () => {
+        if (!highlight_tracker) {
+            mark();
+        }
+    });
+
+    // Mouse click: toggle persistent highlight
+    element.addEventListener("click", () => {
+        if (highlight_tracker) {
+            if (element.classList.contains(highlightClass)) {
+                highlight_tracker = false;
+                unmark();
+            } else {
+                unmark();
+                mark();
+            }
+        } else {
+            highlight_tracker = true;
+        }
     });
 
     // Mouse leave: remove highlight
-    span.addEventListener("mouseleave", () => {
-        document.querySelectorAll(`[data-identifier="${identifier}"]`).forEach(el => {
-            el.classList.remove(highlightClass);
-        });
+    element.addEventListener("mouseleave", () => {
+        if (!highlight_tracker) {
+            unmark();
+        }
     });
-
-    return span;
 }
