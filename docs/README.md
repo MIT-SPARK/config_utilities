@@ -67,6 +67,9 @@ The following tutorials will guide you through functionalities of `config_utilit
 
 10. [**Debug Tools: Introspection**](Introspection.md)
 
+    - [Getting Introspection data](#Introspection.md#getting-introspection-data)
+    - [Visualize the results](#Introspection.md#visualize-the-results)
+
 11. [**Varia**](Varia.md)
     - [Settings](Varia.md#settings)
 
