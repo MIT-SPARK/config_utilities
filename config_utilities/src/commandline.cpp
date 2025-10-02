@@ -298,7 +298,7 @@ YAML::Node nodeFromFileEntry(const CliParser::Entry& entry) {
   std::filesystem::path file(filepath);
   if (!fs::exists(file)) {
     std::stringstream ss;
-    ss << "File '" << file << "' does not exist!";
+    ss << "File '" << file.string() << "' does not exist!";
     Logger::logError(ss.str());
     return node;
   }
@@ -307,7 +307,7 @@ YAML::Node nodeFromFileEntry(const CliParser::Entry& entry) {
     node = YAML::LoadFile(file);
   } catch (const std::exception& e) {
     std::stringstream ss;
-    ss << "Failure for '" << file << "': " << e.what();
+    ss << "Failure for '" << file.string() << "': " << e.what();
     Logger::logError(ss.str());
     return node;
   }

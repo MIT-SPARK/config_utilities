@@ -92,7 +92,7 @@ install(
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(DIRECTORY introspection_viewer/ DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(PROGRAMS introspection_viewer/introspection_viewer.py
-        RENAME config_utilities_viewer
+        RENAME config-utilities-viewer
         DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(

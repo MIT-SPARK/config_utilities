@@ -19,7 +19,7 @@ Alternatively, the introspection can be enabled by setting the `config::Settings
 
 ## Visualize the results
 
-To interactively visualize the results, we provide the `config_utilities_viewer` tool.
-After running your app with `-i` option, you can run `config_utilities_viewer` from the same terminal to inspect the results.
+To interactively visualize the results, we provide the `config-utilities-viewer` tool.
+After running your app with `-i` option, you can run `config-utilities-viewer` from the same terminal to inspect the results.
 If running in the same directory, it will automatically look for the default introspection output. Otherwise, use the `--data /my/output/path/data.json` arg to read the correct introspection output.
 Your browser should automatically open with the viewer, otherwise navigate to to host:port (default is `https://localhost:5000`) to see the output.
