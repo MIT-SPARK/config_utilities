@@ -333,21 +333,6 @@ class ModuleRegistry {
 template <typename T>
 struct ModuleMapBase {};
 
-//! @brief Original internal API for registering factories (used by public hydra_ros)
-template <typename BaseT, typename... Args>
-struct ModuleMapBase<std::function<BaseT*(const YAML::Node&, Args...)>> {
-  [[deprecated("see ModuleRegistry instead")]] static void
-  addEntry(const std::string& type, const std::function<BaseT*(const YAML::Node&)>& func, const std::string&) {
-    ModuleRegistry::addModule<BaseT, const YAML::Node&>(type, func, true);
-  }
-};
-
-//! @brief Original internal API to get type signature (used by public hydra_ros)
-template <typename BaseT, typename... Args>
-[[deprecated("see ModuleInfo instead")]] std::string typeInfo() {
-  return ModuleInfo::fromTypes<BaseT, Args...>().typeInfo();
-}
-
 template <typename ConfigT>
 struct ConfigWrapperImpl : public ConfigWrapper {
   explicit ConfigWrapperImpl(const std::string& _type) : ConfigWrapper(_type) {}
