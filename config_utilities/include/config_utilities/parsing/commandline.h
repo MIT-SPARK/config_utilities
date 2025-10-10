@@ -35,8 +35,11 @@
 
 #pragma once
 
+#include <map>
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "config_utilities/factory.h"
 #include "config_utilities/internal/visitor.h"
@@ -47,7 +50,7 @@ namespace internal {
 
 struct ParserInfo {
   bool help_present = false;
-  bool force_block_style = false;
+  std::map<std::string, bool> flags;
 };
 
 /**

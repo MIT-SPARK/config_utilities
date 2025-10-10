@@ -2,7 +2,7 @@
 
 #include <config_utilities/parsing/commandline.h>
 
-const std::string help_msg =
+const char help_msg[] =
     R"""(Usage: composite-config [--config-utilities-yaml YAML_TOKEN ...]... [--config-utilities-file FILEPATH[@NAMESPACE]]...
 
 Merges the input YAML values from left to right and outputs the resulting composite YAML to stdout.
@@ -118,6 +118,10 @@ inline void forceBlockForAll(YAML::Node node) {
 
 int main(int argc, char* argv[]) {
   config::internal::ParserInfo info;
+  info.flags = {
+      {"force-block-style", false},
+  };
+
   auto result = config::internal::loadFromArguments(argc, argv, false, &info);
   if (info.help_present) {
     std::cerr << help_msg << std::endl;
@@ -125,7 +129,7 @@ int main(int argc, char* argv[]) {
   }
 
   forceBlockForNonLeaves(result);
-  if (info.force_block_style) {
+  if (info.flags.at("force-block-style")) {
     forceBlockForAll(result);
   }
 

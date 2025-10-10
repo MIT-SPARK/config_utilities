@@ -84,7 +84,6 @@ struct CliParser {
 
   CliParser() = default;
   CliParser& parse(int& argc, char* argv[], bool remove_args);
-  std::optional<Opt> matches(const std::string& option);
 
   std::vector<Entry> entries;
 };
@@ -185,7 +184,7 @@ std::string CliParser::Opt::getFlagToken(const std::string& option) const {
   return name + "=" + (is_true ? "true" : "false");
 }
 
-std::optional<CliParser::Opt> CliParser::matches(const std::string& option) {
+std::optional<CliParser::Opt> matches(const std::vector<CliParser::Opt>& opts, const std::string& option) {
   for (const auto& opt : opts) {
     if (opt.matches(option)) {
       return opt;
@@ -196,6 +195,11 @@ std::optional<CliParser::Opt> CliParser::matches(const std::string& option) {
 }
 
 CliParser& CliParser::parse(int& argc, char* argv[], bool remove_args) {
+  std::vector<Opt> local_opts = opts;
+  for (const auto& [flag, value] : info.flags) {
+    local_opts.push_back(Opt{flag, Entry::Type::Flag, 0, ""});
+  }
+
   int i = 0;
   bool found_separator = false;
   std::vector<Span> spans;
@@ -215,20 +219,7 @@ CliParser& CliParser::parse(int& argc, char* argv[], bool remove_args) {
       continue;
     }
 
-    if ((curr_opt == "--force-block-style") && !found_separator) {
-      info.force_block_style = true;
-      spans.emplace_back(Span{i, 0, curr_opt});
-      ++i;
-      continue;
-    }
-
-    if (curr_opt == "--" && !found_separator) {
-      found_separator = true;
-      spans.emplace_back(Span{i, 0, curr_opt});
-      break;
-    }
-
-    const auto opt_match = matches(curr_opt);
+    const auto opt_match = matches(local_opts, curr_opt);
     if (opt_match) {
       curr_span = getSpan(argc, argv, i, opt_match->nargs, error);
     }
@@ -236,6 +227,16 @@ CliParser& CliParser::parse(int& argc, char* argv[], bool remove_args) {
     if (curr_span) {
       spans.emplace_back(*curr_span);
       i += curr_span->num_tokens + 1;
+      switch (opt_match->type) {
+        case Entry::Type::File:
+        case Entry::Type::Yaml:
+        case Entry::Type::Var:
+          entries.push_back(Entry{opt_match->type, curr_span->extractTokens(argc, argv)});
+          break;
+        case Entry::Type::Flag:
+          entries.push_back(Entry{opt_match->type, opt_match->getFlagToken(curr_span->key)});
+      }
+
       continue;
     }
 
@@ -246,23 +247,6 @@ CliParser& CliParser::parse(int& argc, char* argv[], bool remove_args) {
     }
 
     ++i;
-  }
-
-  for (const auto& span : spans) {
-    const auto opt = matches(span.key);
-    if (!opt) {
-      continue;  // skip any spans for single options
-    }
-
-    switch (opt->type) {
-      case Entry::Type::File:
-      case Entry::Type::Yaml:
-      case Entry::Type::Var:
-        entries.push_back(Entry{opt->type, span.extractTokens(argc, argv)});
-        break;
-      case Entry::Type::Flag:
-        entries.push_back(Entry{opt->type, opt->getFlagToken(span.key)});
-    }
   }
 
   if (remove_args) {
@@ -344,6 +328,7 @@ void updateContextFromFlag(const CliParser::Entry& entry, ParserContext& context
   const bool value = entry.value.substr(pos + 1) == "true";
   if (name == "disable-substitutions") {
     context.allow_substitutions = !value;
+    return;
   }
 }
 
