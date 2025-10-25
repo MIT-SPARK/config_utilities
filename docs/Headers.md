@@ -26,7 +26,7 @@ The following directories and files exist:
 ├── formatting          # Specify a formatter to parse configs and warnings to text.
 │   └── asl.h             # Formatter specialized for human-readable prints to fixed-width consoles (Default).
 │
-├── logging             # Sepcify an output logger to log warnings and errors to.
+├── logging             # Specify an output logger to log warnings and errors to.
 │   ├── log_to_glog.h     # Log to glog. Dependes on 'google/logging'.
 │   └── log_to_stdout.h   # Log to stdout console (Default).
 │
