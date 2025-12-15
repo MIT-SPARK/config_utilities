@@ -167,7 +167,7 @@ const auto object_2 = config::createFromContext<MyBase>("optional/namespace", ba
 # Parsing in ROS2
 
 Certain design choices with how parameters work in ROS2 made it impossible to bring forward our original ROS1 parameters parsing code (that leveraged `XmlRPC`).
-Instead, we also recommend using the global context for parsing configs in ROS2 code.
+Instead, we recommend also using the global context for parsing configs in ROS2 code.
 When doing this, there are two things to watch out for.
 The first is that you should parse and remove `config-utilities` command-line arguments **before** calling `rclcpp::init`.
 Roughly, your top-level executable code should take this general structure:
@@ -211,10 +211,10 @@ int main(int argc, char* argv[]) {
 
 The second thing to watch out for is that nodes included in a launch file will not display stdout statements.
 Both the default logger (which uses stdout/stderr) and the glog-based logger will appropriately display warnings and errors,
-but you may want to implement your own `config-utilities` logger that forwards messages to the `rclcpp` infrastructure.
+but you may want to implement your own `config-utilities` logger that forwards messages to the `rclcpp` logging infrastructure.
 
 To actually specify configuration information for a node, you just need to supply the appropriate command-line information under the `args` section of the node.
-As an example:
+Using a portion of Hydra's launch file as example, this would look like:
 ```yaml
 launch:
   - ...
@@ -228,4 +228,8 @@ launch:
         --config-utilities-yaml {robot_id: $(var robot_id), log_path: $(var log_path)}
   - ...
 ```
-Note that you cannot escape any portion of the command-line information when you use ROS2 substitutions.
+
+> **:warning: Warning**</br>
+> Note that you cannot escape any portion of the command-line information when you use ROS2 substitutions.
+> The command-line parsing for `config_utilities` was developed for use with ROS2 launch files originally,
+> so the parsed yaml should accurately reflect the specified information without required any escaping (i.e., we handle cases where inline yaml is broken over multiple strings in `argv`).
