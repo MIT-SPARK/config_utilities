@@ -1,16 +1,20 @@
 @PACKAGE_INIT@
 
-get_filename_component(config_utilities_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}"
-                       PATH)
+get_filename_component(config_utilities_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 include(CMakeFindDependencyMacro)
 
 find_dependency(yaml-cpp REQUIRED)
+
 if (@Eigen3_FOUND@)  # expanded from Eigen3_FOUND during build time
   find_dependency(Eigen3)
 endif()
 
 if (@glog_FOUND@)  # expanded from glog_FOUND during build time
   find_dependency(glog)
+endif()
+
+if(NOT @BUILD_SHARED_LIBS@)  # expanded from BUILD_SHARED_LIBS during build time
+  find_dependency(Boost COMPONENTS dll filesystem system)
 endif()
 
 if(NOT TARGET config_utilities::config_utilities)
