@@ -5,7 +5,7 @@
 `config_utilities` is a minimal but powerful C++ library, providing tools for automated modular software configuration. Parse, verify, modify, and print C++ config structs to build modular object-oriented software systems at run-time.
 
 > **ℹ️ Note**</br>
-> With the deprecation of ROS1, we no longer support parsing parameters from ROS. The last version of `config_utilities` to support this is available [here](https://github.com/MIT-SPARK/config_utilities/tree/archive/ros_noetic).
+> With the deprecation of ROS1, we no longer support parsing configs from ROS parameters. The last version of `config_utilities` to support this is available [here](https://github.com/MIT-SPARK/config_utilities/tree/archive/ros_noetic).
 
 ## Table of contents
 
