@@ -7,7 +7,7 @@ This tutorial explains how to create configs and other objects from source data.
 - [Parse from yaml](#parse-from-yaml)
 - [Parse from the command line](#parse-from-the-command-line)
 - [Parse via global context](#parse-via-global-context)
-- [Parsing in ROS2](#parse-in-ros2)
+- [Parsing in ROS2](#parsing-in-ros2)
 
 ## Parse from yaml
 
@@ -129,8 +129,8 @@ Instead, you should use one of the following methods:
 
 ```cpp
 int main(int argc, char** argv) {
-    // pushes config-utilities specific flags to the end of argv and decrements argc so that it
-    // looks like the command was run without any config-utilities specific flags
+    // pushes config_utilities specific flags to the end of argv and decrements argc so that it
+    // looks like the command was run without any config_utilities specific flags
     const bool remove_config_utils_args = true;
     config::initContext(argc, argv, remove_config_utils_args);
 
@@ -169,7 +169,7 @@ const auto object_2 = config::createFromContext<MyBase>("optional/namespace", ba
 Certain design choices with how parameters work in ROS2 made it impossible to bring forward our original ROS1 parameters parsing code (that leveraged `XmlRPC`).
 Instead, we recommend also using the global context for parsing configs in ROS2 code.
 When doing this, there are two things to watch out for.
-The first is that you should parse and remove `config-utilities` command-line arguments **before** calling `rclcpp::init`.
+The first is that you should parse and remove `config_utilities` command-line arguments **before** calling `rclcpp::init`.
 Roughly, your top-level executable code should take this general structure:
 
 ```cpp
@@ -211,7 +211,7 @@ int main(int argc, char* argv[]) {
 
 The second thing to watch out for is that nodes included in a launch file will not display stdout statements.
 Both the default logger (which uses stdout/stderr) and the glog-based logger will appropriately display warnings and errors,
-but you may want to implement your own `config-utilities` logger that forwards messages to the `rclcpp` logging infrastructure.
+but you may want to implement your own `config_utilities` logger that forwards messages to the `rclcpp` logging infrastructure.
 
 To actually specify configuration information for a node, you just need to supply the appropriate command-line information under the `args` section of the node.
 Using a portion of Hydra's launch file as example, this would look like:
