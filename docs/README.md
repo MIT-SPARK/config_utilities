@@ -19,6 +19,7 @@ The following tutorials will guide you through functionalities of `config_utilit
    - [Parse from yaml](Parsing.md#parse-from-yaml)
    - [Parse from the command line](Parsing.md#parse-from-the-command-line)
    - [Parse via global context](Parsing.md#parse-via-global-context)
+   - [Parsing in ROS2](Parsing.md#parsing-in-ros2)
 
 4. [**Handling complex configs or types**](Types.md)
 

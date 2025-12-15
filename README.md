@@ -4,6 +4,9 @@
 
 `config_utilities` is a minimal but powerful C++ library, providing tools for automated modular software configuration. Parse, verify, modify, and print C++ config structs to build modular object-oriented software systems at run-time.
 
+> **ℹ️ Note**</br>
+> With the deprecation of ROS1, we no longer support parsing parameters from ROS. The last version of `config_utilities` to support this is available [here](https://github.com/MIT-SPARK/config_utilities/tree/archive/ros_noetic).
+
 ## Table of contents
 
 - [Credits](#credits)
@@ -14,7 +17,7 @@
 
 ## Credits
 
-This library was developed by [Lukas Schmid](https://schmluk.github.io/) and [Nathan Hughes](http://mit.edu/sparklab/people.html) at the [MIT-SPARK Lab](http://mit.edu/sparklab), based on functionalities in [ethz-asl/config_utilities](https://github.com/ethz-asl/config_utilities) and [Hydra](https://github.com/MIT-SPARK/Hydra), and is released under a [BSD-3-Clause License](LICENSE)! Additional contributions welcome! This work was supported in part by the Swiss National Science Foundation and Amazon.
+This library was developed by [Lukas Schmid](https://schmluk.github.io/) and [Nathan Hughes](https://nathanhhughes.github.io/) at the [MIT-SPARK Lab](http://mit.edu/sparklab), based on functionalities in [ethz-asl/config_utilities](https://github.com/ethz-asl/config_utilities) and [Hydra](https://github.com/MIT-SPARK/Hydra), and is released under a [BSD-3-Clause License](LICENSE)! Additional contributions welcome! This work was supported in part by the Swiss National Science Foundation and Amazon.
 
 ## Why `config_utilities`?
 
@@ -128,7 +131,7 @@ This package is compatible with `ROS2`/`colcon`. Just clone it into your workspa
 ```bash
 cd ~/my_ws/src
 git clone git@github.com:MIT-SPARK/config_utilities.git
-colcon build config_utilities_ros
+colcon build --packages-up-to config_utilities_ros
 ```
 
 If you want to build and install without colcon/ROS, that is easy, too! Just clone this repository and build via CMake:
