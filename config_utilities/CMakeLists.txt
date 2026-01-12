@@ -117,6 +117,6 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/config_utilitiesConfig.cmake
 
 # Exposes this package to ament for ros2 run and other utilities to work
 find_package(ament_cmake_core QUIET)
-if (${ament_cmake_core_FOUND}) 
+if (${ament_cmake_core_FOUND})
   ament_package()
 endif()
