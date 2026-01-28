@@ -35,11 +35,13 @@
 
 #include "config_utilities/update.h"
 
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "config_utilities/config.h"
 #include "config_utilities/parsing/yaml.h"
-#include "config_utilities/test/default_config.h"
 #include "config_utilities/types/enum.h"
 #include "config_utilities/validation.h"
 
@@ -66,23 +68,19 @@ void declare_config(UpdateConfig& config) {
   check(config.f, GE, 0, "f");
 }
 
-const std::string yaml_seq = R"(
-  s: "a"
-  f: 1.0
-  v: [1, 2, 3]
-  e: "A")";
+const char yaml_seq[] = R"(
+s: "a"
+f: 1.0
+v: [1, 2, 3]
+e: "A")";
 
-const std::string yaml_update_s = R"(
-  s: "b")";
+const char yaml_update_s[] = R"(s: "b")";
 
-const std::string yaml_update_f = R"(
-  f: 2.0)";
+const char yaml_update_f[] = R"(f: 2.0)";
 
-const std::string yaml_update_v = R"(
-  v: [4, 5, 6])";
+const char yaml_update_v[] = R"(v: [4, 5, 6])";
 
-const std::string yaml_update_e = R"(
-  e: "B")";
+const char yaml_update_e[] = R"(e: "B")";
 
 TEST(UpdateConfig, UpdateSuccessDirect) {
   const YAML::Node node = YAML::Load(yaml_seq);

@@ -35,6 +35,9 @@
 
 #include "config_utilities/parsing/commandline.h"
 
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "config_utilities/test/cli_args.h"

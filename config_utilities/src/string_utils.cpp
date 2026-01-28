@@ -36,7 +36,8 @@
 #include "config_utilities/internal/string_utils.h"
 
 #include <algorithm>
-#include <sstream>
+#include <string>
+#include <vector>
 
 namespace config::internal {
 

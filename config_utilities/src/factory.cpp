@@ -35,6 +35,11 @@
 
 #include "config_utilities/factory.h"
 
+#include <map>
+#include <memory>
+#include <utility>
+#include <string>
+
 namespace config::internal {
 
 namespace {

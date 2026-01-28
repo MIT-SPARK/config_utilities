@@ -116,7 +116,7 @@ class MyLogger : public Logger {
 Formatters work exactly like the loggers above. To implement your custom formatter, inherit from `Formatter` and implement the virtual functions. An example is given in `formatters/asl.h`.
 
 ## Adding custom parsers
-`config_utilities` uses [yaml-cpp](https://github.com/jbeder/yaml-cpp/tree/master) as internal data representation. To parse configs from other sources of data, convert them to yaml compatible data structures. 
+`config_utilities` uses [yaml-cpp](https://github.com/jbeder/yaml-cpp/tree/master) as internal data representation. To parse configs from other sources of data, convert them to yaml compatible data structures.
 
 ## Adding custom substitutions
 

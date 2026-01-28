@@ -36,6 +36,7 @@
 #include "config_utilities/substitution_parsers.h"
 
 #include <cstdlib>
+#include <string>
 
 #include "config_utilities/internal/logger.h"
 

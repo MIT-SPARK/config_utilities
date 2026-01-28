@@ -35,13 +35,15 @@
 
 #include "config_utilities/factory.h"
 
+#include <memory>
+#include <string>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "config_utilities/config.h"
-#include "config_utilities/logging/log_to_stdout.h"
 #include "config_utilities/parsing/yaml.h"
 #include "config_utilities/test/utils.h"
-#include "config_utilities/traits.h"
 
 namespace config::test {
 

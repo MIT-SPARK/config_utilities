@@ -35,7 +35,9 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
+#include <utility>
 
 #include "config_utilities/internal/config_context.h"
 

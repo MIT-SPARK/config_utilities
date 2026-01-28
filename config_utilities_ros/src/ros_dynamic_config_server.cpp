@@ -34,6 +34,8 @@
  * -------------------------------------------------------------------------- */
 #include "config_utilities_ros/ros_dynamic_config_server.h"
 
+#include <memory>
+
 #include <rclcpp/create_publisher.hpp>
 #include <rclcpp/create_service.hpp>
 

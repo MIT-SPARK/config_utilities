@@ -111,5 +111,3 @@ function parseSummaryDefault(node, legendEntries) {
         }
     }
 }
-
-

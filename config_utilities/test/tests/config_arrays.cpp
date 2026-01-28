@@ -35,6 +35,9 @@
 
 #include <gtest/gtest.h>
 
+#include <vector>
+#include <string>
+
 #include "config_utilities/config.h"
 #include "config_utilities/factory.h"
 #include "config_utilities/formatting/asl.h"

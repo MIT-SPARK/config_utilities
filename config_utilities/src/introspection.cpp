@@ -1,9 +1,10 @@
 #include "config_utilities/internal/introspection.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
-#include <functional>
 #include <sstream>
+#include <string>
 
 #ifdef CONFIG_UTILS_ENABLE_JSON
 #include <nlohmann/json.hpp>

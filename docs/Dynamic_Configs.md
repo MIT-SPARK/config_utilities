@@ -64,7 +64,7 @@ dynamic_config.get().x = new_x; // Won't work! Only modifies the copy.
 All dynamic configs allow registering callback functions that are triggered whenever the dynamic config is updated:
 
 ```c++
-config::DynamicConfig<MyConfig> dynamic_config("my_config"); 
+config::DynamicConfig<MyConfig> dynamic_config("my_config");
 
 // Register a callback:
 dynamic_config.setCallback([&dynamic_config](){
@@ -84,11 +84,11 @@ config::DynamicConfig<MyConfig> dynamic_config("my_config"); // key: my_config
 config::DynamicConfigServer server;
 
 // Get the values of a dynamic config:
-YAML::Node values = server.get("my_config");  
+YAML::Node values = server.get("my_config");
 
 // Set the values of a dynamic config:
 YAML::Node new_values = ...;
-server.set("my_config", new_values);  // Works! 
+server.set("my_config", new_values);  // Works!
 
 // Note that the new values can also contain only a subset of params:
 server.set("my_config", YAML::Load("x: 123"));  // Works! Only sets the x param.
@@ -108,13 +108,13 @@ server.setHooks(hooks); // All done!
 To see further functionalities and use cases see the demo and source code.
 
 ## Custom Dynamic Config Servers
-Custom servers or client can easily be implemented by building on top of the provided `DynamicConfigServer`. 
+Custom servers or client can easily be implemented by building on top of the provided `DynamicConfigServer`.
 An example of this is given in the `RosDynamicConfigServer` in `config_utilities_ros`, which advertizes all config get/set interfaces via ROS2 topics.
 This can be used to, for example, modify the C++ configs using a python GUI, as demonstrated in our `demo_dynamic_config`. Give it a try:
 
 ```bash
  # Required for the GUI:
-pip install flask webbrowser  
+pip install flask webbrowser
 
 # Run the demo:
 ros2 launch config_utilities_ros demo_ros_dynamic_config.yaml

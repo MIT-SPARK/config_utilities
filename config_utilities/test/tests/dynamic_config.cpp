@@ -35,6 +35,11 @@
 
 #include "config_utilities/dynamic_config.h"
 
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "config_utilities/test/default_config.h"

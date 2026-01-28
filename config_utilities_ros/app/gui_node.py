@@ -42,14 +42,14 @@ class RosDynamicConfigGUI(Node):
     def get_available_servers_and_keys(self):
         # We assume that no other node will use config_utilities messages with the same name.
         configs = [
-            t[0][:-4]
-            for t in self.get_service_names_and_types()
+            t[0][:-4] for t in self.get_service_names_and_types()
             if t[0].endswith("/set")
             and t[1][0] == "config_utilities_msgs/srv/SetConfig"
         ]
 
-        available_nodes = [n[2] for n in get_node_names(
-            node=self, include_hidden_nodes=False)]
+        available_nodes = [
+            n[2] for n in get_node_names(node=self, include_hidden_nodes=False)
+        ]
 
         servers = {}
         for config in configs:
@@ -101,15 +101,17 @@ class RosDynamicConfigGUI(Node):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Webserver hosting dynamic configuration GUI."
-    )
+        description="Webserver hosting dynamic configuration GUI.")
     parser.add_argument("--debug", "-d", action="store_true")
-    parser.add_argument(
-        "--host", type=str, default="localhost", help="Host to run the webserver on."
-    )
-    parser.add_argument(
-        "--port", "-p", type=int, default=5000, help="Port to run the webserver on."
-    )
+    parser.add_argument("--host",
+                        type=str,
+                        default="localhost",
+                        help="Host to run the webserver on.")
+    parser.add_argument("--port",
+                        "-p",
+                        type=int,
+                        default=5000,
+                        help="Port to run the webserver on.")
     parser.add_argument(
         "--no-open-browser",
         action="store_true",
@@ -121,7 +123,9 @@ def main():
     gui = RosDynamicConfigGUI()
     signal.signal(signal.SIGINT, lambda sig, frame: gui.shutdown())
     print(f"Running Dynamic Config GUI at 'http://{args.host}:{args.port}'.")
-    gui.run(debug=args.debug, host=args.host, port=args.port,
+    gui.run(debug=args.debug,
+            host=args.host,
+            port=args.port,
             open_browser=not args.no_open_browser)
     gui.shutdown()
 

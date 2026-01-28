@@ -35,7 +35,11 @@
 
 #include "config_utilities/substitutions.h"
 
+#include <list>
+#include <memory>
 #include <regex>
+#include <string>
+#include <utility>
 
 #include "config_utilities/internal/logger.h"
 

@@ -35,6 +35,8 @@
 
 #include "config_utilities/types/path.h"
 
+#include <string>
+#include <memory>
 #include <cstdlib>
 
 namespace config {

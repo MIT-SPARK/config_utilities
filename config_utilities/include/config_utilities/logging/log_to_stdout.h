@@ -35,6 +35,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "config_utilities/internal/logger.h"
 
 namespace config::internal {
@@ -49,7 +51,7 @@ class StdoutLogger : public Logger {
    * @param min_severity Mininum severity to output
    * @param stderr_severity Mininum severity to log to stderr instead of stdout
    */
-  StdoutLogger(Severity min_severity = Severity::kWarning, Severity stderr_severity = Severity::kError);
+  explicit StdoutLogger(Severity min_severity = Severity::kWarning, Severity stderr_severity = Severity::kError);
 
   virtual ~StdoutLogger() = default;
 

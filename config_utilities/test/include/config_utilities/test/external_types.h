@@ -1,3 +1,7 @@
+#pragma once
+
+#include <string>
+
 #include "config_utilities/config.h"
 #include "config_utilities/factory.h"
 

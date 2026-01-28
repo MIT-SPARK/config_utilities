@@ -35,6 +35,10 @@
 
 #include "config_utilities/internal/formatter.h"
 
+#include <string>
+#include <utility>
+#include <vector>
+
 namespace config::internal {
 
 std::string Formatter::formatErrors(const MetaData& data,

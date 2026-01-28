@@ -35,18 +35,19 @@
 
 #include "config_utilities/internal/introspection.h"
 
+#include <map>
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "config_utilities/config.h"
-#include "config_utilities/factory.h"
 #include "config_utilities/parsing/commandline.h"
 #include "config_utilities/parsing/context.h"
 #include "config_utilities/settings.h"
 #include "config_utilities/test/cli_args.h"
-#include "config_utilities/test/default_config.h"
 #include "config_utilities/test/introspection_utils.h"
 #include "config_utilities/test/utils.h"
-#include "config_utilities/types/conversions.h"
 #include "config_utilities/types/enum.h"
 #include "config_utilities/virtual_config.h"
 
@@ -457,7 +458,7 @@ TEST(Introspection, getValues) {
   auto context_data = YAML::Load(R"(
 a: 123 # get
 vec: [1, 2, 3] # default
-map: {a: false} # get, absent 
+map: {a: false} # get, absent
 e: NONEXISTENT # fail parsing
 empty_vec_modules: [ {type: IntroDerivedA, s: overridden}, {type: IntroDerivedB} ] # create vec modules
 )");
@@ -660,7 +661,7 @@ config:
   pushToContext(YAML::Load(R"(
 defaulted:
   type: IntroDerivedWithSubConfigs
-non_defaulted: 
+non_defaulted:
   type: IntroDerivedWithSubConfigs
   defaulted:
     type: IntroDerivedWithSubConfigs

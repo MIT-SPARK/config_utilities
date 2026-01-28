@@ -35,15 +35,19 @@
 
 #include "config_utilities/parsing/commandline.h"
 
+#include <algorithm>
 #include <filesystem>
+#include <map>
 #include <regex>
 #include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "config_utilities/internal/introspection.h"
 #include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/yaml_utils.h"
 #include "config_utilities/substitutions.h"
-#include "config_utilities/update.h"
 
 namespace config {
 namespace internal {

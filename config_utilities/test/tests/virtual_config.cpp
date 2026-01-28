@@ -35,10 +35,14 @@
 
 #include "config_utilities/virtual_config.h"
 
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "config_utilities/config.h"
-#include "config_utilities/formatting/asl.h"
 #include "config_utilities/parsing/yaml.h"
 #include "config_utilities/printing.h"
 #include "config_utilities/test/utils.h"

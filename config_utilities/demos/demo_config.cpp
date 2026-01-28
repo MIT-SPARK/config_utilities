@@ -39,8 +39,10 @@
  */
 
 #include <iostream>
+#include <map>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include "config_utilities/config.h"                 // Enables declare_config().
 #include "config_utilities/formatting/asl.h"         // Simply including this file sets a style to format output.

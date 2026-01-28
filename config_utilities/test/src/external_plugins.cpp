@@ -33,7 +33,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
-#include <iostream>
+#include <string>
 
 #include <config_utilities/config.h>
 #include <config_utilities/external_registry.h>

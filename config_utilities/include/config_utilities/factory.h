@@ -39,6 +39,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "config_utilities/internal/introspection.h"

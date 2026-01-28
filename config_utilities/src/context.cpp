@@ -36,12 +36,12 @@
 #include "config_utilities/parsing/context.h"
 
 #include <memory>
+#include <string>
 
 #include "config_utilities/internal/config_context.h"
 #include "config_utilities/internal/introspection.h"
 #include "config_utilities/parsing/commandline.h"
 #include "config_utilities/settings.h"
-#include "config_utilities/update.h"
 
 namespace config {
 

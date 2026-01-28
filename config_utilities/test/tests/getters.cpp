@@ -35,11 +35,12 @@
 
 #include "config_utilities/getters.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "config_utilities/config.h"
 #include "config_utilities/parsing/yaml.h"
-#include "config_utilities/test/default_config.h"
 #include "config_utilities/test/utils.h"
 
 namespace config::test {

@@ -9,6 +9,7 @@ import argparse
 
 
 class IntrospectionViewer:
+
     def __init__(self, data, app_name=__name__):
         self._data = data  # Introspection data as json.
         # The GUI is a Flask app, setup end points.
@@ -34,16 +35,25 @@ class IntrospectionViewer:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Viewer for introspection data logged by config_utilities. To log introspection, run your executable using config_utilities with the --config-utilities-introspect/-i option.")
-    parser.add_argument("--data", default=None,
-                        help="Path to the introspection data.json file to view")
-    parser.add_argument("--host", default="localhost",
+        description=
+        "Viewer for introspection data logged by config_utilities. To log introspection, run your executable using config_utilities with the --config-utilities-introspect/-i option."
+    )
+    parser.add_argument(
+        "--data",
+        default=None,
+        help="Path to the introspection data.json file to view")
+    parser.add_argument("--host",
+                        default="localhost",
                         help="Host to run the Flask app on")
-    parser.add_argument("--port", type=int, default=5000,
+    parser.add_argument("--port",
+                        type=int,
+                        default=5000,
                         help="Port to run the Flask app on")
-    parser.add_argument("--debug", action="store_true",
+    parser.add_argument("--debug",
+                        action="store_true",
                         help="Run the Flask app in debug mode")
-    parser.add_argument("--open-browser", action="store_true",
+    parser.add_argument("--open-browser",
+                        action="store_true",
                         help="Open the browser to the GUI")
     args = parser.parse_args()
 
@@ -51,16 +61,18 @@ def main():
     if args.data is None:
         candidate_paths = [
             os.path.join(os.path.curdir, "data.json"),
-            os.path.join(os.path.curdir,
-                         "config_introspection_output", "data.json"),
-            os.path.join(os.path.dirname(__file__), 'data.json')]
+            os.path.join(os.path.curdir, "config_introspection_output",
+                         "data.json"),
+            os.path.join(os.path.dirname(__file__), 'data.json')
+        ]
         for path in candidate_paths:
             if os.path.exists(path):
                 args.data = path
                 break
         if args.data is None:
             raise FileNotFoundError(
-                "No introspection data file specified and no default found. Please specify the path to the introspection data.json file using the --data argument.")
+                "No introspection data file specified and no default found. Please specify the path to the introspection data.json file using the --data argument."
+            )
 
     if not os.path.exists(args.data):
         raise FileNotFoundError(
@@ -70,9 +82,12 @@ def main():
 
     viewer = IntrospectionViewer(data)
     print(
-        f"Running Introspection Viewer for '{os.path.abspath(args.data)}' at 'http://{args.host}:{args.port}'.")
-    viewer.run(host=args.host, port=args.port,
-               debug=args.debug, open_browser=args.open_browser)
+        f"Running Introspection Viewer for '{os.path.abspath(args.data)}' at 'http://{args.host}:{args.port}'."
+    )
+    viewer.run(host=args.host,
+               port=args.port,
+               debug=args.debug,
+               open_browser=args.open_browser)
 
 
 if __name__ == '__main__':

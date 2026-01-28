@@ -38,13 +38,12 @@
 #include <fstream>
 #include <memory>
 #include <string>
-#include <vector>
+#include <utility>
 
 #include <yaml-cpp/node/node.h>
 #include <yaml-cpp/yaml.h>
 
 #include "config_utilities/factory.h"
-#include "config_utilities/internal/string_utils.h"
 #include "config_utilities/internal/visitor.h"
 #include "config_utilities/internal/yaml_utils.h"
 #include "config_utilities/update.h"

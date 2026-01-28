@@ -35,8 +35,8 @@
 
 #pragma once
 
+#include <limits>
 #include <map>
-#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -44,7 +44,6 @@
 #include <yaml-cpp/yaml.h>
 
 #include "config_utilities/internal/meta_data.h"
-#include "config_utilities/settings.h"
 
 namespace config::internal {
 

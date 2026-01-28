@@ -4,7 +4,7 @@
 // - history: list of events
 // - key: Name of the key in the parent map (if any)
 // - map: child nodes, stored as array to preserve order (child nodes will have a 'key' field)
-// - list: list of child nodes 
+// - list: list of child nodes
 // -------------- Processed Fields:  Fields set by the processing that are used to render. These need to be overwritten or cleared to get the desired rendering --------------
 // - value (str): the value to display if the node is a leaf
 // - color: color of the text

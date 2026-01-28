@@ -35,7 +35,10 @@
 
 #include "config_utilities/internal/logger.h"
 
+#include <memory>
 #include <stdexcept>
+#include <string>
+#include <utility>
 
 #include "config_utilities/logging/log_to_stdout.h"
 #include "config_utilities/settings.h"

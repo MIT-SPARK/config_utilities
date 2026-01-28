@@ -35,8 +35,8 @@
 
 #pragma once
 
+#include <map>
 #include <memory>
-#include <vector>
 
 #include <config_utilities/dynamic_config.h>
 #include <config_utilities_msgs/srv/set_config.hpp>

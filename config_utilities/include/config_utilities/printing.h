@@ -35,16 +35,14 @@
 
 #pragma once
 
+#include <map>
 #include <ostream>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "config_utilities/internal/formatter.h"
 #include "config_utilities/internal/logger.h"
-#include "config_utilities/internal/string_utils.h"
 #include "config_utilities/internal/visitor.h"
-#include "config_utilities/settings.h"
 #include "config_utilities/traits.h"
 
 namespace config {

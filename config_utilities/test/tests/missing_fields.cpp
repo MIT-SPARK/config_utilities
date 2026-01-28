@@ -33,14 +33,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "config_utilities/config.h"
-#include "config_utilities/formatting/asl.h"
 #include "config_utilities/internal/visitor.h"
-#include "config_utilities/logging/log_to_stdout.h"
 #include "config_utilities/printing.h"
-#include "config_utilities/virtual_config.h"
 
 namespace config::test {
 
