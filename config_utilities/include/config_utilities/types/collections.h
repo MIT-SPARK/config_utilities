@@ -160,6 +160,74 @@ struct MapValueConverter {
 };
 
 /**
+ * @brief Field conversion that applies conversions to keys and values in a map
+ * @tparam KeyConverter Conversion to apply to every key in the map
+ * @tparam ValueConverter Conversion to apply to every value in the map
+ *
+ * Can be used for any "associative" collection type that exposes a forward iterator and `emplace()`, e.g., `std::map`
+ * or `std::unordered_map`, which should be inferred automatically.
+ *
+ * Note that keys or values that result in a conversion error will be dropped
+ */
+template <typename KeyConverter, typename ValueConverter>
+struct MapKeyValueConverter {
+  using InterKeyT = detail::intermediate_t<KeyConverter>;
+  using OrigKeyT = detail::original_t<KeyConverter>;
+  using InterValueT = detail::intermediate_t<ValueConverter>;
+  using OrigValueT = detail::original_t<ValueConverter>;
+
+  template <template <typename K, typename V> typename Map>
+  static Map<InterKeyT, InterValueT> toIntermediate(const Map<OrigKeyT, OrigValueT> original, std::string& error) {
+    Map<InterKeyT, InterValueT> intermediate;
+    for (const auto& [key, value] : original) {
+      std::string key_error;
+      auto new_key = KeyConverter::toIntermediate(key, key_error);
+      if (!key_error.empty()) {
+        error += " key conversion failure: " + key_error;
+        continue;
+      }
+
+      std::string value_error;
+      auto new_value = ValueConverter::toIntermediate(value, value_error);
+      if (!value_error.empty()) {
+        error += " value conversion failure: " + value_error;
+        continue;
+      }
+
+      intermediate.emplace(new_key, new_value);
+    }
+
+    return intermediate;
+  }
+
+  template <template <typename K, typename V> typename Map>
+  static void fromIntermediate(const Map<InterKeyT, InterValueT>& intermediate,
+                               Map<OrigKeyT, OrigValueT>& original,
+                               std::string& error) {
+    original.clear();
+    for (const auto& [key, value] : intermediate) {
+      std::string key_error;
+      OrigKeyT new_key;
+      KeyConverter::fromIntermediate(key, new_key, key_error);
+      if (!key_error.empty()) {
+        error += " key conversion failure: " + key_error;
+        continue;
+      }
+
+      std::string value_error;
+      OrigKeyT new_value;
+      ValueConverter::fromIntermediate(value, new_value, value_error);
+      if (!value_error.empty()) {
+        error += " value conversion failure: " + value_error;
+        continue;
+      }
+
+      original.emplace(new_key, new_value);
+    }
+  }
+};
+
+/**
  * @brief Field conversion that applies another conversion to values in a sequence
  * @tparam Converter Conversion to apply to every value in the sequence
  *

@@ -52,6 +52,11 @@ struct PlusOneConversion {
   static void fromIntermediate(int intermediate, int& value, std::string&) { value = intermediate - 1; }
 };
 
+struct MinusOneConversion {
+  static int toIntermediate(int value, std::string&) { return value - 1; }
+  static void fromIntermediate(int intermediate, int& value, std::string&) { value = intermediate + 1; }
+};
+
 struct KeyConversionStruct {
   std::map<int, std::string> key_map;
   std::unordered_map<int, std::string> unordered_key_map;
@@ -78,6 +83,21 @@ struct ValueConversionStruct {
 void declare_config(ValueConversionStruct& config) {
   field<MapValueConverter<PlusOneConversion>>(config.value_map, "value_map");
   field<MapValueConverter<PlusOneConversion>>(config.unordered_value_map, "value_map");
+}
+
+struct KeyValueConversionStruct {
+  std::map<int, int> int_map;
+  std::unordered_map<int, int> unordered_int_map;
+
+  std::map<int, int> ordered_int_map() const {
+    return std::map<int, int>(unordered_int_map.begin(), unordered_int_map.end());
+  }
+};
+
+void declare_config(KeyValueConversionStruct& config) {
+  using FullConversion = MapKeyValueConverter<PlusOneConversion, MinusOneConversion>;
+  field<FullConversion>(config.int_map, "int_map");
+  field<FullConversion>(config.unordered_int_map, "int_map");
 }
 
 struct SeqConversionStruct {
@@ -136,6 +156,21 @@ value_map:
   expected = {{"foo", -1}};
   EXPECT_EQ(expected, result.value_map);
   EXPECT_EQ(expected, result.ordered_value_map());
+}
+
+TEST(Collections, ConvertFullMap) {
+  auto node = YAML::Load(R"yaml(int_map: {1: 2, 2: 3, 3: 0})yaml");
+  auto result = fromYaml<KeyValueConversionStruct>(node);
+  std::map<int, int> expected{{0, 3}, {1, 4}, {2, 1}};
+  EXPECT_EQ(expected, result.int_map);
+  EXPECT_EQ(expected, result.ordered_int_map());
+
+  // make sure second parse overrides first
+  node = YAML::Load(R"yaml(int_map: {2: -2})yaml");
+  EXPECT_TRUE(updateFromYaml(result, node));
+  expected = {{1, -1}};
+  EXPECT_EQ(expected, result.int_map);
+  EXPECT_EQ(expected, result.ordered_int_map());
 }
 
 TEST(Collections, ConvertSequence) {
