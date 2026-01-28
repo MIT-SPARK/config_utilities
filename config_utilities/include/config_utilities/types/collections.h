@@ -74,7 +74,7 @@ struct MapKeyConverter {
   using KeyT = detail::original_t<Converter>;
 
   template <typename ValueT, template <typename K, typename V> typename Map>
-  static Map<InterT, ValueT> toIntermediate(const Map<KeyT, ValueT> original, std::string& error) {
+  static Map<InterT, ValueT> toIntermediate(const Map<KeyT, ValueT>& original, std::string& error) {
     Map<InterT, ValueT> intermediate;
     for (const auto& [key, value] : original) {
       std::string key_error;
@@ -92,7 +92,7 @@ struct MapKeyConverter {
 
   template <typename ValueT, template <typename K, typename V> typename Map>
   static void fromIntermediate(const Map<InterT, ValueT>& intermediate,
-                               Map<InterT, ValueT>& original,
+                               Map<KeyT, ValueT>& original,
                                std::string& error) {
     original.clear();
     for (const auto& [key, value] : intermediate) {
@@ -126,7 +126,7 @@ struct MapValueConverter {
   using ValueT = detail::original_t<Converter>;
 
   template <typename KeyT, template <typename K, typename V> typename Map>
-  static Map<KeyT, InterT> toIntermediate(const Map<KeyT, ValueT> original, std::string& error) {
+  static Map<KeyT, InterT> toIntermediate(const Map<KeyT, ValueT>& original, std::string& error) {
     Map<KeyT, InterT> intermediate;
     for (const auto& [key, value] : original) {
       std::string value_error;
@@ -177,7 +177,7 @@ struct MapKeyValueConverter {
   using OrigValueT = detail::original_t<ValueConverter>;
 
   template <template <typename K, typename V> typename Map>
-  static Map<InterKeyT, InterValueT> toIntermediate(const Map<OrigKeyT, OrigValueT> original, std::string& error) {
+  static Map<InterKeyT, InterValueT> toIntermediate(const Map<OrigKeyT, OrigValueT>& original, std::string& error) {
     Map<InterKeyT, InterValueT> intermediate;
     for (const auto& [key, value] : original) {
       std::string key_error;
@@ -244,7 +244,7 @@ struct SequenceConverter {
   using InterT = detail::intermediate_t<Converter>;
 
   template <template <typename T> typename Seq>
-  static Seq<InterT> toIntermediate(const Seq<OrigT> original, std::string& error) {
+  static Seq<InterT> toIntermediate(const Seq<OrigT>& original, std::string& error) {
     Seq<InterT> intermediate;
     for (const auto& orig : original) {
       std::string value_error;
