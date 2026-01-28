@@ -33,70 +33,46 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
-#pragma once
+#include "config_utilities/types/collections.h"
 
-#include <map>
-#include <string>
+#include <gtest/gtest.h>
 
-namespace config {
-namespace detail {
+#include "config_utilities/config.h"
+#include "config_utilities/parsing/yaml.h"
 
-template <class FuncT>
-struct ConvertArgs;
+namespace config::test {
 
-template <typename OrigT, typename InterT>
-struct ConvertArgs<void(InterT, OrigT, std::string&)> {
-  using intermediate = std::remove_const_t<std::remove_reference_t<InterT>>;
-  using original = std::remove_const_t<std::remove_reference_t<OrigT>>;
+struct PlusOneConversion {
+  static int toIntermediate(int value, std::string&) { return value + 1; }
+  static void fromIntermediate(int intermediate, int& value, std::string&) { value = intermediate - 1; }
 };
 
-template <typename Converter>
-using intermediate_t = typename ConvertArgs<decltype(Converter::fromIntermediate)>::intermediate;
-
-template <typename Converter>
-using original_t = typename ConvertArgs<decltype(Converter::fromIntermediate)>::original;
-
-}  // namespace detail
-
-template <typename Converter>
-struct KeyConverter {
-  using InterT = detail::intermediate_t<Converter>;
-  using KeyT = detail::original_t<Converter>;
-
-  template <typename ValueT>
-  static std::map<InterT, ValueT> toIntermediate(const std::map<KeyT, ValueT> original, std::string& error) {
-    std::map<InterT, ValueT> intermediate;
-    for (const auto& [key, value] : original) {
-      std::string key_error;
-      auto new_key = Converter::toIntermediate(key, key_error);
-      if (!key_error.empty()) {
-        error += " key conversion failure: " + key_error;
-        continue;
-      }
-
-      intermediate.emplace(new_key, value);
-    }
-
-    return intermediate;
-  }
-
-  template <typename ValueT>
-  static void fromIntermediate(const std::map<InterT, ValueT>& intermediate,
-                               std::map<InterT, ValueT>& original,
-                               std::string& error) {
-    original.clear();
-    for (const auto& [key, value] : intermediate) {
-      std::string key_error;
-      KeyT new_key;
-      Converter::fromIntermediate(key, new_key, key_error);
-      if (!key_error.empty()) {
-        error += " key conversion failure: " + key_error;
-        continue;
-      }
-
-      original.emplace(new_key, value);
-    }
-  }
+struct CollectionConversionStruct {
+  std::map<int, std::string> word_map{{1, "hello"}};
 };
 
-}  // namespace config
+void declare_config(CollectionConversionStruct& config) {
+  field<KeyConverter<PlusOneConversion>>(config.word_map, "word_map");
+}
+
+TEST(Collections, ConvertKeys) {
+  auto node = YAML::Load(R"yaml(
+word_map:
+  2: world
+  3: hello
+  0: test
+)yaml");
+  auto result = fromYaml<CollectionConversionStruct>(node);
+  std::map<int, std::string> expected{{-1, "test"}, {1, "world"}, {2, "hello"}};
+  EXPECT_EQ(expected, result.word_map);
+
+  node = YAML::Load(R"yaml(
+word_map:
+  0: foo
+  )yaml");
+  EXPECT_TRUE(updateFromYaml(result, node));
+  expected = {{-1, "foo"}};
+  EXPECT_EQ(expected, result.word_map);
+}
+
+}  // namespace config::test
