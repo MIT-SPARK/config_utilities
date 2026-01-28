@@ -57,6 +57,17 @@ using original_t = typename ConvertArgs<decltype(Converter::fromIntermediate)>::
 
 }  // namespace detail
 
+/**
+ * @brief Field conversion that applies another conversion to keys in a map
+ * @tparam Converter Conversion to apply to every key in the map
+ *
+ * Automatic type inference *should* work as long as the conversion is specified, e.g.,
+ * `field<MapKeyConverter<ConverterToApply>>(config.field, "field");`
+ * Can be used for any "associative" collection type that exposes a forward iterator and `emplace()`, e.g., `std::map`
+ * or `std::unordered_map`.
+ *
+ * Note that keys that result in a conversion error will be dropped
+ */
 template <typename Converter>
 struct MapKeyConverter {
   using InterT = detail::intermediate_t<Converter>;
@@ -98,6 +109,17 @@ struct MapKeyConverter {
   }
 };
 
+/**
+ * @brief Field conversion that applies another conversion to values in a map
+ * @tparam Converter Conversion to apply to every value in the map
+ *
+ * Automatic type inference *should* work as long as the conversion is specified, e.g.,
+ * `field<MapValueConverter<ConverterToApply>>(config.field, "field");`
+ * Can be used for any "associative" collection type that exposes a forward iterator and `emplace()`, e.g., `std::map`
+ * or `std::unordered_map`.
+ *
+ * Note that values that result in a conversion error will be dropped
+ */
 template <typename Converter>
 struct MapValueConverter {
   using InterT = detail::intermediate_t<Converter>;
@@ -137,6 +159,17 @@ struct MapValueConverter {
   }
 };
 
+/**
+ * @brief Field conversion that applies another conversion to values in a sequence
+ * @tparam Converter Conversion to apply to every value in the sequence
+ *
+ * Automatic type inference *should* work as long as the conversion is specified, e.g.,
+ * `field<SequenceConverter<ConverterToApply>>(config.field, "field");`
+ * Can be used for any collection type that exposes a forward iterator and `emplace_back()`, e.g., `std::vector` or
+ * `std::list`.
+ *
+ * Note that values that result in a conversion error will be dropped
+ */
 template <typename Converter>
 struct SequenceConverter {
   using OrigT = detail::original_t<Converter>;
