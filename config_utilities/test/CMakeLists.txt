@@ -38,6 +38,7 @@ add_executable(
   src/introspection_utils.cpp
   src/utils.cpp
   tests/asl_formatter.cpp
+  tests/collections.cpp
   tests/commandline.cpp
   tests/config_arrays.cpp
   tests/config_maps.cpp
