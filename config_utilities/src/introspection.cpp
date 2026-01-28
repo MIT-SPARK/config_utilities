@@ -12,6 +12,7 @@
 
 #include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/yaml_utils.h"
+#include "config_utilities/settings.h"
 
 // TMP
 #include <iostream>
