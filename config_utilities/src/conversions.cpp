@@ -35,11 +35,8 @@
 
 #include "config_utilities/types/conversions.h"
 
+#include <string>
 #include <thread>
-
-#include "config_utilities/internal/formatter.h"
-#include "config_utilities/internal/logger.h"
-#include "config_utilities/internal/visitor.h"
 
 namespace config {
 

@@ -33,6 +33,10 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
+#include <algorithm>
+#include <string>
+#include <vector>
+
 #include "config_utilities/factory.h"
 #include "config_utilities/formatting/asl.h"
 #include "config_utilities/internal/string_utils.h"

@@ -35,6 +35,8 @@
 
 #include "config_utilities/internal/config_context.h"
 
+#include <string>
+
 #include "config_utilities/internal/yaml_utils.h"
 
 namespace config::internal {

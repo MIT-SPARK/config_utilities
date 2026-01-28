@@ -35,7 +35,6 @@
 
 #pragma once
 
-#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -73,7 +72,7 @@ struct FieldInputInfo {
 };
 
 struct IntFieldInputInfo : public FieldInputInfo {
-  IntFieldInputInfo(const std::string& type_str) : FieldInputInfo(Type::kInt), type_str(type_str) {}
+  explicit IntFieldInputInfo(const std::string& type_str) : FieldInputInfo(Type::kInt), type_str(type_str) {}
 
   // Constraints for the field.
   // NOTE(lschmid): We currently do not consider data larger than 64 bit integers.
@@ -90,7 +89,7 @@ struct IntFieldInputInfo : public FieldInputInfo {
 };
 
 struct FloatFieldInputInfo : public FieldInputInfo {
-  FloatFieldInputInfo(const std::string& type_str) : FieldInputInfo(Type::kFloat), type_str(type_str) {}
+  explicit FloatFieldInputInfo(const std::string& type_str) : FieldInputInfo(Type::kFloat), type_str(type_str) {}
 
   // Constraints for the field.
   // NOTE(lschmid): We currently do not consider data larger than 64 bit floats.

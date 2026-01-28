@@ -35,14 +35,16 @@
 
 #include "config_utilities/types/conversions.h"
 
+#include <memory>
+#include <string>
 #include <thread>
+#include <vector>
 
 #include <gtest/gtest.h>
 
 #include "config_utilities/config.h"
 #include "config_utilities/internal/visitor.h"
 #include "config_utilities/parsing/yaml.h"
-#include "config_utilities/printing.h"
 
 namespace config::test {
 

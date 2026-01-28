@@ -35,13 +35,13 @@
 
 #include "config_utilities/types/path.h"
 
-#include <fstream>
 #include <cstdlib>
+#include <fstream>
+#include <string>
 
 #include <gtest/gtest.h>
 
 #include "config_utilities/config.h"
-#include "config_utilities/printing.h"
 #include "config_utilities/test/utils.h"
 #include "config_utilities/validation.h"
 
@@ -154,7 +154,7 @@ TEST(Path, AbsoluteConversion) {
   EXPECT_EQ(Path::Absolute::toIntermediate(with_home_path, error), expected_home);
   EXPECT_EQ(Path::Absolute::toIntermediate(empty_path, error), "");
 
-  { // check that absolute path is not modified
+  {  // check that absolute path is not modified
     std::filesystem::path path;
     std::string str;
     Path::Absolute::fromIntermediate(expected, path, error);
@@ -163,7 +163,7 @@ TEST(Path, AbsoluteConversion) {
     EXPECT_EQ(str, expected);
   }
 
-  { // check that non-canonical absolute path is cleaned
+  {  // check that non-canonical absolute path is cleaned
     std::filesystem::path path;
     std::string str;
     Path::Absolute::fromIntermediate(with_dot, path, error);
@@ -172,7 +172,7 @@ TEST(Path, AbsoluteConversion) {
     EXPECT_EQ(str, expected);
   }
 
-  { // check that relative path is appended to cwd
+  {  // check that relative path is appended to cwd
     std::filesystem::path path;
     std::string str;
     Path::Absolute::fromIntermediate(relative, path, error);
@@ -181,7 +181,7 @@ TEST(Path, AbsoluteConversion) {
     EXPECT_EQ(str, expected_abs);
   }
 
-  { // check that home is expanded
+  {  // check that home is expanded
     std::filesystem::path path;
     std::string str;
     Path::Absolute::fromIntermediate(with_home, path, error);
@@ -190,7 +190,7 @@ TEST(Path, AbsoluteConversion) {
     EXPECT_EQ(str, expected_home);
   }
 
-  { // check that empty paths are handled correctly
+  {  // check that empty paths are handled correctly
     error.clear();
     std::filesystem::path path;
     std::string str;

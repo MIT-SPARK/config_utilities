@@ -35,6 +35,11 @@
 
 #include "config_utilities/external_registry.h"
 
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "config_utilities/logging/log_to_stdout.h"

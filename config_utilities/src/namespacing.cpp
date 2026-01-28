@@ -35,6 +35,8 @@
 
 #include "config_utilities/internal/namespacing.h"
 
+#include <string>
+
 #include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/string_utils.h"
 #include "config_utilities/internal/visitor.h"

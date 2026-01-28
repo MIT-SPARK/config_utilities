@@ -35,8 +35,7 @@
 
 #include "config_utilities/internal/meta_data.h"
 
-#include "config_utilities/internal/string_utils.h"
-#include "config_utilities/settings.h"
+#include <string>
 
 namespace config::internal {
 

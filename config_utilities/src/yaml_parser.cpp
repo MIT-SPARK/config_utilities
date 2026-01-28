@@ -35,6 +35,9 @@
 
 #include "config_utilities/internal/yaml_parser.h"
 
+#include <limits>
+#include <string>
+
 namespace config::internal {
 
 void YamlParser::fromYamlImpl(uint8_t& value, const YAML::Node& node, std::string& error) {

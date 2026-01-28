@@ -35,7 +35,9 @@
 
 #pragma once
 
+#include <map>
 #include <string>
+#include <vector>
 
 #include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/visitor.h"

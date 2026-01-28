@@ -35,6 +35,11 @@
 
 #include "config_utilities/test/default_config.h"
 
+#include <map>
+#include <set>
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "config_utilities/config.h"

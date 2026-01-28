@@ -35,8 +35,8 @@
 
 #include "config_utilities/logging/log_to_stdout.h"
 
-#include <exception>
 #include <iostream>
+#include <string>
 
 #include "config_utilities/factory.h"
 

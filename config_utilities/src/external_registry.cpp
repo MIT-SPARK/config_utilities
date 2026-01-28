@@ -36,6 +36,10 @@
 #include "config_utilities/external_registry.h"
 
 #include <iostream>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <boost/dll.hpp>
 #include <config_utilities/factory.h>
@@ -139,7 +143,7 @@ void ExternalRegistry::unload(const std::filesystem::path& library_path) {
 }
 
 struct RegistryLock {
-  RegistryLock(std::function<void(const ModuleInfo&, const std::string&, const std::string&)> callback) {
+  explicit RegistryLock(std::function<void(const ModuleInfo&, const std::string&, const std::string&)> callback) {
     ModuleRegistry::lock(std::move(callback));
   }
 

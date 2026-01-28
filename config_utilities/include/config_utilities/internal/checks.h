@@ -109,7 +109,7 @@ class BinaryCheck : public CheckBase {
     if (!info || (info->type != FieldInputInfo::Type::kInt && info->type != FieldInputInfo::Type::kFloat)) {
       return nullptr;
     }
-    YAML::Node value = YamlParser::toYaml(value_); 
+    YAML::Node value = YamlParser::toYaml(value_);
     if (!value) {
       return nullptr;
     }

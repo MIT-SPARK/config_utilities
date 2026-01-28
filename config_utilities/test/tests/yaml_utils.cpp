@@ -35,7 +35,9 @@
 
 #include "config_utilities/internal/yaml_utils.h"
 
-#include <sstream>
+#include <map>
+#include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 

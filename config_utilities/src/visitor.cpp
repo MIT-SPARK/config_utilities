@@ -36,6 +36,8 @@
 #include "config_utilities/internal/visitor.h"
 
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 #include "config_utilities/factory.h"
 #include "config_utilities/internal/yaml_utils.h"

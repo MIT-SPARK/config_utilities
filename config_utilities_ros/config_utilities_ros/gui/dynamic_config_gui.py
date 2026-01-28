@@ -6,7 +6,6 @@ import re
 import copy
 import logging
 
-
 FACTORY_TYPE_PAPRAM_NAME = "type"
 NS_SEP = "/"
 UNINITIALIZED_VIRTUAL_CONFIG_NAME = (
@@ -29,6 +28,7 @@ def from_yaml(data):
 
 
 class DynamicConfigGUI:
+
     def __init__(self, app_name=__name__):
         # Additional display containers.
         self.message = ""
@@ -36,7 +36,8 @@ class DynamicConfigGUI:
         self.warnings = []
 
         # Config data containers
-        self._config_data = {}  # The underlying config data, this is the data that is received from the server.
+        self._config_data = {
+        }  # The underlying config data, this is the data that is received from the server.
         self._fields = None  # The linearized fields to render in the GUI.
 
         # Server and key containers.
@@ -55,15 +56,26 @@ class DynamicConfigGUI:
         self._app = Flask(app_name)
         self._app.secret_key = uuid.uuid4().hex
         self._app.jinja_env.auto_reload = True
-        self._app.add_url_rule("/", "index", self._index, methods=["GET", "POST"])
-        self._app.add_url_rule("/refresh", "refresh", self._refresh, methods=["POST"])
-        self._app.add_url_rule("/submit", "submit", self._submit, methods=["POST"])
-        self._app.add_url_rule(
-            "/select", "select", self._select_server_or_key, methods=["POST"]
-        )
-        self._app.add_url_rule(
-            "/add_delete", "add_delete", self._add_delete_field, methods=["POST"]
-        )
+        self._app.add_url_rule("/",
+                               "index",
+                               self._index,
+                               methods=["GET", "POST"])
+        self._app.add_url_rule("/refresh",
+                               "refresh",
+                               self._refresh,
+                               methods=["POST"])
+        self._app.add_url_rule("/submit",
+                               "submit",
+                               self._submit,
+                               methods=["POST"])
+        self._app.add_url_rule("/select",
+                               "select",
+                               self._select_server_or_key,
+                               methods=["POST"])
+        self._app.add_url_rule("/add_delete",
+                               "add_delete",
+                               self._add_delete_field,
+                               methods=["POST"])
         self._app.add_url_rule("/msg", "msg", self._msg, methods=["POST"])
 
     def run(self, host="localhost", port=5000, debug=False, open_browser=True):
@@ -105,7 +117,8 @@ class DynamicConfigGUI:
         self.warnings = []
 
         # Update the available servers and keys.
-        self._available_servers_and_keys = self.get_available_servers_and_keys_fn()
+        self._available_servers_and_keys = self.get_available_servers_and_keys_fn(
+        )
         self._update_server_and_key_selected()
 
         # Update the content of the selection.
@@ -163,14 +176,11 @@ class DynamicConfigGUI:
                 elif field["type"] == "config":
                     if field["field_name"] == curr_ns:
                         # If the field is an array or map check the index.
-                        if "array_index" in field and int(field["array_index"]) != int(
-                            ns[0]
-                        ):
+                        if "array_index" in field and int(
+                                field["array_index"]) != int(ns[0]):
                             continue
-                        if (
-                            "map_config_key" in field
-                            and field["map_config_key"] != ns[0]
-                        ):
+                        if ("map_config_key" in field
+                                and field["map_config_key"] != ns[0]):
                             continue
 
                         if "array_index" in field or "map_config_key" in field:
@@ -192,16 +202,15 @@ class DynamicConfigGUI:
 
         if action == "add":
             # Add a new field by copying the last field.
-            curr_data.insert(curr_index + 1, copy.deepcopy(curr_data[curr_index]))
+            curr_data.insert(curr_index + 1,
+                             copy.deepcopy(curr_data[curr_index]))
             # Adjust for new keys.
             if "array_index" in curr_data[curr_index]:
                 i = curr_index + 1
                 while i < len(curr_data):
-                    if (
-                        "array_index" in curr_data[i]
-                        and curr_data[i]["field_name"]
-                        == curr_data[curr_index]["field_name"]
-                    ):
+                    if ("array_index" in curr_data[i]
+                            and curr_data[i]["field_name"]
+                            == curr_data[curr_index]["field_name"]):
                         curr_data[i]["array_index"] += 1
                     i += 1
             if "map_config_key" in curr_data[curr_index]:
@@ -211,11 +220,9 @@ class DynamicConfigGUI:
             if "array_index" in curr_data[curr_index]:
                 i = curr_index + 1
                 while i < len(curr_data):
-                    if (
-                        "array_index" in curr_data[i]
-                        and curr_data[i]["field_name"]
-                        == curr_data[curr_index]["field_name"]
-                    ):
+                    if ("array_index" in curr_data[i]
+                            and curr_data[i]["field_name"]
+                            == curr_data[curr_index]["field_name"]):
                         curr_data[i]["array_index"] -= 1
                     i += 1
             # Delete the field.
@@ -234,10 +241,9 @@ class DynamicConfigGUI:
             return
 
         # Get the new data from the server.
-        self._config_data = self.set_request_fn(
-            self._active_server, self._active_key, data
-        )
-        
+        self._config_data = self.set_request_fn(self._active_server,
+                                                self._active_key, data)
+
         # Parse the config data into fields for the GUI.
         self._parse_fields(replace_yaml=True)
         self._parse_errors()
@@ -248,7 +254,8 @@ class DynamicConfigGUI:
         """
         # Verify that all required functions are set.
         if self.get_available_servers_and_keys_fn is None:
-            raise ValueError("No function to get available servers and keys set.")
+            raise ValueError(
+                "No function to get available servers and keys set.")
         if self.set_request_fn is None:
             raise ValueError("No function to set the request set.")
         self._is_setup = True
@@ -264,19 +271,21 @@ class DynamicConfigGUI:
             # If the server is no longer available, reset the server and key.
             self._active_server = None
             self._active_key = None
-        if self._active_server is None and len(self._available_servers_and_keys) > 0:
+        if self._active_server is None and len(
+                self._available_servers_and_keys) > 0:
             # If no server is selected, select the first available server.
-            self._active_server = list(self._available_servers_and_keys.keys())[0]
+            self._active_server = list(
+                self._available_servers_and_keys.keys())[0]
 
         # Selection logic for the key.
         self._available_keys = self._available_servers_and_keys.get(
-            self._active_server, []
-        )
+            self._active_server, [])
         if self._active_key not in self._available_keys:
             self._active_key = None
         if self._active_key is None:
             # Try to lookup previously selected keys.
-            previous_key = self._previously_selected_keys.get(self._active_server, None)
+            previous_key = self._previously_selected_keys.get(
+                self._active_server, None)
             if previous_key in self._available_keys:
                 self._active_key = previous_key
             elif len(self._available_keys) > 0:
@@ -284,7 +293,8 @@ class DynamicConfigGUI:
 
         # Cache the previously selected key.
         if self._active_server is not None and self._active_key is not None:
-            self._previously_selected_keys[self._active_server] = self._active_key
+            self._previously_selected_keys[
+                self._active_server] = self._active_key
 
     def _render(self):
         """
@@ -418,13 +428,14 @@ class DynamicConfigGUI:
                             values[field["field_name"]] = []
                         if has_subfields:
                             values[field["field_name"]].append(
-                                parse_rec(field, new_prefix, val)
-                            )
+                                parse_rec(field, new_prefix, val))
                     elif "map_config_key" in field:
                         key = field["map_config_key"]
                         name = field["field_name"]
-                        new_prefix.append(key)  # Keep the old key to look up IDs.
-                        new_key = str(data[f"{prefix_str}{name}{NS_SEP}{key}-key"])
+                        new_prefix.append(
+                            key)  # Keep the old key to look up IDs.
+                        new_key = str(
+                            data[f"{prefix_str}{name}{NS_SEP}{key}-key"])
                         if new_key == "":
                             self.errors.append(
                                 f"Error: map key for '{'.'.join(prefix + [name])}' is empty."
@@ -436,13 +447,13 @@ class DynamicConfigGUI:
                         if name not in values:
                             values[name] = {}
                         if has_subfields:
-                            values[name][new_key] = parse_rec(field, new_prefix, val)
+                            values[name][new_key] = parse_rec(
+                                field, new_prefix, val)
                         field["map_config_key"] = new_key
                     else:
                         # Parse all fields in a regular config.
-                        values[field["field_name"]] = (
-                            parse_rec(field, new_prefix, val) if has_subfields else val
-                        )
+                        values[field["field_name"]] = (parse_rec(
+                            field, new_prefix, val) if has_subfields else val)
                 else:
                     raise ValueError(f"Unknown field type: {field['type']}")
             return values

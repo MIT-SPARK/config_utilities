@@ -1,8 +1,9 @@
 #include <iostream>
+#include <string>
 
 #include <config_utilities/parsing/commandline.h>
 
-const std::string help_msg =
+const char help_msg[] =
     R"""(Usage: composite-config [--config-utilities-yaml YAML_TOKEN ...]... [--config-utilities-file FILEPATH[@NAMESPACE]]...
 
 Merges the input YAML values from left to right and outputs the resulting composite YAML to stdout.

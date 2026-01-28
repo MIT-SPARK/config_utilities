@@ -35,6 +35,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "config_utilities/substitutions.h"
 
 namespace config {

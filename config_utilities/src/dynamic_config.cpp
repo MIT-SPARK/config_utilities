@@ -35,6 +35,9 @@
 
 #include "config_utilities/dynamic_config.h"
 
+#include <string>
+#include <vector>
+
 #include "config_utilities/internal/logger.h"
 
 namespace config {

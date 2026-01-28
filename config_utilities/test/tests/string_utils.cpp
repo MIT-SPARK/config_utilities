@@ -35,6 +35,8 @@
 
 #include "config_utilities/internal/string_utils.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 namespace config::test {

@@ -38,6 +38,8 @@
 #include <optional>
 #include <regex>
 #include <sstream>
+#include <string>
+#include <vector>
 
 #include "config_utilities/internal/logger.h"
 #include "config_utilities/internal/string_utils.h"

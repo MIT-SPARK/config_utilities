@@ -35,6 +35,9 @@
 
 #include "config_utilities/substitutions.h"
 
+#include <map>
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "config_utilities/test/utils.h"

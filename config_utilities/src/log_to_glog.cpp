@@ -40,6 +40,7 @@
 #endif
 
 #include <iostream>
+#include <string>
 
 #include "config_utilities/factory.h"
 #include "config_utilities/logging/log_to_stdout.h"

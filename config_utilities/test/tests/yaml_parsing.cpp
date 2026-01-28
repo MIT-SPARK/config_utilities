@@ -33,7 +33,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
-#include <sstream>
+#include <list>
+#include <map>
+#include <set>
+#include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 

@@ -1,6 +1,8 @@
 #include "config_utilities/test/cli_args.h"
 
 #include <sstream>
+#include <string>
+#include <vector>
 
 namespace config::test {
 

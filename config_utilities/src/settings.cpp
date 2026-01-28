@@ -36,6 +36,8 @@
 #include "config_utilities/settings.h"
 
 #include <memory>
+#include <string>
+#include <utility>
 
 #include "config_utilities/config.h"
 #include "config_utilities/factory.h"

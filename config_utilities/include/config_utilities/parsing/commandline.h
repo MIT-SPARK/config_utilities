@@ -37,6 +37,8 @@
 
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "config_utilities/factory.h"
 #include "config_utilities/internal/visitor.h"

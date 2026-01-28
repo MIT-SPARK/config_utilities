@@ -34,7 +34,8 @@
  * -------------------------------------------------------------------------- */
 #include "config_utilities/internal/field_input_info.h"
 
-#include <algorithm>
+#include <memory>
+#include <string>
 #include <unordered_set>
 
 #include "config_utilities/internal/yaml_parser.h"

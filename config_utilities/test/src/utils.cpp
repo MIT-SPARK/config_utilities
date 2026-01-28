@@ -35,6 +35,10 @@
 
 #include "config_utilities/test/utils.h"
 
+#include <string>
+#include <memory>
+#include <iostream>
+
 #include <gtest/gtest.h>
 
 namespace config::test {

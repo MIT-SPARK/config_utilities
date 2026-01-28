@@ -33,6 +33,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
+#include <string>
+
 #include <config_utilities/config.h>
 #include <config_utilities/internal/visitor.h>
 #include <config_utilities/virtual_config.h>

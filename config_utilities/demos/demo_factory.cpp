@@ -41,6 +41,7 @@
 
 #include <iostream>
 #include <string>
+#include <memory>
 
 #include "config_utilities/config.h"                 // Required for config declaration
 #include "config_utilities/factory.h"                // enables 'create()'

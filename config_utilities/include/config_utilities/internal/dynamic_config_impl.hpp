@@ -33,10 +33,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
+#pragma once
+
+#include <string>
 #include <utility>
 
+#include "config_utilities/dynamic_config.h"
 #include "config_utilities/internal/formatter.h"
-#include "config_utilities/internal/string_utils.h"
 
 namespace config {
 
