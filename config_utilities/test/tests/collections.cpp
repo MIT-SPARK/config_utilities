@@ -35,6 +35,11 @@
 
 #include "config_utilities/types/collections.h"
 
+#include <list>
+#include <map>
+#include <unordered_map>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "config_utilities/config.h"
@@ -47,32 +52,105 @@ struct PlusOneConversion {
   static void fromIntermediate(int intermediate, int& value, std::string&) { value = intermediate - 1; }
 };
 
-struct CollectionConversionStruct {
-  std::map<int, std::string> word_map{{1, "hello"}};
+struct KeyConversionStruct {
+  std::map<int, std::string> key_map;
+  std::unordered_map<int, std::string> unordered_key_map;
+
+  std::map<int, std::string> ordered_key_map() const {
+    return std::map<int, std::string>(unordered_key_map.begin(), unordered_key_map.end());
+  }
 };
 
-void declare_config(CollectionConversionStruct& config) {
-  field<KeyConverter<PlusOneConversion>>(config.word_map, "word_map");
+void declare_config(KeyConversionStruct& config) {
+  field<MapKeyConverter<PlusOneConversion>>(config.key_map, "key_map");
+  field<MapKeyConverter<PlusOneConversion>>(config.unordered_key_map, "key_map");
+}
+
+struct ValueConversionStruct {
+  std::map<std::string, int> value_map;
+  std::unordered_map<std::string, int> unordered_value_map;
+
+  std::map<std::string, int> ordered_value_map() const {
+    return std::map<std::string, int>(unordered_value_map.begin(), unordered_value_map.end());
+  }
+};
+
+void declare_config(ValueConversionStruct& config) {
+  field<MapValueConverter<PlusOneConversion>>(config.value_map, "value_map");
+  field<MapValueConverter<PlusOneConversion>>(config.unordered_value_map, "value_map");
+}
+
+struct SeqConversionStruct {
+  std::list<int> value_list;
+  std::vector<int> value_vec;
+
+  std::list<int> vec_as_list() const { return std::list<int>(value_vec.begin(), value_vec.end()); }
+};
+
+void declare_config(SeqConversionStruct& config) {
+  field<SequenceConverter<PlusOneConversion>>(config.value_list, "values");
+  field<SequenceConverter<PlusOneConversion>>(config.value_vec, "values");
 }
 
 TEST(Collections, ConvertKeys) {
   auto node = YAML::Load(R"yaml(
-word_map:
+key_map:
   2: world
   3: hello
   0: test
 )yaml");
-  auto result = fromYaml<CollectionConversionStruct>(node);
+  auto result = fromYaml<KeyConversionStruct>(node);
   std::map<int, std::string> expected{{-1, "test"}, {1, "world"}, {2, "hello"}};
-  EXPECT_EQ(expected, result.word_map);
+  EXPECT_EQ(expected, result.key_map);
+  EXPECT_EQ(expected, result.ordered_key_map());
 
+  // make sure second parse overrides first
   node = YAML::Load(R"yaml(
-word_map:
+key_map:
   0: foo
   )yaml");
   EXPECT_TRUE(updateFromYaml(result, node));
   expected = {{-1, "foo"}};
-  EXPECT_EQ(expected, result.word_map);
+  EXPECT_EQ(expected, result.key_map);
+  EXPECT_EQ(expected, result.ordered_key_map());
+}
+
+TEST(Collections, ConvertValues) {
+  auto node = YAML::Load(R"yaml(
+value_map:
+  world: 2
+  hello: 3
+  test: 0
+)yaml");
+  auto result = fromYaml<ValueConversionStruct>(node);
+  std::map<std::string, int> expected{{"test", -1}, {"world", 1}, {"hello", 2}};
+  EXPECT_EQ(expected, result.value_map);
+  EXPECT_EQ(expected, result.ordered_value_map());
+
+  // make sure second parse overrides first
+  node = YAML::Load(R"yaml(
+value_map:
+  foo: 0
+  )yaml");
+  EXPECT_TRUE(updateFromYaml(result, node));
+  expected = {{"foo", -1}};
+  EXPECT_EQ(expected, result.value_map);
+  EXPECT_EQ(expected, result.ordered_value_map());
+}
+
+TEST(Collections, ConvertSequence) {
+  auto node = YAML::Load(R"yaml(values: [1, 2, 3])yaml");
+  auto result = fromYaml<SeqConversionStruct>(node);
+  std::list<int> expected{0, 1, 2};
+  EXPECT_EQ(expected, result.value_list);
+  EXPECT_EQ(expected, result.vec_as_list());
+
+  // make sure second parse overrides first
+  node = YAML::Load(R"yaml(values: [0, 2, 4, 6])yaml");
+  EXPECT_TRUE(updateFromYaml(result, node));
+  expected = {-1, 1, 3, 5};
+  EXPECT_EQ(expected, result.value_list);
+  EXPECT_EQ(expected, result.vec_as_list());
 }
 
 }  // namespace config::test
