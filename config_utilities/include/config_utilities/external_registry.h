@@ -48,6 +48,7 @@ namespace config {
 namespace internal {
 
 struct InstanceInfoBase {
+  virtual ~InstanceInfoBase() = default;
   virtual void cleanup() = 0;
 };
 
