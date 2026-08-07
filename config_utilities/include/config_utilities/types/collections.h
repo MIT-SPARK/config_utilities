@@ -73,7 +73,7 @@ struct MapKeyConverter {
   using InterT = detail::intermediate_t<Converter>;
   using KeyT = detail::original_t<Converter>;
 
-  template <typename ValueT, template <typename K, typename V> typename Map>
+  template <typename ValueT, template <typename, typename, typename...> typename Map>
   static Map<InterT, ValueT> toIntermediate(const Map<KeyT, ValueT>& original, std::string& error) {
     Map<InterT, ValueT> intermediate;
     for (const auto& [key, value] : original) {
@@ -90,7 +90,7 @@ struct MapKeyConverter {
     return intermediate;
   }
 
-  template <typename ValueT, template <typename K, typename V> typename Map>
+  template <typename ValueT, template <typename, typename, typename...> typename Map>
   static void fromIntermediate(const Map<InterT, ValueT>& intermediate,
                                Map<KeyT, ValueT>& original,
                                std::string& error) {
@@ -125,7 +125,7 @@ struct MapValueConverter {
   using InterT = detail::intermediate_t<Converter>;
   using ValueT = detail::original_t<Converter>;
 
-  template <typename KeyT, template <typename K, typename V> typename Map>
+  template <typename KeyT, template <typename, typename, typename...> typename Map>
   static Map<KeyT, InterT> toIntermediate(const Map<KeyT, ValueT>& original, std::string& error) {
     Map<KeyT, InterT> intermediate;
     for (const auto& [key, value] : original) {
@@ -142,7 +142,7 @@ struct MapValueConverter {
     return intermediate;
   }
 
-  template <typename KeyT, template <typename K, typename V> typename Map>
+  template <typename KeyT, template <typename, typename, typename...> typename Map>
   static void fromIntermediate(const Map<KeyT, InterT>& intermediate, Map<KeyT, ValueT>& original, std::string& error) {
     original.clear();
     for (const auto& [key, value] : intermediate) {
@@ -176,7 +176,7 @@ struct MapKeyValueConverter {
   using InterValueT = detail::intermediate_t<ValueConverter>;
   using OrigValueT = detail::original_t<ValueConverter>;
 
-  template <template <typename K, typename V> typename Map>
+  template <template <typename, typename, typename...> typename Map>
   static Map<InterKeyT, InterValueT> toIntermediate(const Map<OrigKeyT, OrigValueT>& original, std::string& error) {
     Map<InterKeyT, InterValueT> intermediate;
     for (const auto& [key, value] : original) {
@@ -200,7 +200,7 @@ struct MapKeyValueConverter {
     return intermediate;
   }
 
-  template <template <typename K, typename V> typename Map>
+  template <template <typename, typename, typename...> typename Map>
   static void fromIntermediate(const Map<InterKeyT, InterValueT>& intermediate,
                                Map<OrigKeyT, OrigValueT>& original,
                                std::string& error) {
@@ -243,7 +243,7 @@ struct SequenceConverter {
   using OrigT = detail::original_t<Converter>;
   using InterT = detail::intermediate_t<Converter>;
 
-  template <template <typename T> typename Seq>
+  template <template <typename, typename...> typename Seq>
   static Seq<InterT> toIntermediate(const Seq<OrigT>& original, std::string& error) {
     Seq<InterT> intermediate;
     for (const auto& orig : original) {
@@ -260,7 +260,7 @@ struct SequenceConverter {
     return intermediate;
   }
 
-  template <template <typename T> typename Seq>
+  template <template <typename, typename...> typename Seq>
   static void fromIntermediate(const Seq<InterT>& intermediate, Seq<OrigT>& original, std::string& error) {
     original.clear();
     for (const auto& value : intermediate) {

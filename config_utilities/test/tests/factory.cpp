@@ -379,42 +379,49 @@ TEST(Factory, moduleNameConflicts) {
   auto logger = TestLogger::create();
 
   // Allow shadowing of same name for different module types.
-  const auto registration1 = config::Registration<TemplatedBase<int>, TemplatedDerived<int, int>>("name");
-  const auto registration2 = config::Registration<TemplatedBase<float>, TemplatedDerived<float, float>>("name");
+  [[maybe_unused]] const auto registration1 =
+      config::Registration<TemplatedBase<int>, TemplatedDerived<int, int>>("name");
+  [[maybe_unused]] const auto registration2 =
+      config::Registration<TemplatedBase<float>, TemplatedDerived<float, float>>("name");
   EXPECT_EQ(logger->numMessages(), 0);
 
   // Same derived different name. NOTE(lschmid): This is allowed, not sure if we would want to warn users though.
-  const auto registration3 = config::Registration<TemplatedBase<int>, TemplatedDerived<int, int>>("other_name");
+  [[maybe_unused]] const auto registration3 =
+      config::Registration<TemplatedBase<int>, TemplatedDerived<int, int>>("other_name");
   EXPECT_FALSE(logger->hasMessages());
 
   // Same derived same name. Not allowed. NOTE(lschmid): Could also be an option to make this allowed (skip silently).
-  const auto registration4 = config::Registration<TemplatedBase<int>, TemplatedDerived<int, int>>("name");
+  [[maybe_unused]] const auto registration4 =
+      config::Registration<TemplatedBase<int>, TemplatedDerived<int, int>>("name");
   ASSERT_EQ(logger->numMessages(), 1);
   EXPECT_EQ(logger->lastMessage(),
             "Cannot register already existent type 'name' for BaseT='config::test::TemplatedBase<int>' and "
             "ConstructorArguments={}.");
 
   // Different derived same base and same name. Not allowed.
-  const auto registration5 = config::Registration<TemplatedBase<int>, TemplatedDerived<float, int>>("name");
+  [[maybe_unused]] const auto registration5 =
+      config::Registration<TemplatedBase<int>, TemplatedDerived<float, int>>("name");
   EXPECT_EQ(logger->numMessages(), 2);
   EXPECT_EQ(logger->lastMessage(),
             "Cannot register already existent type 'name' for BaseT='config::test::TemplatedBase<int>' and "
             "ConstructorArguments={}.");
 
   // Same name, same base but different constructor arguments. Allowed.
-  const auto registration6 = config::Registration<TemplatedBase<int>, TemplatedDerived<int, int>, bool>("name");
+  [[maybe_unused]] const auto registration6 =
+      config::Registration<TemplatedBase<int>, TemplatedDerived<int, int>, bool>("name");
   EXPECT_EQ(logger->numMessages(), 2);
 
   // Different constructor args with different name. Allowed but not encouraged.
-  const auto registration7 =
+  [[maybe_unused]] const auto registration7 =
       config::Registration<TemplatedBase<float>, TemplatedDerived<float, float>, bool>("different_name");
   EXPECT_EQ(logger->numMessages(), 2);
 
   // NOTE(nathan): combining printing and name conflicts tests to avoid different behaviors between clang and gcc (and
   // local usage vs ctest). Otherwise sometimes the modules from moduleNameConflicts would get compiled into the
   // registry and sometimes they wouldn't which would lead to inconsistent test behavior...
-  const auto registration8 = config::Registration<TemplatedBase<int>, TemplatedDerived<int, int>>("int_derived");
-  const auto registration9 =
+  [[maybe_unused]] const auto registration8 =
+      config::Registration<TemplatedBase<int>, TemplatedDerived<int, int>>("int_derived");
+  [[maybe_unused]] const auto registration9 =
       config::Registration<TemplatedBase<float>, TemplatedDerived<float, float>>("float_derived");
   const std::string expected = R"""(########################################
 #          Registered Objects          #
