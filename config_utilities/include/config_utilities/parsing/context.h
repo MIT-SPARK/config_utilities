@@ -38,6 +38,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "config_utilities/internal/config_context.h"
 
@@ -50,6 +51,12 @@ namespace config {
  * @param remove_arguments Remove parsed command line arguments.
  */
 void initContext(int& argc, char* argv[], bool remove_arguments = true);
+
+/**
+ * @brief Initialize global config context from the command line
+ * @param args Command line arguments
+ */
+void initContext(const std::vector<std::string>& args);
 
 /**
  * @brief Aggregate YAML node into global context

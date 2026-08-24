@@ -37,6 +37,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "config_utilities/internal/config_context.h"
 #include "config_utilities/internal/introspection.h"
@@ -47,6 +48,11 @@ namespace config {
 
 void initContext(int& argc, char* argv[], bool remove_arguments) {
   const auto node = internal::loadFromArguments(argc, argv, remove_arguments);
+  internal::Context::update(node, "", internal::MergeMode::APPEND);
+}
+
+void initContext(const std::vector<std::string>& args) {
+  const auto node = internal::loadFromArguments(args);
   internal::Context::update(node, "", internal::MergeMode::APPEND);
 }
 
