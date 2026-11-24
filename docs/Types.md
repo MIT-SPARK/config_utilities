@@ -118,6 +118,10 @@ VirtualConfig<Base> config;
 config.setOptional();
 isValid(config);  // Will return true as the config is optional.
 ```
+
+Set `type: ''` in YAML to clear a virtual config, including one initialized with a
+default. A cleared config is valid when it is optional.
+
 Similar to uninitialized smart pointers, virtual configs implement `operator bool` to check if they are initialized:
 ```c++
 if (config) {

@@ -240,8 +240,7 @@ void declare_config(VirtualConfig<BaseT, Opt>& config) {
 
   // If a type is returned the config should be reset or created.
   if (type) {
-    if (*type == internal::kUninitializedVirtualConfigType) {
-      // Reserved token to delete the virtual config in dynamic configs.
+    if (type->empty() || *type == internal::kUninitializedVirtualConfigType) {
       config.config_.reset();
     } else {
       config.config_ = internal::ConfigFactory<BaseT>::create(*type);

@@ -617,6 +617,16 @@ TEST(VirtualConfig, optionalNullCreation) {
   ASSERT_EQ(object, nullptr);
 }
 
+TEST(VirtualConfig, emptyOptionalTypeWithoutRegisteredImplementations) {
+  struct UnregisteredBase {};
+
+  const auto logger = TestLogger::create();
+  const auto config = fromYaml<VirtualConfig<UnregisteredBase, true>>(YAML::Load("type: ''"));
+  EXPECT_FALSE(config.isSet());
+  EXPECT_TRUE(isValid(config));
+  EXPECT_FALSE(logger->hasMessages()) << logger->lastMessage();
+}
+
 TEST(VirtualConfig, defaultedConfigCorrect) {
   RegistrationGuard<DefaultedOptional, DefaultedOptional, DefaultedOptional::Config> guard("DefaultedOptional");
   RegistrationGuard<ParentOfDefaultedOptional, ParentOfDefaultedOptional, ParentOfDefaultedOptional::Config>
