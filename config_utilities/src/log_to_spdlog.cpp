@@ -33,30 +33,22 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * -------------------------------------------------------------------------- */
 
-#include <string>
 #include "config_utilities/logging/log_to_spdlog.h"
 
+#include <string>
 #include <utility>
 
 #ifdef CONFIG_UTILS_ENABLE_SPDLOG_LOGGING
-#include <spdlog/spdlog.h>
 #include <cstdlib>
+
+#include <spdlog/spdlog.h>
 #endif
 
-#include "config_utilities/factory.h"
 #include "config_utilities/logging/log_to_stdout.h"
 
 namespace config::internal {
-namespace {
 
-#ifdef CONFIG_UTILS_ENABLE_SPDLOG_LOGGING
-const auto registration = Registration<Logger, SpdlogLogger>("spdlog");
-#endif
-
-}  // namespace
-
-SpdlogLogger::SpdlogLogger(std::shared_ptr<spdlog::logger> logger)
-    : logger_(std::move(logger)) {
+SpdlogLogger::SpdlogLogger(std::shared_ptr<spdlog::logger> logger) : logger_(std::move(logger)) {
 #ifdef CONFIG_UTILS_ENABLE_SPDLOG_LOGGING
   if (!logger_) {
     logger_ = spdlog::default_logger();
