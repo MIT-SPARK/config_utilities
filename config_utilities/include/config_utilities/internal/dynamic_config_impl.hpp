@@ -100,7 +100,7 @@ bool DynamicConfig<ConfigT>::set(const ConfigT& config) {
   {  // critical section
     std::lock_guard<std::mutex> lock(mutex_);
     const auto old_snapshot = internal::Visitor::getSnapshot(config_, false);
-    if (internal::isEqual(old_snapshot, new_snapshot, true)) {
+    if (old_snapshot == new_snapshot) {
       return false;
     }
 
@@ -139,7 +139,7 @@ std::string DynamicConfig<ConfigT>::setValues(const YAML::Node& values) const {
     const auto old_snapshot = internal::Visitor::getSnapshot(config_, false);
     const auto new_snapshot = internal::Visitor::getSnapshot(new_config, false);
     config_ = new_config;
-    if (internal::isEqual(old_snapshot, new_snapshot, true)) {
+    if (old_snapshot == new_snapshot) {
       return error;
     }
 

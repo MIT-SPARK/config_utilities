@@ -49,6 +49,26 @@
 #include "config_utilities/validation.h"
 
 namespace config::test {
+namespace {
+
+struct FlattenedParent {
+  struct Child {};
+
+  struct Config {
+    VirtualConfig<Child, true> child;
+    int value = 0;
+  };
+
+  explicit FlattenedParent(const Config&) {}
+};
+
+void declare_config(FlattenedParent::Config& config) {
+  field(config.child, "child", false);
+  field(config.value, "value");
+  check(config.value, CheckMode::GE, 0, "value");
+}
+
+}  // namespace
 
 struct Base2 {
   virtual std::string name() const = 0;
@@ -645,6 +665,25 @@ TEST(VirtualConfig, updateRestoresPreviouslyFailedType) {
   ASSERT_EQ(config.modules.size(), 1u);
   EXPECT_FALSE(config.modules.front().isSet());
   EXPECT_FALSE(logger->hasMessages());
+}
+
+TEST(VirtualConfig, updateRestoresTypesThatShareAYamlKey) {
+  const RegistrationGuard<FlattenedParent, FlattenedParent, FlattenedParent::Config> parent("FlattenedParent");
+  auto config = fromYaml<VirtualConfig<FlattenedParent>>(YAML::Load("{type: FlattenedParent, value: 3}"));
+  auto& strict = Settings().factory.strict_virtual_config_types;
+  const bool previous_strict = strict;
+  strict = false;
+  EXPECT_TRUE(isValid(config));
+  EXPECT_FALSE(updateFromYaml(config, YAML::Load("value: -1")));
+  strict = true;
+  const bool valid_in_strict_mode = isValid(config);
+  strict = previous_strict;
+
+  const auto restored = config.getUnderlying<FlattenedParent::Config>();
+  ASSERT_TRUE(restored);
+  EXPECT_EQ(restored->value, 3);
+  EXPECT_FALSE(restored->child.isSet());
+  EXPECT_FALSE(valid_in_strict_mode);
 }
 
 TEST(VirtualConfig, parseOptionalMissingField) {

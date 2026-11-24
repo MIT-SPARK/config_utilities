@@ -45,14 +45,12 @@
 #include "config_utilities/settings.h"
 
 namespace config::internal {
-namespace {
-
-// Restore failed lookups from a snapshot without calling the factory again.
-constexpr auto kFailedVirtualConfigTypeTag = "!failed_virtual_config_type";
-
-}  // namespace
 
 thread_local std::vector<Visitor*> Visitor::instances = {};
+
+bool ConfigSnapshot::operator==(const ConfigSnapshot& other) const {
+  return virtual_types == other.virtual_types && isEqual(data, other.data);
+}
 
 Visitor::~Visitor() { instances.pop_back(); }
 
@@ -76,6 +74,30 @@ Visitor& Visitor::instance() {
   return *instances.back();
 }
 
+ConfigSnapshot Visitor::captureSnapshot(const std::function<void()>& declare, bool print_warnings) {
+  ConfigSnapshot result;
+  Visitor visitor(Mode::kGet);
+  visitor.snapshot = SnapshotAccess{&result.virtual_types, nullptr, {}};
+  declare();
+  if (print_warnings && visitor.meta_data.hasErrors()) {
+    Logger::logWarning(Formatter::formatErrors(visitor.meta_data, "Errors parsing config", Severity::kWarning));
+  }
+
+  result.data = std::move(visitor.meta_data.data);
+  return result;
+}
+
+std::optional<Visitor::SnapshotAccess> Visitor::childSnapshot(const std::string& field_name,
+                                                              std::optional<std::string> item) const {
+  if (!snapshot) {
+    return std::nullopt;
+  }
+
+  auto child = *snapshot;
+  child.path.emplace_back(additionalNamespace(), field_name, std::move(item));
+  return child;
+}
+
 void Visitor::visitName(const std::string& name) {
   std::string& current_name = Visitor::instance().meta_data.name;
   // Avoid overriding names. If the name is to be set, it should be cleared previously.
@@ -91,12 +113,12 @@ void Visitor::visitCheck(const CheckBase& check) {
   }
 }
 
-std::optional<Visitor::VirtualConfigType> Visitor::visitVirtualConfig(bool is_set,
-                                                                      bool is_optional,
-                                                                      const std::string& type,
-                                                                      const std::optional<std::string>& failed_type,
-                                                                      const std::string& base_type,
-                                                                      const std::string& base_factory_info) {
+std::optional<ConfigSnapshot::VirtualType> Visitor::visitVirtualConfig(bool is_set,
+                                                                       bool is_optional,
+                                                                       const std::string& type,
+                                                                       const std::optional<std::string>& failed_type,
+                                                                       const std::string& base_type,
+                                                                       const std::string& base_factory_info) {
   Visitor& visitor = Visitor::instance();
   visitor.meta_data.virtual_config_type = type;
 
@@ -117,9 +139,11 @@ std::optional<Visitor::VirtualConfigType> Visitor::visitVirtualConfig(bool is_se
   if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetInfo) {
     // Also write the type param back to file.
     auto type_node = YAML::Node(type);
-    if (visitor.value_purpose == ValuePurpose::kSnapshot && failed_type) {
-      type_node = *failed_type;
-      type_node.SetTag(kFailedVirtualConfigTypeTag);
+    if (visitor.snapshot && visitor.snapshot->capture) {
+      const auto key = std::make_pair(visitor.snapshot->path, visitor.virtual_type_index);
+      ++visitor.virtual_type_index;
+      visitor.snapshot->capture->emplace(
+          key, ConfigSnapshot::VirtualType{failed_type ? *failed_type : type, failed_type.has_value()});
     }
 
     const std::string ns = joinNamespace(visitor.name_space, Settings::instance().factory.type_param_name);
@@ -148,15 +172,24 @@ std::optional<Visitor::VirtualConfigType> Visitor::visitVirtualConfig(bool is_se
         lookupNamespace(visitor.meta_data.data, visitor.name_space);  // Including the param name.
     field_info.value = lookupNamespace(type_node, field_info.name);
 
+    if (visitor.snapshot && visitor.snapshot->restore) {
+      const auto key = std::make_pair(visitor.snapshot->path, visitor.virtual_type_index);
+      ++visitor.virtual_type_index;
+      const auto stored = visitor.snapshot->restore->find(key);
+      if (stored != visitor.snapshot->restore->end()) {
+        field_info.value.reset(YAML::Node(stored->second.name));
+        field_info.was_parsed = true;
+        return stored->second;
+      }
+    }
+
     // underlying derived type is not required if the config is optional, or if the config has been
     // initialized to a derived type already.
     const bool type_required = !is_set && !is_optional;
     std::string type_param;
     if (internal::getType(type_node, type_param, type_required)) {
       field_info.was_parsed = true;
-      const bool restore_failure = visitor.value_purpose == ValuePurpose::kSnapshot &&
-                                   type_node[field_info.name].Tag() == kFailedVirtualConfigTypeTag;
-      return VirtualConfigType{std::move(type_param), restore_failure};
+      return ConfigSnapshot::VirtualType{std::move(type_param)};
     } else if (type_required) {
       internal::Logger::logError("Could not get type for '" + base_factory_info + "'");
     }

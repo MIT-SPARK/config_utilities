@@ -61,9 +61,9 @@ MetaData Visitor::setValues(ConfigT& config,
                             const std::string& name_space,
                             const std::string& field_name,
                             const bool print_missing,
-                            ValuePurpose purpose) {
+                            std::optional<SnapshotAccess> snapshot) {
   Visitor visitor(Mode::kSet, name_space, field_name);
-  visitor.value_purpose = purpose;
+  visitor.snapshot = std::move(snapshot);
   visitor.meta_data.data.reset(node);
   ::config::declare_config(config);
   if (print_warnings && visitor.meta_data.hasErrors()) {
@@ -82,20 +82,26 @@ MetaData Visitor::getValues(const ConfigT& config,
                             const bool print_warnings,
                             const std::string& name_space,
                             const std::string& field_name,
-                            ValuePurpose purpose) {
+                            std::optional<SnapshotAccess> snapshot) {
   Visitor visitor(Mode::kGet, name_space, field_name);
-  visitor.value_purpose = purpose;
+  visitor.snapshot = std::move(snapshot);
   // NOTE(lschmid): We know that in mode kGet, the config is not modified.
   ::config::declare_config(const_cast<ConfigT&>(config));
 
-  if (Settings::instance().printing.show_defaults) {
+  if (!visitor.snapshot && Settings::instance().printing.show_defaults) {
     Visitor::getDefaultValues(config, visitor.meta_data);
   }
+
   if (print_warnings && visitor.meta_data.hasErrors()) {
     Logger::logWarning(Formatter::formatErrors(visitor.meta_data, "Errors parsing config", Severity::kWarning));
   }
 
   return visitor.meta_data;
+}
+
+template <typename ConfigT>
+ConfigSnapshot Visitor::getSnapshot(const ConfigT& config, bool print_warnings) {
+  return captureSnapshot([&config] { ::config::declare_config(const_cast<ConfigT&>(config)); }, print_warnings);
 }
 
 template <typename ConfigT>
@@ -137,7 +143,7 @@ MetaData Visitor::subVisit(ConfigT& config,
   const std::string name_space = joinNamespace(current_visitor.name_space, sub_ns);
   switch (current_visitor.mode) {
     case Visitor::Mode::kGet:
-      data = getValues(config, print_warnings, name_space, field_name, current_visitor.value_purpose);
+      data = getValues(config, print_warnings, name_space, field_name, current_visitor.childSnapshot(field_name));
       break;
     case Visitor::Mode::kSet:
       data = setValues(config,
@@ -146,7 +152,7 @@ MetaData Visitor::subVisit(ConfigT& config,
                        name_space,
                        field_name,
                        false,
-                       current_visitor.value_purpose);
+                       current_visitor.childSnapshot(field_name));
       break;
     case Visitor::Mode::kCheck:
       data = getChecks(config, field_name);
@@ -276,9 +282,10 @@ void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_
     size_t index = 0;
     for (const auto& node : nodes) {
       ConfigT& sub_config = config.emplace_back();
-      auto& new_data = visitor.meta_data.sub_configs.emplace_back(
-          setValues(sub_config, node, false, "", field_name, false, visitor.value_purpose));
-      new_data.array_config_index = index++;
+      auto& new_data = visitor.meta_data.sub_configs.emplace_back(setValues(
+          sub_config, node, false, "", field_name, false, visitor.childSnapshot(field_name, std::to_string(index))));
+      new_data.array_config_index = index;
+      ++index;
     }
   }
 
@@ -290,12 +297,13 @@ void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_
       if (visitor.mode == Visitor::Mode::kGetInfo) {
         visitor.meta_data.sub_configs.emplace_back(getInfo(sub_config, name_space, field_name));
       } else {
-        visitor.meta_data.sub_configs.emplace_back(
-            getValues(sub_config, false, name_space, field_name, visitor.value_purpose));
+        visitor.meta_data.sub_configs.emplace_back(getValues(
+            sub_config, false, name_space, field_name, visitor.childSnapshot(field_name, std::to_string(index))));
       }
       MetaData& new_data = visitor.meta_data.sub_configs.back();
       array_node.push_back(YAML::Clone(lookupNamespace(new_data.data, name_space)));
-      new_data.array_config_index = index++;
+      new_data.array_config_index = index;
+      ++index;
     }
 
     // TODO(lschmid): Add info for empty vectors for getInfo.
@@ -350,9 +358,10 @@ void Visitor::visitField(OrderedMap<K, ConfigT>& config, const std::string& fiel
     for (auto&& [key, node] : nodes) {
       auto& entry = config.emplace_back();
       entry.first = key.template as<K>();
+      const auto key_name = key.template as<std::string>();
       auto& new_data = visitor.meta_data.sub_configs.emplace_back(
-          setValues(entry.second, node, false, "", field_name, false, visitor.value_purpose));
-      new_data.map_config_key = key.template as<std::string>();
+          setValues(entry.second, node, false, "", field_name, false, visitor.childSnapshot(field_name, key_name)));
+      new_data.map_config_key = key_name;
     }
   }
 
@@ -360,15 +369,16 @@ void Visitor::visitField(OrderedMap<K, ConfigT>& config, const std::string& fiel
     const std::string name_space = joinNamespace(visitor.name_space, field_name);
     YAML::Node map_node(YAML::NodeType::Map);
     for (auto&& [key, sub_config] : config) {
+      const auto key_name = YAML::Node(key).as<std::string>();
       if (visitor.mode == Visitor::Mode::kGetInfo) {
         visitor.meta_data.sub_configs.emplace_back(getInfo(sub_config, name_space, field_name));
       } else {
         visitor.meta_data.sub_configs.emplace_back(
-            getValues(sub_config, false, name_space, field_name, visitor.value_purpose));
+            getValues(sub_config, false, name_space, field_name, visitor.childSnapshot(field_name, key_name)));
       }
       MetaData& new_data = visitor.meta_data.sub_configs.back();
       map_node[key] = YAML::Clone(lookupNamespace(new_data.data, name_space));
-      new_data.map_config_key = YAML::Node(key).as<std::string>();
+      new_data.map_config_key = key_name;
     }
 
     if (visitor.mode == Visitor::Mode::kGetInfo && config.empty()) {

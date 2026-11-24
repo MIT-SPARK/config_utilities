@@ -212,9 +212,9 @@ class VirtualConfig {
     }
 
     // Keep failed nested lookups visible to validation in the constructor.
-    const auto snapshot = internal::Visitor::getSnapshot(*this);
-    const internal::FactoryConfigInput input{snapshot, internal::Visitor::ValuePurpose::kSnapshot};
-    return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(input, std::move(args)...);
+    const auto snapshot = internal::Visitor::captureSnapshot([this] { config_->onDeclareConfig(); });
+    return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(
+        config_->type, snapshot, std::move(args)...);
   }
 
  private:
@@ -248,7 +248,7 @@ void declare_config(VirtualConfig<BaseT, Opt>& config) {
   // If a type is returned the config should be reset or created.
   if (type) {
     config.failed_type_.reset();
-    if (type->restore_failure) {
+    if (type->failed) {
       config.config_.reset();
       config.failed_type_ = std::move(type->name);
     } else if (type->name.empty() || type->name == internal::kUninitializedVirtualConfigType) {

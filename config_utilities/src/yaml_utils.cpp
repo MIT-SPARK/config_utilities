@@ -212,12 +212,8 @@ void moveDownNamespace(YAML::Node& node, const std::string& name_space, const st
   }
 }
 
-bool isEqual(const YAML::Node& a, const YAML::Node& b, bool compare_tags) {
+bool isEqual(const YAML::Node& a, const YAML::Node& b) {
   if (a.Type() != b.Type()) {
-    return false;
-  }
-
-  if (compare_tags && a.IsDefined() && a.Tag() != b.Tag()) {
     return false;
   }
 
@@ -229,7 +225,7 @@ bool isEqual(const YAML::Node& a, const YAML::Node& b, bool compare_tags) {
         return false;
       }
       for (size_t i = 0; i < a.size(); ++i) {
-        if (!isEqual(a[i], b[i], compare_tags)) {
+        if (!isEqual(a[i], b[i])) {
           return false;
         }
       }
@@ -243,7 +239,7 @@ bool isEqual(const YAML::Node& a, const YAML::Node& b, bool compare_tags) {
         if (!b[key]) {
           return false;
         }
-        if (!isEqual(kv_pair.second, b[key], compare_tags)) {
+        if (!isEqual(kv_pair.second, b[key])) {
           return false;
         }
       }

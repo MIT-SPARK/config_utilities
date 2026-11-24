@@ -406,7 +406,7 @@ struct ObjectFactory {
 
 struct FactoryConfigInput {
   const YAML::Node& data;
-  Visitor::ValuePurpose purpose = Visitor::ValuePurpose::kNormal;
+  const ConfigSnapshot* snapshot = nullptr;
 };
 
 // Factory to create DerivedT objects that use configs.
@@ -421,7 +421,8 @@ struct ObjectWithConfigFactory {
   static void addEntry(const std::string& type) {
     const Constructor method = [type](const FactoryConfigInput& input, Args... args) -> BaseT* {
       DerivedConfigT config;
-      auto set_data = Visitor::setValues(config, input.data, true, "", "", true, input.purpose);
+      auto set_data =
+          input.snapshot ? Visitor::setSnapshot(config, *input.snapshot) : Visitor::setValues(config, input.data);
       if (Settings::instance().introspection.enabled()) {
         auto get_info = Visitor::getInfo(config);
         // Also log the type parameter used for creation.
@@ -445,12 +446,8 @@ struct ObjectWithConfigFactory {
   }
 
   static std::unique_ptr<BaseT> create(const YAML::Node& data, Args... args) {
-    return create(FactoryConfigInput{data}, std::move(args)...);
-  }
-
-  static std::unique_ptr<BaseT> create(const FactoryConfigInput& input, Args&&... args) {
     std::string type;
-    if (!getType(input.data, type)) {
+    if (!getType(data, type)) {
       if (Settings::instance().introspection.enabled()) {
         // Log that the type could not be determined.
         Introspection::logSingleEvent(
@@ -460,6 +457,15 @@ struct ObjectWithConfigFactory {
       return nullptr;
     }
 
+    return create(type, FactoryConfigInput{data}, std::move(args)...);
+  }
+
+  static std::unique_ptr<BaseT> create(const std::string& type, const ConfigSnapshot& snapshot, Args&&... args) {
+    return create(type, FactoryConfigInput{snapshot.data, &snapshot}, std::move(args)...);
+  }
+
+ private:
+  static std::unique_ptr<BaseT> create(const std::string& type, const FactoryConfigInput& input, Args&&... args) {
     const auto factory =
         ModuleRegistry::getModule<BaseT, const FactoryConfigInput&, Args...>(type, registration_info, true);
     if (!factory) {

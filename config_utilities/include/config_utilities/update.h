@@ -59,8 +59,7 @@ bool updateFields(ConfigT& config, YAML::Node node, bool print_warnings = true, 
       internal::Visitor::setValues(config, internal::lookupNamespace(node, name_space), print_warnings);
   const bool success = !data.hasErrors() && isValid(config);
   if (!success) {
-    internal::Visitor::setValues(
-        config, backup, print_warnings, "", "", true, internal::Visitor::ValuePurpose::kSnapshot);
+    internal::Visitor::setSnapshot(config, backup, print_warnings);
   }
 
   return success;

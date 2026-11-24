@@ -92,9 +92,9 @@ YAML::Node lookupNamespace(const YAML::Node& node, const std::string& name_space
 void moveDownNamespace(YAML::Node& node, const std::string& name_space, const std::string& separator = "/");
 
 /**
- * @brief Compare YAML node values by content, with optional tag comparison.
+ * @brief Compare YAML node values by content.
  */
-bool isEqual(const YAML::Node& a, const YAML::Node& b, bool compare_tags = false);
+bool isEqual(const YAML::Node& a, const YAML::Node& b);
 
 /**
  * @brief Convert a yaml node that contains a map or sequence to a list of corresponding nodes.
