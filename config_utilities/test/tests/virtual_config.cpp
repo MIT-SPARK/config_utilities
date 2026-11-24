@@ -545,7 +545,7 @@ TEST(VirtualConfig, optionalByDefault) {
   Settings().restoreDefaults();
 
   const std::string yaml_str = R"""(modules:
-  - {type: testing}
+  - {type: ''}
   - {a: 5, b: 6}
   - {type: Derived2}
 )""";
@@ -554,6 +554,84 @@ TEST(VirtualConfig, optionalByDefault) {
   const auto config = config::fromYaml<ObjectWithOptionalConfigs::Config>(node);
   const ObjectWithOptionalConfigs object(config);
   EXPECT_EQ(object.valid.size(), 1u);
+}
+
+TEST(VirtualConfig, unknownOptionalTypeFailsValidation) {
+  const auto logger = TestLogger::create();
+  const auto config = fromYaml<ObjectWithOptionalConfigs::Config>(YAML::Load("modules: [{type: Typo}]"));
+  ASSERT_EQ(config.modules.size(), 1u);
+  EXPECT_FALSE(config.modules.front().isSet());
+  ASSERT_TRUE(logger->hasMessages());
+  EXPECT_NE(logger->lastMessage().find("No module of type 'Typo'"), std::string::npos);
+
+  logger->clear();
+  EXPECT_FALSE(isValid(config, true));
+  ASSERT_TRUE(logger->hasMessages());
+  EXPECT_NE(logger->lastMessage().find("Virtual config 'modules'"), std::string::npos);
+  EXPECT_NE(logger->lastMessage().find("'Typo'"), std::string::npos) << logger->lastMessage();
+
+  const bool strict = Settings().factory.strict_virtual_config_types;
+  setConfigSettingsFromYAML(YAML::Load("factory: {strict_virtual_config_types: false}"));
+  EXPECT_TRUE(isValid(config));
+  Settings().factory.strict_virtual_config_types = strict;
+}
+
+TEST(VirtualConfig, failedTypeSurvivesCopyAndMove) {
+  using OptionalConfig = VirtualConfig<Base2, true>;
+  auto original = fromYaml<OptionalConfig>(YAML::Load("type: UnregisteredBase2Type"));
+  auto copy = original;
+  EXPECT_FALSE(isValid(copy));
+
+  auto moved = std::move(copy);
+  EXPECT_FALSE(isValid(moved));
+
+  copy = original;
+  EXPECT_FALSE(isValid(copy));
+
+  OptionalConfig assigned;
+  assigned = std::move(copy);
+  EXPECT_FALSE(isValid(assigned));
+}
+
+TEST(VirtualConfig, failedTypeClearsAfterSuccessfulAssignment) {
+  using OptionalConfig = VirtualConfig<Base2, true>;
+  const auto invalid = fromYaml<OptionalConfig>(YAML::Load("type: UnregisteredBase2Type"));
+  auto replaced = invalid;
+  ASSERT_TRUE(updateFromYaml(replaced, YAML::Load("{type: Derived2, f: 1}")));
+  EXPECT_EQ(replaced.getType(), "Derived2");
+
+  auto cleared = invalid;
+  ASSERT_TRUE(updateFromYaml(cleared, YAML::Load("type: ''")));
+  EXPECT_FALSE(cleared.isSet());
+
+  auto assigned = invalid;
+  ASSERT_TRUE(assigned.set(Derived2::Config()));
+  EXPECT_TRUE(isValid(assigned));
+}
+
+TEST(VirtualConfig, updateRestoresValidConfigAfterUnknownType) {
+  auto config = fromYaml<ObjectWithOptionalConfigs::Config>(YAML::Load("modules: [{type: Derived2, f: 2}]"));
+  ASSERT_TRUE(isValid(config));
+
+  EXPECT_FALSE(updateFromYaml(config, YAML::Load("modules: [{type: UnregisteredBase2Type}]")));
+  ASSERT_EQ(config.modules.size(), 1u);
+  const auto restored = config.modules.front().getUnderlying<Derived2::Config>();
+  ASSERT_TRUE(restored);
+  EXPECT_FLOAT_EQ(restored->f, 2.f);
+}
+
+TEST(VirtualConfig, updateRestoresPreviouslyFailedType) {
+  auto config = fromYaml<ObjectWithOptionalConfigs::Config>(YAML::Load("modules: [{type: UnregisteredBase2Type}]"));
+  ASSERT_FALSE(isValid(config));
+  EXPECT_EQ(toYaml(config)["modules"][0]["type"].as<std::string>(), internal::kUninitializedVirtualConfigType);
+
+  const auto logger = TestLogger::create();
+  EXPECT_FALSE(updateFromYaml(config, YAML::Load("{}")));
+  EXPECT_FALSE(updateFromYaml(config, YAML::Load("modules: [{type: Derived2, f: -1}]")));
+  EXPECT_FALSE(isValid(config));
+  ASSERT_EQ(config.modules.size(), 1u);
+  EXPECT_FALSE(config.modules.front().isSet());
+  EXPECT_FALSE(logger->hasMessages());
 }
 
 TEST(VirtualConfig, parseOptionalMissingField) {

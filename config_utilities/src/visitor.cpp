@@ -37,6 +37,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "config_utilities/factory.h"
@@ -44,6 +45,12 @@
 #include "config_utilities/settings.h"
 
 namespace config::internal {
+namespace {
+
+// Restore failed lookups from an update snapshot without calling the factory again.
+constexpr auto kFailedVirtualConfigTypeTag = "!failed_virtual_config_type";
+
+}  // namespace
 
 thread_local std::vector<Visitor*> Visitor::instances = {};
 
@@ -84,29 +91,37 @@ void Visitor::visitCheck(const CheckBase& check) {
   }
 }
 
-std::optional<std::string> Visitor::visitVirtualConfig(bool is_set,
-                                                       bool is_optional,
-                                                       const std::string& type,
-                                                       const std::string& base_type,
-                                                       const std::string& base_factory_info) {
+std::optional<Visitor::VirtualConfigType> Visitor::visitVirtualConfig(bool is_set,
+                                                                      bool is_optional,
+                                                                      const std::string& type,
+                                                                      const std::optional<std::string>& failed_type,
+                                                                      const std::string& base_type,
+                                                                      const std::string& base_factory_info) {
   Visitor& visitor = Visitor::instance();
   visitor.meta_data.virtual_config_type = type;
 
   // Treat the validity of virtual configs as checks.
   if (visitor.mode == Visitor::Mode::kCheck) {
-    if (!is_set && !is_optional) {
-      const std::string field_name =
-          visitor.meta_data.field_name.empty() ? "" : "'" + visitor.meta_data.field_name + "' ";
-      visitor.meta_data.checks.emplace_back(
-          new Check(false, "Virtual config " + field_name + "is not set and not marked optional"));
-    } else {
+    const bool lookup_failed = failed_type && Settings::instance().factory.strict_virtual_config_types;
+    if (!lookup_failed && (is_set || is_optional)) {
       visitor.meta_data.checks.emplace_back(new Check(true, ""));
+    } else {
+      const auto& field_name = visitor.meta_data.field_name;
+      const auto label = field_name.empty() ? std::string("Virtual config") : "Virtual config '" + field_name + "'";
+      const auto reason =
+          lookup_failed ? " could not load type '" + *failed_type + "'" : " is not set and not marked optional";
+      visitor.meta_data.checks.emplace_back(new Check(false, label + reason));
     }
   }
 
   if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetInfo) {
     // Also write the type param back to file.
-    auto type_node = YAML::Node(is_set ? type : kUninitializedVirtualConfigType);
+    auto type_node = YAML::Node(type);
+    if (visitor.value_purpose == ValuePurpose::kRollback && failed_type) {
+      type_node = *failed_type;
+      type_node.SetTag(kFailedVirtualConfigTypeTag);
+    }
+
     const std::string ns = joinNamespace(visitor.name_space, Settings::instance().factory.type_param_name);
     moveDownNamespace(type_node, ns);
     mergeYamlNodes(visitor.meta_data.data, type_node);
@@ -139,7 +154,9 @@ std::optional<std::string> Visitor::visitVirtualConfig(bool is_set,
     std::string type_param;
     if (internal::getType(type_node, type_param, type_required)) {
       field_info.was_parsed = true;
-      return type_param;
+      const bool restore_failure = visitor.value_purpose == ValuePurpose::kRollback &&
+                                   type_node[field_info.name].Tag() == kFailedVirtualConfigTypeTag;
+      return VirtualConfigType{std::move(type_param), restore_failure};
     } else if (type_required) {
       internal::Logger::logError("Could not get type for '" + base_factory_info + "'");
     }

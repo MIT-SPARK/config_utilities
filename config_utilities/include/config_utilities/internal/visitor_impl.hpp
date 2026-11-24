@@ -60,8 +60,10 @@ MetaData Visitor::setValues(ConfigT& config,
                             const bool print_warnings,
                             const std::string& name_space,
                             const std::string& field_name,
-                            const bool print_missing) {
+                            const bool print_missing,
+                            ValuePurpose purpose) {
   Visitor visitor(Mode::kSet, name_space, field_name);
+  visitor.value_purpose = purpose;
   visitor.meta_data.data.reset(node);
   ::config::declare_config(config);
   if (print_warnings && visitor.meta_data.hasErrors()) {
@@ -79,8 +81,10 @@ template <typename ConfigT>
 MetaData Visitor::getValues(const ConfigT& config,
                             const bool print_warnings,
                             const std::string& name_space,
-                            const std::string& field_name) {
+                            const std::string& field_name,
+                            ValuePurpose purpose) {
   Visitor visitor(Mode::kGet, name_space, field_name);
+  visitor.value_purpose = purpose;
   // NOTE(lschmid): We know that in mode kGet, the config is not modified.
   ::config::declare_config(const_cast<ConfigT&>(config));
 
@@ -133,10 +137,16 @@ MetaData Visitor::subVisit(ConfigT& config,
   const std::string name_space = joinNamespace(current_visitor.name_space, sub_ns);
   switch (current_visitor.mode) {
     case Visitor::Mode::kGet:
-      data = getValues(config, print_warnings, name_space, field_name);
+      data = getValues(config, print_warnings, name_space, field_name, current_visitor.value_purpose);
       break;
     case Visitor::Mode::kSet:
-      data = setValues(config, current_visitor.meta_data.data, print_warnings, name_space, field_name, false);
+      data = setValues(config,
+                       current_visitor.meta_data.data,
+                       print_warnings,
+                       name_space,
+                       field_name,
+                       false,
+                       current_visitor.value_purpose);
       break;
     case Visitor::Mode::kCheck:
       data = getChecks(config, field_name);
@@ -266,8 +276,8 @@ void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_
     size_t index = 0;
     for (const auto& node : nodes) {
       ConfigT& sub_config = config.emplace_back();
-      auto& new_data =
-          visitor.meta_data.sub_configs.emplace_back(setValues(sub_config, node, false, "", field_name, false));
+      auto& new_data = visitor.meta_data.sub_configs.emplace_back(
+          setValues(sub_config, node, false, "", field_name, false, visitor.value_purpose));
       new_data.array_config_index = index++;
     }
   }
@@ -280,7 +290,8 @@ void Visitor::visitField(std::vector<ConfigT>& config, const std::string& field_
       if (visitor.mode == Visitor::Mode::kGetInfo) {
         visitor.meta_data.sub_configs.emplace_back(getInfo(sub_config, name_space, field_name));
       } else {
-        visitor.meta_data.sub_configs.emplace_back(getValues(sub_config, false, name_space, field_name));
+        visitor.meta_data.sub_configs.emplace_back(
+            getValues(sub_config, false, name_space, field_name, visitor.value_purpose));
       }
       MetaData& new_data = visitor.meta_data.sub_configs.back();
       array_node.push_back(YAML::Clone(lookupNamespace(new_data.data, name_space)));
@@ -339,8 +350,8 @@ void Visitor::visitField(OrderedMap<K, ConfigT>& config, const std::string& fiel
     for (auto&& [key, node] : nodes) {
       auto& entry = config.emplace_back();
       entry.first = key.template as<K>();
-      auto& new_data =
-          visitor.meta_data.sub_configs.emplace_back(setValues(entry.second, node, false, "", field_name, false));
+      auto& new_data = visitor.meta_data.sub_configs.emplace_back(
+          setValues(entry.second, node, false, "", field_name, false, visitor.value_purpose));
       new_data.map_config_key = key.template as<std::string>();
     }
   }
@@ -352,7 +363,8 @@ void Visitor::visitField(OrderedMap<K, ConfigT>& config, const std::string& fiel
       if (visitor.mode == Visitor::Mode::kGetInfo) {
         visitor.meta_data.sub_configs.emplace_back(getInfo(sub_config, name_space, field_name));
       } else {
-        visitor.meta_data.sub_configs.emplace_back(getValues(sub_config, false, name_space, field_name));
+        visitor.meta_data.sub_configs.emplace_back(
+            getValues(sub_config, false, name_space, field_name, visitor.value_purpose));
       }
       MetaData& new_data = visitor.meta_data.sub_configs.back();
       map_node[key] = YAML::Clone(lookupNamespace(new_data.data, name_space));

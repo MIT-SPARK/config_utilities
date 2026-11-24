@@ -573,6 +573,7 @@ global_settings:
   disable_default_stdout_logger: ['a3@c0:false']
   factory:
     type_param_name: ['a3@c2:type']
+    strict_virtual_config_types: ['a3@c2:true']
   introspection:
     output: ['a3@c4:config_introspection_output'])";
   EXPECT_EQ(Intro::instance().data().display(), expected);

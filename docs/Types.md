@@ -122,6 +122,10 @@ isValid(config);  // Will return true as the config is optional.
 Set `type: ''` in YAML to clear a virtual config, including one initialized with a
 default. A cleared config is valid when it is optional.
 
+An unregistered type fails validation even for an optional virtual config. To
+allow optional configs with unregistered types to pass validation as unset, see
+[`strict_virtual_config_types`](Varia.md#settings).
+
 Similar to uninitialized smart pointers, virtual configs implement `operator bool` to check if they are initialized:
 ```c++
 if (config) {

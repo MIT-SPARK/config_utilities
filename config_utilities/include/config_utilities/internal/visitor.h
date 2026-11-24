@@ -65,6 +65,8 @@ struct Visitor {
   ~Visitor();
   static bool hasInstance();
 
+  enum class ValuePurpose { kNormal, kRollback };
+
   // Interfaces for all internal tools to interact with configs through the visitor.
   /**
    * @brief Set the values of a config from a YAML node.
@@ -77,14 +79,16 @@ struct Visitor {
                             const bool print_warnings = true,
                             const std::string& name_space = "",
                             const std::string& field_name = "",
-                            const bool print_missing = true);
+                            const bool print_missing = true,
+                            ValuePurpose purpose = ValuePurpose::kNormal);
 
   // Get the data stored in the config.
   template <typename ConfigT>
   static MetaData getValues(const ConfigT& config,
                             const bool print_warnings = true,
                             const std::string& name_space = "",
-                            const std::string& field_name = "");
+                            const std::string& field_name = "",
+                            ValuePurpose purpose = ValuePurpose::kNormal);
 
   // Get the data and field info stored in the config.
   template <typename ConfigT>
@@ -134,11 +138,17 @@ struct Visitor {
   static void visitBase(ConfigT& config);
 
   // Virtual config.
-  static std::optional<std::string> visitVirtualConfig(bool is_set,
-                                                       bool is_optional,
-                                                       const std::string& type,
-                                                       const std::string& base_type,
-                                                       const std::string& base_factory_info);
+  struct VirtualConfigType {
+    std::string name;
+    bool restore_failure = false;
+  };
+
+  static std::optional<VirtualConfigType> visitVirtualConfig(bool is_set,
+                                                             bool is_optional,
+                                                             const std::string& type,
+                                                             const std::optional<std::string>& failed_type,
+                                                             const std::string& base_type,
+                                                             const std::string& base_factory_info);
 
  private:
   friend class config::NameSpace;
@@ -203,6 +213,8 @@ struct Visitor {
 
   // The current namespace used to get or set values.
   std::string name_space;
+
+  ValuePurpose value_purpose = ValuePurpose::kNormal;
 
   // Keep track of which base configs were already visited to avoid duplicates in diamond inheritance.
   std::set<std::string> visited_base_configs;

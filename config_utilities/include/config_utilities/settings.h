@@ -99,6 +99,9 @@ struct Settings {
   struct Factory {
     //! @brief The factory will look for this param to deduce the type of the object to be created.
     std::string type_param_name = "type";
+
+    //! @brief Fail validation when a virtual config's type lookup fails.
+    bool strict_virtual_config_types = true;
   } factory;
 
   /**

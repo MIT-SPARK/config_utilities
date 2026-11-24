@@ -36,6 +36,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -67,11 +68,13 @@ class VirtualConfig {
       config_.reset();
     }
     optional_ = other.optional_;
+    failed_type_ = other.failed_type_;
   }
 
   VirtualConfig(VirtualConfig&& other) {
     config_ = std::move(other.config_);
     optional_ = other.optional_;
+    failed_type_ = std::exchange(other.failed_type_, std::nullopt);
   }
 
   VirtualConfig& operator=(const VirtualConfig& other) {
@@ -81,12 +84,14 @@ class VirtualConfig {
       config_.reset();
     }
     optional_ = other.optional_;
+    failed_type_ = other.failed_type_;
     return *this;
   }
 
   VirtualConfig& operator=(VirtualConfig&& other) {
     config_ = std::move(other.config_);
     optional_ = other.optional_;
+    failed_type_ = std::exchange(other.failed_type_, std::nullopt);
     return *this;
   }
 
@@ -137,6 +142,7 @@ class VirtualConfig {
     auto wrapper = std::make_unique<internal::ConfigWrapperImpl<ConfigT>>(type);
     wrapper->config = config;
     config_ = std::move(wrapper);
+    failed_type_.reset();
     return true;
   }
 
@@ -219,6 +225,7 @@ class VirtualConfig {
 
   bool optional_ = OptionalByDefault;
   std::unique_ptr<internal::ConfigWrapper> config_;
+  std::optional<std::string> failed_type_;
 };
 
 namespace internal {
@@ -232,18 +239,26 @@ struct is_virtual_config<VirtualConfig<T, Opt>> : std::true_type {};
 // Declare the Virtual Config a config, so it can be handled like any other object.
 template <typename BaseT, bool Opt>
 void declare_config(VirtualConfig<BaseT, Opt>& config) {
-  const auto type = internal::Visitor::visitVirtualConfig(config.isSet(),
-                                                          config.optional_,
-                                                          config.getType(),
-                                                          internal::typeName<BaseT>(),
-                                                          internal::ModuleInfo::fromTypes<BaseT>().typeInfo());
+  auto type = internal::Visitor::visitVirtualConfig(config.isSet(),
+                                                    config.optional_,
+                                                    config.getType(),
+                                                    config.failed_type_,
+                                                    internal::typeName<BaseT>(),
+                                                    internal::ModuleInfo::fromTypes<BaseT>().typeInfo());
 
   // If a type is returned the config should be reset or created.
   if (type) {
-    if (type->empty() || *type == internal::kUninitializedVirtualConfigType) {
+    config.failed_type_.reset();
+    if (type->restore_failure) {
+      config.config_.reset();
+      config.failed_type_ = std::move(type->name);
+    } else if (type->name.empty() || type->name == internal::kUninitializedVirtualConfigType) {
       config.config_.reset();
     } else {
-      config.config_ = internal::ConfigFactory<BaseT>::create(*type);
+      config.config_ = internal::ConfigFactory<BaseT>::create(type->name);
+      if (!config.config_) {
+        config.failed_type_ = std::move(type->name);
+      }
     }
   }
 

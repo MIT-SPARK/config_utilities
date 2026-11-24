@@ -102,6 +102,7 @@ void declare_config(Settings::Printing& config) {
 void declare_config(Settings::Factory& config) {
   name("Factory");
   field(config.type_param_name, "type_param_name");
+  field(config.strict_virtual_config_types, "strict_virtual_config_types");
 }
 
 void declare_config(Settings::ExternalLibraries& config) {

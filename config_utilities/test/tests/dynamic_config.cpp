@@ -42,10 +42,27 @@
 
 #include <gtest/gtest.h>
 
+#include "config_utilities/config.h"
 #include "config_utilities/test/default_config.h"
 #include "config_utilities/test/utils.h"
+#include "config_utilities/virtual_config.h"
 
 namespace config::test {
+namespace {
+
+struct OptionalModuleConfig {
+  struct Base {};
+  VirtualConfig<Base, true> module;
+  int value = 0;
+};
+
+void declare_config(OptionalModuleConfig& config) {
+  name("OptionalModuleConfig");
+  field(config.module, "module");
+  field(config.value, "value");
+}
+
+}  // namespace
 
 DefaultConfig modified_config() {
   DefaultConfig config;
@@ -121,6 +138,15 @@ TEST(DynamicConfig, SetGet) {
   EXPECT_TRUE(values.IsNull());
   server.set("invalid", DefaultConfig::defaultValues());
   EXPECT_EQ(dyn.get().i, 7);
+}
+
+TEST(DynamicConfig, RejectsUnknownOptionalModuleType) {
+  DynamicConfig<OptionalModuleConfig> config("optional_module");
+  DynamicConfigServer server;
+
+  const auto error = server.set("optional_module", YAML::Load("value: 1\nmodule: {type: UnknownDynamicModule}"));
+  EXPECT_NE(error.find("UnknownDynamicModule"), std::string::npos);
+  EXPECT_EQ(config.get().value, 0);
 }
 
 TEST(DynamicConfig, getInfo) {
