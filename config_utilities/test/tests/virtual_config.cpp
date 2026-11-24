@@ -576,6 +576,19 @@ TEST(VirtualConfig, unknownOptionalTypeFailsValidation) {
   Settings().factory.strict_virtual_config_types = strict;
 }
 
+TEST(VirtualConfig, createPreservesFailedNestedType) {
+  const RegistrationGuard<DefaultedOptional, DefaultedOptional, DefaultedOptional::Config> child("DefaultedOptional");
+  const RegistrationGuard<ParentOfDefaultedOptional, ParentOfDefaultedOptional, ParentOfDefaultedOptional::Config>
+      parent("ParentOfDefaultedOptional");
+  const auto config = fromYaml<VirtualConfig<ParentOfDefaultedOptional>>(
+      YAML::Load("{type: ParentOfDefaultedOptional, child: {type: UnknownChild}}"));
+  ASSERT_FALSE(isValid(config));
+
+  const auto object = config.create();
+  ASSERT_TRUE(object);
+  EXPECT_FALSE(isValid(object->config));
+}
+
 TEST(VirtualConfig, failedTypeSurvivesCopyAndMove) {
   using OptionalConfig = VirtualConfig<Base2, true>;
   auto original = fromYaml<OptionalConfig>(YAML::Load("type: UnregisteredBase2Type"));

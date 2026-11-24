@@ -404,19 +404,24 @@ struct ObjectFactory {
   }
 };
 
+struct FactoryConfigInput {
+  const YAML::Node& data;
+  Visitor::ValuePurpose purpose = Visitor::ValuePurpose::kNormal;
+};
+
 // Factory to create DerivedT objects that use configs.
 template <class BaseT, typename... Args>
 struct ObjectWithConfigFactory {
-  using Constructor = FactoryMethod<BaseT, const YAML::Node&, Args...>;
+  using Constructor = FactoryMethod<BaseT, const FactoryConfigInput&, Args...>;
   inline static constexpr auto registration_info =
       "config::RegistrationWithConfig<BaseT, DerivedT, DerivedConfigT, ConstructorArguments...>";
 
   // Add entries.
   template <typename DerivedT, typename DerivedConfigT>
   static void addEntry(const std::string& type) {
-    const Constructor method = [type](const YAML::Node& data, Args... args) -> BaseT* {
+    const Constructor method = [type](const FactoryConfigInput& input, Args... args) -> BaseT* {
       DerivedConfigT config;
-      auto set_data = Visitor::setValues(config, data);
+      auto set_data = Visitor::setValues(config, input.data, true, "", "", true, input.purpose);
       if (Settings::instance().introspection.enabled()) {
         auto get_info = Visitor::getInfo(config);
         // Also log the type parameter used for creation.
@@ -432,16 +437,20 @@ struct ObjectWithConfigFactory {
       return new DerivedT(config, std::move(args)...);
     };
 
-    ModuleRegistry::addModule<BaseT, DerivedT, const YAML::Node&, Args...>(type, method, true);
+    ModuleRegistry::addModule<BaseT, DerivedT, const FactoryConfigInput&, Args...>(type, method, true);
   }
 
   static void removeEntry(const std::string& type) {
-    ModuleRegistry::removeModule<BaseT, const YAML::Node&, Args...>(type, true);
+    ModuleRegistry::removeModule<BaseT, const FactoryConfigInput&, Args...>(type, true);
   }
 
   static std::unique_ptr<BaseT> create(const YAML::Node& data, Args... args) {
+    return create(FactoryConfigInput{data}, std::move(args)...);
+  }
+
+  static std::unique_ptr<BaseT> create(const FactoryConfigInput& input, Args&&... args) {
     std::string type;
-    if (!getType(data, type)) {
+    if (!getType(input.data, type)) {
       if (Settings::instance().introspection.enabled()) {
         // Log that the type could not be determined.
         Introspection::logSingleEvent(
@@ -451,12 +460,13 @@ struct ObjectWithConfigFactory {
       return nullptr;
     }
 
-    const auto factory = ModuleRegistry::getModule<BaseT, const YAML::Node&, Args...>(type, registration_info, true);
+    const auto factory =
+        ModuleRegistry::getModule<BaseT, const FactoryConfigInput&, Args...>(type, registration_info, true);
     if (!factory) {
       return nullptr;
     }
 
-    return std::unique_ptr<BaseT>(factory(data, std::move(args)...));
+    return std::unique_ptr<BaseT>(factory(input, std::move(args)...));
   }
 };
 

@@ -43,6 +43,7 @@
 #include <gtest/gtest.h>
 
 #include "config_utilities/config.h"
+#include "config_utilities/parsing/yaml.h"
 #include "config_utilities/test/default_config.h"
 #include "config_utilities/test/utils.h"
 #include "config_utilities/virtual_config.h"
@@ -147,6 +148,33 @@ TEST(DynamicConfig, RejectsUnknownOptionalModuleType) {
   const auto error = server.set("optional_module", YAML::Load("value: 1\nmodule: {type: UnknownDynamicModule}"));
   EXPECT_NE(error.find("UnknownDynamicModule"), std::string::npos);
   EXPECT_EQ(config.get().value, 0);
+}
+
+TEST(DynamicConfig, SetClearsFailedOptionalModuleType) {
+  auto& strict = Settings().factory.strict_virtual_config_types;
+  const bool previous_strict = strict;
+  strict = false;
+  const auto failed = fromYaml<OptionalModuleConfig>(YAML::Load("module: {type: UnknownDynamicModule}"));
+  DynamicConfig<OptionalModuleConfig> config("optional_module", failed);
+
+  EXPECT_TRUE(config.set(OptionalModuleConfig{}));
+  strict = true;
+  EXPECT_TRUE(isValid(config.get()));
+  strict = previous_strict;
+}
+
+TEST(DynamicConfig, SetValuesNotifiesWhenClearingFailedOptionalModuleType) {
+  auto& strict = Settings().factory.strict_virtual_config_types;
+  const bool previous_strict = strict;
+  strict = false;
+  const auto failed = fromYaml<OptionalModuleConfig>(YAML::Load("module: {type: UnknownDynamicModule}"));
+  int updates = 0;
+  DynamicConfig<OptionalModuleConfig> config("optional_module", failed, [&updates] { ++updates; });
+  DynamicConfigServer server;
+
+  EXPECT_TRUE(server.set("optional_module", YAML::Load("module: {type: ''}")).empty());
+  EXPECT_EQ(updates, 1);
+  strict = previous_strict;
 }
 
 TEST(DynamicConfig, getInfo) {

@@ -210,12 +210,11 @@ class VirtualConfig {
     if (!config_) {
       return nullptr;
     }
-    // NOTE(lschmid): This is not the most beautiful but fairly general. Deserialize the config to YAML and use that to
-    // create the object with the standard factory. We assume that every type that can be serialized into a config can
-    // also be de-serialized so this should not result in any warnings, we print them anyways to be sure. The factory
-    // should take proper care of any other verbose error management.
-    const internal::MetaData data = internal::Visitor::getValues(*this);
-    return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(data.data, std::move(args)...);
+
+    // Keep failed nested lookups visible to validation in the constructor.
+    const auto snapshot = internal::Visitor::getSnapshot(*this);
+    const internal::FactoryConfigInput input{snapshot, internal::Visitor::ValuePurpose::kSnapshot};
+    return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(input, std::move(args)...);
   }
 
  private:

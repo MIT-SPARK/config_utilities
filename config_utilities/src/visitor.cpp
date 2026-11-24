@@ -47,7 +47,7 @@
 namespace config::internal {
 namespace {
 
-// Restore failed lookups from an update snapshot without calling the factory again.
+// Restore failed lookups from a snapshot without calling the factory again.
 constexpr auto kFailedVirtualConfigTypeTag = "!failed_virtual_config_type";
 
 }  // namespace
@@ -117,7 +117,7 @@ std::optional<Visitor::VirtualConfigType> Visitor::visitVirtualConfig(bool is_se
   if (visitor.mode == Visitor::Mode::kGet || visitor.mode == Visitor::Mode::kGetInfo) {
     // Also write the type param back to file.
     auto type_node = YAML::Node(type);
-    if (visitor.value_purpose == ValuePurpose::kRollback && failed_type) {
+    if (visitor.value_purpose == ValuePurpose::kSnapshot && failed_type) {
       type_node = *failed_type;
       type_node.SetTag(kFailedVirtualConfigTypeTag);
     }
@@ -154,7 +154,7 @@ std::optional<Visitor::VirtualConfigType> Visitor::visitVirtualConfig(bool is_se
     std::string type_param;
     if (internal::getType(type_node, type_param, type_required)) {
       field_info.was_parsed = true;
-      const bool restore_failure = visitor.value_purpose == ValuePurpose::kRollback &&
+      const bool restore_failure = visitor.value_purpose == ValuePurpose::kSnapshot &&
                                    type_node[field_info.name].Tag() == kFailedVirtualConfigTypeTag;
       return VirtualConfigType{std::move(type_param), restore_failure};
     } else if (type_required) {

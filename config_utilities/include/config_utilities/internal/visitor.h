@@ -65,7 +65,7 @@ struct Visitor {
   ~Visitor();
   static bool hasInstance();
 
-  enum class ValuePurpose { kNormal, kRollback };
+  enum class ValuePurpose { kNormal, kSnapshot };
 
   // Interfaces for all internal tools to interact with configs through the visitor.
   /**
@@ -89,6 +89,12 @@ struct Visitor {
                             const std::string& name_space = "",
                             const std::string& field_name = "",
                             ValuePurpose purpose = ValuePurpose::kNormal);
+
+  // Capture values and failed virtual config lookups for internal use.
+  template <typename ConfigT>
+  static YAML::Node getSnapshot(const ConfigT& config, bool print_warnings = true) {
+    return getValues(config, print_warnings, "", "", ValuePurpose::kSnapshot).data;
+  }
 
   // Get the data and field info stored in the config.
   template <typename ConfigT>

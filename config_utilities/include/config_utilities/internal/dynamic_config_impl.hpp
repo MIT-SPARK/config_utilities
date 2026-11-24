@@ -95,13 +95,16 @@ bool DynamicConfig<ConfigT>::set(const ConfigT& config) {
     return true;
   }
 
-  const auto new_yaml = internal::Visitor::getValues(config).data;
+  const auto new_snapshot = internal::Visitor::getSnapshot(config, false);
+  YAML::Node new_yaml;
   {  // critical section
     std::lock_guard<std::mutex> lock(mutex_);
-    const auto old_yaml = internal::Visitor::getValues(config_).data;
-    if (internal::isEqual(old_yaml, new_yaml)) {
+    const auto old_snapshot = internal::Visitor::getSnapshot(config_, false);
+    if (internal::isEqual(old_snapshot, new_snapshot, true)) {
       return false;
     }
+
+    new_yaml = internal::Visitor::getValues(config).data;
     config_ = config;
   }  // end critical section
 
@@ -120,7 +123,7 @@ std::string DynamicConfig<ConfigT>::setValues(const YAML::Node& values) const {
   if (values.Type() != YAML::NodeType::Map || values.size() == 0) {
     return "";
   }
-  YAML::Node old_yaml, new_yaml;
+  YAML::Node new_yaml;
   std::string error;
   {  // start critical section
     std::lock_guard<std::mutex> lock(mutex_);
@@ -133,16 +136,15 @@ std::string DynamicConfig<ConfigT>::setValues(const YAML::Node& values) const {
       return internal::Formatter::formatErrors(check_data, "", internal::Severity::kError, true) + error;
     }
 
-    old_yaml = internal::Visitor::getValues(config_).data;
+    const auto old_snapshot = internal::Visitor::getSnapshot(config_, false);
+    const auto new_snapshot = internal::Visitor::getSnapshot(new_config, false);
     config_ = new_config;
+    if (internal::isEqual(old_snapshot, new_snapshot, true)) {
+      return error;
+    }
+
     new_yaml = internal::Visitor::getValues(config_).data;
   }  // end critical section
-
-  // Check if the config was actually changed.
-  // TODO(lschmid): This is not beautiful, think about better ways to get good behavior.
-  if (internal::isEqual(old_yaml, new_yaml)) {
-    return error;
-  }
 
   if (callback_) {
     callback_();
