@@ -9,8 +9,12 @@ if (@Eigen3_FOUND@)  # expanded from Eigen3_FOUND during build time
   find_dependency(Eigen3)
 endif()
 
-if (@glog_FOUND@)  # expanded from glog_FOUND during build time
+if (@CONFIG_UTILS_WITH_GLOG@)  # expanded from glog_FOUND during build time
   find_dependency(glog)
+endif()
+
+if (@CONFIG_UTILS_WITH_SPDLOG@)
+  find_dependency(spdlog)
 endif()
 
 if(NOT @BUILD_SHARED_LIBS@)  # expanded from BUILD_SHARED_LIBS during build time

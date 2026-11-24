@@ -514,8 +514,9 @@ Config[config::test::Talker]():
 
   Settings().printing.width = 40;
 
-  // drop glog if it exists to avoid conditional registration problems
+  // Exclude optional logging backends from this registry snapshot.
   internal::ObjectFactory<internal::Logger>::removeEntry("glog");
+  internal::ObjectFactory<internal::Logger>::removeEntry("spdlog");
   const std::string modules = internal::ModuleRegistry::getAllRegistered();
   EXPECT_EQ(modules, expected);
   Settings().restoreDefaults();

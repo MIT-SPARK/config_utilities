@@ -15,7 +15,14 @@ option(CONFIG_UTILS_BUILD_DEMOS "Build demo executables" ON)
 find_package(yaml-cpp REQUIRED)
 find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
 find_package(Eigen3 QUIET)
-find_package(glog QUIET)
+option(CONFIG_UTILS_ENABLE_GLOG_LOGGING "Enable glog logging when available" ON)
+option(CONFIG_UTILS_ENABLE_SPDLOG_LOGGING "Enable spdlog logging when available" ON)
+if(CONFIG_UTILS_ENABLE_GLOG_LOGGING)
+  find_package(glog QUIET)
+endif()
+if(CONFIG_UTILS_ENABLE_SPDLOG_LOGGING)
+  find_package(spdlog QUIET)
+endif()
 find_package(nlohmann_json QUIET)
 
 add_library(
@@ -33,6 +40,7 @@ add_library(
   src/introspection.cpp
   src/log_to_stdout.cpp
   src/log_to_glog.cpp
+  src/log_to_spdlog.cpp
   src/logger.cpp
   src/meta_data.cpp
   src/namespacing.cpp
@@ -60,9 +68,17 @@ add_library(config_utilities::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 if(Eigen3_FOUND)
   target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen)
 endif()
-if(glog_FOUND)
+set(CONFIG_UTILS_WITH_GLOG OFF)
+set(CONFIG_UTILS_WITH_SPDLOG OFF)
+if(CONFIG_UTILS_ENABLE_GLOG_LOGGING AND glog_FOUND)
+  set(CONFIG_UTILS_WITH_GLOG ON)
   target_link_libraries(${PROJECT_NAME} PUBLIC glog::glog)
   target_compile_definitions(${PROJECT_NAME} PRIVATE CONFIG_UTILS_ENABLE_GLOG_LOGGING)
+endif()
+if(CONFIG_UTILS_ENABLE_SPDLOG_LOGGING AND spdlog_FOUND)
+  set(CONFIG_UTILS_WITH_SPDLOG ON)
+  target_link_libraries(${PROJECT_NAME} PUBLIC spdlog::spdlog)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE CONFIG_UTILS_ENABLE_SPDLOG_LOGGING)
 endif()
 if(nlohmann_json_FOUND)
   target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)
