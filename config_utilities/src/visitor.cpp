@@ -35,6 +35,7 @@
 
 #include "config_utilities/internal/visitor.h"
 
+#include <algorithm>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -96,6 +97,25 @@ std::optional<Visitor::SnapshotAccess> Visitor::childSnapshot(const std::string&
   auto child = *snapshot;
   child.path.emplace_back(additionalNamespace(), field_name, std::move(item));
   return child;
+}
+
+void Visitor::SnapshotAccess::clearCapturedTypes() const {
+  if (!capture) {
+    return;
+  }
+
+  const auto first = capture->lower_bound({path, 0});
+  auto end = first;
+  while (end != capture->end()) {
+    const auto& entry_path = end->first.first;
+    if (entry_path.size() < path.size() || !std::equal(path.begin(), path.end(), entry_path.begin())) {
+      break;
+    }
+
+    ++end;
+  }
+
+  capture->erase(first, end);
 }
 
 void Visitor::visitName(const std::string& name) {

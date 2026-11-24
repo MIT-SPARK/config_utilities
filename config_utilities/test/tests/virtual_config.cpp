@@ -199,6 +199,12 @@ void declare_config(ObjectWithOptionalConfigs::Config& config) {
   config::field(config.modules, "modules");
 }
 
+struct OrderedModules {
+  OrderedMap<std::string, VirtualConfig<Base2>> modules;
+};
+
+void declare_config(OrderedModules& config) { field(config.modules, "modules"); }
+
 struct DefaultedOptional {
   struct Config {
     int foo = 3;
@@ -684,6 +690,22 @@ TEST(VirtualConfig, updateRestoresTypesThatShareAYamlKey) {
   EXPECT_EQ(restored->value, 3);
   EXPECT_FALSE(restored->child.isSet());
   EXPECT_FALSE(valid_in_strict_mode);
+}
+
+TEST(VirtualConfig, updateRestoresLastTypeForDuplicateMapKey) {
+  auto config = fromYaml<OrderedModules>(YAML::Load(R"(
+modules:
+  duplicate: {type: Derived2, f: 2}
+  duplicate: {type: Derived2A, i: 3}
+)"));
+  ASSERT_EQ(config.modules.size(), 2u);
+  ASSERT_TRUE(isValid(config));
+  EXPECT_FALSE(updateFromYaml(config, YAML::Load("modules: {duplicate: {type: UnknownModule}}")));
+
+  ASSERT_EQ(config.modules.size(), 1u);
+  const auto restored = config.modules.front().second.getUnderlying<Derived2A::Config>();
+  ASSERT_TRUE(restored);
+  EXPECT_EQ(restored->i, 3);
 }
 
 TEST(VirtualConfig, parseOptionalMissingField) {

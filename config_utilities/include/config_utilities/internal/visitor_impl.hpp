@@ -373,8 +373,14 @@ void Visitor::visitField(OrderedMap<K, ConfigT>& config, const std::string& fiel
       if (visitor.mode == Visitor::Mode::kGetInfo) {
         visitor.meta_data.sub_configs.emplace_back(getInfo(sub_config, name_space, field_name));
       } else {
+        auto entry_snapshot = visitor.childSnapshot(field_name, key_name);
+        if (entry_snapshot && std::as_const(map_node)[key]) {
+          // The YAML map replaces the entire previous entry for this key.
+          entry_snapshot->clearCapturedTypes();
+        }
+
         visitor.meta_data.sub_configs.emplace_back(
-            getValues(sub_config, false, name_space, field_name, visitor.childSnapshot(field_name, key_name)));
+            getValues(sub_config, false, name_space, field_name, std::move(entry_snapshot)));
       }
       MetaData& new_data = visitor.meta_data.sub_configs.back();
       map_node[key] = YAML::Clone(lookupNamespace(new_data.data, name_space));

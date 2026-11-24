@@ -88,6 +88,8 @@ struct Visitor {
     ConfigSnapshot::VirtualTypes* capture;
     const ConfigSnapshot::VirtualTypes* restore;
     ConfigSnapshot::Path path;
+
+    void clearCapturedTypes() const;
   };
 
  public:
