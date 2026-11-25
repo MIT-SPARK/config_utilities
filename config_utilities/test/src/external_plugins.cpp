@@ -68,9 +68,9 @@ void declare_config(FancyTalker::Config& config) {
   config::field(config.suffix, "suffix");
 }
 
-struct ExternalLogger : config::internal::Logger {
-  void logImpl(const config::Severity, const std::string&) { throw std::runtime_error("External logger!"); }
-  inline static const auto reg = config::Registration<config::internal::Logger, ExternalLogger>("external_logger");
+struct ExternalLogger : config::LoggerImpl {
+  void logImpl(config::Severity, const std::string&) override { throw std::runtime_error("External logger!"); }
+  inline static const auto reg = config::Registration<config::LoggerImpl, ExternalLogger>("external_logger");
 };
 
 }  // namespace external

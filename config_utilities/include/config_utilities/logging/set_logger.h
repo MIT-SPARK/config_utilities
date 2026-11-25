@@ -40,8 +40,7 @@
 
 namespace config {
 
-void setCustomLogger(std::unique_ptr<LoggerImpl>&& logger);
-
+//! Install a custom backend; accepts shared pointers and moved unique pointers.
 void setCustomLogger(std::shared_ptr<LoggerImpl> logger);
 
 }  // namespace config

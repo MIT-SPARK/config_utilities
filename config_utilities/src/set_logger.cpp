@@ -41,8 +41,6 @@
 
 namespace config {
 
-void setCustomLogger(std::unique_ptr<LoggerImpl>&& logger) { internal::Logger::setLogger(std::move(logger)); }
-
 void setCustomLogger(std::shared_ptr<LoggerImpl> logger) { internal::Logger::setLogger(std::move(logger)); }
 
 }  // namespace config

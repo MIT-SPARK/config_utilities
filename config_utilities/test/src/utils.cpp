@@ -42,6 +42,7 @@
 #include <gtest/gtest.h>
 
 #include "config_utilities/internal/logger.h"
+#include "config_utilities/logging/set_logger.h"
 
 namespace config::test {
 namespace {
@@ -112,7 +113,7 @@ void TestLogger::logImpl(const Severity severity, const std::string& message) {
 
 std::shared_ptr<TestLogger> TestLogger::create() {
   auto logger = std::make_shared<TestLogger>();
-  internal::Logger::setLogger(logger);
+  setCustomLogger(logger);
   return logger;
 }
 

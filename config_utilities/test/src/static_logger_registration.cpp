@@ -34,9 +34,9 @@
  * -------------------------------------------------------------------------- */
 
 #include "config_utilities/factory.h"
-#include "config_utilities/internal/logger.h"
+#include "config_utilities/logging/logger_impl.h"
 
 int main() {
   // Referencing SpdlogLogger directly would hide a discarded archive member.
-  return config::create<config::internal::Logger>("spdlog") ? 0 : 1;
+  return config::create<config::LoggerImpl>("spdlog") ? 0 : 1;
 }

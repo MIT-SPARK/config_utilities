@@ -155,8 +155,11 @@ backends can be selected with `config::Settings().setLogger("glog")` or
 `config::Settings().setLogger("spdlog")`. CMake options
 `CONFIG_UTILS_ENABLE_GLOG_LOGGING` and `CONFIG_UTILS_ENABLE_SPDLOG_LOGGING`
 (default ON) control optional discovery and exported dependencies independently.
-For custom spdlog sinks, pass a shared logger to `config::internal::SpdlogLogger`
-and install it with `config::internal::Logger::setLogger`.
+For custom spdlog sinks, pass a shared logger to `config::SpdlogLogger`
+and install it with `config::setCustomLogger` from
+`<config_utilities/logging/set_logger.h>`. The setter accepts shared pointers
+and moved unique pointers. Select `"none"` to suppress diagnostics while keeping
+fatal validation failures as exceptions.
 
 ## How to `config_utilities`
 

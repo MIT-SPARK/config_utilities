@@ -36,6 +36,7 @@
 #include "config_utilities/settings.h"
 
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -45,6 +46,17 @@
 #include "config_utilities/internal/logger.h"
 
 namespace config::internal {
+namespace {
+
+class NullLogger : public LoggerImpl {
+  void logImpl(Severity severity, const std::string& message) override {
+    if (severity == Severity::kFatal) {
+      throw std::runtime_error("FATAL: " + message);
+    }
+  }
+};
+
+}  // namespace
 
 Settings Settings::instance_;
 
@@ -54,6 +66,7 @@ bool Settings::Introspection::enabled() const { return !output.empty(); }
 
 void Settings::setLogger(const std::string& name) {
   if (name == "none") {
+    Logger::setLogger(std::make_shared<NullLogger>());
     return;
   }
 
