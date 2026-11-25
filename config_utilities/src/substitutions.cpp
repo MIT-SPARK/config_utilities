@@ -42,9 +42,13 @@
 #include <utility>
 
 #include "config_utilities/internal/logger.h"
+#include "config_utilities/substitution_parsers.h"
 
 namespace config {
 namespace {
+
+static const auto env_reg = RegisteredSubstitutions::Registration<EnvSubstitution>();
+static const auto var_reg = RegisteredSubstitutions::Registration<VarSubstitution>();
 
 class SubsNode {
  public:

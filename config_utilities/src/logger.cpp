@@ -40,19 +40,25 @@
 #include <string>
 #include <utility>
 
+#include "config_utilities/factory.h"
 #include "config_utilities/logging/log_to_stdout.h"
 #include "config_utilities/settings.h"
 
+#ifdef CONFIG_UTILS_ENABLE_GLOG_LOGGING
+#include "config_utilities/logging/log_to_glog.h"
+#endif
 #ifdef CONFIG_UTILS_ENABLE_SPDLOG_LOGGING
-#include "config_utilities/factory.h"
 #include "config_utilities/logging/log_to_spdlog.h"
 #endif
 
 namespace config::internal {
 namespace {
 
+// Keep enabled backends reachable when linking the library statically.
+#ifdef CONFIG_UTILS_ENABLE_GLOG_LOGGING
+const auto glog_registration = Registration<Logger, GlogLogger>("glog");
+#endif
 #ifdef CONFIG_UTILS_ENABLE_SPDLOG_LOGGING
-// Keep the built-in backend reachable when linking the library statically.
 const auto spdlog_registration = Registration<Logger, SpdlogLogger>("spdlog");
 #endif
 

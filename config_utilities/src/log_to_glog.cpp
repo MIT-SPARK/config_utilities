@@ -42,17 +42,9 @@
 #include <iostream>
 #include <string>
 
-#include "config_utilities/factory.h"
 #include "config_utilities/logging/log_to_stdout.h"
 
 namespace config::internal {
-namespace {
-
-#ifdef CONFIG_UTILS_ENABLE_GLOG_LOGGING
-static const auto registration = Registration<Logger, GlogLogger>("glog");
-#endif
-
-}  // namespace
 
 GlogLogger::GlogLogger() {
 #ifndef CONFIG_UTILS_ENABLE_GLOG_LOGGING
