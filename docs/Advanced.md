@@ -87,7 +87,6 @@ To implement custom loggers, inherit from `config::LoggerImpl` and override `log
 
 class MyLogger : public config::LoggerImpl {
  public:
- // Implement this function to do the logging work.
   void logImpl(config::Severity severity, const std::string& message) override;
 
   // Optional registration for config::Settings().setLogger("my_logger").
@@ -97,13 +96,12 @@ class MyLogger : public config::LoggerImpl {
 ```
 
 > **✅ Supports**<br>
-> Install a logger with `config::setCustomLogger`, using a shared pointer or a moved unique pointer. For example,
+> Install your logger with `config::setCustomLogger`. It accepts shared or unique pointers.
 > ```c++
-> auto logger = std::make_shared<MyLogger>();
-> config::setCustomLogger(logger);
-> { /* do magic */ }
-> logger->doSomethingWithCollectedState();
+> config::setCustomLogger(std::make_unique<MyLogger>());
 > ```
+
+For spdlog, pass your logger to `config::SpdlogLogger` and install it with the same setter.
 
 > **✅ Supports**<br>
 > To log to the current `config_utilities` logger, you can use:
