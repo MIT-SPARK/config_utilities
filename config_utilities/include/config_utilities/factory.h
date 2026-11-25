@@ -404,25 +404,19 @@ struct ObjectFactory {
   }
 };
 
-struct FactoryConfigInput {
-  const YAML::Node& data;
-  const ConfigSnapshot* snapshot = nullptr;
-};
-
 // Factory to create DerivedT objects that use configs.
 template <class BaseT, typename... Args>
 struct ObjectWithConfigFactory {
-  using Constructor = FactoryMethod<BaseT, const FactoryConfigInput&, Args...>;
+  using Constructor = FactoryMethod<BaseT, const YAML::Node&, Args...>;
   inline static constexpr auto registration_info =
       "config::RegistrationWithConfig<BaseT, DerivedT, DerivedConfigT, ConstructorArguments...>";
 
   // Add entries.
   template <typename DerivedT, typename DerivedConfigT>
   static void addEntry(const std::string& type) {
-    const Constructor method = [type](const FactoryConfigInput& input, Args... args) -> BaseT* {
+    const Constructor method = [type](const YAML::Node& data, Args... args) -> BaseT* {
       DerivedConfigT config;
-      auto set_data =
-          input.snapshot ? Visitor::setSnapshot(config, *input.snapshot) : Visitor::setValues(config, input.data);
+      auto set_data = Visitor::setValues(config, data);
       if (Settings::instance().introspection.enabled()) {
         auto get_info = Visitor::getInfo(config);
         // Also log the type parameter used for creation.
@@ -438,11 +432,11 @@ struct ObjectWithConfigFactory {
       return new DerivedT(config, std::move(args)...);
     };
 
-    ModuleRegistry::addModule<BaseT, DerivedT, const FactoryConfigInput&, Args...>(type, method, true);
+    ModuleRegistry::addModule<BaseT, DerivedT, const YAML::Node&, Args...>(type, method, true);
   }
 
   static void removeEntry(const std::string& type) {
-    ModuleRegistry::removeModule<BaseT, const FactoryConfigInput&, Args...>(type, true);
+    ModuleRegistry::removeModule<BaseT, const YAML::Node&, Args...>(type, true);
   }
 
   static std::unique_ptr<BaseT> create(const YAML::Node& data, Args... args) {
@@ -457,22 +451,12 @@ struct ObjectWithConfigFactory {
       return nullptr;
     }
 
-    return create(type, FactoryConfigInput{data}, std::move(args)...);
-  }
-
-  static std::unique_ptr<BaseT> create(const std::string& type, const ConfigSnapshot& snapshot, Args&&... args) {
-    return create(type, FactoryConfigInput{snapshot.data, &snapshot}, std::move(args)...);
-  }
-
- private:
-  static std::unique_ptr<BaseT> create(const std::string& type, const FactoryConfigInput& input, Args&&... args) {
-    const auto factory =
-        ModuleRegistry::getModule<BaseT, const FactoryConfigInput&, Args...>(type, registration_info, true);
+    const auto factory = ModuleRegistry::getModule<BaseT, const YAML::Node&, Args...>(type, registration_info, true);
     if (!factory) {
       return nullptr;
     }
 
-    return std::unique_ptr<BaseT>(factory(input, std::move(args)...));
+    return std::unique_ptr<BaseT>(factory(data, std::move(args)...));
   }
 };
 

@@ -210,11 +210,12 @@ class VirtualConfig {
     if (!config_) {
       return nullptr;
     }
-
-    // Keep failed nested lookups visible to validation in the constructor.
-    const auto snapshot = internal::Visitor::captureSnapshot([this] { config_->onDeclareConfig(); });
-    return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(
-        config_->type, snapshot, std::move(args)...);
+    // NOTE(lschmid): This is not the most beautiful but fairly general. Deserialize the config to YAML and use that to
+    // create the object with the standard factory. We assume that every type that can be serialized into a config can
+    // also be de-serialized so this should not result in any warnings, we print them anyways to be sure. The factory
+    // should take proper care of any other verbose error management.
+    const internal::MetaData data = internal::Visitor::getValues(*this);
+    return internal::ObjectWithConfigFactory<BaseT, ConstructorArguments...>::create(data.data, std::move(args)...);
   }
 
  private:
@@ -248,15 +249,12 @@ void declare_config(VirtualConfig<BaseT, Opt>& config) {
   // If a type is returned the config should be reset or created.
   if (type) {
     config.failed_type_.reset();
-    if (type->failed) {
-      config.config_.reset();
-      config.failed_type_ = std::move(type->name);
-    } else if (type->name.empty() || type->name == internal::kUninitializedVirtualConfigType) {
+    if (type->empty() || *type == internal::kUninitializedVirtualConfigType) {
       config.config_.reset();
     } else {
-      config.config_ = internal::ConfigFactory<BaseT>::create(type->name);
+      config.config_ = internal::ConfigFactory<BaseT>::create(*type);
       if (!config.config_) {
-        config.failed_type_ = std::move(type->name);
+        config.failed_type_ = std::move(*type);
       }
     }
   }

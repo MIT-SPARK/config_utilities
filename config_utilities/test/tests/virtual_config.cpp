@@ -49,26 +49,6 @@
 #include "config_utilities/validation.h"
 
 namespace config::test {
-namespace {
-
-struct FlattenedParent {
-  struct Child {};
-
-  struct Config {
-    VirtualConfig<Child, true> child;
-    int value = 0;
-  };
-
-  explicit FlattenedParent(const Config&) {}
-};
-
-void declare_config(FlattenedParent::Config& config) {
-  field(config.child, "child", false);
-  field(config.value, "value");
-  check(config.value, CheckMode::GE, 0, "value");
-}
-
-}  // namespace
 
 struct Base2 {
   virtual std::string name() const = 0;
@@ -198,12 +178,6 @@ void declare_config(ObjectWithOptionalConfigs::Config& config) {
   config::name("ObjectWithOptionalConfigs");
   config::field(config.modules, "modules");
 }
-
-struct OrderedModules {
-  OrderedMap<std::string, VirtualConfig<Base2>> modules;
-};
-
-void declare_config(OrderedModules& config) { field(config.modules, "modules"); }
 
 struct DefaultedOptional {
   struct Config {
@@ -602,7 +576,7 @@ TEST(VirtualConfig, unknownOptionalTypeFailsValidation) {
   Settings().factory.strict_virtual_config_types = strict;
 }
 
-TEST(VirtualConfig, createPreservesFailedNestedType) {
+TEST(VirtualConfig, createWithFailedOptionalChild) {
   const RegistrationGuard<DefaultedOptional, DefaultedOptional, DefaultedOptional::Config> child("DefaultedOptional");
   const RegistrationGuard<ParentOfDefaultedOptional, ParentOfDefaultedOptional, ParentOfDefaultedOptional::Config>
       parent("ParentOfDefaultedOptional");
@@ -612,100 +586,16 @@ TEST(VirtualConfig, createPreservesFailedNestedType) {
 
   const auto object = config.create();
   ASSERT_TRUE(object);
-  EXPECT_FALSE(isValid(object->config));
+  EXPECT_FALSE(object->child);
+  EXPECT_TRUE(isValid(object->config));
 }
 
-TEST(VirtualConfig, failedTypeSurvivesCopyAndMove) {
-  using OptionalConfig = VirtualConfig<Base2, true>;
-  auto original = fromYaml<OptionalConfig>(YAML::Load("type: UnregisteredBase2Type"));
-  auto copy = original;
-  EXPECT_FALSE(isValid(copy));
-
-  auto moved = std::move(copy);
-  EXPECT_FALSE(isValid(moved));
-
-  copy = original;
-  EXPECT_FALSE(isValid(copy));
-
-  OptionalConfig assigned;
-  assigned = std::move(copy);
-  EXPECT_FALSE(isValid(assigned));
-}
-
-TEST(VirtualConfig, failedTypeClearsAfterSuccessfulAssignment) {
-  using OptionalConfig = VirtualConfig<Base2, true>;
-  const auto invalid = fromYaml<OptionalConfig>(YAML::Load("type: UnregisteredBase2Type"));
-  auto replaced = invalid;
-  ASSERT_TRUE(updateFromYaml(replaced, YAML::Load("{type: Derived2, f: 1}")));
-  EXPECT_EQ(replaced.getType(), "Derived2");
-
-  auto cleared = invalid;
-  ASSERT_TRUE(updateFromYaml(cleared, YAML::Load("type: ''")));
-  EXPECT_FALSE(cleared.isSet());
-
-  auto assigned = invalid;
-  ASSERT_TRUE(assigned.set(Derived2::Config()));
-  EXPECT_TRUE(isValid(assigned));
-}
-
-TEST(VirtualConfig, updateRestoresValidConfigAfterUnknownType) {
-  auto config = fromYaml<ObjectWithOptionalConfigs::Config>(YAML::Load("modules: [{type: Derived2, f: 2}]"));
-  ASSERT_TRUE(isValid(config));
-
-  EXPECT_FALSE(updateFromYaml(config, YAML::Load("modules: [{type: UnregisteredBase2Type}]")));
-  ASSERT_EQ(config.modules.size(), 1u);
-  const auto restored = config.modules.front().getUnderlying<Derived2::Config>();
-  ASSERT_TRUE(restored);
-  EXPECT_FLOAT_EQ(restored->f, 2.f);
-}
-
-TEST(VirtualConfig, updateRestoresPreviouslyFailedType) {
-  auto config = fromYaml<ObjectWithOptionalConfigs::Config>(YAML::Load("modules: [{type: UnregisteredBase2Type}]"));
+TEST(VirtualConfig, successfulAssignmentClearsFailedType) {
+  auto config = fromYaml<VirtualConfig<Base2, true>>(YAML::Load("type: Typo"));
   ASSERT_FALSE(isValid(config));
-  EXPECT_EQ(toYaml(config)["modules"][0]["type"].as<std::string>(), internal::kUninitializedVirtualConfigType);
 
-  const auto logger = TestLogger::create();
-  EXPECT_FALSE(updateFromYaml(config, YAML::Load("{}")));
-  EXPECT_FALSE(updateFromYaml(config, YAML::Load("modules: [{type: Derived2, f: -1}]")));
-  EXPECT_FALSE(isValid(config));
-  ASSERT_EQ(config.modules.size(), 1u);
-  EXPECT_FALSE(config.modules.front().isSet());
-  EXPECT_FALSE(logger->hasMessages());
-}
-
-TEST(VirtualConfig, updateRestoresTypesThatShareAYamlKey) {
-  const RegistrationGuard<FlattenedParent, FlattenedParent, FlattenedParent::Config> parent("FlattenedParent");
-  auto config = fromYaml<VirtualConfig<FlattenedParent>>(YAML::Load("{type: FlattenedParent, value: 3}"));
-  auto& strict = Settings().factory.strict_virtual_config_types;
-  const bool previous_strict = strict;
-  strict = false;
+  ASSERT_TRUE(config.set(Derived2::Config()));
   EXPECT_TRUE(isValid(config));
-  EXPECT_FALSE(updateFromYaml(config, YAML::Load("value: -1")));
-  strict = true;
-  const bool valid_in_strict_mode = isValid(config);
-  strict = previous_strict;
-
-  const auto restored = config.getUnderlying<FlattenedParent::Config>();
-  ASSERT_TRUE(restored);
-  EXPECT_EQ(restored->value, 3);
-  EXPECT_FALSE(restored->child.isSet());
-  EXPECT_FALSE(valid_in_strict_mode);
-}
-
-TEST(VirtualConfig, updateRestoresLastTypeForDuplicateMapKey) {
-  auto config = fromYaml<OrderedModules>(YAML::Load(R"(
-modules:
-  duplicate: {type: Derived2, f: 2}
-  duplicate: {type: Derived2A, i: 3}
-)"));
-  ASSERT_EQ(config.modules.size(), 2u);
-  ASSERT_TRUE(isValid(config));
-  EXPECT_FALSE(updateFromYaml(config, YAML::Load("modules: {duplicate: {type: UnknownModule}}")));
-
-  ASSERT_EQ(config.modules.size(), 1u);
-  const auto restored = config.modules.front().second.getUnderlying<Derived2A::Config>();
-  ASSERT_TRUE(restored);
-  EXPECT_EQ(restored->i, 3);
 }
 
 TEST(VirtualConfig, parseOptionalMissingField) {

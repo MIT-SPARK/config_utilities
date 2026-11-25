@@ -35,13 +35,11 @@
 
 #pragma once
 
-#include <functional>
 #include <map>
 #include <mutex>
 #include <optional>
 #include <set>
 #include <string>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -58,41 +56,12 @@ using OrderedMap = std::vector<std::pair<Key, ConfigT>>;
 
 namespace internal {
 
-struct ConfigSnapshot {
-  struct VirtualType {
-    std::string name;
-    bool failed = false;
-
-    bool operator==(const VirtualType& other) const { return name == other.name && failed == other.failed; }
-  };
-
-  // Each path component contains the declaration namespace, field and collection key.
-  using Field = std::tuple<std::string, std::string, std::optional<std::string>>;
-  using Path = std::vector<Field>;
-  using VirtualTypes = std::map<std::pair<Path, size_t>, VirtualType>;
-
-  YAML::Node data;
-  VirtualTypes virtual_types;
-
-  bool operator==(const ConfigSnapshot& other) const;
-};
-
 /**
  * @brief The visitor gets and sets information between the meta-data and configs. It is hidden via in-thread singleton
  * sequential access to make the public user interface cleaner. This is thread safe and creates one visitor instance per
  * thread, so it can be used as if single-threaded.
  */
 struct Visitor {
- private:
-  struct SnapshotAccess {
-    ConfigSnapshot::VirtualTypes* capture;
-    const ConfigSnapshot::VirtualTypes* restore;
-    ConfigSnapshot::Path path;
-
-    void clearCapturedTypes() const;
-  };
-
- public:
   ~Visitor();
   static bool hasInstance();
 
@@ -108,28 +77,14 @@ struct Visitor {
                             const bool print_warnings = true,
                             const std::string& name_space = "",
                             const std::string& field_name = "",
-                            const bool print_missing = true,
-                            std::optional<SnapshotAccess> snapshot = std::nullopt);
+                            const bool print_missing = true);
 
   // Get the data stored in the config.
   template <typename ConfigT>
   static MetaData getValues(const ConfigT& config,
                             const bool print_warnings = true,
                             const std::string& name_space = "",
-                            const std::string& field_name = "",
-                            std::optional<SnapshotAccess> snapshot = std::nullopt);
-
-  // Capture values and failed virtual config lookups for internal use.
-  template <typename ConfigT>
-  static ConfigSnapshot getSnapshot(const ConfigT& config, bool print_warnings = true);
-
-  static ConfigSnapshot captureSnapshot(const std::function<void()>& declare, bool print_warnings = true);
-
-  template <typename ConfigT>
-  static MetaData setSnapshot(ConfigT& config, const ConfigSnapshot& snapshot, bool print_warnings = true) {
-    return setValues(
-        config, snapshot.data, print_warnings, "", "", true, SnapshotAccess{nullptr, &snapshot.virtual_types, {}});
-  }
+                            const std::string& field_name = "");
 
   // Get the data and field info stored in the config.
   template <typename ConfigT>
@@ -179,12 +134,12 @@ struct Visitor {
   static void visitBase(ConfigT& config);
 
   // Virtual config.
-  static std::optional<ConfigSnapshot::VirtualType> visitVirtualConfig(bool is_set,
-                                                                       bool is_optional,
-                                                                       const std::string& type,
-                                                                       const std::optional<std::string>& failed_type,
-                                                                       const std::string& base_type,
-                                                                       const std::string& base_factory_info);
+  static std::optional<std::string> visitVirtualConfig(bool is_set,
+                                                       bool is_optional,
+                                                       const std::string& type,
+                                                       const std::optional<std::string>& failed_type,
+                                                       const std::string& base_type,
+                                                       const std::string& base_factory_info);
 
  private:
   friend class config::NameSpace;
@@ -240,9 +195,6 @@ struct Visitor {
   // Get the additional namespace with respect to the meta data.
   std::string additionalNamespace() const;
 
-  std::optional<SnapshotAccess> childSnapshot(const std::string& field_name,
-                                              std::optional<std::string> item = std::nullopt) const;
-
   /* Internal data to handle visits. */
   // The messenger data to read from and return eventually.
   MetaData meta_data;
@@ -252,10 +204,6 @@ struct Visitor {
 
   // The current namespace used to get or set values.
   std::string name_space;
-
-  std::optional<SnapshotAccess> snapshot;
-  // A virtual config can declare another virtual config in the same visitor.
-  size_t virtual_type_index = 0;
 
   // Keep track of which base configs were already visited to avoid duplicates in diamond inheritance.
   std::set<std::string> visited_base_configs;

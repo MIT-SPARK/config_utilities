@@ -95,16 +95,13 @@ bool DynamicConfig<ConfigT>::set(const ConfigT& config) {
     return true;
   }
 
-  const auto new_snapshot = internal::Visitor::getSnapshot(config, false);
-  YAML::Node new_yaml;
+  const auto new_yaml = internal::Visitor::getValues(config).data;
   {  // critical section
     std::lock_guard<std::mutex> lock(mutex_);
-    const auto old_snapshot = internal::Visitor::getSnapshot(config_, false);
-    if (old_snapshot == new_snapshot) {
+    const auto old_yaml = internal::Visitor::getValues(config_).data;
+    if (internal::isEqual(old_yaml, new_yaml)) {
       return false;
     }
-
-    new_yaml = internal::Visitor::getValues(config).data;
     config_ = config;
   }  // end critical section
 
@@ -123,28 +120,30 @@ std::string DynamicConfig<ConfigT>::setValues(const YAML::Node& values) const {
   if (values.Type() != YAML::NodeType::Map || values.size() == 0) {
     return "";
   }
-  YAML::Node new_yaml;
+  YAML::Node old_yaml, new_yaml;
   std::string error;
   {  // start critical section
     std::lock_guard<std::mutex> lock(mutex_);
     ConfigT new_config = config_;
-    const auto parse_data = internal::Visitor::setValues(new_config, values);
-    error = internal::Formatter::formatErrors(parse_data, "", internal::Severity::kWarning, true);
+    auto meta_data = internal::Visitor::setValues(new_config, values);
+    error = internal::Formatter::formatErrors(meta_data, "", internal::Severity::kWarning, true);
+    meta_data.errors.clear();
+    meta_data.checks = std::move(internal::Visitor::getChecks(new_config).checks);
 
-    const auto check_data = internal::Visitor::getChecks(new_config);
-    if (!internal::hasNoInvalidChecks(check_data)) {
-      return internal::Formatter::formatErrors(check_data, "", internal::Severity::kError, true) + error;
+    if (!internal::hasNoInvalidChecks(meta_data)) {
+      return internal::Formatter::formatErrors(meta_data, "", internal::Severity::kError, true) + error;
     }
 
-    const auto old_snapshot = internal::Visitor::getSnapshot(config_, false);
-    const auto new_snapshot = internal::Visitor::getSnapshot(new_config, false);
+    old_yaml = internal::Visitor::getValues(config_).data;
     config_ = new_config;
-    if (old_snapshot == new_snapshot) {
-      return error;
-    }
-
     new_yaml = internal::Visitor::getValues(config_).data;
   }  // end critical section
+
+  // Check if the config was actually changed.
+  // TODO(lschmid): This is not beautiful, think about better ways to get good behavior.
+  if (internal::isEqual(old_yaml, new_yaml)) {
+    return error;
+  }
 
   if (callback_) {
     callback_();

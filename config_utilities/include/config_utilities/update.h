@@ -54,12 +54,12 @@ namespace config {
  */
 template <typename ConfigT>
 bool updateFields(ConfigT& config, YAML::Node node, bool print_warnings = true, const std::string& name_space = "") {
-  const auto backup = internal::Visitor::getSnapshot(config);
+  const auto backup = internal::Visitor::getValues(config);
   const internal::MetaData data =
       internal::Visitor::setValues(config, internal::lookupNamespace(node, name_space), print_warnings);
   const bool success = !data.hasErrors() && isValid(config);
   if (!success) {
-    internal::Visitor::setSnapshot(config, backup, print_warnings);
+    internal::Visitor::setValues(config, backup.data, print_warnings);
   }
 
   return success;
