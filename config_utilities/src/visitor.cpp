@@ -87,6 +87,7 @@ void Visitor::visitCheck(const CheckBase& check) {
 std::optional<std::string> Visitor::visitVirtualConfig(bool is_set,
                                                        bool is_optional,
                                                        const std::string& type,
+                                                       const std::optional<std::string>& failed_type,
                                                        const std::string& base_type,
                                                        const std::string& base_factory_info) {
   Visitor& visitor = Visitor::instance();
@@ -94,11 +95,13 @@ std::optional<std::string> Visitor::visitVirtualConfig(bool is_set,
 
   // Treat the validity of virtual configs as checks.
   if (visitor.mode == Visitor::Mode::kCheck) {
-    if (!is_set && !is_optional) {
-      const std::string field_name =
-          visitor.meta_data.field_name.empty() ? "" : "'" + visitor.meta_data.field_name + "' ";
-      visitor.meta_data.checks.emplace_back(
-          new Check(false, "Virtual config " + field_name + "is not set and not marked optional"));
+    const bool lookup_failed = failed_type && Settings::instance().factory.strict_virtual_config_types;
+    if (lookup_failed || (!is_set && !is_optional)) {
+      const auto& field_name = visitor.meta_data.field_name;
+      const auto label = field_name.empty() ? std::string("Virtual config") : "Virtual config '" + field_name + "'";
+      const auto reason =
+          lookup_failed ? " could not load type '" + *failed_type + "'" : " is not set and not marked optional";
+      visitor.meta_data.checks.emplace_back(new Check(false, label + reason));
     } else {
       visitor.meta_data.checks.emplace_back(new Check(true, ""));
     }

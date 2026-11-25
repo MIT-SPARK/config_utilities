@@ -137,6 +137,7 @@ struct Visitor {
   static std::optional<std::string> visitVirtualConfig(bool is_set,
                                                        bool is_optional,
                                                        const std::string& type,
+                                                       const std::optional<std::string>& failed_type,
                                                        const std::string& base_type,
                                                        const std::string& base_factory_info);
 

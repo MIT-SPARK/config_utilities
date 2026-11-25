@@ -545,7 +545,7 @@ TEST(VirtualConfig, optionalByDefault) {
   Settings().restoreDefaults();
 
   const std::string yaml_str = R"""(modules:
-  - {type: testing}
+  - {type: ''}
   - {a: 5, b: 6}
   - {type: Derived2}
 )""";
@@ -554,6 +554,48 @@ TEST(VirtualConfig, optionalByDefault) {
   const auto config = config::fromYaml<ObjectWithOptionalConfigs::Config>(node);
   const ObjectWithOptionalConfigs object(config);
   EXPECT_EQ(object.valid.size(), 1u);
+}
+
+TEST(VirtualConfig, unknownOptionalTypeFailsValidation) {
+  const auto logger = TestLogger::create();
+  const auto config = fromYaml<ObjectWithOptionalConfigs::Config>(YAML::Load("modules: [{type: Typo}]"));
+  ASSERT_EQ(config.modules.size(), 1u);
+  EXPECT_FALSE(config.modules.front().isSet());
+  ASSERT_TRUE(logger->hasMessages());
+  EXPECT_NE(logger->lastMessage().find("No module of type 'Typo'"), std::string::npos);
+
+  logger->clear();
+  EXPECT_FALSE(isValid(config, true));
+  ASSERT_TRUE(logger->hasMessages());
+  EXPECT_NE(logger->lastMessage().find("Virtual config 'modules'"), std::string::npos);
+  EXPECT_NE(logger->lastMessage().find("'Typo'"), std::string::npos) << logger->lastMessage();
+
+  const bool strict = Settings().factory.strict_virtual_config_types;
+  setConfigSettingsFromYAML(YAML::Load("factory: {strict_virtual_config_types: false}"));
+  EXPECT_TRUE(isValid(config));
+  Settings().factory.strict_virtual_config_types = strict;
+}
+
+TEST(VirtualConfig, createWithFailedOptionalChild) {
+  const RegistrationGuard<DefaultedOptional, DefaultedOptional, DefaultedOptional::Config> child("DefaultedOptional");
+  const RegistrationGuard<ParentOfDefaultedOptional, ParentOfDefaultedOptional, ParentOfDefaultedOptional::Config>
+      parent("ParentOfDefaultedOptional");
+  const auto config = fromYaml<VirtualConfig<ParentOfDefaultedOptional>>(
+      YAML::Load("{type: ParentOfDefaultedOptional, child: {type: UnknownChild}}"));
+  ASSERT_FALSE(isValid(config));
+
+  const auto object = config.create();
+  ASSERT_TRUE(object);
+  EXPECT_FALSE(object->child);
+  EXPECT_TRUE(isValid(object->config));
+}
+
+TEST(VirtualConfig, successfulAssignmentClearsFailedType) {
+  auto config = fromYaml<VirtualConfig<Base2, true>>(YAML::Load("type: Typo"));
+  ASSERT_FALSE(isValid(config));
+
+  ASSERT_TRUE(config.set(Derived2::Config()));
+  EXPECT_TRUE(isValid(config));
 }
 
 TEST(VirtualConfig, parseOptionalMissingField) {
@@ -615,6 +657,16 @@ TEST(VirtualConfig, optionalNullCreation) {
 
   auto object = config.create();
   ASSERT_EQ(object, nullptr);
+}
+
+TEST(VirtualConfig, emptyOptionalTypeWithoutRegisteredImplementations) {
+  struct UnregisteredBase {};
+
+  const auto logger = TestLogger::create();
+  const auto config = fromYaml<VirtualConfig<UnregisteredBase, true>>(YAML::Load("type: ''"));
+  EXPECT_FALSE(config.isSet());
+  EXPECT_TRUE(isValid(config));
+  EXPECT_FALSE(logger->hasMessages()) << logger->lastMessage();
 }
 
 TEST(VirtualConfig, defaultedConfigCorrect) {

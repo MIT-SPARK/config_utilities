@@ -19,3 +19,12 @@ Settings().factory.type_param_name = "type";
 Settings().setLogger("stdout");
 Settings().setFormatter("asl");
 ```
+
+`Settings().factory.strict_virtual_config_types` is `true` by default.
+With this setting enabled, a virtual config fails validation if its requested
+type could not be loaded by the factory. Set it to `false` to allow optional
+virtual configs with a failed lookup to pass validation as unset. The factory
+still logs the lookup error.
+
+With `setConfigSettingsFromYAML()` or `setConfigSettingsFromContext()`, use
+`factory: {strict_virtual_config_types: false}` to restore the previous behavior.
