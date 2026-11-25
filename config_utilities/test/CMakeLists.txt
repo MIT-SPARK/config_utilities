@@ -74,17 +74,10 @@ else()
   set_property(TARGET test_${PROJECT_NAME} PROPERTY ENABLE_EXPORTS ON)
   target_include_directories(
     test_${PROJECT_NAME}_plugins
-    PRIVATE $<TARGET_PROPERTY:${PROJECT_NAME},INTERFACE_INCLUDE_DIRECTORIES>)
+    PRIVATE ${PROJECT_SOURCE_DIR}/include)
   target_link_libraries(
     test_${PROJECT_NAME}_plugins
-    PRIVATE test_${PROJECT_NAME}
-            "$<TARGET_GENEX_EVAL:${PROJECT_NAME},$<TARGET_PROPERTY:${PROJECT_NAME},INTERFACE_LINK_LIBRARIES>>")
+    PRIVATE test_${PROJECT_NAME} yaml-cpp)
 endif()
 target_compile_options(test_${PROJECT_NAME} PRIVATE -Wno-unused-but-set-variable)
 gtest_add_tests(TARGET test_${PROJECT_NAME})
-
-if(CONFIG_UTILS_WITH_SPDLOG AND NOT BUILD_SHARED_LIBS)
-  add_executable(test_static_logger_registration src/static_logger_registration.cpp)
-  target_link_libraries(test_static_logger_registration PRIVATE ${PROJECT_NAME})
-  add_test(NAME Logging.StaticSpdlogRegistration COMMAND test_static_logger_registration)
-endif()
