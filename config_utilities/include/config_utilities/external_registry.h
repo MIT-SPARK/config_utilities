@@ -223,6 +223,9 @@ struct ExternalRegistry {
 
 }  // namespace internal
 
+// Export internal type that gets used downstream
+using internal::LibraryGuard;
+
 /**
  * @brief Populate factory methods from a provided shared object library
  * @param library_path Relative or absolute path to library (without extension or lib prefix)
@@ -239,7 +242,7 @@ struct ExternalRegistry {
  *
  * @returns Guard that unloads library once out of scope
  */
-[[nodiscard]] internal::LibraryGuard loadExternalFactories(const std::filesystem::path& library_path);
+[[nodiscard]] LibraryGuard loadExternalFactories(const std::filesystem::path& library_path);
 
 /**
  * @brief Populate factory methods from a provided shared object libraries
@@ -249,7 +252,7 @@ struct ExternalRegistry {
  *
  * @returns Guard that unloads library once out of scope
  */
-[[nodiscard]] internal::LibraryGuard loadExternalFactories(const std::vector<std::filesystem::path>& libraries);
+[[nodiscard]] LibraryGuard loadExternalFactories(const std::vector<std::filesystem::path>& libraries);
 
 /**
  * @brief Populate factory methods from a provided shared object libraries
@@ -259,7 +262,7 @@ struct ExternalRegistry {
  *
  * @returns Guard that unloads library once out of scope
  */
-[[nodiscard]] internal::LibraryGuard loadExternalFactories(const std::vector<std::string>& libraries);
+[[nodiscard]] LibraryGuard loadExternalFactories(const std::vector<std::string>& libraries);
 
 /**
  * @brief Wrap a created object that ensures external instance deletion on external library unload

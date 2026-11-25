@@ -267,7 +267,7 @@ TEST(ValidityChecks, checkValid) {
   config.i = -1;
   checkValid(config);
   EXPECT_EQ(logger->messages().size(), 1);
-  EXPECT_EQ(logger->messages().back().first, internal::Severity::kFatal);
+  EXPECT_EQ(logger->messages().back().first, Severity::kFatal);
 }
 
 }  // namespace config::test

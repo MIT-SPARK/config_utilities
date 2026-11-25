@@ -72,8 +72,7 @@ bool isValid(const ConfigT& config, bool print_warnings = false) {
     return true;
   }
   if (print_warnings) {
-    internal::Logger::logWarning(
-        internal::Formatter::formatErrors(data, "Invalid config", internal::Severity::kWarning));
+    internal::Logger::logWarning(internal::Formatter::formatErrors(data, "Invalid config", Severity::kWarning));
   }
   return false;
 }
@@ -96,7 +95,7 @@ const ConfigT& checkValid(const ConfigT& config) {
     return config;
   }
 
-  internal::Logger::logFatal(internal::Formatter::formatErrors(data, "Invalid config", internal::Severity::kFatal));
+  internal::Logger::logFatal(internal::Formatter::formatErrors(data, "Invalid config", Severity::kFatal));
   return config;
 }
 

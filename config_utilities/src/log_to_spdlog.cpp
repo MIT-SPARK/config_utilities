@@ -42,11 +42,12 @@
 #include <cstdlib>
 
 #include <spdlog/spdlog.h>
+#else
+#include "config_utilities/internal/logger.h"
+#include "config_utilities/logging/log_to_stdout.h"
 #endif
 
-#include "config_utilities/logging/log_to_stdout.h"
-
-namespace config::internal {
+namespace config {
 
 SpdlogLogger::SpdlogLogger(std::shared_ptr<spdlog::logger> logger) : logger_(std::move(logger)) {
 #ifdef CONFIG_UTILS_ENABLE_SPDLOG_LOGGING
@@ -75,9 +76,9 @@ void SpdlogLogger::logImpl(Severity severity, const std::string& message) {
   }
 #else
   // Use the existing public dispatch interface for the fallback backend.
-  Logger::setLogger(std::make_shared<StdoutLogger>());
-  Logger::log(severity, message);
+  internal::Logger::setLogger(std::make_shared<StdoutLogger>());
+  internal::Logger::log(severity, message);
 #endif
 }
 
-}  // namespace config::internal
+}  // namespace config

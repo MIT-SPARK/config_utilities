@@ -35,28 +35,29 @@
 
 #include "config_utilities/logging/log_to_glog.h"
 
-#ifdef CONFIG_UTILS_ENABLE_GLOG_LOGGING
-#include <glog/logging.h>
-#endif
-
-#include <iostream>
 #include <string>
 
-#include "config_utilities/logging/log_to_stdout.h"
+#ifdef CONFIG_UTILS_ENABLE_GLOG_LOGGING
+#include <glog/logging.h>
+#else
+#include <iostream>
 
-namespace config::internal {
+#include "config_utilities/internal/logger.h"
+#include "config_utilities/logging/log_to_stdout.h"
+#endif
+
+namespace config {
 
 GlogLogger::GlogLogger() {
 #ifndef CONFIG_UTILS_ENABLE_GLOG_LOGGING
-  std::cerr << "config_utilities was not build with glog support! reverting to stdout logging implementation"
-            << std::endl;
+  std::cerr << "config_utilities was not build with glog support! using stdout logging implementation" << std::endl;
 #endif
 }
 
 void GlogLogger::logImpl(const Severity severity, const std::string& message) {
 #ifndef CONFIG_UTILS_ENABLE_GLOG_LOGGING
-  Logger::setLogger(std::make_shared<StdoutLogger>());
-  Logger::log(severity, message);
+  internal::Logger::setLogger(std::make_shared<StdoutLogger>());
+  internal::Logger::log(severity, message);
 #else
   switch (severity) {
     case Severity::kInfo:
@@ -78,4 +79,4 @@ void GlogLogger::logImpl(const Severity severity, const std::string& message) {
 #endif
 }
 
-}  // namespace config::internal
+}  // namespace config

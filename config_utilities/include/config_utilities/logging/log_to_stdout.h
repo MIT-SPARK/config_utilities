@@ -37,14 +37,12 @@
 
 #include <string>
 
-#include "config_utilities/internal/logger.h"
+#include "config_utilities/logging/logger_impl.h"
 
-namespace config::internal {
+namespace config {
 
-/**
- * @brief Implements logging to std::cout.
- */
-class StdoutLogger : public Logger {
+//! Implements logging to std::cout.
+class StdoutLogger : public LoggerImpl {
  public:
   /**
    * @brief Construct a logger to output to stdout or stderr depending on configuration
@@ -68,4 +66,4 @@ class StdoutLogger : public Logger {
   } initializer_ = Initializer();
 };
 
-}  // namespace config::internal
+}  // namespace config

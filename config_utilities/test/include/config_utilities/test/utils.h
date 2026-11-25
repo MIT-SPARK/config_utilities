@@ -43,7 +43,6 @@
 #include <yaml-cpp/yaml.h>
 
 #include "config_utilities/factory.h"
-#include "config_utilities/internal/logger.h"
 
 namespace config::test {
 
@@ -55,9 +54,9 @@ namespace config::test {
  */
 bool expectEqual(const YAML::Node& a, const YAML::Node& b, double epsilon = 0.0);
 
-class TestLogger : public internal::Logger {
+class TestLogger : public LoggerImpl {
  public:
-  using Message = std::pair<internal::Severity, std::string>;
+  using Message = std::pair<Severity, std::string>;
   using Messages = std::vector<Message>;
 
   TestLogger() = default;
@@ -73,12 +72,12 @@ class TestLogger : public internal::Logger {
   static std::shared_ptr<TestLogger> create();
 
  protected:
-  void logImpl(const internal::Severity severity, const std::string& message) override;
+  void logImpl(const Severity severity, const std::string& message) override;
 
  private:
   Messages messages_;
 
-  inline static const auto registration_ = Registration<internal::Logger, TestLogger>("test_logger");
+  inline static const auto registration_ = Registration<LoggerImpl, TestLogger>("test_logger");
 };
 
 template <class BaseT, class DerivedT, class ConfigT, typename... Args>

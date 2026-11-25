@@ -35,22 +35,16 @@
 
 #pragma once
 
-#include <exception>
 #include <memory>
 #include <string>
-#include <utility>
+
+#include "config_utilities/logging/logger_impl.h"
 
 namespace config::internal {
 
-// Enum for different severity levels of logging. Enum values are used for comparing logging levels.
-enum class Severity { kInfo = 0, kWarning = 1, kError = 2, kFatal = 3 };
-
 std::string severityToString(const Severity severity);
 
-/**
- * @brief Abstract interface class for all logging classes. Calls to logging will happen through a global instance of
- * the logger that can be set by the implementation.
- */
+//! Singleton logging manager for config_utilities
 class Logger {
  public:
   using Ptr = std::shared_ptr<Logger>;
@@ -59,7 +53,6 @@ class Logger {
   Logger() = default;
   virtual ~Logger() = default;
 
-  // Severity levels for logging. Important: Implementations of logFatal are expected to stop execution of the program.
   static void log(const Severity severity, const std::string& message);
 
   // Convenience interfaces to log to a specific severity.
@@ -69,16 +62,12 @@ class Logger {
   static void logFatal(const std::string& message);
 
   // Set the global logger.
-  static void setLogger(Logger::Ptr logger);
-
- protected:
-  // Interface to be implemented by loggers.
-  virtual void logImpl(const Severity severity, const std::string& message);
+  static void setLogger(std::shared_ptr<LoggerImpl> logger);
 
  private:
   static void dispatch(const Severity severity, const std::string& message);
 
-  static Logger::Ptr logger_;
+  static std::shared_ptr<LoggerImpl> logger_;
 };
 
 }  // namespace config::internal

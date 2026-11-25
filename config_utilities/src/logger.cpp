@@ -56,15 +56,15 @@ namespace {
 
 // Keep enabled backends reachable when linking the library statically.
 #ifdef CONFIG_UTILS_ENABLE_GLOG_LOGGING
-const auto glog_registration = Registration<Logger, GlogLogger>("glog");
+const auto glog_registration = Registration<LoggerImpl, GlogLogger>("glog");
 #endif
 #ifdef CONFIG_UTILS_ENABLE_SPDLOG_LOGGING
-const auto spdlog_registration = Registration<Logger, SpdlogLogger>("spdlog");
+const auto spdlog_registration = Registration<LoggerImpl, SpdlogLogger>("spdlog");
 #endif
 
 }  // namespace
 
-Logger::Ptr Logger::logger_;
+decltype(Logger::logger_) Logger::logger_;
 
 std::string severityToString(const Severity severity) {
   switch (severity) {
@@ -90,26 +90,25 @@ void Logger::logError(const std::string& message) { dispatch(Severity::kError, m
 
 void Logger::logFatal(const std::string& message) { dispatch(Severity::kFatal, message); }
 
-void Logger::setLogger(Logger::Ptr logger) {
+void Logger::setLogger(std::shared_ptr<LoggerImpl> logger) {
   if (logger) {
     logger_ = std::move(logger);
   }
 }
 
 void Logger::dispatch(const Severity severity, const std::string& message) {
-  if (!logger_) {
+  if (!logger_ && !Settings::instance().disable_default_stdout_logger) {
     // NOTE(nathan) we default to logging to stdout/stderr to make sure warnings and errors are visible
-    logger_ = Settings::instance().disable_default_stdout_logger ? std::make_shared<Logger>()
-                                                                 : std::make_shared<StdoutLogger>();
+    logger_ = std::make_unique<StdoutLogger>();
   }
 
-  logger_->logImpl(severity, message);
-}
-
-void Logger::logImpl(const Severity severity, const std::string& message) {
-  // Empty logger does not log anything. Implementations of logFatal are expected to stop execution of the program.
-  if (severity == Severity::kFatal) {
-    throw std::runtime_error("FATAL: " + message);
+  if (logger_) {
+    logger_->logImpl(severity, message);
+  } else {
+    // Empty logger does not log anything. Implementations of logFatal are expected to stop execution of the program.
+    if (severity == Severity::kFatal) {
+      throw std::runtime_error("FATAL: " + message);
+    }
   }
 }
 

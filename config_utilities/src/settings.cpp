@@ -54,10 +54,10 @@ bool Settings::Introspection::enabled() const { return !output.empty(); }
 
 void Settings::setLogger(const std::string& name) {
   if (name == "none") {
-    Logger::setLogger(std::make_unique<Logger>());
     return;
   }
-  std::unique_ptr<Logger> new_logger = create<Logger>(name);
+
+  auto new_logger = create<LoggerImpl>(name);
   if (new_logger) {
     Logger::setLogger(std::move(new_logger));
   }

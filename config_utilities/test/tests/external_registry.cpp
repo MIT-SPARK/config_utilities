@@ -51,7 +51,7 @@ namespace config::test {
 
 struct LoggerGuard {
   LoggerGuard() : logger(TestLogger::create()) {}
-  ~LoggerGuard() { internal::Logger::setLogger(std::make_shared<internal::StdoutLogger>()); }
+  ~LoggerGuard() { internal::Logger::setLogger(std::make_shared<StdoutLogger>()); }
   std::shared_ptr<TestLogger> logger;
 };
 

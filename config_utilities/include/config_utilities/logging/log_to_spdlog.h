@@ -38,16 +38,16 @@
 #include <memory>
 #include <string>
 
-#include "config_utilities/internal/logger.h"
+#include "config_utilities/logging/logger_impl.h"
 
 namespace spdlog {
 class logger;
 }
 
-namespace config::internal {
+namespace config {
 
-// Optional spdlog backend. A supplied logger controls routing and severity.
-class SpdlogLogger : public Logger {
+//! Logger implementation that uses spdlog as a backend
+class SpdlogLogger : public LoggerImpl {
  public:
   explicit SpdlogLogger(std::shared_ptr<spdlog::logger> logger = nullptr);
 
@@ -58,4 +58,4 @@ class SpdlogLogger : public Logger {
   std::shared_ptr<spdlog::logger> logger_;
 };
 
-}  // namespace config::internal
+}  // namespace config

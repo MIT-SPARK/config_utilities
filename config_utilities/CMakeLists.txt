@@ -51,6 +51,7 @@ add_library(
   src/meta_data.cpp
   src/namespacing.cpp
   src/path.cpp
+  src/set_logger.cpp
   src/settings.cpp
   src/string_utils.cpp
   src/substitutions.cpp

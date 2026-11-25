@@ -37,15 +37,12 @@
 
 #include <string>
 
-#include "config_utilities/internal/logger.h"
+#include "config_utilities/logging/logger_impl.h"
 
-namespace config::internal {
+namespace config {
 
-/**
- * @brief Implements logging to glog. This file pulls in glog as a dependency, but glog is not required if this file is
- * not included in the project.
- */
-class GlogLogger : public Logger {
+//! Logger implementation that uses glog as a backend
+class GlogLogger : public LoggerImpl {
  public:
   GlogLogger();
   virtual ~GlogLogger() = default;
@@ -54,4 +51,4 @@ class GlogLogger : public Logger {
   void logImpl(const Severity severity, const std::string& message) override;
 };
 
-}  // namespace config::internal
+}  // namespace config
