@@ -13,7 +13,7 @@ option(BUILD_SHARED_LIBS "Build shared libs" ON)
 option(CONFIG_UTILS_BUILD_DEMOS "Build demo executables" ON)
 
 find_package(yaml-cpp REQUIRED)
-find_package(Boost CONFIG REQUIRED COMPONENTS filesystem system)
+find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
 find_package(Eigen3 QUIET)
 find_package(glog QUIET)
 find_package(nlohmann_json QUIET)
@@ -54,7 +54,7 @@ target_include_directories(
 target_link_libraries(
   ${PROJECT_NAME}
   PUBLIC yaml-cpp
-  PRIVATE Boost::filesystem Boost::system Boost::boost ${CMAKE_DL_LIBS})
+  PRIVATE Boost::filesystem Boost::boost ${CMAKE_DL_LIBS})
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE 1)
 add_library(config_utilities::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 if(Eigen3_FOUND)
