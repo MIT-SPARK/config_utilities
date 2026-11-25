@@ -20,6 +20,11 @@ The features described in this tutorial require including `config_utilities/exte
 To use registered factories from external libraries, you first have to load the libraries themselves.
 This is done via `config::loadExternalFactories()`.
 
+Use a shared `config_utilities` build so the executable and its plugins share a
+registry. Static builds require the executable to export its symbols and plugins
+to link against that executable. The
+[test setup](../config_utilities/test/CMakeLists.txt) shows this configuration.
+
 Assuming you have the following definitions:
 ```c++
 /******** compiled in main executable  **********************************************************************/

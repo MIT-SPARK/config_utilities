@@ -2,9 +2,8 @@ find_package(GTest REQUIRED)
 include(GoogleTest)
 enable_testing()
 
-add_library(test_${PROJECT_NAME}_plugins src/external_plugins.cpp)
+add_library(test_${PROJECT_NAME}_plugins SHARED src/external_plugins.cpp)
 target_include_directories(test_${PROJECT_NAME}_plugins PRIVATE include)
-target_link_libraries(test_${PROJECT_NAME}_plugins ${PROJECT_NAME})
 target_compile_options(test_${PROJECT_NAME}_plugins PRIVATE -fvisibility=hidden)
 
 # Add new test resources here to ensure they get copied to the approriate build
@@ -68,6 +67,19 @@ add_dependencies(test_${PROJECT_NAME} copy_test_resources)
 target_include_directories(test_${PROJECT_NAME} PRIVATE include)
 target_link_libraries(test_${PROJECT_NAME} PRIVATE ${PROJECT_NAME}
                                                    GTest::gtest_main)
+if(BUILD_SHARED_LIBS)
+  target_link_libraries(test_${PROJECT_NAME}_plugins PRIVATE ${PROJECT_NAME})
+else()
+  # Share the static host's registries instead of embedding another copy.
+  set_property(TARGET test_${PROJECT_NAME} PROPERTY ENABLE_EXPORTS ON)
+  target_include_directories(
+    test_${PROJECT_NAME}_plugins
+    PRIVATE $<TARGET_PROPERTY:${PROJECT_NAME},INTERFACE_INCLUDE_DIRECTORIES>)
+  target_link_libraries(
+    test_${PROJECT_NAME}_plugins
+    PRIVATE test_${PROJECT_NAME}
+            "$<TARGET_GENEX_EVAL:${PROJECT_NAME},$<TARGET_PROPERTY:${PROJECT_NAME},INTERFACE_LINK_LIBRARIES>>")
+endif()
 target_compile_options(test_${PROJECT_NAME} PRIVATE -Wno-unused-but-set-variable)
 gtest_add_tests(TARGET test_${PROJECT_NAME})
 
