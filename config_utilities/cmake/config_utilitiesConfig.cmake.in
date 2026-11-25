@@ -5,16 +5,23 @@ include(CMakeFindDependencyMacro)
 
 find_dependency(yaml-cpp REQUIRED)
 
-if (@Eigen3_FOUND@)  # expanded from Eigen3_FOUND during build time
+if(@Eigen3_FOUND@)
   find_dependency(Eigen3)
 endif()
 
-if (@glog_FOUND@)  # expanded from glog_FOUND during build time
+if(@CONFIG_UTILS_WITH_GLOG@)
   find_dependency(glog)
+endif()
+
+if(@CONFIG_UTILS_WITH_SPDLOG@)
+  find_dependency(spdlog)
 endif()
 
 if(NOT @BUILD_SHARED_LIBS@)  # expanded from BUILD_SHARED_LIBS during build time
   find_dependency(Boost CONFIG COMPONENTS filesystem)
+  if(@nlohmann_json_FOUND@)
+    find_dependency(nlohmann_json)
+  endif()
 endif()
 
 if(NOT TARGET config_utilities::config_utilities)

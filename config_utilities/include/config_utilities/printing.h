@@ -61,8 +61,7 @@ std::string toString(const ConfigT& config, bool print_warnings = true) {
   internal::MetaData data = internal::Visitor::getValues(config);
   // Format the output data.
   if (print_warnings && data.hasErrors()) {
-    internal::Logger::logWarning(
-        internal::Formatter::formatErrors(data, "Errors parsing config", internal::Severity::kWarning));
+    internal::Logger::logWarning(internal::Formatter::formatErrors(data, "Errors parsing config", Severity::kWarning));
   }
 
   return internal::Formatter::formatConfig(data);
@@ -88,8 +87,7 @@ std::string toString(const std::vector<ConfigT>& array_config, bool print_warnin
 
   // Format the output data.
   if (print_warnings && data.hasErrors()) {
-    internal::Logger::logWarning(
-        internal::Formatter::formatErrors(data, "Errors parsing config", internal::Severity::kWarning));
+    internal::Logger::logWarning(internal::Formatter::formatErrors(data, "Errors parsing config", Severity::kWarning));
   }
 
   return internal::Formatter::formatConfig(data);
@@ -116,8 +114,7 @@ std::string toString(const std::map<K, ConfigT>& config, bool print_warnings = t
 
   // Format the output data.
   if (print_warnings && data.hasErrors()) {
-    internal::Logger::logWarning(
-        internal::Formatter::formatErrors(data, "Errors parsing config", internal::Severity::kWarning));
+    internal::Logger::logWarning(internal::Formatter::formatErrors(data, "Errors parsing config", Severity::kWarning));
   }
 
   return internal::Formatter::formatConfig(data);

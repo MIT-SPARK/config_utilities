@@ -41,12 +41,6 @@
 #include "config_utilities/internal/logger.h"
 
 namespace config {
-namespace {
-
-static const auto env_reg = RegisteredSubstitutions::Registration<EnvSubstitution>();
-static const auto var_reg = RegisteredSubstitutions::Registration<VarSubstitution>();
-
-}  // namespace
 
 std::string EnvSubstitution::process(const ParserContext& context, const std::string& contents) const {
   const auto ret = std::getenv(contents.c_str());

@@ -11,12 +11,25 @@ endif()
 
 option(BUILD_SHARED_LIBS "Build shared libs" ON)
 option(CONFIG_UTILS_BUILD_DEMOS "Build demo executables" ON)
+option(CONFIG_UTILS_ENABLE_GLOG_LOGGING "Enable glog logging when available" ON)
+option(CONFIG_UTILS_ENABLE_SPDLOG_LOGGING "Enable spdlog logging when available" ON)
 
 find_package(yaml-cpp REQUIRED)
 find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
 find_package(Eigen3 QUIET)
-find_package(glog QUIET)
 find_package(nlohmann_json QUIET)
+
+set(CONFIG_UTILS_WITH_GLOG OFF)
+if(CONFIG_UTILS_ENABLE_GLOG_LOGGING)
+  find_package(glog QUIET)
+  set(CONFIG_UTILS_WITH_GLOG ${glog_FOUND})
+endif()
+
+set(CONFIG_UTILS_WITH_SPDLOG OFF)
+if(CONFIG_UTILS_ENABLE_SPDLOG_LOGGING)
+  find_package(spdlog QUIET)
+  set(CONFIG_UTILS_WITH_SPDLOG ${spdlog_FOUND})
+endif()
 
 add_library(
   ${PROJECT_NAME}
@@ -33,10 +46,12 @@ add_library(
   src/introspection.cpp
   src/log_to_stdout.cpp
   src/log_to_glog.cpp
+  src/log_to_spdlog.cpp
   src/logger.cpp
   src/meta_data.cpp
   src/namespacing.cpp
   src/path.cpp
+  src/set_logger.cpp
   src/settings.cpp
   src/string_utils.cpp
   src/substitutions.cpp
@@ -46,6 +61,7 @@ add_library(
   src/yaml_parser.cpp
   src/yaml_utils.cpp
 )
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 target_include_directories(
   ${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>
                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
@@ -60,9 +76,13 @@ add_library(config_utilities::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 if(Eigen3_FOUND)
   target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen)
 endif()
-if(glog_FOUND)
+if(CONFIG_UTILS_WITH_GLOG)
   target_link_libraries(${PROJECT_NAME} PUBLIC glog::glog)
   target_compile_definitions(${PROJECT_NAME} PRIVATE CONFIG_UTILS_ENABLE_GLOG_LOGGING)
+endif()
+if(CONFIG_UTILS_WITH_SPDLOG)
+  target_link_libraries(${PROJECT_NAME} PUBLIC spdlog::spdlog)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE CONFIG_UTILS_ENABLE_SPDLOG_LOGGING)
 endif()
 if(nlohmann_json_FOUND)
   target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)

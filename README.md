@@ -148,6 +148,20 @@ make -j
 sudo make install
 ```
 
+### Logging backends
+
+Logging defaults to stdout/stderr. To use spdlog:
+
+```cpp
+config::Settings().setLogger("spdlog");
+```
+
+Use `"glog"` for glog or `"none"` to disable logging. Fatal validation failures
+still throw when logging is disabled. Both backends are available when installed
+unless their CMake option (`CONFIG_UTILS_ENABLE_GLOG_LOGGING` or
+`CONFIG_UTILS_ENABLE_SPDLOG_LOGGING`) is OFF.
+See [custom loggers](docs/Advanced.md#adding-custom-loggers) to supply your own backend.
+
 ## How to `config_utilities`
 
 We provide detailed introductions about everything you need to know about `config_utilities` in the following [tutorials](docs/README.md#tutorials) and some verbose example [demos](docs/README.md#demos) that you can run.

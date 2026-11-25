@@ -40,11 +40,11 @@
 
 #include "config_utilities/factory.h"
 
-namespace config::internal {
+namespace config {
 namespace {
 
 // Factory registration to allow setting of formatters via Settings::setLogger().
-static const auto registration = Registration<Logger, StdoutLogger>("stdout");
+static const auto registration = Registration<LoggerImpl, StdoutLogger>("stdout");
 
 }  // namespace
 
@@ -81,6 +81,6 @@ void StdoutLogger::logImpl(const Severity severity, const std::string& message) 
   }
 }
 
-StdoutLogger::Initializer::Initializer() { Logger::setLogger(std::make_shared<StdoutLogger>()); }
+StdoutLogger::Initializer::Initializer() { internal::Logger::setLogger(std::make_unique<StdoutLogger>()); }
 
-}  // namespace config::internal
+}  // namespace config

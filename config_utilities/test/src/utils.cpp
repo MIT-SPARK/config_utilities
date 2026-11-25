@@ -35,11 +35,14 @@
 
 #include "config_utilities/test/utils.h"
 
-#include <string>
-#include <memory>
 #include <iostream>
+#include <memory>
+#include <string>
 
 #include <gtest/gtest.h>
+
+#include "config_utilities/internal/logger.h"
+#include "config_utilities/logging/set_logger.h"
 
 namespace config::test {
 namespace {
@@ -104,13 +107,13 @@ bool expectEqual(const YAML::Node& a, const YAML::Node& b, double epsilon) {
   return equal;
 }
 
-void TestLogger::logImpl(const internal::Severity severity, const std::string& message) {
+void TestLogger::logImpl(const Severity severity, const std::string& message) {
   messages_.emplace_back(severity, message);
 }
 
 std::shared_ptr<TestLogger> TestLogger::create() {
   auto logger = std::make_shared<TestLogger>();
-  internal::Logger::setLogger(logger);
+  setCustomLogger(logger);
   return logger;
 }
 

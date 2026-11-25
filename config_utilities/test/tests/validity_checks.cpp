@@ -34,6 +34,7 @@
  * -------------------------------------------------------------------------- */
 
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -41,6 +42,7 @@
 #include <gtest/gtest.h>
 
 #include "config_utilities/config.h"
+#include "config_utilities/logging/set_logger.h"
 #include "config_utilities/test/default_config.h"
 #include "config_utilities/test/utils.h"
 #include "config_utilities/validation.h"
@@ -267,7 +269,22 @@ TEST(ValidityChecks, checkValid) {
   config.i = -1;
   checkValid(config);
   EXPECT_EQ(logger->messages().size(), 1);
-  EXPECT_EQ(logger->messages().back().first, internal::Severity::kFatal);
+  EXPECT_EQ(logger->messages().back().first, Severity::kFatal);
+}
+
+TEST(ValidityChecks, checkValidWithDisabledLogger) {
+  DefaultConfig config;
+  config.i = -1;
+  const auto logger = TestLogger::create();
+  Settings().setLogger("none");
+
+  EXPECT_FALSE(isValid(config, true));
+  EXPECT_TRUE(logger->messages().empty());
+  EXPECT_THROW(checkValid(config), std::runtime_error);
+
+  setCustomLogger(logger);
+  EXPECT_FALSE(isValid(config, true));
+  EXPECT_EQ(logger->numMessages(), 1);
 }
 
 }  // namespace config::test

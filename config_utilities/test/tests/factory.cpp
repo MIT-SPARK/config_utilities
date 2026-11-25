@@ -427,12 +427,12 @@ TEST(Factory, moduleNameConflicts) {
 #          Registered Objects          #
 ########################################
 
+config::LoggerImpl():
+  'stdout' (config::StdoutLogger)
+  'test_logger' (config::test::TestLogger)
+
 config::internal::Formatter():
   'asl' (config::internal::AslFormatter)
-
-config::internal::Logger():
-  'stdout' (config::internal::StdoutLogger)
-  'test_logger' (config::test::TestLogger)
 
 config::test::Base(int):
   'DerivedA' (config::test::DerivedA)
@@ -514,8 +514,9 @@ Config[config::test::Talker]():
 
   Settings().printing.width = 40;
 
-  // drop glog if it exists to avoid conditional registration problems
-  internal::ObjectFactory<internal::Logger>::removeEntry("glog");
+  // Exclude optional logging backends from this registry snapshot.
+  internal::ObjectFactory<LoggerImpl>::removeEntry("glog");
+  internal::ObjectFactory<LoggerImpl>::removeEntry("spdlog");
   const std::string modules = internal::ModuleRegistry::getAllRegistered();
   EXPECT_EQ(modules, expected);
   Settings().restoreDefaults();

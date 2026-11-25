@@ -79,32 +79,29 @@ void declare_config(Config& config) {
 ```
 
 ## Adding custom loggers
-To implement custom loggers, inherit from `Logger` and implement all desired virtual functions. Examples of this are given in `logging/`.
+To implement custom loggers, inherit from `config::LoggerImpl` and override `logImpl`. Examples are given in `logging/`.
 
 ```c++
-class MyLogger : public Logger {
+#include <config_utilities/factory.h>
+#include <config_utilities/logging/set_logger.h>
+
+class MyLogger : public config::LoggerImpl {
  public:
- // Implement this function to do the logging work.
-  void logImpl(const Severity severity, const std::string& message) override;
+  void logImpl(config::Severity severity, const std::string& message) override;
 
-  // Factory registration to allow setting of formatters via Settings::setLogger().
-  inline static const auto registration_ = Registration<Logger, MyLogger>("my_logger");
-
-  // Optionally use a static registration struct to set your logger automatically if included.
-  inline static const struct Initializer {
-    Initializer() { Logger::setLogger(std::make_shared<MyLogger>()); }
-  } initializer_;
+  // Optional registration for config::Settings().setLogger("my_logger").
+  inline static const auto registration_ =
+      config::Registration<config::LoggerImpl, MyLogger>("my_logger");
 };
 ```
 
 > **✅ Supports**<br>
-> Loggers can be set using the base-logger's static `setLogger()` function. For example,
+> Install your logger with `config::setCustomLogger`. It accepts shared or unique pointers.
 > ```c++
-> auto logger = std::make_shared<MyLogger>();
-> internal::Logger::setLogger(logger);
-> { /* do magic */ }
-> logger->doSomethingWithCollectedState();
+> config::setCustomLogger(std::make_unique<MyLogger>());
 > ```
+
+For spdlog, pass your logger to `config::SpdlogLogger` and install it with the same setter.
 
 > **✅ Supports**<br>
 > To log to the current `config_utilities` logger, you can use:

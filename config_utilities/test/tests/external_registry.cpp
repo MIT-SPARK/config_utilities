@@ -43,6 +43,7 @@
 #include <gtest/gtest.h>
 
 #include "config_utilities/logging/log_to_stdout.h"
+#include "config_utilities/logging/set_logger.h"
 #include "config_utilities/settings.h"
 #include "config_utilities/test/external_types.h"
 #include "config_utilities/test/utils.h"
@@ -51,7 +52,7 @@ namespace config::test {
 
 struct LoggerGuard {
   LoggerGuard() : logger(TestLogger::create()) {}
-  ~LoggerGuard() { internal::Logger::setLogger(std::make_shared<internal::StdoutLogger>()); }
+  ~LoggerGuard() { setCustomLogger(std::make_unique<StdoutLogger>()); }
   std::shared_ptr<TestLogger> logger;
 };
 
@@ -78,12 +79,12 @@ TEST(ExternalRegistry, MoveableGuard) {
 
 TEST(ExternalRegistry, InstanceLifetimes) {
   auto plugin_lib = loadExternalFactories("./test_config_utilities_plugins");
-  auto unmanaged_logger = create<internal::Logger>("external_logger");
+  auto unmanaged_logger = create<LoggerImpl>("external_logger");
   EXPECT_TRUE(unmanaged_logger);
   unmanaged_logger.reset();
 
-  auto internal_logger = createManaged(create<internal::Logger>("stdout"));
-  auto external_logger = createManaged(create<internal::Logger>("external_logger"));
+  auto internal_logger = createManaged(create<LoggerImpl>("stdout"));
+  auto external_logger = createManaged(create<LoggerImpl>("external_logger"));
   ASSERT_TRUE(internal_logger);
   ASSERT_TRUE(external_logger);
   {  // limit scope for views
@@ -95,7 +96,7 @@ TEST(ExternalRegistry, InstanceLifetimes) {
 
   // after unloading, we shouldn't be able to make a test logger
   plugin_lib.unload();
-  unmanaged_logger = internal::ObjectFactory<internal::Logger>::create("external_logger");
+  unmanaged_logger = internal::ObjectFactory<LoggerImpl>::create("external_logger");
   EXPECT_FALSE(unmanaged_logger);
 
   EXPECT_FALSE(internal_logger);
